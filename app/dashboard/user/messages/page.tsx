@@ -19,7 +19,7 @@ export default function MessagesPage() {
   const [searching, setSearching] = useState(false);
   const [startMsg, setStartMsg] = useState("");
   const msgsEndRef = useRef<HTMLDivElement>(null);
-  const pollRef = useRef<NodeJS.Timeout>();
+  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadConvs = useCallback(async () => {
     try {
