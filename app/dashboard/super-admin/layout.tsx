@@ -1,7 +1,7 @@
 ﻿import AuthGuard from "@/components/layout/AuthGuard";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import AdminTopbar from "@/components/layout/AdminTopbar";
-import { MessagesWidget } from "@/components/widgets/MessagesWidget";
+import MessagesWidget from "@/components/shared/MessagesWidget";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
