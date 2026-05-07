@@ -19,7 +19,7 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
   const [startMsg, setStartMsg] = useState("");
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const msgsEndRef = useRef<HTMLDivElement>(null);
-  const pollRef = useRef<NodeJS.Timeout>();
+  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [unread, setUnread] = useState(0);
 
   const loadConvs = useCallback(async () => {
