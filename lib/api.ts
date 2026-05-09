@@ -1,6 +1,7 @@
 ﻿import axios from "axios";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -15,16 +16,24 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
     try {
-      const raw = localStorage.getItem("auth-storage");
+      // ✅ MUST MATCH ZUSTAND STORE NAME
+      const raw = localStorage.getItem("car-dealer-auth");
+
       if (raw) {
         const parsed = JSON.parse(raw);
-        const token = parsed?.state?.accessToken || parsed?.accessToken;
+
+        // ✅ correct persisted structure
+        const token = parsed?.state?.user?.accessToken;
+
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
       }
-    } catch { }
+    } catch (err) {
+      console.error("Token parse error:", err);
+    }
   }
+
   return config;
 });
 
@@ -35,14 +44,21 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       if (typeof window !== "undefined") {
         const path = window.location.pathname;
-        const isPublic = ["/feed", "/auth/login", "/auth/register", "/auth/forgot-password"].some(
-          (p) => path.startsWith(p)
-        );
-        if (!isPublic && path !== "/") {
+
+        const isPublic = [
+          "/",
+          "/feed",
+          "/auth/login",
+          "/auth/register",
+          "/auth/forgot-password",
+        ].some((p) => path.startsWith(p));
+
+        if (!isPublic) {
           window.location.href = "/auth/login";
         }
       }
     }
+
     return Promise.reject(error);
   }
 );
