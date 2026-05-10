@@ -1,220 +1,170 @@
 ﻿"use client";
-import { useState, useRef, useEffect } from "react";
-import { useNotifications } from "@/hooks/useNotifications";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import api from "@/lib/api";
 
-const TYPE_ICONS: Record<string, string> = {
-  car_sold: "💰",
-  car_added: "🚗",
-  car_moved: "🔄",
-  dealer_approved: "✅",
-  dealer_suspended: "⛔",
-  partner_request: "🤝",
-  payment_received: "💳",
-  cctv_alert: "📹",
-  general: "🔔",
-};
+function getLink(n: any): string | null {
+  const msg = (n.message || "").toLowerCase();
+  const title = (n.title || "").toLowerCase();
+  if (n.type === "message" || msg.includes("message")) return null; // handled in messages
+  if (msg.includes("partner") || title.includes("partner")) return null;
+  if (msg.includes("appointment")) return null;
+  if (msg.includes("request")) return null;
+  return null;
+}
 
 export default function NotificationBell() {
-  const { notifications, unreadCount, markRead, markAllRead } = useNotifications();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [notifs, setNotifs] = useState<any[]>([]);
+  const [unread, setUnread] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
+
+  const fetchNotifs = async () => {
+    try {
+      const res = await api.get("/api/v1/notifications/?limit=15");
+      const data = res.data.notifications || res.data || [];
+      setNotifs(data);
+      setUnread(data.filter((n: any) => !n.isRead).length);
+    } catch { }
+  };
+
+  useEffect(() => {
+    fetchNotifs();
+    const t = setInterval(fetchNotifs, 30000);
+    return () => clearInterval(t);
+  }, []);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener("mousedown", handler);
+    if (open) document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  }, [open]);
 
-  const formatTime = (iso: string) => {
-    const diff = Date.now() - new Date(iso).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "just now";
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    return `${Math.floor(hrs / 24)}d ago`;
+  const markRead = async (id: string) => {
+    await api.post(`/api/v1/notifications/${id}/read`).catch(() => {});
+    setNotifs((p) => p.map((n) => n._id === id ? { ...n, isRead: true } : n));
+    setUnread((u) => Math.max(0, u - 1));
+  };
+
+  const markAll = async () => {
+    await api.post("/api/v1/notifications/read-all").catch(() => {});
+    setNotifs((p) => p.map((n) => ({ ...n, isRead: true })));
+    setUnread(0);
+  };
+
+  const fmtTime = (iso: string) => {
+    const d = Date.now() - new Date(iso).getTime();
+    const m = Math.floor(d / 60000);
+    if (m < 1) return "now";
+    if (m < 60) return `${m}m`;
+    if (m < 1440) return `${Math.floor(m / 60)}h`;
+    return new Date(iso).toLocaleDateString("en-NG", { day: "numeric", month: "short" });
   };
 
   return (
     <div className="bell-wrap" ref={ref}>
-      <button className="bell-btn" onClick={() => setOpen((o) => !o)}>
-        🔔
-        {unreadCount > 0 && (
-          <span className="bell-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>
-        )}
+      <button className="bell-btn" onClick={() => setOpen(!open)} aria-label="Notifications">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        {unread > 0 && <span className="bell-badge">{unread > 9 ? "9+" : unread}</span>}
       </button>
 
       {open && (
-        <div className="notif-panel">
-          <div className="notif-header">
-            <span className="notif-title">NOTIFICATIONS</span>
-            {unreadCount > 0 && (
-              <button className="mark-all-btn" onClick={markAllRead}>
-                Mark all read
-              </button>
+        <div className="notif-dropdown">
+          <div className="nd-header">
+            <span className="nd-title">Notifications</span>
+            {unread > 0 && (
+              <button className="nd-mark-all" onClick={markAll}>Mark all read</button>
             )}
           </div>
-
-          <div className="notif-list">
-            {notifications.length === 0 ? (
-              <div className="notif-empty">
-                <span>🔕</span>
-                <p>No notifications yet</p>
-              </div>
-            ) : (
-              notifications.map((n) => (
-                <div
-                  key={n._id}
-                  className={`notif-item ${!n.isRead ? "unread" : ""}`}
-                  onClick={() => !n.isRead && markRead(n._id)}
-                >
-                  <div className="notif-icon">
-                    {TYPE_ICONS[n.type] || "🔔"}
-                  </div>
-                  <div className="notif-body">
-                    <div className="notif-item-title">{n.title}</div>
-                    <div className="notif-msg">{n.message}</div>
-                    <div className="notif-time">{formatTime(n.createdAt)}</div>
-                  </div>
-                  {!n.isRead && <div className="unread-dot" />}
+          <div className="nd-list">
+            {notifs.length === 0 ? (
+              <div className="nd-empty">No notifications yet</div>
+            ) : notifs.map((n) => (
+              <div
+                key={n._id}
+                className={`nd-item ${!n.isRead ? "unread" : ""}`}
+                onClick={() => markRead(n._id)}
+              >
+                <div className="nd-dot" style={{ background: !n.isRead ? "#F47B20" : "#E5E5E5" }} />
+                <div className="nd-content">
+                  <div className="nd-text">{n.title}</div>
+                  <div className="nd-sub">{n.message?.slice(0, 60)}{n.message?.length > 60 ? "..." : ""}</div>
+                  <div className="nd-time">{fmtTime(n.createdAt)}</div>
                 </div>
-              ))
-            )}
+              </div>
+            ))}
           </div>
         </div>
       )}
 
       <style>{`
-        .bell-wrap { position:relative; }
+        .bell-wrap { position: relative; flex-shrink: 0; }
         .bell-btn {
-          background:none;
-          border:none;
-          font-size:1.1rem;
-          cursor:pointer;
-          position:relative;
-          padding:0.4rem;
-          border-radius:6px;
-          transition:background 0.2s;
-          display:flex;
-          align-items:center;
-          justify-content:center;
+          position: relative; width: 36px; height: 36px; border-radius: 8px;
+          background: #F5F5F5; border: 1.5px solid #E5E5E5; color: #525252;
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer; transition: all 0.2s;
         }
-        .bell-btn:hover { background:var(--surface-2); }
+        .bell-btn:hover { border-color: #F47B20; color: #F47B20; background: #FFF7ED; }
         .bell-badge {
-          position:absolute;
-          top:-2px;
-          right:-2px;
-          background:var(--error);
-          color:#fff;
-          font-size:0.6rem;
-          font-weight:700;
-          min-width:16px;
-          height:16px;
-          border-radius:8px;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          padding:0 3px;
-          font-family:var(--font-mono);
-          border:2px solid var(--surface);
+          position: absolute; top: -4px; right: -4px;
+          background: #DC2626; color: #fff; border-radius: 50%;
+          min-width: 16px; height: 16px; display: flex; align-items: center;
+          justify-content: center; font-size: 0.58rem; font-weight: 700;
+          border: 2px solid #fff; padding: 0 2px;
         }
-        .notif-panel {
-          position:absolute;
-          top:calc(100% + 0.5rem);
-          right:0;
-          width:340px;
-          background:#fff;
-          border:1.5px solid #E5E5E5;
-          border-radius:10px;
-          box-shadow:0 8px 32px rgba(0,0,0,0.5);
-          z-index:500;
-          overflow:hidden;
-          animation:fadeIn 0.15s ease;
+        .notif-dropdown {
+          position: absolute;
+          top: calc(100% + 8px);
+          right: 0;
+          width: 300px;
+          max-height: 420px;
+          background: #fff;
+          border: 1.5px solid #E5E5E5;
+          border-radius: 12px;
+          box-shadow: 0 16px 48px rgba(0,0,0,0.14);
+          z-index: 9999;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
         }
-        @keyframes fadeIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
-        .notif-header {
-          display:flex;
-          align-items:center;
-          justify-content:space-between;
-          padding:0.875rem 1rem;
-          border-bottom:1px solid var(--border);
-          background:var(--surface-2);
+        /* Keep it on screen on mobile */
+        @media (max-width: 480px) {
+          .notif-dropdown {
+            right: -50px;
+            width: calc(100vw - 2rem);
+            max-width: 300px;
+          }
         }
-        .notif-title {
-          font-family:var(--font-display);
-          font-size:0.8rem;
-          letter-spacing:0.12em;
-          color:var(--text-muted);
+        .nd-header {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 0.875rem 1rem; border-bottom: 1px solid #E5E5E5;
+          background: #FAFAFA; flex-shrink: 0;
         }
-        .mark-all-btn {
-          background:none;
-          border:none;
-          color:var(--gold-dim);
-          font-size:0.72rem;
-          cursor:pointer;
-          transition:color 0.2s;
-          font-family:var(--font-body);
+        .nd-title { font-family: var(--font-display); font-size: 0.875rem; letter-spacing: 0.08em; color: #1A1A1A; }
+        .nd-mark-all { background: none; border: none; color: #F47B20; font-size: 0.72rem; cursor: pointer; font-family: var(--font-body); }
+        .nd-list { overflow-y: auto; flex: 1; }
+        .nd-empty { padding: 2rem; text-align: center; color: #A3A3A3; font-size: 0.875rem; }
+        .nd-item {
+          display: flex; align-items: flex-start; gap: 0.75rem;
+          padding: 0.875rem 1rem; cursor: pointer; border-bottom: 1px solid #F5F5F5;
+          transition: background 0.15s;
         }
-        .mark-all-btn:hover { color:#F47B20; }
-        .notif-list {
-          max-height:380px;
-          overflow-y:auto;
-        }
-        .notif-empty {
-          display:flex;
-          flex-direction:column;
-          align-items:center;
-          gap:0.5rem;
-          padding:2.5rem 1rem;
-          color:var(--text-dim);
-          font-size:0.825rem;
-        }
-        .notif-empty span { font-size:1.5rem; }
-        .notif-item {
-          display:flex;
-          align-items:flex-start;
-          gap:0.75rem;
-          padding:0.875rem 1rem;
-          border-bottom:1px solid var(--border);
-          cursor:pointer;
-          transition:background 0.15s;
-          position:relative;
-        }
-        .notif-item:last-child { border-bottom:none; }
-        .notif-item:hover { background:var(--surface-2); }
-        .notif-item.unread { background:rgba(201,168,76,0.04); }
-        .notif-icon { font-size:1.1rem; flex-shrink:0; margin-top:1px; }
-        .notif-body { flex:1; display:flex; flex-direction:column; gap:0.2rem; }
-        .notif-item-title {
-          font-size:0.82rem;
-          font-weight:500;
-          color:var(--text);
-        }
-        .notif-msg {
-          font-size:0.775rem;
-          color:var(--text-muted);
-          line-height:1.4;
-        }
-        .notif-time {
-          font-size:0.68rem;
-          color:var(--text-dim);
-          margin-top:0.1rem;
-          font-family:var(--font-mono);
-        }
-        .unread-dot {
-          width:7px;
-          height:7px;
-          border-radius:50%;
-          background:var(--gold);
-          flex-shrink:0;
-          margin-top:4px;
-        }
+        .nd-item:hover { background: #FFFBF5; }
+        .nd-item.unread { background: #FFFDF9; }
+        .nd-item:last-child { border-bottom: none; }
+        .nd-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+        .nd-content { flex: 1; min-width: 0; }
+        .nd-text { font-size: 0.8rem; font-weight: 600; color: #1A1A1A; line-height: 1.3; }
+        .nd-sub { font-size: 0.72rem; color: #737373; margin-top: 0.15rem; line-height: 1.3; }
+        .nd-time { font-size: 0.65rem; color: #A3A3A3; margin-top: 0.2rem; font-family: var(--font-mono); }
       `}</style>
     </div>
   );
 }
-

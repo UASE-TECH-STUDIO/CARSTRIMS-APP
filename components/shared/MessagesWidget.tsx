@@ -50,7 +50,21 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
     setActiveConv(conv);
     loadMessages(conv);
     if (pollRef.current) clearInterval(pollRef.current);
-    pollRef.current = setInterval(() => loadMessages(conv), 5000);
+    pollRef.current = setInterval(async () => {
+      // Silent poll — no loading state change
+      try {
+        const res = await api.get(`/api/v1/messages/conversation/${conv.conversationId}`);
+        const msgs = res.data || [];
+        setMessages(msgs);
+        // Scroll only if new messages arrived
+        setMessages((prev) => {
+          if (msgs.length > prev.length) {
+            setTimeout(() => msgsEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+          }
+          return msgs;
+        });
+      } catch { }
+    }, 5000);
     // Update unread
     setConversations((p) => p.map((c) => c.conversationId===conv.conversationId ? {...c,unreadCount:0} : c));
     setUnread((u) => Math.max(0, u - (conv.unreadCount||0)));
@@ -286,4 +300,5 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
     </>
   );
 }
+
 

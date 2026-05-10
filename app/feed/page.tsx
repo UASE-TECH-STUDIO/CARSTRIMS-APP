@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -539,7 +539,7 @@ export default function FeedPage() {
 
       <style>{`
         * { box-sizing:border-box; }
-        .feed { min-height:100vh; background:#F5F5F5; display:flex; flex-direction:column; font-family:var(--font-body); padding-bottom:0; }
+        .feed { min-height:100vh; background:#F5F5F5; display:flex; flex-direction:column; font-family:var(--font-body); }
 
         /* -- TOPBAR --------------------------- */
         .feed-topbar {
@@ -632,10 +632,9 @@ export default function FeedPage() {
         }
         .scan-btn:hover { border-color:#F47B20; color:#F47B20; background:#FFF7ED; }
         .dash-btn {
-          background:#F47B20; color:#fff; border:none; border-radius:8px;
-          padding:0.5rem 0.875rem; font-family:var(--font-display); font-size:0.78rem;
-          letter-spacing:0.06em; cursor:pointer; text-decoration:none; white-space:nowrap;
-          transition:background 0.2s;
+          background:#F47B20;color:#fff;border:none;border-radius:6px;
+          padding:0.4rem 0.75rem;font-family:var(--font-display);font-size:0.72rem;
+          letter-spacing:0.04em;cursor:pointer;text-decoration:none;white-space:nowrap;transition:background 0.2s;
         }
         .dash-btn:hover { background:#FF9340; }
         .auth-btns { display:flex; gap:0.375rem; }
@@ -779,7 +778,7 @@ export default function FeedPage() {
         /* -- COMBINED FOOTER -------------------- */
         .combined-footer {
           background:#fff; border-top:1.5px solid #E5E5E5;
-          position:sticky; bottom:0; z-index:100;
+          margin-top:auto;
         }
 
         /* Nav row */
@@ -853,8 +852,16 @@ export default function FeedPage() {
         .scan-cam:hover { border-color:#F47B20; color:#F47B20; background:#FFF7ED; }
 
         @media(max-width:640px) {
-          .feed-topbar { padding:0 0.875rem; gap:0.5rem; }
-          .feed-brand { font-size:1rem; }
+          .feed-topbar { padding:0 0.75rem; gap:0.4rem; height:54px; }
+          .feed-brand { font-size:0.95rem; letter-spacing:0.12em; }
+          .search-box { min-width:0; }
+          .auth-btns { display:none; }
+          .scan-btn { display:none; }
+          .cars-grid { grid-template-columns:repeat(auto-fill,minmax(155px,1fr)); gap:0.65rem; padding:0 0.75rem 1rem; }
+          .car-img-wrap { height:135px; }
+          .guest-note { display:none; }
+          .filter-dropdown { width:calc(100vw - 1.5rem); right:-0.5rem; }
+        }
           .auth-btns { display:none; }
           .scan-btn { padding:0.5rem 0.625rem; font-size:0.7rem; }
           .cars-grid { grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:0.75rem; padding:0 0.875rem 1rem; }
@@ -868,3 +875,5 @@ export default function FeedPage() {
     </div>
   );
 }
+
+
