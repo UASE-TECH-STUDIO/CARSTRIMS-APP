@@ -49,8 +49,8 @@ export default function FeedFooter({ onScan }: Props) {
             <div className="fi-col">
               <div className="fi-head">PLATFORM</div>
               <div className="fi-links">
-                <Link href="/auth/register" className="fi-link">Register Free</Link>
-                <Link href="/auth/login" className="fi-link">Login</Link>
+                <Link href="/(auth)/register" className="fi-link">Register Free</Link>
+                <Link href="/(auth)/login" className="fi-link">Login</Link>
                 <span className="fi-link fi-dev">Built by UASE TECH STUDIO</span>
               </div>
             </div>
@@ -77,7 +77,7 @@ export default function FeedFooter({ onScan }: Props) {
         </Link>
 
         {isAuthenticated && (
-          <button className="bn-item" onClick={() => { logout(); router.push("/auth/login"); }}>
+          <button className="bn-item" onClick={() => { logout(); router.push("/(auth)/login"); }}>
             <div className="bn-icon out">OUT</div>
             <span className="bn-label">Logout</span>
           </button>
