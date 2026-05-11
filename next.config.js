@@ -1,4 +1,4 @@
-﻿/** @type {import("next").NextConfig} */
+/** @type {import("next").NextConfig} */
 const nextConfig = {
   images: {
     remotePatterns: [
@@ -7,7 +7,6 @@ const nextConfig = {
     ],
     unoptimized: true,
   },
-  // Allow all image domains (easier for development)
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },
   compress: true,
