@@ -28,9 +28,9 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401 && typeof window !== "undefined") {
       const p = window.location.pathname;
-      const pub = ["/feed", "/auth/", "/cars/", "/dealers/"];
+      const pub = ["/feed", "/login", "/register", "/forgot-password", "/cars/", "/dealers/"];
       if (!pub.some((x) => p.startsWith(x)) && p !== "/") {
-        window.location.href = "/auth/login";
+        window.location.href = "/login";
       }
     }
     return Promise.reject(error);

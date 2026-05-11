@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { ReactNode, useEffect, useState } from "react";
 import AuthGuard from "@/components/layout/AuthGuard";
 import Link from "next/link";
@@ -77,7 +77,7 @@ export default function PartnerLayout({ children }: { children: ReactNode }) {
             </div>
             <div className="sb-bottom">
               <div className="dev-note">Powered by UASE TECH STUDIO</div>
-              <button className="logout-btn" onClick={() => { logout(); router.push("/auth/login"); }}>Sign Out</button>
+              <button className="logout-btn" onClick={() => { logout(); router.push("/login"); }}>Sign Out</button>
             </div>
           </aside>
         </SidebarWrapper>

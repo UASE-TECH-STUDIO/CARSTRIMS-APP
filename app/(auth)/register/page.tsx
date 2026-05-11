@@ -5,16 +5,38 @@ import Link from "next/link";
 import api from "@/lib/api";
 
 const ROLES = [
-  { value:"DEALER_ADMIN", label:"Dealer / Car Stand", desc:"Manage inventory and sales" },
-  { value:"PARTNER_USER", label:"Partner / Asset Owner", desc:"Monitor cars across dealers" },
-  { value:"PUBLIC_USER", label:"Car Buyer", desc:"Browse, save and request cars" },
+  {
+    value: "DEALER_ADMIN",
+    label: "Dealer / Car Stand",
+    icon: "Ã°Å¸ÂÂ¢",
+    desc: "Manage inventory, staff and sales",
+  },
+  {
+    value: "PARTNER_USER",
+    label: "Partner / Asset Owner",
+    icon: "Ã°Å¸Â¤Â",
+    desc: "Monitor your cars across dealers",
+  },
+  {
+    value: "PUBLIC_USER",
+    label: "Car Buyer",
+    icon: "Ã°Å¸â€˜Â¤",
+    desc: "Browse, save and request cars",
+  },
 ];
 
 export default function RegisterPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [role, setRole] = useState("");
-  const [form, setForm] = useState({ fullName:"", username:"", email:"", password:"", phone:"" });
+  const [form, setForm] = useState({
+    fullName: "",
+    username: "",
+    email: "",
+    password: "",
+    phone: "",
+    whatsapp: "",
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -24,104 +46,303 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await api.post("/api/v1/auth/register", { ...form, role });
-      router.push("/auth/login");
+      router.push(
+        role === "DEALER_ADMIN"
+          ? "/auth/login?msg=pending"
+          : "/auth/login?msg=created"
+      );
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Registration failed");
-    } finally { setLoading(false); }
+      setError(err.response?.data?.detail || "Registration failed. Try again.");
+    } finally {
+      setLoading(false);
+    }
   };
-
-  const inputStyle: React.CSSProperties = {
-    background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"8px",
-    padding:"0.875rem 1rem",color:"#171717",fontSize:"0.9rem",outline:"none",width:"100%",
-    fontFamily:"var(--font-body)"
-  };
-  const labelStyle: React.CSSProperties = { fontSize:"0.7rem",fontWeight:600,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#525252" };
 
   return (
-    <div style={{display:"flex",minHeight:"100vh"}}>
-      <div style={{width:"42%",background:"linear-gradient(160deg,#E5E5E5,#D4D4D4,#C8C8C8)",padding:"3rem",display:"flex",flexDirection:"column",justifyContent:"space-between"}}>
-        <div style={{fontFamily:"var(--font-display)",fontSize:"1.5rem",letterSpacing:"0.2em",color:"#F47B20"}}>CARSTRIMS</div>
-        <div>
-          <h1 style={{fontFamily:"var(--font-display)",fontSize:"2.5rem",lineHeight:1.05,color:"#171717",marginBottom:"1rem"}}>JOIN NIGERIA&apos;S PREMIER CAR PLATFORM</h1>
-          <div style={{display:"flex",flexDirection:"column",gap:"0.5rem",marginTop:"1.5rem"}}>
-            {["Free to join","Verified dealers","Real-time inventory","Secure messaging"].map((f)=>(
-              <div key={f} style={{display:"flex",alignItems:"center",gap:"0.625rem",fontSize:"0.875rem",color:"#404040"}}>
-                <span style={{width:"8px",height:"8px",borderRadius:"50%",background:"#F47B20",flexShrink:0,display:"block"}} />{f}
-              </div>
-            ))}
+    <div className="auth-root">
+      <div className="auth-left">
+        <div className="al-inner">
+          <div className="al-brand">Ã¢â€”Ë† CARSTRIMS</div>
+          <div className="al-mid">
+            <h1 className="al-title">JOIN THE PLATFORM TODAY</h1>
+            <p className="al-sub">
+              Whether you are a dealer, partner or buyer Ã¢â‚¬â€ CARSTRIMS gives you
+              the tools to succeed in the car market.
+            </p>
+            <div className="al-features">
+              {["Free to join", "Verified dealers", "Real-time inventory", "Secure messaging"].map(
+                (f) => (
+                  <div key={f} className="al-feat">
+                    <span className="feat-dot" />
+                    {f}
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+          <div className="al-dev">
+            Developed by <strong>UASE TECH STUDIO</strong> Ã‚Â· CARSTRIMS 2026
           </div>
         </div>
-        <div style={{fontSize:"0.7rem",color:"#A3A3A3"}}>Built by UASE TECH STUDIO</div>
       </div>
-      <div style={{flex:1,background:"#F5F5F5",display:"flex",alignItems:"center",justifyContent:"center",padding:"2rem",overflowY:"auto"}}>
-        <div style={{width:"100%",maxWidth:"480px",background:"#fff",borderRadius:"16px",padding:"2.5rem",boxShadow:"0 4px 24px rgba(0,0,0,0.08)",display:"flex",flexDirection:"column",gap:"1.25rem"}}>
-          <div>
-            <div style={{display:"flex",alignItems:"center",gap:"0.5rem",marginBottom:"0.75rem"}}>
-              {[1,2].map((s)=>(
-                <div key={s} style={{width:"28px",height:"28px",borderRadius:"50%",background:step>=s?"#F47B20":"#E5E5E5",color:step>=s?"#fff":"#737373",fontSize:"0.8rem",fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center"}}>{s}</div>
-              ))}
-            </div>
-            <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.75rem",color:"#171717"}}>{step===1?"Choose Account Type":"Create Account"}</h2>
+
+      <div className="auth-right">
+        <div className="auth-card">
+          <div className="step-row">
+            <div className={`step-dot ${step >= 1 ? "done" : ""}`}>1</div>
+            <div className="step-line" />
+            <div className={`step-dot ${step >= 2 ? "done" : ""}`}>2</div>
           </div>
 
-          {error && <div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",color:"#DC2626",padding:"0.75rem",borderRadius:"8px",fontSize:"0.875rem"}}>{error}</div>}
+          <div className="ac-head">
+            <h2 className="ac-title">
+              {step === 1 ? "Choose Account Type" : "Create Your Account"}
+            </h2>
+            <p className="ac-sub">
+              {step === 1
+                ? "Select how you will use CARSTRIMS"
+                : "Fill in your details below"}
+            </p>
+          </div>
 
-          {step===1 ? (
-            <div style={{display:"flex",flexDirection:"column",gap:"0.75rem"}}>
-              {ROLES.map((r)=>(
-                <button key={r.value} onClick={()=>setRole(r.value)}
-                  style={{display:"flex",alignItems:"flex-start",gap:"1rem",padding:"1rem 1.25rem",background:role===r.value?"#FFF7ED":"#F5F5F5",border:role===r.value?"1.5px solid #F47B20":"1.5px solid #E5E5E5",borderRadius:"10px",cursor:"pointer",textAlign:"left",width:"100%",fontFamily:"var(--font-body)"}}>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:"0.9rem",fontWeight:600,color:"#171717"}}>{r.label}</div>
-                    <div style={{fontSize:"0.75rem",color:"#737373",marginTop:"0.2rem"}}>{r.desc}</div>
+          {error && <div className="auth-err">{error}</div>}
+
+          {step === 1 ? (
+            <div className="role-list">
+              {ROLES.map((r) => (
+                <button
+                  key={r.value}
+                  className={`role-card ${role === r.value ? "selected" : ""}`}
+                  onClick={() => setRole(r.value)}
+                >
+                  <span className="rc-icon">{r.icon}</span>
+                  <div className="rc-body">
+                    <div className="rc-label">{r.label}</div>
+                    <div className="rc-desc">{r.desc}</div>
                   </div>
-                  {role===r.value && <span style={{color:"#F47B20",fontWeight:700}}>✓</span>}
+                  {role === r.value && <span className="rc-check">Ã¢Å“â€œ</span>}
                 </button>
               ))}
-              <button onClick={()=>setStep(2)} disabled={!role}
-                style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.875rem",fontFamily:"var(--font-display)",fontSize:"0.95rem",letterSpacing:"0.1em",cursor:role?"pointer":"not-allowed",opacity:role?1:0.5,marginTop:"0.5rem"}}>
-                CONTINUE
+              <button
+                className="auth-btn"
+                onClick={() => setStep(2)}
+                disabled={!role}
+              >
+                CONTINUE Ã¢â€ â€™
               </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} style={{display:"flex",flexDirection:"column",gap:"1rem"}}>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem"}}>
-                <div style={{display:"flex",flexDirection:"column",gap:"0.4rem"}}>
-                  <label style={labelStyle}>Full Name *</label>
-                  <input style={inputStyle} placeholder="John Doe" value={form.fullName} onChange={(e)=>setForm({...form,fullName:e.target.value})} required />
+            <form onSubmit={handleSubmit} className="auth-form">
+              <div className="form-row">
+                <div className="field">
+                  <label className="fl">Full Name *</label>
+                  <input
+                    className="fi"
+                    placeholder="John Doe"
+                    value={form.fullName}
+                    onChange={(e) =>
+                      setForm({ ...form, fullName: e.target.value })
+                    }
+                    required
+                  />
                 </div>
-                <div style={{display:"flex",flexDirection:"column",gap:"0.4rem"}}>
-                  <label style={labelStyle}>Username *</label>
-                  <input style={inputStyle} placeholder="johndoe" value={form.username} onChange={(e)=>setForm({...form,username:e.target.value})} required />
+                <div className="field">
+                  <label className="fl">Username *</label>
+                  <input
+                    className="fi"
+                    placeholder="johndoe"
+                    value={form.username}
+                    onChange={(e) =>
+                      setForm({ ...form, username: e.target.value })
+                    }
+                    required
+                  />
                 </div>
               </div>
-              <div style={{display:"flex",flexDirection:"column",gap:"0.4rem"}}>
-                <label style={labelStyle}>Email *</label>
-                <input type="email" style={inputStyle} placeholder="you@example.com" value={form.email} onChange={(e)=>setForm({...form,email:e.target.value})} required />
+              <div className="field">
+                <label className="fl">Email Address *</label>
+                <input
+                  type="email"
+                  className="fi"
+                  placeholder="you@example.com"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  required
+                />
               </div>
-              <div style={{display:"flex",flexDirection:"column",gap:"0.4rem"}}>
-                <label style={labelStyle}>Password *</label>
-                <input type="password" style={inputStyle} placeholder="Min 6 characters" value={form.password} onChange={(e)=>setForm({...form,password:e.target.value})} required />
+              <div className="field">
+                <label className="fl">Password *</label>
+                <input
+                  type="password"
+                  className="fi"
+                  placeholder="Minimum 8 characters"
+                  value={form.password}
+                  onChange={(e) =>
+                    setForm({ ...form, password: e.target.value })
+                  }
+                  required
+                  minLength={8}
+                />
               </div>
-              <div style={{display:"flex",flexDirection:"column",gap:"0.4rem"}}>
-                <label style={labelStyle}>Phone *</label>
-                <input style={inputStyle} placeholder="+234..." value={form.phone} onChange={(e)=>setForm({...form,phone:e.target.value})} required />
+              <div className="form-row">
+                <div className="field">
+                  <label className="fl">Phone *</label>
+                  <input
+                    className="fi"
+                    placeholder="+234..."
+                    value={form.phone}
+                    onChange={(e) =>
+                      setForm({ ...form, phone: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+                <div className="field">
+                  <label className="fl">WhatsApp</label>
+                  <input
+                    className="fi"
+                    placeholder="+234..."
+                    value={form.whatsapp}
+                    onChange={(e) =>
+                      setForm({ ...form, whatsapp: e.target.value })
+                    }
+                  />
+                </div>
               </div>
-              {role==="DEALER_ADMIN"&&<div style={{background:"#FFF7ED",border:"1px solid rgba(244,123,32,0.3)",color:"#C4621A",padding:"0.75rem",borderRadius:"8px",fontSize:"0.8rem",lineHeight:1.5}}>Dealer accounts require admin approval before access is granted.</div>}
-              <div style={{display:"flex",gap:"0.75rem",marginTop:"0.25rem"}}>
-                <button type="button" onClick={()=>setStep(1)} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.875rem 1.25rem",fontSize:"0.875rem",cursor:"pointer",fontFamily:"var(--font-body)"}}>Back</button>
-                <button type="submit" disabled={loading} style={{flex:1,background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.875rem",fontFamily:"var(--font-display)",fontSize:"0.9rem",letterSpacing:"0.1em",cursor:"pointer",opacity:loading?0.6:1}}>
-                  {loading?"Creating...":"CREATE ACCOUNT"}
+              {role === "DEALER_ADMIN" && (
+                <div className="dealer-note">
+                  Dealer accounts require approval before you get full access.
+                  You will be notified once approved.
+                </div>
+              )}
+              <div className="form-actions">
+                <button
+                  type="button"
+                  className="back-btn"
+                  onClick={() => setStep(1)}
+                >
+                  Ã¢â€ Â Back
+                </button>
+                <button
+                  type="submit"
+                  className="auth-btn flex-btn"
+                  disabled={loading}
+                >
+                  {loading ? "Creating account..." : "CREATE ACCOUNT"}
                 </button>
               </div>
             </form>
           )}
 
-          <p style={{fontSize:"0.875rem",color:"#737373",textAlign:"center"}}>
-            Already have an account? <Link href="/auth/login" style={{color:"#F47B20",textDecoration:"none",fontWeight:600}}>Sign in</Link>
+          <p className="auth-switch">
+            Already have an account?{" "}
+            <Link href="/login" className="switch-link">
+              Sign in
+            </Link>
           </p>
         </div>
       </div>
+
+      <style>{`
+        .auth-root { display:flex; min-height:100vh; font-family:var(--font-body); }
+        .auth-left {
+          width:42%; background:linear-gradient(160deg,#E5E5E5 0%,#D4D4D4 55%,#C8C8C8 100%);
+          display:flex; align-items:stretch; position:relative; overflow:hidden;
+        }
+        .auth-left::before {
+          content:"Ã¢â€”Ë†"; position:absolute; bottom:-60px; right:-50px;
+          font-family:var(--font-display); font-size:320px;
+          color:rgba(244,123,32,0.07); line-height:1; pointer-events:none;
+        }
+        .al-inner {
+          position:relative; z-index:1; display:flex; flex-direction:column;
+          justify-content:space-between; padding:2.5rem; width:100%;
+        }
+        .al-brand { font-family:var(--font-display); font-size:1.4rem; letter-spacing:0.2em; color:#F47B20; }
+        .al-mid { display:flex; flex-direction:column; gap:1.25rem; }
+        .al-title { font-family:var(--font-display); font-size:clamp(1.75rem,2.8vw,3rem); line-height:1.05; color:#1A1A1A; }
+        .al-sub { font-size:0.9rem; color:#525252; line-height:1.7; max-width:340px; }
+        .al-features { display:flex; flex-direction:column; gap:0.625rem; margin-top:0.5rem; }
+        .al-feat { display:flex; align-items:center; gap:0.625rem; font-size:0.875rem; color:#404040; }
+        .feat-dot { width:8px; height:8px; border-radius:50%; background:#F47B20; flex-shrink:0; }
+        .al-dev { font-size:0.7rem; color:#A3A3A3; }
+        .al-dev strong { color:#F47B20; }
+        .auth-right {
+          flex:1; background:#F5F5F5; display:flex; align-items:center;
+          justify-content:center; padding:2rem; overflow-y:auto;
+        }
+        .auth-card {
+          width:100%; max-width:480px; background:#fff; border-radius:16px;
+          padding:2.5rem; box-shadow:0 4px 24px rgba(0,0,0,0.08);
+          display:flex; flex-direction:column; gap:1.25rem;
+        }
+        .step-row { display:flex; align-items:center; gap:0; }
+        .step-dot {
+          width:28px; height:28px; border-radius:50%; background:#E5E5E5;
+          color:#737373; font-size:0.8rem; font-weight:600;
+          display:flex; align-items:center; justify-content:center; flex-shrink:0;
+          transition:all 0.2s;
+        }
+        .step-dot.done { background:#F47B20; color:#fff; }
+        .step-line { flex:1; height:2px; background:#E5E5E5; max-width:60px; }
+        .ac-head { display:flex; flex-direction:column; gap:0.3rem; }
+        .ac-title { font-family:var(--font-display); font-size:1.75rem; letter-spacing:0.04em; color:#1A1A1A; }
+        .ac-sub { font-size:0.875rem; color:#737373; }
+        .auth-err { background:#FEF2F2; border:1px solid #FCA5A5; color:#DC2626; padding:0.75rem 1rem; border-radius:8px; font-size:0.875rem; }
+        .role-list { display:flex; flex-direction:column; gap:0.75rem; }
+        .role-card {
+          display:flex; align-items:center; gap:1rem; padding:1rem 1.25rem;
+          background:#F5F5F5; border:1.5px solid #E5E5E5; border-radius:10px;
+          cursor:pointer; text-align:left; transition:all 0.2s;
+          font-family:var(--font-body); width:100%;
+        }
+        .role-card:hover { border-color:#F47B20; background:#FFF7ED; }
+        .role-card.selected { border-color:#F47B20; background:#FFF7ED; box-shadow:0 0 0 3px rgba(244,123,32,0.12); }
+        .rc-icon { font-size:1.5rem; flex-shrink:0; }
+        .rc-body { flex:1; }
+        .rc-label { font-size:0.9rem; font-weight:600; color:#1A1A1A; }
+        .rc-desc { font-size:0.75rem; color:#737373; margin-top:0.2rem; }
+        .rc-check { color:#F47B20; font-weight:700; font-size:1.1rem; flex-shrink:0; }
+        .auth-form { display:flex; flex-direction:column; gap:1rem; }
+        .form-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+        .field { display:flex; flex-direction:column; gap:0.4rem; }
+        .fl { font-size:0.7rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:#525252; }
+        .fi {
+          background:#F5F5F5; border:1.5px solid #E5E5E5; border-radius:8px;
+          padding:0.8rem 1rem; color:#1A1A1A; font-size:0.9rem;
+          font-family:var(--font-body); outline:none; transition:all 0.2s; width:100%;
+        }
+        .fi:focus { border-color:#F47B20; background:#fff; box-shadow:0 0 0 3px rgba(244,123,32,0.1); }
+        .fi::placeholder { color:#A3A3A3; }
+        .dealer-note {
+          background:#FFF7ED; border:1px solid rgba(244,123,32,0.3);
+          color:#C4621A; padding:0.75rem 1rem; border-radius:8px;
+          font-size:0.8rem; line-height:1.5;
+        }
+        .form-actions { display:flex; gap:0.75rem; align-items:center; margin-top:0.25rem; }
+        .back-btn {
+          background:#F5F5F5; border:1.5px solid #E5E5E5; color:#525252;
+          border-radius:8px; padding:0.875rem 1.25rem; font-family:var(--font-body);
+          font-size:0.875rem; cursor:pointer; transition:all 0.2s; white-space:nowrap;
+        }
+        .back-btn:hover { border-color:#F47B20; color:#F47B20; }
+        .auth-btn {
+          background:#F47B20; color:#fff; border:none; border-radius:8px;
+          padding:0.875rem 1.25rem; font-family:var(--font-display); font-size:0.95rem;
+          letter-spacing:0.12em; cursor:pointer; transition:background 0.2s;
+        }
+        .auth-btn:hover { background:#FF9340; }
+        .auth-btn:disabled { opacity:0.6; cursor:not-allowed; }
+        .flex-btn { flex:1; }
+        .auth-switch { font-size:0.875rem; color:#737373; text-align:center; }
+        .switch-link { color:#F47B20; text-decoration:none; font-weight:600; }
+        @media(max-width:768px) {
+          .auth-left { display:none; }
+          .auth-right { background:#fff; padding:1.5rem; }
+          .auth-card { box-shadow:none; padding:1.5rem; }
+          .form-row { grid-template-columns:1fr; }
+        }
+      `}</style>
     </div>
   );
 }

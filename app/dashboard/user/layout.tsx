@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { ReactNode, useEffect, useState } from "react";
 import AuthGuard from "@/components/layout/AuthGuard";
 import Link from "next/link";
@@ -124,7 +124,7 @@ export default function UserLayout({ children }: { children: ReactNode }) {
                 : <span className="avatar-letter">{(me?.fullName||user?.fullName||"U").charAt(0).toUpperCase()}</span>
               }
             </button>
-            <button className="logout-topbar-btn" onClick={() => { logout(); router.push("/auth/login"); }} title="Sign Out">
+            <button className="logout-topbar-btn" onClick={() => { logout(); router.push("/login"); }} title="Sign Out">
               ↩
             </button>
           </div>

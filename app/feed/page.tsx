@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import FeedFooter from "@/components/layout/FeedFooter";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -146,7 +146,7 @@ export default function FeedPage() {
 
   const handleFav = async (e: React.MouseEvent, carId: string) => {
     e.preventDefault(); e.stopPropagation();
-    if (!isAuthenticated) { router.push("/auth/login"); return; }
+    if (!isAuthenticated) { router.push("/login"); return; }
     try {
       if (userFavs.includes(carId)) {
         await api.delete(`/api/v1/public/cars/${carId}/favorite`);
@@ -350,8 +350,8 @@ export default function FeedPage() {
             <Link href={myDash} className="dash-btn">My Dashboard</Link>
           ) : (
             <div className="auth-btns">
-              <Link href="/auth/login" className="login-btn">Login</Link>
-              <Link href="/auth/register" className="register-btn">Register</Link>
+              <Link href="/login" className="login-btn">Login</Link>
+              <Link href="/register" className="register-btn">Register</Link>
             </div>
           )}
         </div>

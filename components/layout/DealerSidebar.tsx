@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
@@ -84,7 +84,7 @@ export default function DealerSidebar() {
 
       <div className="sb-bottom">
         <div className="sb-dev">Powered by <strong>UASE TECH STUDIO</strong></div>
-        <button className="sb-logout" onClick={() => { logout(); router.push("/auth/login"); }}>
+        <button className="sb-logout" onClick={() => { logout(); router.push("/login"); }}>
           ↩ Sign Out
         </button>
       </div>

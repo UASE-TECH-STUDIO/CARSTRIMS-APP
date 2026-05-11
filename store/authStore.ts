@@ -22,18 +22,20 @@ export interface AuthUser {
 interface AuthStore {
   user: AuthUser | null;
   isAuthenticated: boolean;
+  _hasHydrated: boolean;
   setUser: (user: AuthUser) => void;
   logout: () => void;
   updateUser: (data: Partial<AuthUser>) => void;
+  setHasHydrated: (val: boolean) => void;
 }
 
 export function getRoleRedirect(role: string, dealerId?: string | null): string {
   switch (role) {
-    case "SYSTEM_ADMIN": return "/dashboard/super-admin";
-    case "DEALER_ADMIN": return "/dashboard/dealer";
-    case "DEALER_STAFF": return "/dashboard/staff";
-    case "PARTNER_USER": return "/dashboard/partner";
-    default: return "/dashboard/user";
+    case "SYSTEM_ADMIN":  return "/dashboard/super-admin";
+    case "DEALER_ADMIN":  return "/dashboard/dealer";
+    case "DEALER_STAFF":  return "/dashboard/staff";
+    case "PARTNER_USER":  return "/dashboard/partner";
+    default:              return "/dashboard/user";
   }
 }
 
@@ -42,14 +44,19 @@ export const useAuthStore = create<AuthStore>()(
     (set) => ({
       user: null,
       isAuthenticated: false,
+      _hasHydrated: false,
       setUser: (user) => set({ user, isAuthenticated: true }),
       logout: () => set({ user: null, isAuthenticated: false }),
       updateUser: (data) =>
         set((s) => ({ user: s.user ? { ...s.user, ...data } : null })),
+      setHasHydrated: (val) => set({ _hasHydrated: val }),
     }),
     {
       name: "auth-storage",
       partialize: (s) => ({ user: s.user, isAuthenticated: s.isAuthenticated }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

@@ -55,7 +55,7 @@ export default function FeedFooter({ onScan }: Props) {
               </div>
             </div>
           </div>
-          <div className="fi-copy">© 2026 CARSTRIMS · Powered by UASE TECH STUDIO</div>
+          <div className="fi-copy">Â© 2026 CARSTRIMS Â· Powered by UASE TECH STUDIO</div>
         </div>
       )}
 
@@ -71,7 +71,7 @@ export default function FeedFooter({ onScan }: Props) {
           <span className="bn-label">Scan</span>
         </button>
 
-        <Link href={isAuthenticated ? myDash : "/auth/login"} className="bn-item">
+        <Link href={isAuthenticated ? myDash : "/login"} className="bn-item">
           <div className="bn-icon">ACCT</div>
           <span className="bn-label">{isAuthenticated ? "Dashboard" : "Login"}</span>
         </Link>

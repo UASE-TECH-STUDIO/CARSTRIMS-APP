@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
@@ -59,7 +59,7 @@ export default function AdminSidebar() {
 
       <div className="sb-bot">
         <div className="sb-dev">UASE TECH STUDIO · CARSTRIMS 2026</div>
-        <button className="sb-out" onClick={() => { logout(); router.push("/auth/login"); }}>↩ Sign Out</button>
+        <button className="sb-out" onClick={() => { logout(); router.push("/login"); }}>↩ Sign Out</button>
       </div>
 
       <style>{`
