@@ -77,7 +77,7 @@ export default function FeedFooter({ onScan }: Props) {
         </Link>
 
         {isAuthenticated && (
-          <button className="bn-item" onClick={() => { logout(); router.push("/(auth)/login"); }}>
+          <button className="bn-item" onClick={() => { logout(); router.push("/login"); }}>
             <div className="bn-icon out">OUT</div>
             <span className="bn-label">Logout</span>
           </button>
