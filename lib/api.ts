@@ -26,11 +26,38 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (r) => r,
   (error) => {
-    if (error.response?.status === 401 && typeof window !== "undefined") {
-      const p = window.location.pathname;
-      const pub = ["/feed", "/login", "/register", "/forgot-password", "/cars/", "/dealers/"];
-      if (!pub.some((x) => p.startsWith(x)) && p !== "/") {
-        window.location.href = "/login";
+    if (!error.response) {
+      // Network error - no response from server
+      error.userMessage = "Unable to connect to server. Please check your connection.";
+      error.isNetworkError = true;
+    } else {
+      const status = error.response.status;
+      const detail = error.response.data?.detail;
+      if (status === 400 && detail?.toLowerCase().includes("already registered")) {
+        error.userMessage = "An account with this email already exists. Please sign in instead.";
+      } else if (status === 400 && detail?.toLowerCase().includes("already in favorites")) {
+        error.userMessage = "This car is already in your favorites.";
+      } else if (status === 400 && detail?.toLowerCase().includes("already exists")) {
+        error.userMessage = detail;
+      } else if (status === 401) {
+        error.userMessage = "Your session has expired. Please sign in again.";
+        if (typeof window !== "undefined") {
+          const p = window.location.pathname;
+          const pub = ["/feed", "/login", "/register", "/forgot-password", "/cars/", "/dealers/"];
+          if (!pub.some((x) => p.startsWith(x)) && p !== "/") {
+            window.location.href = "/login";
+          }
+        }
+      } else if (status === 403) {
+        error.userMessage = "You do not have permission to do this.";
+      } else if (status === 404) {
+        error.userMessage = detail || "The requested item was not found.";
+      } else if (status === 422) {
+        error.userMessage = "Some fields are missing or invalid. Please check your input.";
+      } else if (status >= 500) {
+        error.userMessage = "Server error. Please try again in a moment.";
+      } else {
+        error.userMessage = detail || "Something went wrong. Please try again.";
       }
     }
     return Promise.reject(error);

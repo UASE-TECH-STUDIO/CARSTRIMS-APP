@@ -28,24 +28,24 @@ export default function LoginPage() {
 
   return (
     <div className="auth-root">
-      {/* LEFT — Grey gradient panel */}
+      {/* LEFT â€” Grey gradient panel */}
       <div className="auth-left">
         <div className="al-top">
-          <div className="brand">◈ CARSTRIMS</div>
+          <div className="brand">â—ˆ CARSTRIMS</div>
         </div>
         <div className="al-mid">
           <h1 className="al-title">THE SMARTER WAY TO BUY &amp; SELL CARS</h1>
           <p className="al-sub">Connect with verified dealers. Browse thousands of vehicles. Track every deal from listing to sale.</p>
           <div className="al-stats">
             <div className="stat-item"><span className="stat-num">6</span><span className="stat-lbl">User Roles</span></div>
-            <div className="stat-item"><span className="stat-num">∞</span><span className="stat-lbl">Inventory</span></div>
+            <div className="stat-item"><span className="stat-num">âˆž</span><span className="stat-lbl">Inventory</span></div>
             <div className="stat-item"><span className="stat-num">24/7</span><span className="stat-lbl">Live</span></div>
           </div>
         </div>
-        <div className="al-foot">Built by <strong>UASE TECH STUDIO</strong> · CARSTRIMS 2026</div>
+        <div className="al-foot">Built by <strong>UASE TECH STUDIO</strong> Â· CARSTRIMS 2026</div>
       </div>
 
-      {/* RIGHT — White card */}
+      {/* RIGHT â€” White card */}
       <div className="auth-right">
         <div className="auth-card">
           <div>
@@ -73,14 +73,14 @@ export default function LoginPage() {
           </form>
 
           <p className="auth-switch">No account? <Link href="/register" className="sw-lnk">Create one free</Link></p>
-          <Link href="/feed" className="back-feed">← Browse cars without signing in</Link>
+          <Link href="/feed" className="back-feed">â† Browse cars without signing in</Link>
         </div>
       </div>
 
       <style>{`
         .auth-root { display:flex; min-height:100vh; font-family:var(--font-body); background:#F5F5F5; }
 
-        /* LEFT — grey gradient */
+        /* LEFT â€” grey gradient */
         .auth-left {
           width: 42%;
           background: linear-gradient(160deg, #E5E5E5 0%, #D4D4D4 55%, #C8C8C8 100%);
@@ -92,7 +92,7 @@ export default function LoginPage() {
           overflow: hidden;
         }
         .auth-left::before {
-          content: "◈";
+          content: "â—ˆ";
           position: absolute;
           bottom: -60px; right: -50px;
           font-family: var(--font-display);
@@ -112,7 +112,7 @@ export default function LoginPage() {
         .al-foot { font-size:0.7rem; color:#A3A3A3; }
         .al-foot strong { color:#F47B20; }
 
-        /* RIGHT — white */
+        /* RIGHT â€” white */
         .auth-right { flex:1; background:#F5F5F5; display:flex; align-items:center; justify-content:center; padding:2rem; }
         .auth-card {
           width:100%; max-width:420px;

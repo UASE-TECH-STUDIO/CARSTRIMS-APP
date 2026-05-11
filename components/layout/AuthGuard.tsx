@@ -14,9 +14,7 @@ export default function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
   const [hydrated, setHydrated] = useState(false);
   const [checked, setChecked] = useState(false);
 
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
+  useEffect(() => { setHydrated(true); }, []);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -28,11 +26,11 @@ export default function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
 
     if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
       const roleMap: Record<string, string> = {
-        SYSTEM_ADMIN: "/dashboard/super-admin",
-        DEALER_ADMIN: "/dashboard/dealer",
-        DEALER_STAFF: "/dashboard/staff",
-        PARTNER_USER: "/dashboard/partner",
-        PUBLIC_USER: "/dashboard/user",
+        SYSTEM_ADMIN:  "/dashboard/super-admin",
+        DEALER_ADMIN:  "/dashboard/dealer",
+        DEALER_STAFF:  "/dashboard/staff",
+        PARTNER_USER:  "/dashboard/partner",
+        PUBLIC_USER:   "/dashboard/user",
       };
       router.replace(roleMap[user.role] || "/login");
       return;
@@ -43,12 +41,20 @@ export default function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
 
   if (!hydrated || !checked) {
     return (
-      <div style={{ minHeight:"100vh", background:"var(--black)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"1rem" }}>
-          <div style={{ fontFamily:"var(--font-display)", fontSize:"1.5rem", letterSpacing:"0.2em", color:"var(--gold)" }}>CARSTRIMS</div>
-          <div style={{ width:"32px", height:"32px", border:"2px solid var(--border)", borderTopColor:"var(--gold)", borderRadius:"50%", animation:"spin 0.8s linear infinite" }} />
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div style={{
+        minHeight:"100vh", background:"#F5F5F5",
+        display:"flex", alignItems:"center", justifyContent:"center",
+        flexDirection:"column", gap:"1rem",
+      }}>
+        <div style={{fontFamily:"var(--font-display)", fontSize:"1.5rem", letterSpacing:"0.2em", color:"#F47B20"}}>
+          CARSTRIMS
         </div>
+        <div style={{
+          width:"28px", height:"28px",
+          border:"2px solid #E5E5E5", borderTopColor:"#F47B20",
+          borderRadius:"50%", animation:"spin 0.8s linear infinite",
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }

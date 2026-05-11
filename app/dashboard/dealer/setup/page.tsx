@@ -1,478 +1,204 @@
-﻿"use client";
-import { useState } from "react";
+"use client";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
-import ImageUpload from "@/components/ui/ImageUpload";
-
-const STEPS = [
-  { num: 1, label: "Company Info" },
-  { num: 2, label: "First Car" },
-  { num: 3, label: "First Staff" },
-  { num: 4, label: "CCTV Setup" },
-  { num: 5, label: "Awaiting Approval" },
-];
-
-const PERMISSIONS = [
-  "view_inventory","add_cars","edit_cars","view_sales","record_sales",
-  "view_staff","view_partners","view_cctv","view_movements","view_reports",
-];
+import { useAuthStore } from "@/store/authStore";
 
 export default function DealerSetupPage() {
   const router = useRouter();
-  const { user, setUser } = useAuthStore();
-  const [step, setStep] = useState(1);
+  const { user } = useAuthStore();
+  const [step, setStep] = useState<"form"|"pending">("form");
+  const [dealerStatus, setDealerStatus] = useState<string|null>(null);
+  const [form, setForm] = useState({
+    companyName:"", phone:"", whatsapp:"", address:"",
+    city:"", state:"", country:"Nigeria", description:"",
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [logoUrl, setLogoUrl] = useState("");
-  const [dealerId, setDealerId] = useState<string | null>(null);
-  const [carId, setCarId] = useState<string | null>(null);
+  const [checking, setChecking] = useState(true);
 
-  const [companyForm, setCompanyForm] = useState({
-    companyName: "", phone: "", whatsapp: "",
-    address: "", city: "", state: "", country: "Nigeria", description: "",
-  });
+  // Check if dealer profile already exists
+  useEffect(() => {
+    api.get("/api/v1/dealers/me")
+      .then((r) => {
+        setDealerStatus(r.data.status);
+        if (r.data.status === "approved" || r.data.status === "active") {
+          router.replace("/dashboard/dealer");
+        } else {
+          setStep("pending");
+        }
+      })
+      .catch(() => {
+        // No profile yet - show setup form
+        setStep("form");
+      })
+      .finally(() => setChecking(false));
+  }, [router]);
 
-  const [carForm, setCarForm] = useState({
-    brand: "", model: "", year: new Date().getFullYear(), color: "",
-    mileage: "", transmission: "automatic", fuelType: "petrol",
-    condition: "used", description: "", state: "", city: "",
-    purchasePrice: "", sellingPrice: "",
-  });
-
-  const [staffForm, setStaffForm] = useState({
-    fullName: "", username: "", email: "", phone: "",
-    position: "Manager", password: "Staff@1234",
-    permissions: ["view_inventory","view_sales","add_cars"],
-  });
-
-  const [cctvForm, setCctvForm] = useState({
-    cameraName: "", cameraLocation: "", streamUrl: "", streamType: "rtsp",
-  });
-
-  const togglePerm = (p: string) => {
-    setStaffForm((f) => ({
-      ...f,
-      permissions: f.permissions.includes(p)
-        ? f.permissions.filter((x) => x !== p)
-        : [...f.permissions, p],
-    }));
-  };
-
-  const handleStep1 = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.companyName.trim()) { setError("Company name is required"); return; }
     setLoading(true); setError("");
     try {
-      const res = await api.post("/api/v1/dealers/setup", {
-        ...companyForm,
-        logo: logoUrl || undefined,
-      });
-      setDealerId(res.data._id || res.data.dealerId);
-      setStep(2);
+      await api.post("/api/v1/dealers/setup", form);
+      setStep("pending");
     } catch (err: any) {
-      if (err.response?.status === 400 && err.response?.data?.detail?.includes("already exists")) {
-        setStep(2);
-      } else {
-        setError(err.response?.data?.detail || "Failed to save company info");
-      }
+      setError((err as any).userMessage || err.response?.data?.detail || "Setup failed. Please try again.");
     } finally { setLoading(false); }
   };
 
-  const handleStep2 = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true); setError("");
-    try {
-      const res = await api.post("/api/v1/cars/", {
-        ...carForm,
-        year: Number(carForm.year),
-        mileage: carForm.mileage ? Number(carForm.mileage) : null,
-        purchasePrice: Number(carForm.purchasePrice),
-        sellingPrice: Number(carForm.sellingPrice),
-      });
-      setCarId(res.data.carId);
-      setStep(3);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to add car");
-    } finally { setLoading(false); }
+  const fi: React.CSSProperties = {
+    background:"#F5F5F5", border:"1.5px solid #E5E5E5", borderRadius:"8px",
+    padding:"0.875rem 1rem", color:"#1A1A1A", fontSize:"0.9rem",
+    fontFamily:"var(--font-body)", outline:"none", width:"100%",
+  };
+  const lbl: React.CSSProperties = {
+    fontSize:"0.7rem", fontWeight:700, letterSpacing:"0.1em",
+    textTransform:"uppercase" as const, color:"#525252", display:"block", marginBottom:"0.4rem",
   };
 
-  const handleStep3 = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true); setError("");
-    try {
-      await api.post("/api/v1/staff/", staffForm);
-      setStep(4);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to create staff");
-    } finally { setLoading(false); }
-  };
+  if (checking) return (
+    <div style={{minHeight:"100vh", background:"#F5F5F5", display:"flex", alignItems:"center", justifyContent:"center"}}>
+      <div style={{width:"28px", height:"28px", border:"2.5px solid #E5E5E5", borderTopColor:"#F47B20", borderRadius:"50%", animation:"spin 0.8s linear infinite"}} />
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
 
-  const handleStep4 = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true); setError("");
-    try {
-      if (cctvForm.cameraName && cctvForm.streamUrl) {
-        await api.post("/api/v1/cctv/", cctvForm);
-      }
-      setStep(5);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to save CCTV");
-    } finally { setLoading(false); }
-  };
-
-  const skipCCTV = () => setStep(5);
-
-  const goToDashboard = () => router.push("/dashboard/dealer");
-
-  return (
-    <div className="setup-page">
-      {/* Progress */}
-      <div className="setup-header">
-        <div className="setup-brand">◈ CARTRACK SETUP</div>
-        <div className="step-track">
-          {STEPS.map((s, i) => (
-            <div key={s.num} className="step-item">
-              <div className={`step-circle ${step > s.num ? "done" : step === s.num ? "active" : ""}`}>
-                {step > s.num ? "✓" : s.num}
-              </div>
-              <div className={`step-name ${step === s.num ? "active" : ""}`}>{s.label}</div>
-              {i < STEPS.length - 1 && <div className={`step-line ${step > s.num ? "done" : ""}`} />}
+  if (step === "pending") return (
+    <div style={{minHeight:"100vh", background:"#F5F5F5", display:"flex", alignItems:"center", justifyContent:"center", padding:"2rem", fontFamily:"var(--font-body)"}}>
+      <div style={{maxWidth:"520px", width:"100%", background:"#fff", borderRadius:"16px", padding:"2.5rem", boxShadow:"0 4px 24px rgba(0,0,0,0.08)", display:"flex", flexDirection:"column", alignItems:"center", gap:"1.5rem", textAlign:"center"}}>
+        <div style={{fontFamily:"var(--font-display)", fontSize:"1.3rem", letterSpacing:"0.2em", color:"#F47B20"}}>CARSTRIMS</div>
+        <div style={{width:"72px", height:"72px", borderRadius:"50%", background:"#FFF7ED", border:"2px solid #F47B20", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"2rem"}}>
+          Pending
+        </div>
+        <div>
+          <h2 style={{fontFamily:"var(--font-display)", fontSize:"1.75rem", letterSpacing:"0.04em", color:"#1A1A1A"}}>
+            Awaiting Approval
+          </h2>
+          <p style={{fontSize:"0.875rem", color:"#737373", marginTop:"0.5rem", lineHeight:"1.6"}}>
+            Your dealer account application has been submitted and is currently under review by the CARSTRIMS admin team.
+          </p>
+        </div>
+        <div style={{background:"#FFF7ED", border:"1px solid rgba(244,123,32,0.3)", borderRadius:"10px", padding:"1.25rem", width:"100%", textAlign:"left"}}>
+          <div style={{fontSize:"0.72rem", fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase" as const, color:"#F47B20", marginBottom:"0.75rem"}}>
+            What happens next?
+          </div>
+          {[
+            "The CARSTRIMS admin will review your application",
+            "You will receive a notification once approved",
+            "After approval, you get full access to your dealer dashboard",
+            "You can then set up your inventory and start listing cars",
+          ].map((step, i) => (
+            <div key={i} style={{display:"flex", gap:"0.75rem", marginBottom:"0.5rem", fontSize:"0.825rem", color:"#525252"}}>
+              <span style={{color:"#F47B20", fontWeight:700, flexShrink:0}}>{i+1}.</span>
+              <span>{step}</span>
             </div>
           ))}
         </div>
+        <div style={{fontSize:"0.8rem", color:"#A3A3A3", lineHeight:"1.5"}}>
+          Review typically takes 1-2 business days. You will be notified by email and in-app notification.
+        </div>
+        <button
+          onClick={() => window.location.reload()}
+          style={{background:"#F47B20", color:"#fff", border:"none", borderRadius:"8px", padding:"0.875rem 2rem", fontFamily:"var(--font-display)", fontSize:"0.9rem", letterSpacing:"0.1em", cursor:"pointer"}}>
+          CHECK STATUS
+        </button>
       </div>
+    </div>
+  );
 
-      <div className="setup-body">
-        {error && <div className="setup-error">{error}</div>}
+  return (
+    <div style={{minHeight:"100vh", background:"#F5F5F5", display:"flex", alignItems:"center", justifyContent:"center", padding:"2rem", fontFamily:"var(--font-body)"}}>
+      <div style={{maxWidth:"560px", width:"100%", background:"#fff", borderRadius:"16px", padding:"2.5rem", boxShadow:"0 4px 24px rgba(0,0,0,0.08)", display:"flex", flexDirection:"column", gap:"1.5rem"}}>
+        <div style={{textAlign:"center"}}>
+          <div style={{fontFamily:"var(--font-display)", fontSize:"1.3rem", letterSpacing:"0.2em", color:"#F47B20", marginBottom:"0.75rem"}}>CARSTRIMS</div>
+          <h2 style={{fontFamily:"var(--font-display)", fontSize:"1.75rem", color:"#1A1A1A", letterSpacing:"0.04em"}}>Set Up Your Dealership</h2>
+          <p style={{fontSize:"0.875rem", color:"#737373", marginTop:"0.35rem"}}>
+            Complete your dealership profile to submit for approval
+          </p>
+        </div>
 
-        {/* STEP 1 — Company Info */}
-        {step === 1 && (
-          <div className="setup-card">
-            <h2 className="setup-title">Company Information</h2>
-            <p className="setup-sub">Tell us about your dealership</p>
-            <form onSubmit={handleStep1} className="setup-form">
-              <div className="field">
-                <label className="field-label">Company Logo</label>
-                <ImageUpload
-                  endpoint="/api/v1/upload/dealer/logo"
-                  currentImages={logoUrl ? [logoUrl] : []}
-                  maxImages={1}
-                  single
-                  onSuccess={(imgs) => setLogoUrl(imgs[0] || "")}
-                  label="Upload Company Logo"
-                />
-              </div>
-              <div className="form-row">
-                <div className="field">
-                  <label className="field-label">Company Name *</label>
-                  <input className="field-input" value={companyForm.companyName}
-                    onChange={(e) => setCompanyForm({ ...companyForm, companyName: e.target.value })} required />
-                </div>
-                <div className="field">
-                  <label className="field-label">Phone *</label>
-                  <input className="field-input" value={companyForm.phone}
-                    onChange={(e) => setCompanyForm({ ...companyForm, phone: e.target.value })} required />
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="field">
-                  <label className="field-label">WhatsApp</label>
-                  <input className="field-input" value={companyForm.whatsapp}
-                    onChange={(e) => setCompanyForm({ ...companyForm, whatsapp: e.target.value })} />
-                </div>
-                <div className="field">
-                  <label className="field-label">Country</label>
-                  <input className="field-input" value={companyForm.country}
-                    onChange={(e) => setCompanyForm({ ...companyForm, country: e.target.value })} />
-                </div>
-              </div>
-              <div className="field">
-                <label className="field-label">Address *</label>
-                <input className="field-input" value={companyForm.address}
-                  onChange={(e) => setCompanyForm({ ...companyForm, address: e.target.value })} required />
-              </div>
-              <div className="form-row">
-                <div className="field">
-                  <label className="field-label">City</label>
-                  <input className="field-input" value={companyForm.city}
-                    onChange={(e) => setCompanyForm({ ...companyForm, city: e.target.value })} />
-                </div>
-                <div className="field">
-                  <label className="field-label">State</label>
-                  <input className="field-input" value={companyForm.state}
-                    onChange={(e) => setCompanyForm({ ...companyForm, state: e.target.value })} />
-                </div>
-              </div>
-              <div className="field">
-                <label className="field-label">Description</label>
-                <textarea className="field-input field-textarea" rows={3} value={companyForm.description}
-                  onChange={(e) => setCompanyForm({ ...companyForm, description: e.target.value })} />
-              </div>
-              <button type="submit" className="btn-next" disabled={loading}>
-                {loading ? "Saving..." : "Continue →"}
-              </button>
-            </form>
+        {error && (
+          <div style={{background:"#FEF2F2", border:"1px solid #FCA5A5", color:"#DC2626", padding:"0.75rem 1rem", borderRadius:"8px", fontSize:"0.875rem"}}>
+            {error}
           </div>
         )}
 
-        {/* STEP 2 — First Car */}
-        {step === 2 && (
-          <div className="setup-card">
-            <h2 className="setup-title">Add Your First Vehicle</h2>
-            <p className="setup-sub">List your first car on the platform</p>
-            <form onSubmit={handleStep2} className="setup-form">
-              <div className="form-row">
-                <div className="field">
-                  <label className="field-label">Brand *</label>
-                  <input className="field-input" placeholder="Toyota" value={carForm.brand}
-                    onChange={(e) => setCarForm({ ...carForm, brand: e.target.value })} required />
-                </div>
-                <div className="field">
-                  <label className="field-label">Model *</label>
-                  <input className="field-input" placeholder="Camry" value={carForm.model}
-                    onChange={(e) => setCarForm({ ...carForm, model: e.target.value })} required />
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="field">
-                  <label className="field-label">Year *</label>
-                  <input type="number" className="field-input" value={carForm.year}
-                    onChange={(e) => setCarForm({ ...carForm, year: Number(e.target.value) })} required />
-                </div>
-                <div className="field">
-                  <label className="field-label">Color *</label>
-                  <input className="field-input" placeholder="Black" value={carForm.color}
-                    onChange={(e) => setCarForm({ ...carForm, color: e.target.value })} required />
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="field">
-                  <label className="field-label">Purchase Price (₦) *</label>
-                  <input type="number" className="field-input" value={carForm.purchasePrice}
-                    onChange={(e) => setCarForm({ ...carForm, purchasePrice: e.target.value })} required />
-                </div>
-                <div className="field">
-                  <label className="field-label">Selling Price (₦) *</label>
-                  <input type="number" className="field-input" value={carForm.sellingPrice}
-                    onChange={(e) => setCarForm({ ...carForm, sellingPrice: e.target.value })} required />
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="field">
-                  <label className="field-label">Transmission</label>
-                  <select className="field-input" value={carForm.transmission}
-                    onChange={(e) => setCarForm({ ...carForm, transmission: e.target.value })}>
-                    <option value="automatic">Automatic</option>
-                    <option value="manual">Manual</option>
-                  </select>
-                </div>
-                <div className="field">
-                  <label className="field-label">Condition</label>
-                  <select className="field-input" value={carForm.condition}
-                    onChange={(e) => setCarForm({ ...carForm, condition: e.target.value })}>
-                    <option value="used">Used</option>
-                    <option value="new">New</option>
-                    <option value="foreign_used">Foreign Used</option>
-                  </select>
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="field">
-                  <label className="field-label">City</label>
-                  <input className="field-input" value={carForm.city}
-                    onChange={(e) => setCarForm({ ...carForm, city: e.target.value })} />
-                </div>
-                <div className="field">
-                  <label className="field-label">State</label>
-                  <input className="field-input" value={carForm.state}
-                    onChange={(e) => setCarForm({ ...carForm, state: e.target.value })} />
-                </div>
-              </div>
-              <div className="step-btns">
-                <button type="button" className="btn-back" onClick={() => setStep(1)}>← Back</button>
-                <button type="submit" className="btn-next" disabled={loading}>
-                  {loading ? "Adding..." : "Add Car & Continue →"}
-                </button>
-              </div>
-            </form>
+        <form onSubmit={handleSubmit} style={{display:"flex", flexDirection:"column", gap:"1rem"}}>
+          <div>
+            <label style={lbl}>Company / Business Name *</label>
+            <input style={fi} placeholder="e.g. Ayo Motors Ltd" value={form.companyName}
+              onChange={(e) => setForm({...form, companyName:e.target.value})} required
+              onFocus={(e) => { e.target.style.borderColor="#F47B20"; e.target.style.background="#fff"; }}
+              onBlur={(e) => { e.target.style.borderColor="#E5E5E5"; e.target.style.background="#F5F5F5"; }}
+            />
           </div>
-        )}
-
-        {/* STEP 3 — First Staff */}
-        {step === 3 && (
-          <div className="setup-card">
-            <h2 className="setup-title">Create First Staff Account</h2>
-            <p className="setup-sub">Add your first team member with access permissions</p>
-            <form onSubmit={handleStep3} className="setup-form">
-              <div className="form-row">
-                <div className="field">
-                  <label className="field-label">Full Name *</label>
-                  <input className="field-input" value={staffForm.fullName}
-                    onChange={(e) => setStaffForm({ ...staffForm, fullName: e.target.value })} required />
-                </div>
-                <div className="field">
-                  <label className="field-label">Username *</label>
-                  <input className="field-input" value={staffForm.username}
-                    onChange={(e) => setStaffForm({ ...staffForm, username: e.target.value })} required />
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="field">
-                  <label className="field-label">Email *</label>
-                  <input type="email" className="field-input" value={staffForm.email}
-                    onChange={(e) => setStaffForm({ ...staffForm, email: e.target.value })} required />
-                </div>
-                <div className="field">
-                  <label className="field-label">Phone *</label>
-                  <input className="field-input" value={staffForm.phone}
-                    onChange={(e) => setStaffForm({ ...staffForm, phone: e.target.value })} required />
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="field">
-                  <label className="field-label">Position</label>
-                  <input className="field-input" value={staffForm.position}
-                    onChange={(e) => setStaffForm({ ...staffForm, position: e.target.value })} />
-                </div>
-                <div className="field">
-                  <label className="field-label">Temp Password</label>
-                  <input className="field-input" value={staffForm.password}
-                    onChange={(e) => setStaffForm({ ...staffForm, password: e.target.value })} />
-                </div>
-              </div>
-              <div className="field">
-                <label className="field-label">Permissions</label>
-                <div className="perms-grid">
-                  {PERMISSIONS.map((p) => (
-                    <label key={p} className="perm-item">
-                      <input type="checkbox" checked={staffForm.permissions.includes(p)}
-                        onChange={() => togglePerm(p)} />
-                      <span>{p.replace(/_/g, " ")}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div className="step-btns">
-                <button type="button" className="btn-back" onClick={() => setStep(2)}>← Back</button>
-                <button type="submit" className="btn-next" disabled={loading}>
-                  {loading ? "Creating..." : "Create Staff & Continue →"}
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* STEP 4 — CCTV */}
-        {step === 4 && (
-          <div className="setup-card">
-            <h2 className="setup-title">CCTV Setup</h2>
-            <p className="setup-sub">Connect your security cameras (optional — can be done later)</p>
-            <form onSubmit={handleStep4} className="setup-form">
-              <div className="form-row">
-                <div className="field">
-                  <label className="field-label">Camera Name</label>
-                  <input className="field-input" placeholder="Main Gate"
-                    value={cctvForm.cameraName}
-                    onChange={(e) => setCctvForm({ ...cctvForm, cameraName: e.target.value })} />
-                </div>
-                <div className="field">
-                  <label className="field-label">Location</label>
-                  <input className="field-input" placeholder="Front Entrance"
-                    value={cctvForm.cameraLocation}
-                    onChange={(e) => setCctvForm({ ...cctvForm, cameraLocation: e.target.value })} />
-                </div>
-              </div>
-              <div className="field">
-                <label className="field-label">Stream URL</label>
-                <input className="field-input" placeholder="rtsp://... or https://..."
-                  value={cctvForm.streamUrl}
-                  onChange={(e) => setCctvForm({ ...cctvForm, streamUrl: e.target.value })} />
-              </div>
-              <div className="field">
-                <label className="field-label">Stream Type</label>
-                <select className="field-input" value={cctvForm.streamType}
-                  onChange={(e) => setCctvForm({ ...cctvForm, streamType: e.target.value })}>
-                  <option value="rtsp">RTSP</option>
-                  <option value="hls">HLS</option>
-                  <option value="ip">IP Camera</option>
-                </select>
-              </div>
-              <div className="step-btns">
-                <button type="button" className="btn-back" onClick={() => setStep(3)}>← Back</button>
-                <button type="button" className="btn-skip" onClick={skipCCTV}>Skip for now</button>
-                <button type="submit" className="btn-next" disabled={loading}>
-                  {loading ? "Saving..." : "Save & Continue →"}
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* STEP 5 — Pending Approval */}
-        {step === 5 && (
-          <div className="setup-card pending-card">
-            <div className="pending-icon">⏳</div>
-            <h2 className="setup-title">Setup Complete!</h2>
-            <p className="setup-sub">
-              Your account is under review by our team. You will receive full dashboard
-              access once approved. This usually takes a few hours.
-            </p>
-            <div className="pending-checklist">
-              <div className="check-item">✅ Company information saved</div>
-              <div className="check-item">✅ First vehicle listed</div>
-              <div className="check-item">✅ Staff account created</div>
-              <div className="check-item">⏳ Awaiting admin approval</div>
+          <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem"}}>
+            <div>
+              <label style={lbl}>Phone</label>
+              <input style={fi} placeholder="+234..." value={form.phone}
+                onChange={(e) => setForm({...form, phone:e.target.value})}
+                onFocus={(e) => { e.target.style.borderColor="#F47B20"; e.target.style.background="#fff"; }}
+                onBlur={(e) => { e.target.style.borderColor="#E5E5E5"; e.target.style.background="#F5F5F5"; }}
+              />
             </div>
-            <button className="btn-next" onClick={goToDashboard}>
-              Go to Dashboard
-            </button>
+            <div>
+              <label style={lbl}>WhatsApp</label>
+              <input style={fi} placeholder="+234..." value={form.whatsapp}
+                onChange={(e) => setForm({...form, whatsapp:e.target.value})}
+                onFocus={(e) => { e.target.style.borderColor="#F47B20"; e.target.style.background="#fff"; }}
+                onBlur={(e) => { e.target.style.borderColor="#E5E5E5"; e.target.style.background="#F5F5F5"; }}
+              />
+            </div>
           </div>
-        )}
-      </div>
+          <div>
+            <label style={lbl}>Business Address</label>
+            <input style={fi} placeholder="Street address" value={form.address}
+              onChange={(e) => setForm({...form, address:e.target.value})}
+              onFocus={(e) => { e.target.style.borderColor="#F47B20"; e.target.style.background="#fff"; }}
+              onBlur={(e) => { e.target.style.borderColor="#E5E5E5"; e.target.style.background="#F5F5F5"; }}
+            />
+          </div>
+          <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem"}}>
+            <div>
+              <label style={lbl}>City</label>
+              <input style={fi} placeholder="e.g. Abuja" value={form.city}
+                onChange={(e) => setForm({...form, city:e.target.value})}
+                onFocus={(e) => { e.target.style.borderColor="#F47B20"; e.target.style.background="#fff"; }}
+                onBlur={(e) => { e.target.style.borderColor="#E5E5E5"; e.target.style.background="#F5F5F5"; }}
+              />
+            </div>
+            <div>
+              <label style={lbl}>State</label>
+              <input style={fi} placeholder="e.g. FCT" value={form.state}
+                onChange={(e) => setForm({...form, state:e.target.value})}
+                onFocus={(e) => { e.target.style.borderColor="#F47B20"; e.target.style.background="#fff"; }}
+                onBlur={(e) => { e.target.style.borderColor="#E5E5E5"; e.target.style.background="#F5F5F5"; }}
+              />
+            </div>
+          </div>
+          <div>
+            <label style={lbl}>Business Description</label>
+            <textarea
+              style={{...fi, minHeight:"80px", resize:"vertical" as const}}
+              placeholder="Tell customers about your dealership..."
+              value={form.description}
+              onChange={(e) => setForm({...form, description:e.target.value})}
+              onFocus={(e) => { e.target.style.borderColor="#F47B20"; e.target.style.background="#fff"; }}
+              onBlur={(e) => { e.target.style.borderColor="#E5E5E5"; e.target.style.background="#F5F5F5"; }}
+            />
+          </div>
 
-      <style>{`
-        .setup-page { min-height:100vh; background:var(--black); font-family:var(--font-body); }
-        .setup-header { padding:1.5rem 2rem; border-bottom:1px solid var(--border); background:var(--surface); display:flex; flex-direction:column; gap:1.5rem; }
-        .setup-brand { font-family:var(--font-display); font-size:1.1rem; letter-spacing:0.2em; color:var(--gold); }
-        .step-track { display:flex; align-items:center; gap:0; overflow-x:auto; }
-        .step-item { display:flex; align-items:center; gap:0; }
-        .step-circle { width:32px; height:32px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:0.8rem; color:var(--text-dim); background:var(--surface-2); flex-shrink:0; transition:all 0.3s; font-weight:600; }
-        .step-circle.active { border-color:var(--gold); color:var(--gold); background:rgba(201,168,76,0.1); }
-        .step-circle.done { border-color:var(--success); color:var(--success); background:rgba(76,175,130,0.1); }
-        .step-name { font-size:0.72rem; color:var(--text-dim); margin-left:0.5rem; white-space:nowrap; }
-        .step-name.active { color:var(--gold); }
-        .step-line { width:40px; height:2px; background:var(--border); margin:0 0.5rem; flex-shrink:0; transition:background 0.3s; }
-        .step-line.done { background:var(--success); }
-        .setup-body { max-width:640px; margin:3rem auto; padding:0 1.5rem; }
-        .setup-error { background:rgba(224,82,82,0.1); border:1px solid rgba(224,82,82,0.3); color:var(--error); padding:0.75rem 1rem; border-radius:8px; font-size:0.875rem; margin-bottom:1rem; }
-        .setup-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:2rem; }
-        .setup-title { font-family:var(--font-display); font-size:1.8rem; letter-spacing:0.05em; color:var(--text); margin-bottom:0.35rem; }
-        .setup-sub { font-size:0.875rem; color:var(--text-muted); margin-bottom:1.5rem; }
-        .setup-form { display:flex; flex-direction:column; gap:1rem; }
-        .form-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
-        .field { display:flex; flex-direction:column; gap:0.4rem; }
-        .field-label { font-size:0.7rem; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-muted); }
-        .field-input { background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:0.75rem 1rem; color:var(--text); font-size:0.9rem; font-family:var(--font-body); outline:none; transition:border-color 0.2s; width:100%; }
-        .field-input:focus { border-color:var(--gold); }
-        .field-textarea { resize:vertical; min-height:80px; }
-        .perms-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; }
-        .perm-item { display:flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:0.8rem; color:var(--text-muted); text-transform:capitalize; }
-        .perm-item:hover { border-color:var(--gold-dim); color:var(--text); }
-        .perm-item input { accent-color:var(--gold); cursor:pointer; }
-        .step-btns { display:flex; gap:0.75rem; margin-top:0.5rem; }
-        .btn-next { flex:1; background:var(--gold); color:var(--black); border:none; border-radius:6px; padding:0.9rem; font-family:var(--font-display); font-size:1rem; letter-spacing:0.1em; cursor:pointer; transition:background 0.2s; }
-        .btn-next:hover { background:var(--gold-light); }
-        .btn-next:disabled { opacity:0.6; cursor:not-allowed; }
-        .btn-back { background:transparent; color:var(--text-muted); border:1px solid var(--border); border-radius:6px; padding:0.9rem 1.25rem; font-family:var(--font-body); font-size:0.875rem; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
-        .btn-back:hover { border-color:var(--gold-dim); color:var(--text); }
-        .btn-skip { background:transparent; color:var(--text-dim); border:1px solid var(--border); border-radius:6px; padding:0.9rem 1.25rem; font-size:0.875rem; cursor:pointer; white-space:nowrap; font-family:var(--font-body); }
-        .btn-skip:hover { color:var(--text-muted); }
-        .pending-card { text-align:center; display:flex; flex-direction:column; align-items:center; gap:1rem; }
-        .pending-icon { font-size:3.5rem; }
-        .pending-checklist { display:flex; flex-direction:column; gap:0.5rem; text-align:left; width:100%; background:var(--surface-2); border-radius:8px; padding:1rem; }
-        .check-item { font-size:0.875rem; color:var(--text-muted); }
-        @media(max-width:640px) { .form-row { grid-template-columns:1fr; } .step-name { display:none; } }
-      `}</style>
+          <div style={{background:"#FFF7ED", border:"1px solid rgba(244,123,32,0.3)", borderRadius:"8px", padding:"0.875rem 1rem", fontSize:"0.8rem", color:"#C4621A", lineHeight:"1.5"}}>
+            After submission, your account will be reviewed by CARSTRIMS admin. You will not have full dashboard access until approved.
+          </div>
+
+          <button type="submit" disabled={loading}
+            style={{background:"#F47B20", color:"#fff", border:"none", borderRadius:"8px", padding:"1rem", fontFamily:"var(--font-display)", fontSize:"1rem", letterSpacing:"0.12em", cursor:loading?"not-allowed":"pointer", opacity:loading?0.6:1}}>
+            {loading ? "Submitting..." : "SUBMIT FOR APPROVAL"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

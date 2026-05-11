@@ -31,12 +31,12 @@ export default function RegisterPage() {
 
   return (
     <div className="rg-root">
-      {/* LEFT — hidden on mobile */}
+      {/* LEFT â€” hidden on mobile */}
       <div className="rg-left">
         <div className="rg-brand">CARSTRIMS</div>
         <div className="rg-mid">
           <h1 className="rg-title">JOIN THE PLATFORM TODAY</h1>
-          <p className="rg-sub">Whether you are a dealer, partner or buyer — CARSTRIMS gives you the tools to succeed.</p>
+          <p className="rg-sub">Whether you are a dealer, partner or buyer â€” CARSTRIMS gives you the tools to succeed.</p>
           <div className="rg-feats">
             {["Free to join","Verified dealers","Real-time inventory","Secure messaging"].map((f) => (
               <div key={f} className="rg-feat"><span className="rg-dot" />{f}</div>
@@ -46,7 +46,7 @@ export default function RegisterPage() {
         <div className="rg-foot">Built by <strong>UASE TECH STUDIO</strong> &middot; CARSTRIMS 2026</div>
       </div>
 
-      {/* RIGHT — full width on mobile */}
+      {/* RIGHT â€” full width on mobile */}
       <div className="rg-right">
         <div className="rg-card">
           {/* Mobile brand */}
