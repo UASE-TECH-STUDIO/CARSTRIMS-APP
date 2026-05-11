@@ -1,6 +1,6 @@
-﻿"use client";
+"use client";
 import NotificationSettings from "@/components/ui/NotificationSettings";
-import { useNotificationManager } from "@/hooks/useNotifications";
+import { useNotifications } from "@/hooks/useNotifications";
 import { useEffect, useState, useRef } from "react";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";

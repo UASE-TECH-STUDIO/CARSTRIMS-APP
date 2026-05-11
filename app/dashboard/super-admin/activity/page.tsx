@@ -1,145 +1,116 @@
-﻿"use client";
-import { useEffect, useState, useCallback } from "react";
+"use client";
+import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
+const TYPE_ICONS: Record<string, string> = {
+  dealer_approved:"✅", dealer_suspended:"⛔", general:"📢",
+  broadcast:"📣", password_recovery:"🔑", appointment:"📅",
+  car_request:"🚗", partner_request:"🤝",
+};
+
 export default function ActivityPage() {
-  const [activity, setActivity] = useState<any[]>([]);
+  const [activities, setActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const [lastRefreshed, setLastRefreshed] = useState(new Date());
+  const [skip, setSkip] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const LIMIT = 30;
 
-  const fetchActivity = useCallback(async () => {
+  const load = async (s = 0, append = false) => {
+    setLoading(true);
     try {
-      const res = await api.get("/api/v1/admin/activity?limit=50");
-      setActivity(res.data);
-      setLastRefreshed(new Date());
+      const res = await api.get(`/api/v1/admin/activity?limit=${LIMIT}&skip=${s}`);
+      const items = res.data?.activities || [];
+      if (append) setActivities((p) => [...p, ...items]);
+      else setActivities(items);
+      setHasMore(items.length === LIMIT);
     } catch { } finally { setLoading(false); }
-  }, []);
+  };
 
-  useEffect(() => {
-    fetchActivity();
-    if (!autoRefresh) return;
-    const interval = setInterval(fetchActivity, 15000);
-    return () => clearInterval(interval);
-  }, [fetchActivity, autoRefresh]);
+  useEffect(() => { load(0); }, []);
+
+  const loadMore = () => { const ns = skip + LIMIT; setSkip(ns); load(ns, true); };
 
   const fmtTime = (iso: string) => {
     if (!iso) return "—";
-    const diff = Date.now() - new Date(iso).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "just now";
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    return new Date(iso).toLocaleDateString("en-NG");
+    return new Date(iso).toLocaleString("en-NG", { day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" });
   };
 
-  const TYPE_COLORS: Record<string, string> = {
-    sale: "var(--success)",
-    registration: "var(--gold)",
-    car: "#3B8BD4",
-    movement: "#7B68EE",
-    general: "var(--text-dim)",
+  const TYPE_LABELS: Record<string, string> = {
+    dealer_approved:"Dealer Approved", dealer_suspended:"Account Suspended",
+    general:"General", broadcast:"Broadcast", password_recovery:"Password Reset",
+    appointment:"Appointment", car_request:"Car Request", partner_request:"Partnership",
   };
 
   return (
-    <div className="activity-page">
-      <div className="page-header">
+    <div className="act-page">
+      <div className="page-hdr">
         <div>
-          <h2 className="page-heading">Live Activity Feed</h2>
-          <p className="page-sub">
-            Real-time platform activity · Last refreshed: {lastRefreshed.toLocaleTimeString()}
-          </p>
+          <h2 className="page-title">Activity Log</h2>
+          <p className="page-sub">All platform events and notifications in real-time</p>
         </div>
-        <div className="controls">
-          <label className="auto-toggle">
-            <input
-              type="checkbox"
-              checked={autoRefresh}
-              onChange={(e) => setAutoRefresh(e.target.checked)}
-            />
-            <span>Auto-refresh (15s)</span>
-          </label>
-          <button className="refresh-btn" onClick={fetchActivity}>
-            ↻ Refresh Now
-          </button>
-        </div>
+        <button className="refresh-btn" onClick={() => { setSkip(0); load(0); }}>↺ Refresh</button>
       </div>
 
-      {loading ? (
-        <div className="loading-state"><div className="spinner" /></div>
-      ) : activity.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">📡</div>
-          <h3>No activity yet</h3>
-          <p>Platform activity will appear here as dealers and users interact with the system</p>
-        </div>
+      {loading && activities.length === 0 ? (
+        <div className="loading"><div className="spinner" /></div>
+      ) : activities.length === 0 ? (
+        <div className="empty"><span style={{fontSize:"2.5rem"}}>📡</span><p>No activity recorded yet</p></div>
       ) : (
-        <div className="activity-feed">
-          {activity.map((a, i) => (
-            <div key={i} className="activity-item">
-              <div className="activity-left">
-                <div
-                  className="activity-dot"
-                  style={{ background: TYPE_COLORS[a.type] || "var(--text-dim)" }}
-                />
-                {i < activity.length - 1 && <div className="activity-line" />}
-              </div>
-              <div className="activity-content">
-                <div className="activity-icon-lg">{a.icon || "📋"}</div>
-                <div className="activity-body">
-                  <div className="activity-message">{a.message}</div>
-                  {a.amount && (
-                    <div className="activity-amount">
-                      ₦{Number(a.amount).toLocaleString()}
-                    </div>
-                  )}
-                  <div className="activity-meta">
-                    <span
-                      className="activity-type"
-                      style={{ color: TYPE_COLORS[a.type] || "var(--text-dim)" }}
-                    >
-                      {a.type}
-                    </span>
-                    <span className="activity-time">{fmtTime(a.time)}</span>
+        <>
+          <div className="act-list">
+            {activities.map((a, i) => (
+              <div key={a._id || i} className="act-item">
+                <div className="ai-icon">{TYPE_ICONS[a.type] || "🔔"}</div>
+                <div className="ai-body">
+                  <div className="ai-top">
+                    <span className="ai-title">{a.title}</span>
+                    <span className={`ai-badge type-${a.type}`}>{TYPE_LABELS[a.type] || a.type}</span>
+                  </div>
+                  <div className="ai-msg">{a.message}</div>
+                  <div className="ai-meta">
+                    {a.receiverId && <span className="ai-receiver">→ {a.receiverId}</span>}
+                    <span className="ai-time">{fmtTime(a.createdAt)}</span>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+          {hasMore && (
+            <button className="load-more" onClick={loadMore} disabled={loading}>
+              {loading ? "Loading..." : "Load More"}
+            </button>
+          )}
+        </>
       )}
 
       <style>{`
-        .activity-page { display:flex; flex-direction:column; gap:1.5rem; max-width:800px; }
-        .page-header { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
-        .page-heading { font-family:var(--font-display); font-size:1.6rem; letter-spacing:0.05em; color:var(--text); line-height:1; }
+        .act-page { display:flex; flex-direction:column; gap:1.5rem; }
+        .page-hdr { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+        .page-title { font-family:var(--font-display); font-size:1.6rem; letter-spacing:0.06em; color:var(--text); line-height:1; }
         .page-sub { font-size:0.8rem; color:var(--text-muted); margin-top:0.3rem; }
-        .controls { display:flex; align-items:center; gap:0.75rem; flex-shrink:0; }
-        .auto-toggle { display:flex; align-items:center; gap:0.5rem; font-size:0.825rem; color:var(--text-muted); cursor:pointer; }
-        .auto-toggle input { accent-color:var(--error); }
-        .refresh-btn { background:var(--surface); border:1px solid var(--border); color:var(--text-muted); padding:0.5rem 1rem; border-radius:6px; cursor:pointer; font-size:0.825rem; font-family:var(--font-body); transition:all 0.2s; }
-        .refresh-btn:hover { border-color:var(--error); color:var(--text); }
-        .loading-state { display:flex; align-items:center; justify-content:center; min-height:200px; }
-        .spinner { width:28px; height:28px; border:2px solid var(--border); border-top-color:var(--error); border-radius:50%; animation:spin 0.8s linear infinite; }
+        .refresh-btn { background:var(--surface); border:1.5px solid var(--border); color:var(--text-muted); border-radius:8px; padding:0.6rem 1.25rem; font-family:var(--font-body); font-size:0.875rem; cursor:pointer; transition:all 0.2s; }
+        .refresh-btn:hover { border-color:var(--orange); color:var(--orange); }
+        .loading { display:flex; align-items:center; justify-content:center; padding:3rem; }
+        .spinner { width:28px; height:28px; border:2.5px solid var(--border); border-top-color:var(--orange); border-radius:50%; animation:spin 0.8s linear infinite; }
         @keyframes spin { to { transform:rotate(360deg); } }
-        .empty-state { display:flex; flex-direction:column; align-items:center; gap:0.75rem; padding:3rem; text-align:center; border:1px dashed var(--border); border-radius:12px; }
-        .empty-icon { font-size:2.5rem; }
-        .empty-state h3 { font-family:var(--font-display); font-size:1.2rem; color:var(--text); }
-        .empty-state p { color:var(--text-muted); font-size:0.875rem; max-width:360px; }
-        .activity-feed { display:flex; flex-direction:column; }
-        .activity-item { display:flex; gap:0; align-items:stretch; }
-        .activity-left { display:flex; flex-direction:column; align-items:center; width:28px; flex-shrink:0; padding-top:6px; }
-        .activity-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
-        .activity-line { flex:1; width:2px; background:var(--border); margin:4px 0; }
-        .activity-content { display:flex; align-items:flex-start; gap:0.875rem; padding:0 0 1.5rem 1rem; flex:1; }
-        .activity-icon-lg { font-size:1.1rem; flex-shrink:0; margin-top:1px; }
-        .activity-body { flex:1; display:flex; flex-direction:column; gap:0.2rem; }
-        .activity-message { font-size:0.875rem; color:var(--text); line-height:1.5; }
-        .activity-amount { font-size:0.825rem; color:var(--success); font-weight:500; }
-        .activity-meta { display:flex; gap:0.75rem; margin-top:0.15rem; }
-        .activity-type { font-size:0.7rem; text-transform:capitalize; font-weight:500; }
-        .activity-time { font-size:0.7rem; color:var(--text-dim); font-family:var(--font-mono); }
+        .empty { display:flex; flex-direction:column; align-items:center; gap:0.75rem; padding:3rem; text-align:center; border:1.5px dashed var(--border); border-radius:12px; }
+        .empty p { color:var(--text-muted); font-size:0.875rem; }
+        .act-list { display:flex; flex-direction:column; border:1.5px solid var(--border); border-radius:12px; overflow:hidden; background:var(--surface); }
+        .act-item { display:flex; align-items:flex-start; gap:1rem; padding:1rem 1.25rem; border-bottom:1px solid var(--border); transition:background 0.15s; }
+        .act-item:last-child { border-bottom:none; }
+        .act-item:hover { background:var(--grey-50); }
+        .ai-icon { font-size:1.1rem; flex-shrink:0; margin-top:2px; width:24px; text-align:center; }
+        .ai-body { flex:1; display:flex; flex-direction:column; gap:0.3rem; }
+        .ai-top { display:flex; align-items:center; gap:0.625rem; flex-wrap:wrap; }
+        .ai-title { font-size:0.875rem; font-weight:500; color:var(--text); }
+        .ai-badge { font-size:0.65rem; padding:0.15rem 0.5rem; border-radius:20px; background:var(--orange-pale); color:var(--orange-dim); border:1px solid var(--orange-border); font-weight:500; white-space:nowrap; }
+        .ai-msg { font-size:0.78rem; color:var(--text-muted); line-height:1.4; }
+        .ai-meta { display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap; }
+        .ai-receiver { font-size:0.68rem; color:var(--text-dim); font-family:var(--font-mono); }
+        .ai-time { font-size:0.68rem; color:var(--text-dim); font-family:var(--font-mono); margin-left:auto; }
+        .load-more { background:var(--surface); border:1.5px solid var(--border); color:var(--text-muted); border-radius:8px; padding:0.875rem; width:100%; font-family:var(--font-body); font-size:0.875rem; cursor:pointer; transition:all 0.2s; }
+        .load-more:hover { border-color:var(--orange); color:var(--orange); }
+        .load-more:disabled { opacity:0.5; cursor:not-allowed; }
       `}</style>
     </div>
   );

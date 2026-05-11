@@ -1,9 +1,9 @@
-﻿"use client";
+"use client";
 import { useState, useEffect } from "react";
-import { useNotificationManager } from "@/hooks/useNotifications";
+import { useNotifications } from "@/hooks/useNotifications";
 
 export default function NotificationSettings() {
-  const { getPrefs, savePrefs, requestPermission } = useNotificationManager();
+  const { getPrefs, savePrefs, requestPermission } = useNotifications();
   const [prefs, setPrefs] = useState({ systemNotif: true, sound: true });
   const [permission, setPermission] = useState("default");
 

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
@@ -55,7 +55,7 @@ export default function DealerOverviewPage() {
 
   return (
     <div className="overview">
-      {dealer && dealer.status !== "approved" && (
+      {dealer && dealer?.status === "awaiting_approval" && (
         <div className="pending-banner">
           ⏳ Your dealer account is <strong>awaiting approval</strong>. Some features are limited until approved by CARSTRIMS admin.
         </div>

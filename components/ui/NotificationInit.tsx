@@ -1,11 +1,11 @@
-﻿"use client";
-import { useNotificationManager } from "@/hooks/useNotifications";
+"use client";
+import { useNotifications } from "@/hooks/useNotifications";
 import { useAuthStore } from "@/store/authStore";
 import { useEffect } from "react";
 
 export default function NotificationInit() {
   const { isAuthenticated } = useAuthStore();
-  useNotificationManager();
+  useNotifications();
   // Just mounting this component starts the notification manager
   return null;
 }

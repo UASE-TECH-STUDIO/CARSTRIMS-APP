@@ -12,118 +12,148 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
       const res = await api.post("/api/v1/auth/login", form);
       const d = res.data;
-      setUser({
-        userId: d.userId,
-        fullName: d.fullName,
-        email: d.email,
-        role: d.role,
-        dealerId: d.dealerId,
-        accessToken: d.accessToken,
-        refreshToken: d.refreshToken,
-      });
+      setUser({ userId:d.userId, fullName:d.fullName, email:d.email, role:d.role, dealerId:d.dealerId, accessToken:d.accessToken, refreshToken:d.refreshToken });
       router.push(getRoleRedirect(d.role, d.dealerId));
     } catch (err: any) {
       setError(err.response?.data?.detail || "Invalid email or password");
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   return (
     <div className="auth-root">
+      {/* LEFT — Grey gradient panel */}
       <div className="auth-left">
-        <div className="al-inner">
-          <div className="al-brand">◈ CARSTRIMS</div>
-          <div className="al-mid">
-            <h1 className="al-title">THE SMARTER WAY TO BUY & SELL CARS</h1>
-            <p className="al-sub">Connect with verified dealers. Browse thousands of vehicles. Track every deal from listing to sale.</p>
-            <div className="al-stats">
-              <div className="als-item"><span className="als-num">6</span><span className="als-label">User Roles</span></div>
-              <div className="als-item"><span className="als-num">∞</span><span className="als-label">Inventory</span></div>
-              <div className="als-item"><span className="als-num">24/7</span><span className="als-label">Live</span></div>
-            </div>
-          </div>
-          <div className="al-dev">Developed by <strong>UASE TECH STUDIO</strong> · CARSTRIMS 2026</div>
+        <div className="al-top">
+          <div className="brand">◈ CARSTRIMS</div>
         </div>
+        <div className="al-mid">
+          <h1 className="al-title">THE SMARTER WAY TO BUY &amp; SELL CARS</h1>
+          <p className="al-sub">Connect with verified dealers. Browse thousands of vehicles. Track every deal from listing to sale.</p>
+          <div className="al-stats">
+            <div className="stat-item"><span className="stat-num">6</span><span className="stat-lbl">User Roles</span></div>
+            <div className="stat-item"><span className="stat-num">∞</span><span className="stat-lbl">Inventory</span></div>
+            <div className="stat-item"><span className="stat-num">24/7</span><span className="stat-lbl">Live</span></div>
+          </div>
+        </div>
+        <div className="al-foot">Built by <strong>UASE TECH STUDIO</strong> · CARSTRIMS 2026</div>
       </div>
 
+      {/* RIGHT — White card */}
       <div className="auth-right">
         <div className="auth-card">
-          <div className="card-header">
+          <div>
             <h2 className="card-title">Welcome back</h2>
             <p className="card-sub">Sign in to your CARSTRIMS account</p>
           </div>
 
-          {error && <div className="auth-error">{error}</div>}
+          {error && <div className="auth-err">{error}</div>}
 
-          <form onSubmit={handleSubmit} className="auth-form">
+          <form onSubmit={submit} className="auth-form">
             <div className="field">
-              <label className="field-label">Email Address</label>
-              <input type="email" className="field-input" placeholder="you@example.com"
+              <label className="fl">Email Address</label>
+              <input type="email" className="fi" placeholder="you@example.com"
                 value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
             </div>
             <div className="field">
-              <label className="field-label">Password</label>
-              <input type="password" className="field-input" placeholder="Your password"
+              <label className="fl">Password</label>
+              <input type="password" className="fi" placeholder="Your password"
                 value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
-              <Link href="/forgot-password" className="forgot-link">Forgot password?</Link>
+              <Link href="/forgot-password" className="forgot-lnk">Forgot password?</Link>
             </div>
             <button type="submit" className="auth-btn" disabled={loading}>
               {loading ? "Signing in..." : "SIGN IN"}
             </button>
           </form>
 
-          <p className="auth-switch">
-            No account? <Link href="/register" className="switch-link">Create one free</Link>
-          </p>
+          <p className="auth-switch">No account? <Link href="/register" className="sw-lnk">Create one free</Link></p>
           <Link href="/feed" className="back-feed">← Browse cars without signing in</Link>
         </div>
       </div>
 
       <style>{`
-        .auth-root{display:flex;min-height:100vh;background:var(--black);font-family:var(--font-body)}
-        .auth-left{width:45%;background:var(--surface);border-right:1px solid var(--border);display:flex;align-items:stretch;position:relative;overflow:hidden}
-        .auth-left::before{content:"◈";position:absolute;bottom:-80px;right:-60px;font-family:var(--font-display);font-size:340px;color:rgba(201,168,76,0.04);line-height:1;pointer-events:none}
-        .al-inner{position:relative;z-index:1;display:flex;flex-direction:column;justify-content:space-between;padding:2.5rem;width:100%}
-        .al-brand{font-family:var(--font-display);font-size:1.4rem;letter-spacing:0.2em;color:var(--gold)}
-        .al-mid{display:flex;flex-direction:column;gap:1.25rem}
-        .al-title{font-family:var(--font-display);font-size:clamp(1.75rem,2.8vw,3rem);line-height:1.05;color:var(--text);letter-spacing:0.02em}
-        .al-sub{font-size:0.9rem;color:var(--text-muted);line-height:1.7;max-width:340px}
-        .al-stats{display:flex;gap:2rem;padding-top:1.5rem;border-top:1px solid var(--border);margin-top:0.5rem}
-        .als-item{display:flex;flex-direction:column;gap:0.2rem}
-        .als-num{font-family:var(--font-display);font-size:2rem;color:var(--gold);line-height:1}
-        .als-label{font-size:0.68rem;color:var(--text-dim);letter-spacing:0.1em;text-transform:uppercase}
-        .al-dev{font-size:0.7rem;color:var(--text-dim)}
-        .al-dev strong{color:var(--gold)}
-        .auth-right{flex:1;background:var(--black);display:flex;align-items:center;justify-content:center;padding:2rem}
-        .auth-card{width:100%;max-width:420px;display:flex;flex-direction:column;gap:1.5rem}
-        .card-header{display:flex;flex-direction:column;gap:0.3rem}
-        .card-title{font-family:var(--font-display);font-size:2.2rem;letter-spacing:0.04em;color:var(--text)}
-        .card-sub{font-size:0.875rem;color:var(--text-muted)}
-        .auth-error{background:rgba(224,82,82,0.1);border:1px solid rgba(224,82,82,0.3);color:var(--error);padding:0.75rem 1rem;border-radius:6px;font-size:0.875rem}
-        .auth-form{display:flex;flex-direction:column;gap:1.25rem}
-        .field{display:flex;flex-direction:column;gap:0.45rem}
-        .field-label{font-size:0.72rem;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted)}
-        .field-input{background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:0.875rem 1rem;color:var(--text);font-size:0.95rem;font-family:var(--font-body);outline:none;transition:border-color 0.2s;width:100%}
-        .field-input:focus{border-color:var(--gold)}
-        .field-input::placeholder{color:var(--text-dim)}
-        .forgot-link{font-size:0.78rem;color:var(--gold);text-align:right;align-self:flex-end;opacity:0.8}
-        .forgot-link:hover{opacity:1}
-        .auth-btn{background:var(--gold);color:var(--black);border:none;border-radius:6px;padding:1rem;font-family:var(--font-display);font-size:1rem;letter-spacing:0.15em;cursor:pointer;transition:background 0.2s;margin-top:0.25rem}
-        .auth-btn:hover{background:var(--gold-light)}
-        .auth-btn:disabled{opacity:0.6;cursor:not-allowed}
-        .auth-switch{font-size:0.875rem;color:var(--text-muted);text-align:center}
-        .switch-link{color:var(--gold);font-weight:500}
-        .back-feed{font-size:0.78rem;color:var(--text-dim);text-align:center;display:block;transition:color 0.2s}
-        .back-feed:hover{color:var(--gold)}
-        @media(max-width:768px){.auth-left{display:none}.auth-right{padding:2rem 1.5rem}}
+        .auth-root { display:flex; min-height:100vh; font-family:var(--font-body); background:#F5F5F5; }
+
+        /* LEFT — grey gradient */
+        .auth-left {
+          width: 42%;
+          background: linear-gradient(160deg, #E5E5E5 0%, #D4D4D4 55%, #C8C8C8 100%);
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          padding: 2.5rem;
+          position: relative;
+          overflow: hidden;
+        }
+        .auth-left::before {
+          content: "◈";
+          position: absolute;
+          bottom: -60px; right: -50px;
+          font-family: var(--font-display);
+          font-size: 300px;
+          color: rgba(244,123,32,0.07);
+          line-height: 1;
+          pointer-events: none;
+        }
+        .brand { font-family:var(--font-display); font-size:1.4rem; letter-spacing:0.2em; color:#F47B20; }
+        .al-mid { display:flex; flex-direction:column; gap:1.25rem; }
+        .al-title { font-family:var(--font-display); font-size:clamp(1.8rem,2.8vw,3rem); line-height:1.05; color:#1A1A1A; letter-spacing:0.02em; }
+        .al-sub { font-size:0.9rem; color:#525252; line-height:1.7; max-width:340px; }
+        .al-stats { display:flex; gap:2rem; padding-top:1.5rem; border-top:1px solid rgba(0,0,0,0.1); margin-top:0.5rem; }
+        .stat-item { display:flex; flex-direction:column; gap:0.2rem; }
+        .stat-num { font-family:var(--font-display); font-size:2rem; color:#F47B20; line-height:1; }
+        .stat-lbl { font-size:0.68rem; color:#737373; letter-spacing:0.1em; text-transform:uppercase; }
+        .al-foot { font-size:0.7rem; color:#A3A3A3; }
+        .al-foot strong { color:#F47B20; }
+
+        /* RIGHT — white */
+        .auth-right { flex:1; background:#F5F5F5; display:flex; align-items:center; justify-content:center; padding:2rem; }
+        .auth-card {
+          width:100%; max-width:420px;
+          background:#fff;
+          border-radius:16px;
+          padding:2.5rem;
+          box-shadow:0 4px 24px rgba(0,0,0,0.08);
+          display:flex; flex-direction:column; gap:1.5rem;
+        }
+        .card-title { font-family:var(--font-display); font-size:2rem; letter-spacing:0.04em; color:#1A1A1A; }
+        .card-sub { font-size:0.875rem; color:#737373; margin-top:0.25rem; }
+        .auth-err { background:#FEF2F2; border:1px solid #FCA5A5; color:#DC2626; padding:0.75rem 1rem; border-radius:8px; font-size:0.875rem; }
+        .auth-form { display:flex; flex-direction:column; gap:1.25rem; }
+        .field { display:flex; flex-direction:column; gap:0.4rem; }
+        .fl { font-size:0.72rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:#525252; }
+        .fi {
+          background:#F5F5F5; border:1.5px solid #E5E5E5; border-radius:8px;
+          padding:0.875rem 1rem; color:#1A1A1A; font-size:0.95rem;
+          font-family:var(--font-body); outline:none; transition:border-color 0.2s; width:100%;
+        }
+        .fi:focus { border-color:#F47B20; background:#fff; box-shadow:0 0 0 3px rgba(244,123,32,0.1); }
+        .fi::placeholder { color:#A3A3A3; }
+        .forgot-lnk { font-size:0.78rem; color:#F47B20; text-align:right; align-self:flex-end; }
+        .forgot-lnk:hover { opacity:0.8; }
+        .auth-btn {
+          background:#F47B20; color:#fff; border:none; border-radius:8px;
+          padding:1rem; font-family:var(--font-display); font-size:1rem;
+          letter-spacing:0.15em; cursor:pointer; transition:background 0.2s; margin-top:0.25rem;
+        }
+        .auth-btn:hover { background:#FF9340; }
+        .auth-btn:disabled { opacity:0.6; cursor:not-allowed; }
+        .auth-switch { font-size:0.875rem; color:#737373; text-align:center; }
+        .sw-lnk { color:#F47B20; font-weight:600; }
+        .back-feed { font-size:0.78rem; color:#A3A3A3; text-align:center; display:block; transition:color 0.2s; }
+        .back-feed:hover { color:#F47B20; }
+
+        @media(max-width:768px) {
+          .auth-left { display:none; }
+          .auth-right { padding:1.5rem; background:#fff; }
+          .auth-card { box-shadow:none; padding:1.5rem; }
+        }
       `}</style>
     </div>
   );
