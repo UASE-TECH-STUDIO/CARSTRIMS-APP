@@ -1,20 +1,15 @@
-﻿import type { Metadata } from "next";
-import "@/styles/globals.css";
-import HydrationProvider from "@/components/layout/HydrationProvider";
+import type { Metadata } from "next";
+import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CARSTRIMS — Premium Car Dealer Platform",
-  description: "The #1 platform connecting car dealers, partners, staff and buyers in Africa. Powered by UASE TECH STUDIO.",
+  title: "CARSTRIMS - Premium Car Dealer Platform",
+  description: "Multi-tenant car dealer management by UASE TECH STUDIO",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>
-        <HydrationProvider>{children}
-        <NotificationInit /></HydrationProvider>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
-

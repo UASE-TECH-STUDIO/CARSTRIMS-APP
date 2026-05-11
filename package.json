@@ -1,6 +1,6 @@
 {
   "name": "carstrims-frontend",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -9,19 +9,18 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "next": "14.2.5",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
     "axios": "^1.6.8",
-    "zustand": "^4.5.2",
-    "qrcode.react": "^3.1.0"
+    "next": "14.2.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "zustand": "^4.5.2"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "typescript": "^5",
-    "eslint": "^8",
-    "eslint-config-next": "14.2.5"
+    "@types/node": "20.11.5",
+    "@types/react": "18.2.48",
+    "@types/react-dom": "18.2.18",
+    "eslint": "8.56.0",
+    "eslint-config-next": "14.2.5",
+    "typescript": "5.3.3"
   }
 }
