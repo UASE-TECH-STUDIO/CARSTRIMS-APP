@@ -1,4 +1,5 @@
 ﻿"use client";
+import FeedFooter from "@/components/layout/FeedFooter";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -345,8 +346,7 @@ export default function FeedPage() {
         </form>
 
         <div className="topbar-right">
-          <button className="scan-btn" onClick={() => setShowScan(true)}>Scan QR</button>
-          {isAuthenticated ? (
+            {isAuthenticated ? (
             <Link href={myDash} className="dash-btn">My Dashboard</Link>
           ) : (
             <div className="auth-btns">
@@ -473,45 +473,7 @@ export default function FeedPage() {
         </>
       )}
 
-      {/* COMBINED FOOTER + BOTTOM NAV */}
-      <div className="combined-footer">
-        <div className="cf-nav">
-          <Link href="/feed" className="cf-item active">
-            <div className="cf-icon-wrap home">
-              <span className="cf-icon-text">HOME</span>
-            </div>
-            <span className="cf-label">Feed</span>
-          </Link>
-
-          <button className="cf-item" onClick={() => setShowScan(true)}>
-            <div className="cf-icon-wrap qr">
-              <span className="cf-icon-text">QR</span>
-            </div>
-            <span className="cf-label">Scan QR</span>
-          </button>
-
-          <Link href={isAuthenticated ? myDash : "/auth/login"} className="cf-item">
-            <div className="cf-icon-wrap account">
-              <span className="cf-icon-text">ACCT</span>
-            </div>
-            <span className="cf-label">{isAuthenticated ? "My Account" : "Login"}</span>
-          </Link>
-        </div>
-
-        <div className="cf-info">
-          <span className="cf-brand">CARSTRIMS 2026</span>
-          <div className="cf-links">
-            <a href="mailto:support@carstrims.com" className="cf-link">support@carstrims.com</a>
-            <a href="https://wa.me/2348000000000" target="_blank" rel="noreferrer" className="cf-link">WhatsApp</a>
-            <a href="tel:+2348000000000" className="cf-link">+234 800 000 0000</a>
-            <a href="#" className="cf-link">Instagram</a>
-            <a href="#" className="cf-link">Twitter</a>
-            <a href="#" className="cf-link">Facebook</a>
-          </div>
-          <span className="cf-dev">Built by UASE TECH STUDIO</span>
-        </div>
-      </div>
-
+      <FeedFooter onScan={() => setShowScan(true)} />
       {/* QR SCAN MODAL */}
       {showScan && (
         <div className="scan-overlay" onClick={() => setShowScan(false)}>
@@ -649,6 +611,8 @@ export default function FeedPage() {
           letter-spacing:0.05em; white-space:nowrap; transition:background 0.2s;
         }
         .register-btn:hover { background:#FF9340; }
+        .logout-topbar { background:#F5F5F5; border:1.5px solid #E5E5E5; color:#737373; border-radius:7px; padding:0.4rem 0.55rem; font-size:0.7rem; font-weight:700; cursor:pointer; font-family:var(--font-body); transition:all 0.2s; white-space:nowrap; }
+        .logout-topbar:hover { border-color:#DC2626; color:#DC2626; background:#FEF2F2; }
 
         /* ACTIVE FILTER BAR */
         .active-bar {
@@ -875,5 +839,7 @@ export default function FeedPage() {
     </div>
   );
 }
+
+
 
 
