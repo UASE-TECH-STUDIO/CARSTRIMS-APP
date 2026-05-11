@@ -1,4 +1,6 @@
 ﻿"use client";
+import NotificationSettings from "@/components/ui/NotificationSettings";
+import { useNotificationManager } from "@/hooks/useNotifications";
 import { useEffect, useState, useRef } from "react";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
@@ -155,6 +157,7 @@ export default function UserProfilePage() {
         </div>
       )}
 
+      <NotificationSettings />
       <div className="dev-footer">Powered by <strong>UASE TECH STUDIO</strong> for CARSTRIMS 2026</div>
 
       <style>{`
@@ -208,3 +211,4 @@ export default function UserProfilePage() {
     </div>
   );
 }
+

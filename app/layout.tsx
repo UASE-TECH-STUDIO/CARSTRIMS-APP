@@ -11,8 +11,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <HydrationProvider>{children}</HydrationProvider>
+        <HydrationProvider>{children}
+        <NotificationInit /></HydrationProvider>
       </body>
     </html>
   );
 }
+
