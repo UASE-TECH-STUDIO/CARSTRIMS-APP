@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -6,9 +6,9 @@ import api from "@/lib/api";
 import { useAuthStore, getRoleRedirect } from "@/store/authStore";
 
 const ROLES = [
-  { value:"DEALER_ADMIN", label:"Dealer / Car Stand", icon:"🏪", desc:"Manage inventory, staff and sales from your own dealership" },
-  { value:"PARTNER_USER", label:"Partner / Asset Owner", icon:"🤝", desc:"Monitor your cars assigned across multiple dealers" },
-  { value:"PUBLIC_USER",  label:"Car Buyer", icon:"🚗", desc:"Browse, save and request cars from verified dealers" },
+  { value:"DEALER_ADMIN", label:"Dealer / Car Stand", desc:"Manage inventory, staff and sales from your own dealership" },
+  { value:"PARTNER_USER", label:"Partner / Asset Owner", desc:"Monitor your cars assigned across multiple dealers" },
+  { value:"PUBLIC_USER",  label:"Car Buyer", desc:"Browse, save and request cars from verified dealers" },
 ];
 
 export default function RegisterPage() {
@@ -27,18 +27,34 @@ export default function RegisterPage() {
       await api.post("/api/v1/auth/register", { ...form, role });
       const loginRes = await api.post("/api/v1/auth/login", { email: form.email, password: form.password });
       const d = loginRes.data;
-      setUser({ userId:d.userId, fullName:d.fullName, email:d.email, role:d.role, dealerId:d.dealerId, accessToken:d.accessToken, refreshToken:d.refreshToken });
+      const userData = {
+        userId:       d.userId       || d.user_id   || d.id || "",
+        fullName:     d.fullName     || d.full_name  || form.fullName || "",
+        email:        d.email        || form.email,
+        role:         d.role,
+        dealerId:     d.dealerId     || d.dealer_id  || null,
+        accessToken:  d.accessToken  || d.access_token  || "",
+        refreshToken: d.refreshToken || d.refresh_token || "",
+      };
+      if (!userData.accessToken) {
+        setError("Account created but auto-login failed. Please go to the login page and sign in manually.");
+        setLoading(false); return;
+      }
+      setUser(userData as any);
       if (role === "DEALER_ADMIN") {
         router.push("/dashboard/dealer/setup");
       } else {
-        router.push(getRoleRedirect(d.role, d.dealerId));
+        router.push(getRoleRedirect(d.role, userData.dealerId));
       }
     } catch (err: any) {
-      const msg = err.response?.data?.detail || "";
-      if (msg.toLowerCase().includes("already registered") || msg.toLowerCase().includes("already exists")) {
+      const raw = err.response?.data?.detail || err.message || "";
+      const lower = raw.toLowerCase();
+      if (lower.includes("already registered") || lower.includes("already exists") || lower.includes("email already")) {
         setError("An account with this email already exists. Please sign in instead.");
+      } else if (raw) {
+        setError(raw);
       } else {
-        setError(msg || "Registration failed. Please try again.");
+        setError("Registration failed. Please check your details and try again.");
       }
     } finally { setLoading(false); }
   };
@@ -61,10 +77,10 @@ export default function RegisterPage() {
       <div className="rg-right">
         <div className="rg-card">
           <div className="rg-mobile-brand">CARSTRIMS</div>
-          <div className="rg-progress">
-            <div className={`rg-dot-step ${step >= 1 ? "done" : ""}`}><span>1</span></div>
-            <div className="rg-prog-line" />
-            <div className={`rg-dot-step ${step >= 2 ? "done" : ""}`}><span>2</span></div>
+          <div className="rg-steps">
+            <div className={`rg-step ${step >= 1 ? "active" : ""}`}>1</div>
+            <div className="rg-step-line" />
+            <div className={`rg-step ${step >= 2 ? "active" : ""}`}>2</div>
           </div>
           <div>
             <h2 className="rg-card-title">{step === 1 ? "Choose Account Type" : "Create Your Account"}</h2>
@@ -75,7 +91,6 @@ export default function RegisterPage() {
             <div className="rg-roles">
               {ROLES.map((r) => (
                 <button key={r.value} className={`rg-role ${role === r.value ? "sel" : ""}`} onClick={() => setRole(r.value)}>
-                  <span className="rg-role-icon">{r.icon}</span>
                   <div className="rg-role-body">
                     <div className="rg-role-label">{r.label}</div>
                     <div className="rg-role-desc">{r.desc}</div>
@@ -117,7 +132,7 @@ export default function RegisterPage() {
               </div>
               {role === "DEALER_ADMIN" && (
                 <div className="rg-notice">
-                  <strong>Dealer Account:</strong> After registering you will complete your dealership profile. You can access your dashboard right away but your listings will be hidden until a CARSTRIMS admin approves your account.
+                  <strong>Dealer Account:</strong> After registering you will complete your dealership profile. You can use your dashboard right away but your listings will be hidden until a CARSTRIMS admin approves your account.
                 </div>
               )}
               <div className="rg-actions">
@@ -138,23 +153,22 @@ export default function RegisterPage() {
         .rg-sub{font-size:0.9rem;color:#525252;line-height:1.7}
         .rg-feats{display:flex;flex-direction:column;gap:0.5rem}
         .rg-feat{display:flex;align-items:center;gap:0.6rem;font-size:0.875rem;color:#404040}
-        .rg-dot{width:8px;height:8px;border-radius:50%;background:#F47B20;flex-shrink:0}
+        .rg-dot{width:8px;height:8px;border-radius:50%;background:#F47B20;flex-shrink:0;display:block}
         .rg-foot{font-size:0.7rem;color:#A3A3A3}
         .rg-foot strong{color:#F47B20}
         .rg-right{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:2rem;overflow-y:auto}
         .rg-card{width:100%;max-width:500px;background:#fff;border-radius:16px;padding:2rem;box-shadow:0 4px 24px rgba(0,0,0,0.08);display:flex;flex-direction:column;gap:1.25rem;margin:auto}
         .rg-mobile-brand{display:none;font-family:var(--font-display);font-size:1.3rem;letter-spacing:0.2em;color:#F47B20;text-align:center}
-        .rg-progress{display:flex;align-items:center;gap:0.5rem}
-        .rg-dot-step{width:28px;height:28px;border-radius:50%;background:#E5E5E5;color:#737373;font-size:0.8rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s}
-        .rg-dot-step.done{background:#F47B20;color:#fff}
-        .rg-prog-line{flex:1;height:2px;background:#E5E5E5;max-width:50px}
+        .rg-steps{display:flex;align-items:center;gap:0.5rem}
+        .rg-step{width:28px;height:28px;border-radius:50%;background:#E5E5E5;color:#737373;font-size:0.8rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s}
+        .rg-step.active{background:#F47B20;color:#fff}
+        .rg-step-line{flex:1;height:2px;background:#E5E5E5;max-width:50px}
         .rg-card-title{font-family:var(--font-display);font-size:1.6rem;color:#1A1A1A}
         .rg-card-sub{font-size:0.875rem;color:#737373;margin-top:0.25rem}
-        .rg-err{background:#FEF2F2;border:1px solid #FCA5A5;color:#DC2626;padding:0.75rem 1rem;border-radius:8px;font-size:0.875rem}
+        .rg-err{background:#FEF2F2;border:1px solid #FCA5A5;color:#DC2626;padding:0.75rem 1rem;border-radius:8px;font-size:0.875rem;line-height:1.5}
         .rg-roles{display:flex;flex-direction:column;gap:0.75rem}
         .rg-role{display:flex;align-items:center;gap:1rem;padding:1rem;background:#F5F5F5;border:1.5px solid #E5E5E5;border-radius:10px;cursor:pointer;text-align:left;width:100%;font-family:var(--font-body);transition:all 0.2s}
         .rg-role:hover,.rg-role.sel{border-color:#F47B20;background:#FFF7ED}
-        .rg-role-icon{font-size:1.5rem;flex-shrink:0}
         .rg-role-body{flex:1}
         .rg-role-label{font-size:0.9rem;font-weight:600;color:#1A1A1A}
         .rg-role-desc{font-size:0.75rem;color:#737373;margin-top:0.15rem}

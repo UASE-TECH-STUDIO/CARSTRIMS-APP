@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -18,11 +18,24 @@ export default function LoginPage() {
     try {
       const res = await api.post("/api/v1/auth/login", form);
       const d = res.data;
-      setUser({ userId:d.userId, fullName:d.fullName, email:d.email, role:d.role, dealerId:d.dealerId, accessToken:d.accessToken, refreshToken:d.refreshToken });
+      const userData = {
+        userId:       d.userId       || d.user_id   || d.id || "",
+        fullName:     d.fullName     || d.full_name  || "",
+        email:        d.email        || form.email,
+        role:         d.role,
+        dealerId:     d.dealerId     || d.dealer_id  || null,
+        accessToken:  d.accessToken  || d.access_token  || "",
+        refreshToken: d.refreshToken || d.refresh_token || "",
+      };
+      if (!userData.accessToken) {
+        setError("Login succeeded but no token received. Please try again or contact support.");
+        return;
+      }
+      setUser(userData as any);
       if (d.role === "DEALER_ADMIN") {
         router.push("/dashboard/dealer");
       } else {
-        router.push(getRoleRedirect(d.role, d.dealerId));
+        router.push(getRoleRedirect(d.role, userData.dealerId));
       }
     } catch (err: any) {
       const status = err.response?.status;
@@ -31,6 +44,8 @@ export default function LoginPage() {
         setError("Invalid email or password. Please try again.");
       } else if (status === 404 || detail.includes("not found")) {
         setError("No account found with this email address.");
+      } else if (!err.response) {
+        setError("Cannot reach the server. Please check your internet connection.");
       } else {
         setError(err.response?.data?.detail || "Login failed. Please try again.");
       }
@@ -61,11 +76,11 @@ export default function LoginPage() {
           <form onSubmit={submit} className="auth-form">
             <div className="field">
               <label className="fl">Email Address</label>
-              <input type="email" className="fi" placeholder="you@example.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+              <input type="email" className="fi" placeholder="you@example.com" value={form.email} onChange={(e) => setForm({...form,email:e.target.value})} required />
             </div>
             <div className="field">
               <label className="fl">Password</label>
-              <input type="password" className="fi" placeholder="Your password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
+              <input type="password" className="fi" placeholder="Your password" value={form.password} onChange={(e) => setForm({...form,password:e.target.value})} required />
               <Link href="/forgot-password" className="forgot-lnk">Forgot password?</Link>
             </div>
             <button type="submit" className="auth-btn" disabled={loading}>{loading ? "Signing in..." : "SIGN IN"}</button>
@@ -77,7 +92,6 @@ export default function LoginPage() {
       <style>{`
         .auth-root{display:flex;min-height:100vh;font-family:var(--font-body);background:#F5F5F5}
         .auth-left{width:42%;background:linear-gradient(160deg,#E5E5E5 0%,#D4D4D4 55%,#C8C8C8 100%);display:flex;flex-direction:column;justify-content:space-between;padding:2.5rem;position:relative;overflow:hidden}
-        .auth-left::before{content:"CARSTRIMS";position:absolute;bottom:-20px;right:-20px;font-family:var(--font-display);font-size:120px;color:rgba(244,123,32,0.05);line-height:1;pointer-events:none;white-space:nowrap}
         .brand{font-family:var(--font-display);font-size:1.4rem;letter-spacing:0.2em;color:#F47B20}
         .al-mid{display:flex;flex-direction:column;gap:1.25rem}
         .al-title{font-family:var(--font-display);font-size:clamp(1.8rem,2.8vw,3rem);line-height:1.05;color:#1A1A1A;letter-spacing:0.02em}

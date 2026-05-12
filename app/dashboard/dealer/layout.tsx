@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { ReactNode, useEffect, useState } from "react";
 import AuthGuard from "@/components/layout/AuthGuard";
 import DealerSidebar from "@/components/layout/DealerSidebar";
@@ -16,15 +16,19 @@ function DealerShell({ children }: { children: ReactNode }) {
     if (pathname.includes("/setup")) { setReady(true); return; }
     api.get("/api/v1/dealers/me")
       .then((r) => {
-        const hasProfile = !!(r.data?.companyName);
-        setDealerStatus(r.data?.status);
-        if (!hasProfile) {
+        const d = r.data;
+        setDealerStatus(d?.status || null);
+        if (!d?.companyName) {
           router.replace("/dashboard/dealer/setup");
         } else {
           setReady(true);
         }
       })
-      .catch(() => { router.replace("/dashboard/dealer/setup"); });
+      .catch((err) => {
+        if (err?.response?.status !== 401) {
+          router.replace("/dashboard/dealer/setup");
+        }
+      });
   }, [pathname, router]);
 
   if (!ready && !pathname.includes("/setup")) {
@@ -49,7 +53,7 @@ function DealerShell({ children }: { children: ReactNode }) {
         {isPending && (
           <div style={{background:"#FFF7ED",borderBottom:"2px solid #F47B20",padding:"0.6rem 1.75rem",fontSize:"0.82rem",color:"#C4621A",display:"flex",alignItems:"center",gap:"0.75rem",flexWrap:"wrap"}}>
             <span>&#9203;</span>
-            <span><strong>Pending Approval:</strong> Your account is under review. Your listings and profile are hidden from buyers until the super admin approves your account. You can still set up your dashboard, add cars, and manage staff.</span>
+            <span><strong>Pending Approval:</strong> Your account is under review. Your listings are hidden from buyers until approved. You can still set up your dashboard, add cars and manage staff.</span>
           </div>
         )}
         <main className="dealer-content">{children}</main>
