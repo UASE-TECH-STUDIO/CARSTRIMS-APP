@@ -14,146 +14,100 @@ export default function LoginPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
+    setError(""); setLoading(true);
     try {
       const res = await api.post("/api/v1/auth/login", form);
       const d = res.data;
       setUser({ userId:d.userId, fullName:d.fullName, email:d.email, role:d.role, dealerId:d.dealerId, accessToken:d.accessToken, refreshToken:d.refreshToken });
-      router.push(getRoleRedirect(d.role, d.dealerId));
+      if (d.role === "DEALER_ADMIN") {
+        router.push("/dashboard/dealer");
+      } else {
+        router.push(getRoleRedirect(d.role, d.dealerId));
+      }
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Invalid email or password");
+      const status = err.response?.status;
+      const detail = (err.response?.data?.detail || "").toLowerCase();
+      if (status === 401 || detail.includes("password") || detail.includes("invalid") || detail.includes("incorrect")) {
+        setError("Invalid email or password. Please try again.");
+      } else if (status === 404 || detail.includes("not found")) {
+        setError("No account found with this email address.");
+      } else {
+        setError(err.response?.data?.detail || "Login failed. Please try again.");
+      }
     } finally { setLoading(false); }
   };
 
   return (
     <div className="auth-root">
-      {/* LEFT â€” Grey gradient panel */}
       <div className="auth-left">
-        <div className="al-top">
-          <div className="brand">â—ˆ CARSTRIMS</div>
-        </div>
+        <div className="al-top"><div className="brand">CARSTRIMS</div></div>
         <div className="al-mid">
           <h1 className="al-title">THE SMARTER WAY TO BUY &amp; SELL CARS</h1>
           <p className="al-sub">Connect with verified dealers. Browse thousands of vehicles. Track every deal from listing to sale.</p>
           <div className="al-stats">
-            <div className="stat-item"><span className="stat-num">6</span><span className="stat-lbl">User Roles</span></div>
-            <div className="stat-item"><span className="stat-num">âˆž</span><span className="stat-lbl">Inventory</span></div>
+            <div className="stat-item"><span className="stat-num">5</span><span className="stat-lbl">User Roles</span></div>
             <div className="stat-item"><span className="stat-num">24/7</span><span className="stat-lbl">Live</span></div>
           </div>
         </div>
-        <div className="al-foot">Built by <strong>UASE TECH STUDIO</strong> Â· CARSTRIMS 2026</div>
+        <div className="al-foot">Built by <strong>UASE TECH STUDIO</strong> &middot; CARSTRIMS 2026</div>
       </div>
-
-      {/* RIGHT â€” White card */}
       <div className="auth-right">
         <div className="auth-card">
           <div>
             <h2 className="card-title">Welcome back</h2>
             <p className="card-sub">Sign in to your CARSTRIMS account</p>
           </div>
-
           {error && <div className="auth-err">{error}</div>}
-
           <form onSubmit={submit} className="auth-form">
             <div className="field">
               <label className="fl">Email Address</label>
-              <input type="email" className="fi" placeholder="you@example.com"
-                value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+              <input type="email" className="fi" placeholder="you@example.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
             </div>
             <div className="field">
               <label className="fl">Password</label>
-              <input type="password" className="fi" placeholder="Your password"
-                value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
+              <input type="password" className="fi" placeholder="Your password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
               <Link href="/forgot-password" className="forgot-lnk">Forgot password?</Link>
             </div>
-            <button type="submit" className="auth-btn" disabled={loading}>
-              {loading ? "Signing in..." : "SIGN IN"}
-            </button>
+            <button type="submit" className="auth-btn" disabled={loading}>{loading ? "Signing in..." : "SIGN IN"}</button>
           </form>
-
           <p className="auth-switch">No account? <Link href="/register" className="sw-lnk">Create one free</Link></p>
-          <Link href="/feed" className="back-feed">â† Browse cars without signing in</Link>
+          <Link href="/feed" className="back-feed">Browse cars without signing in</Link>
         </div>
       </div>
-
       <style>{`
-        .auth-root { display:flex; min-height:100vh; font-family:var(--font-body); background:#F5F5F5; }
-
-        /* LEFT â€” grey gradient */
-        .auth-left {
-          width: 42%;
-          background: linear-gradient(160deg, #E5E5E5 0%, #D4D4D4 55%, #C8C8C8 100%);
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          padding: 2.5rem;
-          position: relative;
-          overflow: hidden;
-        }
-        .auth-left::before {
-          content: "â—ˆ";
-          position: absolute;
-          bottom: -60px; right: -50px;
-          font-family: var(--font-display);
-          font-size: 300px;
-          color: rgba(244,123,32,0.07);
-          line-height: 1;
-          pointer-events: none;
-        }
-        .brand { font-family:var(--font-display); font-size:1.4rem; letter-spacing:0.2em; color:#F47B20; }
-        .al-mid { display:flex; flex-direction:column; gap:1.25rem; }
-        .al-title { font-family:var(--font-display); font-size:clamp(1.8rem,2.8vw,3rem); line-height:1.05; color:#1A1A1A; letter-spacing:0.02em; }
-        .al-sub { font-size:0.9rem; color:#525252; line-height:1.7; max-width:340px; }
-        .al-stats { display:flex; gap:2rem; padding-top:1.5rem; border-top:1px solid rgba(0,0,0,0.1); margin-top:0.5rem; }
-        .stat-item { display:flex; flex-direction:column; gap:0.2rem; }
-        .stat-num { font-family:var(--font-display); font-size:2rem; color:#F47B20; line-height:1; }
-        .stat-lbl { font-size:0.68rem; color:#737373; letter-spacing:0.1em; text-transform:uppercase; }
-        .al-foot { font-size:0.7rem; color:#A3A3A3; }
-        .al-foot strong { color:#F47B20; }
-
-        /* RIGHT â€” white */
-        .auth-right { flex:1; background:#F5F5F5; display:flex; align-items:center; justify-content:center; padding:2rem; }
-        .auth-card {
-          width:100%; max-width:420px;
-          background:#fff;
-          border-radius:16px;
-          padding:2.5rem;
-          box-shadow:0 4px 24px rgba(0,0,0,0.08);
-          display:flex; flex-direction:column; gap:1.5rem;
-        }
-        .card-title { font-family:var(--font-display); font-size:2rem; letter-spacing:0.04em; color:#1A1A1A; }
-        .card-sub { font-size:0.875rem; color:#737373; margin-top:0.25rem; }
-        .auth-err { background:#FEF2F2; border:1px solid #FCA5A5; color:#DC2626; padding:0.75rem 1rem; border-radius:8px; font-size:0.875rem; }
-        .auth-form { display:flex; flex-direction:column; gap:1.25rem; }
-        .field { display:flex; flex-direction:column; gap:0.4rem; }
-        .fl { font-size:0.72rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:#525252; }
-        .fi {
-          background:#F5F5F5; border:1.5px solid #E5E5E5; border-radius:8px;
-          padding:0.875rem 1rem; color:#1A1A1A; font-size:0.95rem;
-          font-family:var(--font-body); outline:none; transition:border-color 0.2s; width:100%;
-        }
-        .fi:focus { border-color:#F47B20; background:#fff; box-shadow:0 0 0 3px rgba(244,123,32,0.1); }
-        .fi::placeholder { color:#A3A3A3; }
-        .forgot-lnk { font-size:0.78rem; color:#F47B20; text-align:right; align-self:flex-end; }
-        .forgot-lnk:hover { opacity:0.8; }
-        .auth-btn {
-          background:#F47B20; color:#fff; border:none; border-radius:8px;
-          padding:1rem; font-family:var(--font-display); font-size:1rem;
-          letter-spacing:0.15em; cursor:pointer; transition:background 0.2s; margin-top:0.25rem;
-        }
-        .auth-btn:hover { background:#FF9340; }
-        .auth-btn:disabled { opacity:0.6; cursor:not-allowed; }
-        .auth-switch { font-size:0.875rem; color:#737373; text-align:center; }
-        .sw-lnk { color:#F47B20; font-weight:600; }
-        .back-feed { font-size:0.78rem; color:#A3A3A3; text-align:center; display:block; transition:color 0.2s; }
-        .back-feed:hover { color:#F47B20; }
-
-        @media(max-width:768px) {
-          .auth-left { display:none; }
-          .auth-right { padding:1.5rem; background:#fff; }
-          .auth-card { box-shadow:none; padding:1.5rem; }
-        }
+        .auth-root{display:flex;min-height:100vh;font-family:var(--font-body);background:#F5F5F5}
+        .auth-left{width:42%;background:linear-gradient(160deg,#E5E5E5 0%,#D4D4D4 55%,#C8C8C8 100%);display:flex;flex-direction:column;justify-content:space-between;padding:2.5rem;position:relative;overflow:hidden}
+        .auth-left::before{content:"CARSTRIMS";position:absolute;bottom:-20px;right:-20px;font-family:var(--font-display);font-size:120px;color:rgba(244,123,32,0.05);line-height:1;pointer-events:none;white-space:nowrap}
+        .brand{font-family:var(--font-display);font-size:1.4rem;letter-spacing:0.2em;color:#F47B20}
+        .al-mid{display:flex;flex-direction:column;gap:1.25rem}
+        .al-title{font-family:var(--font-display);font-size:clamp(1.8rem,2.8vw,3rem);line-height:1.05;color:#1A1A1A;letter-spacing:0.02em}
+        .al-sub{font-size:0.9rem;color:#525252;line-height:1.7;max-width:340px}
+        .al-stats{display:flex;gap:2rem;padding-top:1.5rem;border-top:1px solid rgba(0,0,0,0.1);margin-top:0.5rem}
+        .stat-item{display:flex;flex-direction:column;gap:0.2rem}
+        .stat-num{font-family:var(--font-display);font-size:2rem;color:#F47B20;line-height:1}
+        .stat-lbl{font-size:0.68rem;color:#737373;letter-spacing:0.1em;text-transform:uppercase}
+        .al-foot{font-size:0.7rem;color:#A3A3A3}
+        .al-foot strong{color:#F47B20}
+        .auth-right{flex:1;background:#F5F5F5;display:flex;align-items:center;justify-content:center;padding:2rem}
+        .auth-card{width:100%;max-width:420px;background:#fff;border-radius:16px;padding:2.5rem;box-shadow:0 4px 24px rgba(0,0,0,0.08);display:flex;flex-direction:column;gap:1.5rem}
+        .card-title{font-family:var(--font-display);font-size:2rem;letter-spacing:0.04em;color:#1A1A1A}
+        .card-sub{font-size:0.875rem;color:#737373;margin-top:0.25rem}
+        .auth-err{background:#FEF2F2;border:1px solid #FCA5A5;color:#DC2626;padding:0.75rem 1rem;border-radius:8px;font-size:0.875rem}
+        .auth-form{display:flex;flex-direction:column;gap:1.25rem}
+        .field{display:flex;flex-direction:column;gap:0.4rem}
+        .fl{font-size:0.72rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#525252}
+        .fi{background:#F5F5F5;border:1.5px solid #E5E5E5;border-radius:8px;padding:0.875rem 1rem;color:#1A1A1A;font-size:0.95rem;font-family:var(--font-body);outline:none;transition:border-color 0.2s;width:100%}
+        .fi:focus{border-color:#F47B20;background:#fff;box-shadow:0 0 0 3px rgba(244,123,32,0.1)}
+        .fi::placeholder{color:#A3A3A3}
+        .forgot-lnk{font-size:0.78rem;color:#F47B20;text-align:right;align-self:flex-end}
+        .auth-btn{background:#F47B20;color:#fff;border:none;border-radius:8px;padding:1rem;font-family:var(--font-display);font-size:1rem;letter-spacing:0.15em;cursor:pointer;transition:background 0.2s;margin-top:0.25rem}
+        .auth-btn:hover{background:#FF9340}
+        .auth-btn:disabled{opacity:0.6;cursor:not-allowed}
+        .auth-switch{font-size:0.875rem;color:#737373;text-align:center}
+        .sw-lnk{color:#F47B20;font-weight:600}
+        .back-feed{font-size:0.78rem;color:#A3A3A3;text-align:center;display:block;transition:color 0.2s}
+        .back-feed:hover{color:#F47B20}
+        @media(max-width:768px){.auth-left{display:none}.auth-right{padding:1.5rem;background:#fff}.auth-card{box-shadow:none;padding:1.5rem}}
       `}</style>
     </div>
   );

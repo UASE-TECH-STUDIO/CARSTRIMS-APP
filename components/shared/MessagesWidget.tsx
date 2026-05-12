@@ -14,6 +14,8 @@ const genPassword = () => {
 
 export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
   const { user } = useAuthStore();
+  const isSuperAdmin = user?.role === "SYSTEM_ADMIN";
+
   const [open, setOpen] = useState(false);
   const [conversations, setConversations] = useState<any[]>([]);
   const [activeConv, setActiveConv] = useState<any>(null);
@@ -25,10 +27,31 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
   const [userResults, setUserResults] = useState<any[]>([]);
   const [startMsg, setStartMsg] = useState("");
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [unread, setUnread] = useState(0);
   const msgsEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setTimeout>|null>(null);
-  const [unread, setUnread] = useState(0);
-  const isSuperAdmin = user?.role === "SYSTEM_ADMIN";
+
+  // Resizable panel state
+  const [panelW, setPanelW] = useState(340);
+  const [panelH, setPanelH] = useState(520);
+  const isResizing = useRef(false);
+  const resizeStart = useRef({ x:0, y:0, w:0, h:0 });
+
+  const startResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizing.current = true;
+    resizeStart.current = { x:e.clientX, y:e.clientY, w:panelW, h:panelH };
+    const onMove = (ev: MouseEvent) => {
+      if (!isResizing.current) return;
+      const dw = resizeStart.current.x - ev.clientX;
+      const dh = resizeStart.current.y - ev.clientY;
+      setPanelW(Math.min(640, Math.max(280, resizeStart.current.w + dw)));
+      setPanelH(Math.min(800, Math.max(340, resizeStart.current.h + dh)));
+    };
+    const onUp = () => { isResizing.current = false; window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
 
   const loadConvs = useCallback(async () => {
     try {
@@ -61,103 +84,150 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
       try {
         const res = await api.get(`/api/v1/messages/conversation/${conv.conversationId}`);
         const msgs = res.data || [];
-        setMessages((prev) => { if (msgs.length > prev.length) setTimeout(() => msgsEndRef.current?.scrollIntoView({ behavior:"smooth" }), 50); return msgs; });
+        setMessages(prev => { if (msgs.length > prev.length) setTimeout(() => msgsEndRef.current?.scrollIntoView({ behavior:"smooth" }), 50); return msgs; });
       } catch {}
     }, 5000);
-    setConversations((p) => p.map((c) => c.conversationId===conv.conversationId?{...c,unreadCount:0}:c));
-    setUnread((u) => Math.max(0, u-(conv.unreadCount||0)));
+    setConversations(p => p.map(c => c.conversationId===conv.conversationId?{...c,unreadCount:0}:c));
+    setUnread(u => Math.max(0, u-(conv.unreadCount||0)));
   };
 
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
 
   const handlePasswordCommand = async (conv: any) => {
-    if (!isSuperAdmin) return;
+    if (!isSuperAdmin) { alert("Only the super admin can use the !password command."); return; }
     setSending(true);
     try {
       const newPassword = genPassword();
       const otherUserId = conv.otherUser?.userId;
+      if (!otherUserId) { alert("Could not identify the user in this conversation."); setSending(false); return; }
+
+      // Save to backend so login works with new password
       let saved = false;
-      try { await api.post(`/api/v1/admin/users/${otherUserId}/reset-password`, { newPassword }); saved=true; } catch {}
-      if (!saved) { try { await api.post(`/api/v1/admin/dealers/${otherUserId}/reset-password`, { newPassword }); saved=true; } catch {} }
-      const responseMsg = `Your account password has been reset.\n\nNew Password: ${newPassword}\n\nPlease log in with this password and change it immediately from your Settings.`;
-      const res = await api.post(`/api/v1/messages/conversation/${conv.conversationId}/send`, { receiverId:otherUserId, message:responseMsg });
-      setMessages((p) => [...p, res.data]);
+      try {
+        await api.post(`/api/v1/admin/users/${otherUserId}/reset-password`, { newPassword });
+        saved = true;
+      } catch {}
+      if (!saved) {
+        try { await api.post(`/api/v1/admin/dealers/${otherUserId}/reset-password`, { newPassword }); saved = true; } catch {}
+      }
+
+      const responseMsg = saved
+        ? `Your password has been reset by the admin.\n\nNew Password: ${newPassword}\n\nPlease log in with this password and change it immediately from your profile settings. Keep this message private.`
+        : `A new password has been generated for you.\n\nNew Password: ${newPassword}\n\nPlease log in with this password. If you have trouble, contact support again.`;
+
+      const res = await api.post(`/api/v1/messages/conversation/${conv.conversationId}/send`, {
+        receiverId: otherUserId,
+        message: responseMsg,
+      });
+      setMessages(p => [...p, res.data]);
       setTimeout(() => msgsEndRef.current?.scrollIntoView({ behavior:"smooth" }), 50);
-    } catch (err: any) { alert("Failed to process !password: "+(err.response?.data?.detail||err.message)); }
-    finally { setSending(false); }
+    } catch (err: any) {
+      alert("!password failed: " + (err.response?.data?.detail || err.message));
+    } finally { setSending(false); }
   };
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMsg.trim()||!activeConv) return;
-    if (newMsg.trim().toLowerCase()==="!password"&&isSuperAdmin) { setNewMsg(""); await handlePasswordCommand(activeConv); return; }
+    if (!newMsg.trim() || !activeConv) return;
+    if (newMsg.trim().toLowerCase() === "!password") {
+      setNewMsg(""); await handlePasswordCommand(activeConv); return;
+    }
     setSending(true);
     try {
-      const res = await api.post(`/api/v1/messages/conversation/${activeConv.conversationId}/send`, { receiverId:activeConv.otherUser?.userId, message:newMsg });
-      setMessages((p) => [...p, res.data]); setNewMsg("");
+      const res = await api.post(`/api/v1/messages/conversation/${activeConv.conversationId}/send`, {
+        receiverId: activeConv.otherUser?.userId,
+        message: newMsg,
+      });
+      setMessages(p => [...p, res.data]); setNewMsg("");
       setTimeout(() => msgsEndRef.current?.scrollIntoView({ behavior:"smooth" }), 50);
     } catch {} finally { setSending(false); }
   };
 
   useEffect(() => {
-    if (userSearch.length<2) { setUserResults([]); return; }
+    if (userSearch.length < 2) { setUserResults([]); return; }
     const t = setTimeout(async () => {
-      try { const res = await api.get("/api/v1/messages/search-users",{params:{q:userSearch}}); setUserResults(res.data||[]); } catch {}
+      try { const res = await api.get("/api/v1/messages/search-users", { params:{q:userSearch} }); setUserResults(res.data || []); } catch {}
     }, 300);
     return () => clearTimeout(t);
   }, [userSearch]);
 
   const startConversation = async () => {
-    if (!selectedUser||!startMsg.trim()) return;
+    if (!selectedUser || !startMsg.trim()) return;
     try {
-      const res = await api.post("/api/v1/messages/start",{receiverId:selectedUser.userId,message:startMsg});
+      const res = await api.post("/api/v1/messages/start", { receiverId:selectedUser.userId, message:startMsg });
       setShowNew(false); setUserSearch(""); setSelectedUser(null); setStartMsg(""); setUserResults([]);
       await loadConvs();
-      const conv = conversations.find((c) => c.conversationId===res.data.conversationId);
-      if (conv) openConv(conv);
-    } catch (err: any) { alert(err.response?.data?.detail||"Failed to start conversation"); }
+      const newConvId = res.data?.conversationId;
+      if (newConvId) {
+        const fresh = await api.get("/api/v1/messages/conversations");
+        const found = (fresh.data||[]).find((c: any) => c.conversationId === newConvId);
+        if (found) openConv(found);
+      }
+    } catch (err: any) { alert(err.response?.data?.detail || "Failed to start conversation"); }
   };
 
   const uid = user?.userId;
-  const fmtTime = (iso: string) => { const d=Date.now()-new Date(iso).getTime(); const m=Math.floor(d/60000); return m<1?"now":m<60?`${m}m`:m<1440?`${Math.floor(m/60)}h`:new Date(iso).toLocaleDateString(); };
+  const fmtTime = (iso: string) => {
+    const d = Date.now()-new Date(iso).getTime(); const m = Math.floor(d/60000);
+    return m<1?"now":m<60?`${m}m`:m<1440?`${Math.floor(m/60)}h`:new Date(iso).toLocaleDateString();
+  };
 
   return (
     <>
-      <button className="msg-fab" onClick={()=>setOpen(!open)} style={{"--accent":accentColor} as any}>
-        {open?"X":"MSG"}
-        {unread>0&&!open&&<span className="fab-badge">{unread}</span>}
+      <button className="msg-fab" onClick={() => setOpen(!open)} style={{"--accent":accentColor} as any}>
+        {open ? "X" : "MSG"}
+        {unread > 0 && !open && <span className="fab-badge">{unread}</span>}
       </button>
 
-      {open&&(
-        <div className="msg-panel" style={{"--accent":accentColor} as any}>
-          <div className="mp-header">
-            <span className="mp-title">Messages</span>
-            <button className="mp-new" onClick={()=>setShowNew(true)}>+ New</button>
-            <button className="mp-close" onClick={()=>{setOpen(false);setActiveConv(null);}}>X</button>
+      {open && (
+        <div className="msg-panel" style={{"--accent":accentColor, width:panelW+"px", height:panelH+"px"} as any}>
+          {/* Resize handle — top-left corner */}
+          <div className="resize-handle" onMouseDown={startResize} title="Drag to resize">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M1 11L11 1M1 6L6 1M6 11L11 6" stroke="#A3A3A3" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
           </div>
 
-          {!activeConv?(
+          <div className="mp-header">
+            <span className="mp-title">Messages</span>
+            <button className="mp-new" onClick={() => setShowNew(true)}>+ New</button>
+            <button className="mp-close" onClick={() => { setOpen(false); setActiveConv(null); if(pollRef.current) clearInterval(pollRef.current); }}>X</button>
+          </div>
+
+          {!activeConv ? (
             <div className="conv-list">
-              {conversations.length===0?(
-                <div className="conv-empty"><p>No conversations</p><button className="mp-new-lg" onClick={()=>setShowNew(true)}>Start a conversation</button></div>
-              ):conversations.map((conv)=>(
-                <div key={conv._id} className="conv-item" onClick={()=>openConv(conv)}>
+              {conversations.length === 0 ? (
+                <div className="conv-empty">
+                  <p>No conversations yet</p>
+                  <button className="mp-new-lg" onClick={() => setShowNew(true)}>Start a conversation</button>
+                </div>
+              ) : conversations.map((conv) => (
+                <div key={conv._id||conv.conversationId} className="conv-item" onClick={() => openConv(conv)}>
                   <div className="ci-avatar">{conv.otherUser?.profilePicture?<img src={conv.otherUser.profilePicture} alt=""/>:conv.otherUser?.fullName?.charAt(0)||"?"}</div>
-                  <div className="ci-info"><div className="ci-name">{conv.otherUser?.fullName||"User"}</div><div className="ci-last">{conv.lastMessage}</div></div>
-                  <div className="ci-meta"><div className="ci-time">{fmtTime(conv.lastMessageAt)}</div>{conv.unreadCount>0&&<div className="ci-unread">{conv.unreadCount}</div>}</div>
+                  <div className="ci-info">
+                    <div className="ci-name">{conv.otherUser?.fullName||"User"}</div>
+                    <div className="ci-last">{conv.lastMessage}</div>
+                  </div>
+                  <div className="ci-meta">
+                    <div className="ci-time">{fmtTime(conv.lastMessageAt)}</div>
+                    {conv.unreadCount > 0 && <div className="ci-unread">{conv.unreadCount}</div>}
+                  </div>
                 </div>
               ))}
             </div>
-          ):(
+          ) : (
             <div className="chat-view">
               <div className="chat-head">
-                <button className="chat-back" onClick={()=>{setActiveConv(null);if(pollRef.current)clearInterval(pollRef.current);}}>back</button>
+                <button className="chat-back" onClick={() => { setActiveConv(null); if(pollRef.current) clearInterval(pollRef.current); }}>back</button>
                 <div className="ch-avatar">{activeConv.otherUser?.profilePicture?<img src={activeConv.otherUser.profilePicture} alt=""/>:activeConv.otherUser?.fullName?.charAt(0)||"?"}</div>
                 <div className="ch-name">{activeConv.otherUser?.fullName}</div>
+                {activeConv.otherUser?.role && (
+                  <div className="ch-role">{activeConv.otherUser.role.replace(/_/g," ").toLowerCase()}</div>
+                )}
               </div>
               <div className="chat-msgs">
-                {messages.map((m)=>{
-                  const isMe=m.senderId===uid;
+                {messages.map((m) => {
+                  const isMe = m.senderId === uid;
                   return (
                     <div key={m._id} className={`msg-row ${isMe?"me":"them"}`}>
                       <div className={`msg-bubble ${isMe?"me":"them"}`}>
@@ -167,41 +237,53 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
                     </div>
                   );
                 })}
-                <div ref={msgsEndRef}/>
+                <div ref={msgsEndRef} />
               </div>
               <form className="chat-input" onSubmit={sendMessage}>
-                <input placeholder={isSuperAdmin?"Type or !password to reset...":"Type a message..."} value={newMsg} onChange={(e)=>setNewMsg(e.target.value)}/>
+                <input
+                  placeholder={isSuperAdmin ? "Type or !password to reset user password..." : "Type a message..."}
+                  value={newMsg} onChange={(e) => setNewMsg(e.target.value)}
+                />
                 <button type="submit" disabled={sending||!newMsg.trim()}>Send</button>
               </form>
-              {isSuperAdmin&&(
-                <div style={{padding:"0.3rem 0.75rem 0.5rem",fontSize:"0.65rem",color:"#A3A3A3",borderTop:"1px solid #F5F5F5"}}>
-                  Tip: type <code style={{background:"#F5F5F5",padding:"0 0.3rem",borderRadius:"3px"}}>!password</code> to reset this user password and send it here
+              {isSuperAdmin && (
+                <div className="pw-tip">
+                  Tip: type <code>!password</code> to generate and send a new password to this user
                 </div>
               )}
             </div>
           )}
 
-          {showNew&&(
-            <div className="new-conv-overlay" onClick={()=>setShowNew(false)}>
-              <div className="new-conv" onClick={(e)=>e.stopPropagation()}>
-                <div className="nc-header"><span>New Conversation</span><button onClick={()=>setShowNew(false)}>X</button></div>
+          {showNew && (
+            <div className="new-conv-overlay" onClick={() => setShowNew(false)}>
+              <div className="new-conv" onClick={(e) => e.stopPropagation()}>
+                <div className="nc-header">
+                  <span>New Conversation</span>
+                  <button onClick={() => setShowNew(false)}>X</button>
+                </div>
                 <div className="nc-body">
                   <div className="nc-search-wrap">
-                    <input className="nc-input" placeholder="Search by name or email..." value={userSearch} onChange={(e)=>setUserSearch(e.target.value)} autoFocus/>
-                    {userResults.length>0&&(
+                    <input className="nc-input" placeholder="Search by name or email..." value={userSearch} onChange={(e) => setUserSearch(e.target.value)} autoFocus />
+                    {userResults.length > 0 && (
                       <div className="nc-results">
-                        {userResults.map((u)=>(
-                          <div key={u.userId} className={`nc-user ${selectedUser?.userId===u.userId?"selected":""}`} onClick={()=>{setSelectedUser(u);setUserSearch(u.fullName);setUserResults([]);}}>
+                        {userResults.map((u) => (
+                          <div key={u.userId} className={`nc-user ${selectedUser?.userId===u.userId?"selected":""}`}
+                            onClick={() => { setSelectedUser(u); setUserSearch(u.fullName); setUserResults([]); }}>
                             <div className="nu-avatar">{u.profilePicture?<img src={u.profilePicture} alt=""/>:u.fullName?.charAt(0)||"?"}</div>
-                            <div className="nu-info"><div className="nu-name">{u.fullName}</div><div className="nu-role">{u.role?.replace(/_/g," ")} - {u.email}</div></div>
+                            <div className="nu-info">
+                              <div className="nu-name">{u.fullName}</div>
+                              <div className="nu-role">{u.role?.replace(/_/g," ")} &middot; {u.email}</div>
+                            </div>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
-                  {selectedUser&&<div className="nc-selected">Selected: {selectedUser.fullName}</div>}
-                  <textarea className="nc-msg" placeholder="Write your first message..." value={startMsg} onChange={(e)=>setStartMsg(e.target.value)} rows={3}/>
-                  <button className="nc-send" onClick={startConversation} disabled={!selectedUser||!startMsg.trim()}>Start Conversation</button>
+                  {selectedUser && <div className="nc-selected">Sending to: <strong>{selectedUser.fullName}</strong></div>}
+                  <textarea className="nc-msg" placeholder="Write your first message..." value={startMsg} onChange={(e) => setStartMsg(e.target.value)} rows={3} />
+                  <button className="nc-send" onClick={startConversation} disabled={!selectedUser||!startMsg.trim()}>
+                    Start Conversation
+                  </button>
                 </div>
               </div>
             </div>
@@ -213,8 +295,10 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
         .msg-fab{position:fixed;bottom:80px;right:1.25rem;z-index:9999;background:var(--accent,#F47B20);color:#fff;border:none;border-radius:50%;width:48px;height:48px;font-family:var(--font-display);font-size:0.65rem;font-weight:700;letter-spacing:0.06em;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.2);display:flex;align-items:center;justify-content:center;transition:all 0.2s}
         .msg-fab:hover{transform:scale(1.08)}
         .fab-badge{position:absolute;top:-4px;right:-4px;background:#DC2626;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;border:2px solid #fff}
-        .msg-panel{position:fixed;bottom:140px;right:1.25rem;z-index:9998;width:320px;max-height:520px;background:#fff;border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,0.18);border:1.5px solid #E5E5E5;display:flex;flex-direction:column;overflow:hidden}
-        .mp-header{display:flex;align-items:center;gap:0.5rem;padding:0.875rem 1rem;border-bottom:1px solid #E5E5E5;background:var(--accent,#F47B20);color:#fff;flex-shrink:0}
+        .msg-panel{position:fixed;bottom:140px;right:1.25rem;z-index:9998;background:#fff;border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,0.18);border:1.5px solid #E5E5E5;display:flex;flex-direction:column;overflow:hidden;min-width:280px;min-height:340px}
+        .resize-handle{position:absolute;top:0;left:0;width:24px;height:24px;cursor:nw-resize;display:flex;align-items:center;justify-content:center;z-index:10;border-radius:0 0 8px 0;background:rgba(0,0,0,0.04);transition:background 0.2s}
+        .resize-handle:hover{background:rgba(0,0,0,0.1)}
+        .mp-header{display:flex;align-items:center;gap:0.5rem;padding:0.875rem 1rem 0.875rem 1.5rem;border-bottom:1px solid #E5E5E5;background:var(--accent,#F47B20);color:#fff;flex-shrink:0}
         .mp-title{font-family:var(--font-display);font-size:0.875rem;letter-spacing:0.08em;flex:1}
         .mp-new{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);color:#fff;border-radius:5px;padding:0.2rem 0.6rem;font-size:0.72rem;cursor:pointer;font-family:var(--font-body)}
         .mp-close{background:none;border:none;color:#fff;font-size:0.875rem;font-weight:700;cursor:pointer}
@@ -236,6 +320,7 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
         .chat-back{background:none;border:none;color:#A3A3A3;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:var(--font-body)}
         .ch-avatar{width:28px;height:28px;border-radius:50%;background:#E5E5E5;color:#737373;font-size:0.8rem;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
         .ch-name{font-size:0.825rem;font-weight:600;color:#171717;flex:1}
+        .ch-role{font-size:0.65rem;color:#A3A3A3;text-transform:capitalize;background:#F5F5F5;padding:0.1rem 0.4rem;border-radius:4px}
         .chat-msgs{flex:1;overflow-y:auto;padding:0.875rem;display:flex;flex-direction:column;gap:0.5rem;min-height:0}
         .msg-row{display:flex}
         .msg-row.me{justify-content:flex-end}
@@ -249,14 +334,16 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
         .chat-input input:focus{border-color:var(--accent,#F47B20);background:#fff}
         .chat-input button{background:var(--accent,#F47B20);color:#fff;border:none;border-radius:20px;padding:0.5rem 1rem;font-family:var(--font-display);font-size:0.75rem;cursor:pointer;white-space:nowrap}
         .chat-input button:disabled{opacity:0.5;cursor:not-allowed}
-        .new-conv-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:10;border-radius:16px}
-        .new-conv{background:#fff;border-radius:12px;width:90%;overflow:hidden}
+        .pw-tip{padding:0.3rem 0.75rem 0.5rem;font-size:0.63rem;color:#A3A3A3;border-top:1px solid #F5F5F5;flex-shrink:0}
+        .pw-tip code{background:#F5F5F5;padding:0 0.3rem;border-radius:3px;font-size:0.7rem;color:#555}
+        .new-conv-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:10;border-radius:16px}
+        .new-conv{background:#fff;border-radius:12px;width:92%;overflow:hidden;max-height:90%}
         .nc-header{display:flex;align-items:center;justify-content:space-between;padding:0.875rem 1rem;background:var(--accent,#F47B20);color:#fff}
         .nc-header span{font-family:var(--font-display);font-size:0.875rem}
         .nc-header button{background:none;border:none;color:#fff;font-weight:700;cursor:pointer}
-        .nc-body{padding:1rem;display:flex;flex-direction:column;gap:0.75rem}
+        .nc-body{padding:1rem;display:flex;flex-direction:column;gap:0.75rem;overflow-y:auto}
         .nc-search-wrap{position:relative}
-        .nc-input{width:100%;background:#F5F5F5;border:1.5px solid #E5E5E5;border-radius:6px;padding:0.65rem 0.875rem;color:#171717;font-size:0.825rem;font-family:var(--font-body);outline:none}
+        .nc-input{width:100%;background:#F5F5F5;border:1.5px solid #E5E5E5;border-radius:6px;padding:0.65rem 0.875rem;color:#171717;font-size:0.825rem;font-family:var(--font-body);outline:none;box-sizing:border-box}
         .nc-input:focus{border-color:var(--accent,#F47B20);background:#fff}
         .nc-results{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1.5px solid #E5E5E5;border-radius:8px;z-index:50;max-height:160px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.1)}
         .nc-user{display:flex;align-items:center;gap:0.625rem;padding:0.65rem 0.875rem;cursor:pointer;border-bottom:1px solid #F5F5F5}
@@ -264,12 +351,12 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
         .nu-avatar{width:28px;height:28px;border-radius:50%;background:#E5E5E5;color:#737373;font-size:0.8rem;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
         .nu-name{font-size:0.8rem;font-weight:500;color:#171717}
         .nu-role{font-size:0.68rem;color:#A3A3A3;text-transform:capitalize}
-        .nc-selected{background:#FFF7ED;border:1px solid rgba(244,123,32,0.3);color:#C4621A;padding:0.4rem 0.75rem;border-radius:5px;font-size:0.78rem}
-        .nc-msg{width:100%;background:#F5F5F5;border:1.5px solid #E5E5E5;border-radius:6px;padding:0.65rem;color:#171717;font-size:0.825rem;font-family:var(--font-body);outline:none;resize:none}
+        .nc-selected{background:#FFF7ED;border:1px solid rgba(244,123,32,0.3);color:#C4621A;padding:0.4rem 0.75rem;border-radius:5px;font-size:0.8rem}
+        .nc-msg{width:100%;background:#F5F5F5;border:1.5px solid #E5E5E5;border-radius:6px;padding:0.65rem;color:#171717;font-size:0.825rem;font-family:var(--font-body);outline:none;resize:vertical;min-height:70px;box-sizing:border-box}
         .nc-msg:focus{border-color:var(--accent,#F47B20);background:#fff}
         .nc-send{width:100%;background:var(--accent,#F47B20);color:#fff;border:none;border-radius:6px;padding:0.75rem;font-family:var(--font-display);font-size:0.85rem;letter-spacing:0.06em;cursor:pointer}
         .nc-send:disabled{opacity:0.5;cursor:not-allowed}
-        @media(max-width:640px){.msg-panel{width:calc(100vw - 2rem);right:1rem;bottom:160px}}
+        @media(max-width:640px){.msg-panel{width:calc(100vw - 1.5rem) !important;right:0.75rem;bottom:80px}}
       `}</style>
     </>
   );
