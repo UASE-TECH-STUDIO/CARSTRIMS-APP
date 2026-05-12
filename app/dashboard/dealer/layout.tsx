@@ -10,36 +10,29 @@ function DealerShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [ready, setReady] = useState(false);
-  const [dealerStatus, setDealerStatus] = useState<string | null>(null);
+  const [dealerStatus, setDealerStatus] = useState<string|null>(null);
 
   useEffect(() => {
     if (pathname.includes("/setup")) { setReady(true); return; }
     api.get("/api/v1/dealers/me")
       .then((r) => {
-        const d = r.data;
-        setDealerStatus(d?.status || null);
-        if (!d?.companyName) {
-          router.replace("/dashboard/dealer/setup");
-        } else {
-          setReady(true);
-        }
+        setDealerStatus(r.data?.status || null);
+        // Any status with a profile = can enter dashboard
+        setReady(true);
       })
       .catch((err) => {
-        if (err?.response?.status !== 401) {
-          router.replace("/dashboard/dealer/setup");
-        }
+        // No dealer profile yet = go to setup (unless 401 which AuthGuard handles)
+        if (err?.response?.status !== 401) router.replace("/dashboard/dealer/setup");
       });
   }, [pathname, router]);
 
-  if (!ready && !pathname.includes("/setup")) {
-    return (
-      <div style={{minHeight:"100vh",background:"#F5F5F5",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:"1rem"}}>
-        <div style={{fontFamily:"var(--font-display)",fontSize:"1.5rem",letterSpacing:"0.2em",color:"#F47B20"}}>CARSTRIMS</div>
-        <div style={{width:"28px",height:"28px",border:"2px solid #E5E5E5",borderTopColor:"#F47B20",borderRadius:"50%",animation:"spin 0.8s linear infinite"}} />
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      </div>
-    );
-  }
+  if (!ready && !pathname.includes("/setup")) return (
+    <div style={{minHeight:"100vh",background:"#F5F5F5",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:"1rem"}}>
+      <div style={{fontFamily:"var(--font-display)",fontSize:"1.5rem",letterSpacing:"0.2em",color:"#F47B20"}}>CARSTRIMS</div>
+      <div style={{width:"28px",height:"28px",border:"2px solid #E5E5E5",borderTopColor:"#F47B20",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
 
   if (pathname.includes("/setup")) return <>{children}</>;
 
@@ -51,9 +44,11 @@ function DealerShell({ children }: { children: ReactNode }) {
       <div className="dealer-main">
         <DealerTopbar />
         {isPending && (
-          <div style={{background:"#FFF7ED",borderBottom:"2px solid #F47B20",padding:"0.6rem 1.75rem",fontSize:"0.82rem",color:"#C4621A",display:"flex",alignItems:"center",gap:"0.75rem",flexWrap:"wrap"}}>
-            <span>&#9203;</span>
-            <span><strong>Pending Approval:</strong> Your account is under review. Your listings are hidden from buyers until approved. You can still set up your dashboard, add cars and manage staff.</span>
+          <div style={{background:"#FFF7ED",borderBottom:"2px solid #F47B20",padding:"0.625rem 1.75rem",fontSize:"0.82rem",color:"#C4621A",display:"flex",alignItems:"center",gap:"0.75rem",flexWrap:"wrap"}}>
+            <span style={{fontSize:"1rem",flexShrink:0}}>&#9203;</span>
+            <span>
+              <strong>Pending Approval:</strong> Your account is under review. Your listings are hidden from the public feed. You can add cars, create staff, and set up your dashboard. You will be notified by email once approved.
+            </span>
           </div>
         )}
         <main className="dealer-content">{children}</main>
