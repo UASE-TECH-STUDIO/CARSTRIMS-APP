@@ -17,16 +17,6 @@ interface Car {
   city?: string; state?: string; images?: string[]; video?: string;
 }
 
-async function uploadToCloudinary(file: File): Promise<string> {
-  const fd = new FormData();
-  fd.append("file", file);
-  const isVideo = file.type.startsWith("video/");
-  const endpoint = isVideo ? "/api/v1/upload/car-video" : "/api/v1/upload/car-image";
-  const token = (() => {
-    try {
-      const raw = localStorage.getItem("auth-storage");
-      return raw ? (JSON.parse(raw)?.state?.user?.accessToken || "") : "";
-    } catch { return ""; }
   })();
   const res = await fetch(
     (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") + endpoint,

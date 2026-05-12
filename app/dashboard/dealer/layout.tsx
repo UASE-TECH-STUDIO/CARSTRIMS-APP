@@ -3,14 +3,13 @@ import { ReactNode, useEffect, useState } from "react";
 import AuthGuard from "@/components/layout/AuthGuard";
 import DealerSidebar from "@/components/layout/DealerSidebar";
 import DealerTopbar from "@/components/layout/DealerTopbar";
+import MessagesWidget from "@/components/shared/MessagesWidget";
 import { useRouter, usePathname } from "next/navigation";
-import { useSidebar } from "@/hooks/useSidebar";
 import api from "@/lib/api";
 
 function DealerShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isOpen, toggle, close } = useSidebar();
   const [ready, setReady] = useState(false);
   const [dealerStatus, setDealerStatus] = useState<string | null>(null);
 
@@ -22,9 +21,6 @@ function DealerShell({ children }: { children: ReactNode }) {
         if (err?.response?.status !== 401) router.replace("/dashboard/dealer/setup");
       });
   }, [pathname, router]);
-
-  // Close sidebar on navigation
-  useEffect(() => { close(); }, [pathname]);
 
   if (!ready && !pathname.includes("/setup")) {
     return (
@@ -38,35 +34,28 @@ function DealerShell({ children }: { children: ReactNode }) {
 
   if (pathname.includes("/setup")) return <>{children}</>;
 
-  const isPending = dealerStatus === "awaiting_approval" || dealerStatus === "pending";
+  const isPending = dealerStatus === "awaiting_approval";
 
   return (
     <div className="dealer-shell">
-      {/* Mobile overlay */}
-      {isOpen && <div className="sidebar-overlay" onClick={close} />}
-
       <DealerSidebar />
-
-      <div className={`dealer-main ${isOpen ? "sidebar-open" : ""}`}>
-        <DealerTopbar onMenuToggle={toggle} isSidebarOpen={isOpen} />
+      <div className="dealer-main">
+        <DealerTopbar />
         {isPending && (
-          <div style={{background:"#FFF7ED",borderBottom:"2px solid #F47B20",padding:"0.6rem 1.75rem",fontSize:"0.82rem",color:"#C4621A",display:"flex",alignItems:"center",gap:"0.75rem",flexWrap:"wrap"}}>
-            <span>&#9203;</span>
-            <span><strong>Pending Approval:</strong> Your account is under review. Your listings are hidden from buyers until approved. You can add cars, manage staff, and set up your dashboard.</span>
+          <div style={{background:"#FFF7ED",borderBottom:"2px solid #F47B20",padding:"0.5rem 1.75rem",fontSize:"0.8rem",color:"#C4621A",display:"flex",alignItems:"center",gap:"0.75rem",flexWrap:"wrap",flexShrink:0}}>
+            <span>⏳</span>
+            <span><strong>Pending Approval:</strong> Your account is under review. Your listings are hidden from buyers until approved. You can still add cars, create staff and configure your dashboard.</span>
           </div>
         )}
         <main className="dealer-content">{children}</main>
       </div>
-
+      <MessagesWidget accentColor="#F47B20" />
       <style>{`
-        .dealer-shell{display:flex;min-height:100vh;background:#F5F5F5;position:relative}
-        .sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:90}
-        .dealer-main{flex:1;margin-left:240px;display:flex;flex-direction:column;min-height:100vh;min-width:0;transition:margin 0.2s}
-        .dealer-content{flex:1;padding:1.75rem}
-        @media(max-width:768px){
-          .dealer-main{margin-left:0}
-          .dealer-content{padding:1rem}
-        }
+        .dealer-shell{display:flex;min-height:100vh;background:#F5F5F5}
+        .dealer-main{flex:1;margin-left:240px;display:flex;flex-direction:column;min-height:100vh;min-width:0;overflow:hidden}
+        .dealer-content{flex:1;padding:1.75rem;width:100%;box-sizing:border-box}
+        @media(max-width:768px){.dealer-main{margin-left:200px}.dealer-content{padding:1.25rem}}
+        @media(max-width:640px){.dealer-shell{display:block}.dealer-main{margin-left:0}.dealer-content{padding:1rem}}
       `}</style>
     </div>
   );

@@ -14,32 +14,26 @@ export default function ApprovalsPage() {
   const [msgType, setMsgType] = useState<"success"|"error">("success");
 
   const showMsg = (text: string, type: "success"|"error") => {
-    setMsg(text); setMsgType(type); setTimeout(()=>setMsg(""), 8000);
+    setMsg(text); setMsgType(type); setTimeout(()=>setMsg(""),8000);
   };
 
   const load = async () => {
     setLoading(true);
-    const dealerResults: any[] = [];
+    const results: any[] = [];
     try {
-      // Get all dealers — filter pending client-side (most reliable)
-      const r = await api.get("/api/v1/admin/dealers", { params:{ limit:200 } });
-      const all = r.data?.dealers || r.data?.items || (Array.isArray(r.data)?r.data:[]);
-      all.filter((d:any)=>d.status==="awaiting_approval"||d.status==="pending")
-         .forEach((d:any)=>{ if(!dealerResults.find(x=>x._id===d._id)) dealerResults.push(d); });
-    } catch (e:any) { console.error("dealers load:", e.response?.data); }
+      // Backend: GET /api/v1/admin/dealers?status=awaiting_approval
+      // dealer status set to "awaiting_approval" by create_dealer_profile()
+      const r = await api.get("/api/v1/admin/dealers", { params:{ status:"awaiting_approval", limit:100 } });
+      const list = r.data?.dealers || [];
+      list.forEach((d: any) => { if(!results.find(x=>x._id===d._id)) results.push(d); });
+    } catch (e: any) { console.error("approvals load error:", e.response?.data); }
+    setDealers(results);
 
-    setDealers(dealerResults);
-
-    // Users who registered as DEALER_ADMIN but haven't done setup (no dealer profile)
     try {
       const r = await api.get("/api/v1/admin/users", { params:{ role:"DEALER_ADMIN", limit:200 } });
-      const users = r.data?.users || r.data?.items || (Array.isArray(r.data)?r.data:[]);
-      const dealerEmails = new Set(dealerResults.map((d:any)=>d.email));
-      const noProfileUsers = users.filter((u:any)=>
-        (u.status==="pending"||u.status==="awaiting_approval"||u.status==="inactive"||u.isActive===false) &&
-        !dealerEmails.has(u.email)
-      );
-      setNoProfile(noProfileUsers);
+      const users = r.data?.users || [];
+      const emails = new Set(results.map((d:any)=>d.email));
+      setNoProfile(users.filter((u:any) => u.status==="pending" && !emails.has(u.email)));
     } catch {}
 
     setLoading(false);
@@ -50,31 +44,32 @@ export default function ApprovalsPage() {
   const approve = async (dealer: any) => {
     setActionLoading(dealer._id);
     try {
-      // This endpoint WORKS - confirmed in dealers/page.tsx
+      // Backend: POST /api/v1/admin/dealers/{dealer_id}/approve
+      // dealer._id = MongoDB ObjectId from dealer_organizations collection
       await api.post(`/api/v1/admin/dealers/${dealer._id}/approve`);
-      showMsg(`${dealer.companyName} approved! They now have full dealer access.`, "success");
+      showMsg(`${dealer.companyName} approved! They now have full access.`, "success");
       setExpanded(null); load();
     } catch (err: any) {
-      const detail = err.response?.data?.detail || "";
-      showMsg(`Approval failed: ${detail || "Unknown error. Check the browser console."}`, "error");
-      console.error("Approve error:", err.response?.data);
+      showMsg(`Approval failed: ${err.response?.data?.detail || "Unknown error"}`, "error");
+      console.error("approve error:", err.response?.data);
     } finally { setActionLoading(null); }
   };
 
   const reject = async () => {
     if (!rejectModal) return;
     setActionLoading(rejectModal._id);
-    const reason = rejectReason || "Application does not meet our requirements at this time";
     try {
-      await api.post(`/api/v1/admin/dealers/${rejectModal._id}/reject`, { reason });
+      await api.post(`/api/v1/admin/dealers/${rejectModal._id}/reject`, {
+        reason: rejectReason || "Your application does not meet our requirements at this time.",
+      });
       showMsg(`${rejectModal.companyName} rejected.`, "success");
       setRejectModal(null); setRejectReason(""); setExpanded(null); load();
     } catch (err: any) {
-      showMsg(`Reject failed: ${err.response?.data?.detail || ""}`, "error");
+      showMsg(`Reject failed: ${err.response?.data?.detail || "Unknown error"}`, "error");
     } finally { setActionLoading(null); }
   };
 
-  const fmtDate = (iso:string) => { try { return new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}); } catch { return "-"; } };
+  const fmtDate = (iso: string) => { try { return new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}); } catch { return "-"; } };
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:"1.5rem",fontFamily:"var(--font-body)"}}>
@@ -82,42 +77,37 @@ export default function ApprovalsPage() {
         <div>
           <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.6rem",letterSpacing:"0.04em",color:"#1A1A1A",lineHeight:1}}>Pending Approvals</h2>
           <p style={{fontSize:"0.8rem",color:"#737373",marginTop:"0.3rem"}}>
-            {loading?"Loading...":`${dealers.length} dealer${dealers.length!==1?"s":""} to approve${noProfile.length>0?` · ${noProfile.length} registered (setup pending)`:""}`}
+            {loading?"Loading...":`${dealers.length} dealer${dealers.length!==1?"s":""} ready to approve${noProfile.length>0?` · ${noProfile.length} registered (setup pending)`:""}`}
           </p>
         </div>
-        <button onClick={load} style={{background:"#fff",border:"1.5px solid #E5E5E5",color:"#737373",borderRadius:"8px",padding:"0.6rem 1.25rem",fontSize:"0.875rem",cursor:"pointer",fontFamily:"var(--font-body)"}}>Refresh</button>
+        <button onClick={load} style={{background:"#fff",border:"1.5px solid #E5E5E5",color:"#737373",borderRadius:"8px",padding:"0.6rem 1.25rem",fontSize:"0.875rem",cursor:"pointer",fontFamily:"var(--font-body)"}}>↻ Refresh</button>
       </div>
 
-      {msg&&(
+      {msg && (
         <div style={{background:msgType==="success"?"#F0FDF4":"#FEF2F2",border:`1px solid ${msgType==="success"?"#86EFAC":"#FCA5A5"}`,color:msgType==="success"?"#15803D":"#DC2626",padding:"0.875rem 1.25rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:"1rem",lineHeight:1.5}}>
           <span>{msg}</span>
-          <button onClick={()=>setMsg("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer",flexShrink:0}}>X</button>
+          <button onClick={()=>setMsg("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}>✕</button>
         </div>
       )}
 
-      {loading?(
+      {loading ? (
         <div style={{display:"flex",justifyContent:"center",padding:"3rem"}}>
           <div style={{width:"28px",height:"28px",border:"2.5px solid #E5E5E5",borderTopColor:"#F47B20",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
           <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
         </div>
-      ):(
+      ) : (
         <>
           {dealers.length===0&&noProfile.length===0&&(
             <div style={{padding:"3rem",textAlign:"center",background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px",display:"flex",flexDirection:"column",alignItems:"center",gap:"0.875rem"}}>
-              <div style={{fontSize:"2rem"}}>&#10003;</div>
+              <div style={{fontSize:"2rem"}}>✅</div>
               <div style={{fontSize:"0.9rem",fontWeight:600,color:"#1A1A1A"}}>No pending approvals</div>
-              <p style={{fontSize:"0.825rem",color:"#737373",maxWidth:"420px",lineHeight:1.6}}>
-                All applications have been reviewed. New dealers appear here once they register and complete their dealership setup.
-              </p>
+              <p style={{fontSize:"0.825rem",color:"#737373",maxWidth:"420px",lineHeight:1.6}}>All applications reviewed. New dealers appear here after they register and complete their dealership setup profile.</p>
             </div>
           )}
 
-          {/* DEALERS WITH PROFILES — CAN APPROVE */}
           {dealers.length>0&&(
             <div style={{display:"flex",flexDirection:"column",gap:"1rem"}}>
-              <div style={{fontSize:"0.72rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#737373"}}>
-                Ready to Approve ({dealers.length})
-              </div>
+              <div style={{fontSize:"0.72rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#737373"}}>Ready to Approve — Profile Submitted ({dealers.length})</div>
               {dealers.map((d)=>(
                 <div key={d._id} style={{background:"#fff",border:`1.5px solid ${expanded===d._id?"#F47B20":"#E5E5E5"}`,borderRadius:"12px",overflow:"hidden"}}>
                   <div style={{padding:"1.25rem 1.5rem",display:"flex",alignItems:"flex-start",gap:"1rem",cursor:"pointer"}} onClick={()=>setExpanded(expanded===d._id?null:d._id)}>
@@ -126,8 +116,8 @@ export default function ApprovalsPage() {
                     </div>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontWeight:700,fontSize:"0.975rem",color:"#1A1A1A"}}>{d.companyName}</div>
-                      <div style={{fontSize:"0.78rem",color:"#737373",marginTop:"0.2rem"}}>{d.ownerName} &middot; {d.email}</div>
-                      <div style={{fontSize:"0.78rem",color:"#737373"}}>{d.phone}{d.city?` &middot; ${d.city}, ${d.state}`:""}</div>
+                      <div style={{fontSize:"0.78rem",color:"#737373",marginTop:"0.2rem"}}>{d.ownerName} · {d.email}</div>
+                      <div style={{fontSize:"0.78rem",color:"#737373"}}>{d.phone}{d.city?` · ${d.city}, ${d.state}`:""}</div>
                       <div style={{display:"flex",gap:"0.5rem",marginTop:"0.4rem",flexWrap:"wrap"}}>
                         <span style={{fontSize:"0.68rem",background:"#FFF7ED",color:"#C4621A",border:"1px solid rgba(244,123,32,0.3)",borderRadius:"4px",padding:"0.15rem 0.5rem"}}>Applied {fmtDate(d.createdAt)}</span>
                         {d.dealerId&&<span style={{fontSize:"0.65rem",background:"#F5F5F5",color:"#737373",border:"1px solid #E5E5E5",borderRadius:"4px",padding:"0.15rem 0.5rem",fontFamily:"monospace"}}>{d.dealerId}</span>}
@@ -136,36 +126,28 @@ export default function ApprovalsPage() {
                     <div style={{display:"flex",flexDirection:"column",gap:"0.4rem",flexShrink:0}} onClick={e=>e.stopPropagation()}>
                       <button onClick={()=>approve(d)} disabled={actionLoading===d._id}
                         style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"6px",padding:"0.5rem 1.25rem",fontFamily:"var(--font-display)",fontSize:"0.8rem",letterSpacing:"0.06em",cursor:"pointer",opacity:actionLoading===d._id?0.6:1,whiteSpace:"nowrap"}}>
-                        {actionLoading===d._id?"Working...":"Approve"}
+                        {actionLoading===d._id?"Working...":"✓ Approve"}
                       </button>
                       <button onClick={()=>{setRejectModal(d);setRejectReason("");}}
                         style={{background:"#FEF2F2",border:"1.5px solid rgba(220,38,38,0.3)",color:"#DC2626",borderRadius:"6px",padding:"0.5rem 1.25rem",fontSize:"0.8rem",cursor:"pointer",fontFamily:"var(--font-body)",whiteSpace:"nowrap"}}>
-                        Reject
+                        ✕ Reject
                       </button>
                     </div>
                   </div>
-
                   {expanded===d._id&&(
                     <div style={{borderTop:"1px solid #F5F5F5",padding:"1.25rem 1.5rem",background:"#FAFAFA",display:"flex",flexDirection:"column",gap:"1rem"}}>
                       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(175px,1fr))",gap:"0.75rem"}}>
-                        {[["Name",d.ownerName||"-"],["Email",d.email||"-"],["Phone",d.phone||"-"],["WhatsApp",d.whatsapp||d.phone||"-"],["Address",d.address||"-"],["City/State",d.city&&d.state?`${d.city}, ${d.state}`:(d.city||d.state||"-")],["Status",d.status||"-"],["Dealer ID",d.dealerId||"Not assigned"]].map(([label,val])=>(
+                        {[["Name",d.ownerName||"-"],["Email",d.email||"-"],["Phone",d.phone||"-"],["WhatsApp",d.whatsapp||d.phone||"-"],["Address",d.address||"-"],["City/State",d.city&&d.state?`${d.city}, ${d.state}`:(d.city||d.state||"-")],["Dealer ID",d.dealerId||"Not assigned"],["DB _id",d._id]].map(([label,val])=>(
                           <div key={label} style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:"6px",padding:"0.625rem 0.875rem"}}>
                             <div style={{fontSize:"0.65rem",fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase" as const,color:"#A3A3A3",marginBottom:"0.2rem"}}>{label}</div>
                             <div style={{fontSize:"0.825rem",color:"#1A1A1A",fontWeight:500,wordBreak:"break-all"}}>{val}</div>
                           </div>
                         ))}
                       </div>
-                      {(d.idCardUrl||d.cacUrl)&&(
-                        <div style={{display:"flex",gap:"0.75rem",flexWrap:"wrap"}}>
-                          {d.idCardUrl&&<a href={d.idCardUrl} target="_blank" rel="noreferrer" style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:"6px",padding:"0.625rem 1rem",fontSize:"0.8rem",color:"#1A1A1A",textDecoration:"none"}}>View ID Card</a>}
-                          {d.cacUrl&&<a href={d.cacUrl} target="_blank" rel="noreferrer" style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:"6px",padding:"0.625rem 1rem",fontSize:"0.8rem",color:"#1A1A1A",textDecoration:"none"}}>View CAC</a>}
-                        </div>
-                      )}
-                      {!d.idCardUrl&&!d.cacUrl&&<div style={{background:"#FFF7ED",border:"1px solid rgba(244,123,32,0.3)",borderRadius:"8px",padding:"0.875rem",fontSize:"0.825rem",color:"#C4621A",lineHeight:1.5}}>No documents uploaded yet. You can still approve or ask the dealer to upload from their Settings.</div>}
                       <div style={{display:"flex",gap:"0.75rem",flexWrap:"wrap"}}>
-                        {d.phone&&<a href={`tel:${d.phone}`} style={{background:"#F5F5F5",border:"1px solid #E5E5E5",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#1A1A1A",textDecoration:"none"}}>Call {d.phone}</a>}
-                        {(d.whatsapp||d.phone)&&<a href={`https://wa.me/${(d.whatsapp||d.phone).replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer" style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#15803D",textDecoration:"none"}}>WhatsApp</a>}
-                        {d.email&&<a href={`mailto:${d.email}`} style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#1D4ED8",textDecoration:"none"}}>Email</a>}
+                        {d.phone&&<a href={`tel:${d.phone}`} style={{background:"#F5F5F5",border:"1px solid #E5E5E5",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#1A1A1A",textDecoration:"none"}}>📞 Call</a>}
+                        {(d.whatsapp||d.phone)&&<a href={`https://wa.me/${(d.whatsapp||d.phone).replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer" style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#15803D",textDecoration:"none"}}>💬 WhatsApp</a>}
+                        {d.email&&<a href={`mailto:${d.email}`} style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#1D4ED8",textDecoration:"none"}}>✉️ Email</a>}
                       </div>
                       <div style={{display:"flex",gap:"0.75rem",borderTop:"1px solid #E5E5E5",paddingTop:"1rem"}}>
                         <button onClick={()=>approve(d)} disabled={actionLoading===d._id}
@@ -184,14 +166,11 @@ export default function ApprovalsPage() {
             </div>
           )}
 
-          {/* USERS WHO REGISTERED BUT HAVEN'T DONE SETUP */}
           {noProfile.length>0&&(
             <div style={{display:"flex",flexDirection:"column",gap:"0.875rem"}}>
-              <div style={{fontSize:"0.72rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#737373"}}>
-                Registered — Setup Not Done ({noProfile.length})
-              </div>
+              <div style={{fontSize:"0.72rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#737373"}}>Registered — Setup Not Done ({noProfile.length})</div>
               <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:"10px",padding:"0.875rem 1rem",fontSize:"0.825rem",color:"#1D4ED8",lineHeight:1.6}}>
-                These users registered as dealers but have not completed their dealership profile setup. Contact them via WhatsApp or email to ask them to sign in and complete setup. They will appear in the Ready to Approve section above once they finish.
+                These dealers registered but have not completed their dealership setup. Contact them to sign in and complete it — they will then appear in the Ready to Approve section above.
               </div>
               {noProfile.map((u)=>(
                 <div key={u._id} style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",padding:"1rem 1.25rem",display:"flex",alignItems:"center",gap:"1rem",flexWrap:"wrap"}}>
@@ -199,11 +178,11 @@ export default function ApprovalsPage() {
                     {(u.fullName||u.username||"?").charAt(0).toUpperCase()}
                   </div>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontWeight:600,fontSize:"0.9rem",color:"#1A1A1A"}}>{u.fullName||u.username||"Unknown"}</div>
+                    <div style={{fontWeight:600,fontSize:"0.9rem",color:"#1A1A1A"}}>{u.fullName||u.username}</div>
                     <div style={{fontSize:"0.78rem",color:"#737373"}}>{u.email}</div>
-                    <div style={{fontSize:"0.72rem",color:"#A3A3A3"}}>Registered {fmtDate(u.createdAt||u.created_at)}</div>
+                    <div style={{fontSize:"0.72rem",color:"#A3A3A3"}}>Registered {fmtDate(u.createdAt)}</div>
                   </div>
-                  <div style={{display:"flex",gap:"0.5rem",flexShrink:0,flexWrap:"wrap"}}>
+                  <div style={{display:"flex",gap:"0.5rem",flexShrink:0}}>
                     {(u.whatsapp||u.phone)&&<a href={`https://wa.me/${(u.whatsapp||u.phone).replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer" style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"6px",padding:"0.4rem 0.75rem",fontSize:"0.78rem",color:"#15803D",textDecoration:"none",whiteSpace:"nowrap"}}>WhatsApp</a>}
                     {u.email&&<a href={`mailto:${u.email}`} style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:"6px",padding:"0.4rem 0.75rem",fontSize:"0.78rem",color:"#1D4ED8",textDecoration:"none",whiteSpace:"nowrap"}}>Email</a>}
                   </div>
@@ -218,9 +197,8 @@ export default function ApprovalsPage() {
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:"12px",padding:"1.5rem",maxWidth:"440px",width:"100%",display:"flex",flexDirection:"column",gap:"1.25rem",boxShadow:"0 16px 48px rgba(0,0,0,0.2)"}}>
             <h3 style={{fontFamily:"var(--font-display)",fontSize:"1.1rem",letterSpacing:"0.08em",color:"#1A1A1A"}}>REJECT APPLICATION</h3>
-            <p style={{fontSize:"0.875rem",color:"#737373"}}>Rejecting <strong>{rejectModal.companyName}</strong>. Provide a reason to send to the dealer.</p>
-            <textarea style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.875rem",color:"#1A1A1A",fontSize:"0.875rem",fontFamily:"var(--font-body)",outline:"none",width:"100%",minHeight:"100px",resize:"vertical" as const,boxSizing:"border-box" as const}}
-              placeholder="e.g. Documents not provided, incomplete information..." value={rejectReason} onChange={e=>setRejectReason(e.target.value)}/>
+            <p style={{fontSize:"0.875rem",color:"#737373"}}>Rejecting <strong>{rejectModal.companyName}</strong>. Provide a reason.</p>
+            <textarea style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.875rem",color:"#1A1A1A",fontSize:"0.875rem",fontFamily:"var(--font-body)",outline:"none",width:"100%",minHeight:"100px",resize:"vertical" as const,boxSizing:"border-box" as const}} placeholder="Reason for rejection..." value={rejectReason} onChange={e=>setRejectReason(e.target.value)}/>
             <div style={{display:"flex",gap:"0.75rem"}}>
               <button onClick={()=>setRejectModal(null)} style={{flex:1,background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.875rem",fontSize:"0.875rem",cursor:"pointer",fontFamily:"var(--font-body)"}}>Cancel</button>
               <button onClick={reject} disabled={actionLoading===rejectModal._id}
