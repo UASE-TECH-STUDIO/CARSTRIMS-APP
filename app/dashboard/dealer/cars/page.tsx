@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useRef, useState, useCallback } from "react";
 import api from "@/lib/api";
 
@@ -10,14 +10,25 @@ const TRANS      = ["automatic","manual","semi-automatic","cvt"];
 
 interface Car { _id:string; carId:string; brand:string; model:string; year:number; color:string; condition:string; status:string; sellingPrice:number; purchasePrice:number; promoPrice:number; mileage:number; fuelType:string; transmission:string; engineType:string; vin:string; description:string; images:string[]; video:string; city:string; state:string; }
 
-const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dkvj0wjta/auto/upload";
-const CLOUDINARY_PRESET = "recipes_media";
 
 async function uploadToCloudinary(file: File): Promise<string> {
   const fd = new FormData();
   fd.append("file", file);
-  fd.append("upload_preset", CLOUDINARY_PRESET);
-  const res = await fetch(CLOUDINARY_URL, { method:"POST", body:fd });
+  const isVideo = file.type.startsWith("video/");
+  const endpoint = isVideo ? "/api/v1/upload/car-video" : "/api/v1/upload/car-image";
+  try {
+    const res = await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") + endpoint, {
+      method: "POST",
+      body: fd,
+      headers: { Authorization: "Bearer " + (() => { try { const r = localStorage.getItem("auth-storage"); return r ? JSON.parse(r)?.state?.user?.accessToken : ""; } catch { return ""; } })() },
+    });
+    if (!res.ok) throw new Error("Upload failed: " + res.status);
+    const data = await res.json();
+    return data.url || data.secure_url || data.imageUrl || data.videoUrl || "";
+  } catch (e: any) {
+    throw new Error("Upload failed: " + e.message);
+  }
+});
   if (!res.ok) throw new Error("Upload failed");
   const data = await res.json();
   return data.secure_url;
@@ -219,7 +230,7 @@ export default function DealerCarsPage() {
 
             {/* Modal header */}
             <div className="modal-hdr">
-              <h3 className="modal-ttl">{modal==="add" ? "Add New Car" : `Edit — ${editCar?.carId}`}</h3>
+              <h3 className="modal-ttl">{modal==="add" ? "Add New Car" : `Edit â€” ${editCar?.carId}`}</h3>
               <button className="modal-x" onClick={closeModal}>X</button>
             </div>
 

@@ -4,7 +4,7 @@ import api from "@/lib/api";
 
 export default function ApprovalsPage() {
   const [dealers, setDealers] = useState<any[]>([]);
-  const [notSetup, setNotSetup] = useState<any[]>([]);
+  const [noProfile, setNoProfile] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string|null>(null);
   const [expanded, setExpanded] = useState<string|null>(null);
@@ -14,61 +14,50 @@ export default function ApprovalsPage() {
   const [msgType, setMsgType] = useState<"success"|"error">("success");
 
   const showMsg = (text: string, type: "success"|"error") => {
-    setMsg(text); setMsgType(type); setTimeout(()=>setMsg(""),8000);
+    setMsg(text); setMsgType(type); setTimeout(()=>setMsg(""), 8000);
   };
 
   const load = async () => {
     setLoading(true);
+    const dealerResults: any[] = [];
     try {
-      // PRIMARY: get dealer profiles that are pending — these have the correct _id for approval
-      const dealerResults: any[] = [];
-      try {
-        const r = await api.get("/api/v1/admin/dealers", { params:{ status:"awaiting_approval", limit:100 } });
-        const list = r.data?.dealers || r.data?.items || (Array.isArray(r.data)?r.data:[]);
-        list.forEach((d:any)=>{ if(!dealerResults.find(x=>x._id===d._id)) dealerResults.push(d); });
-      } catch {}
-      try {
-        const r = await api.get("/api/v1/admin/dealers", { params:{ status:"pending", limit:100 } });
-        const list = r.data?.dealers || r.data?.items || (Array.isArray(r.data)?r.data:[]);
-        list.forEach((d:any)=>{ if(!dealerResults.find(x=>x._id===d._id)) dealerResults.push(d); });
-      } catch {}
-      // Also scan all dealers for pending ones
-      try {
-        const r = await api.get("/api/v1/admin/dealers", { params:{ limit:200 } });
-        const list = r.data?.dealers || r.data?.items || (Array.isArray(r.data)?r.data:[]);
-        list.filter((d:any)=>d.status==="awaiting_approval"||d.status==="pending")
-          .forEach((d:any)=>{ if(!dealerResults.find(x=>x._id===d._id)) dealerResults.push(d); });
-      } catch {}
-      setDealers(dealerResults);
+      // Get all dealers — filter pending client-side (most reliable)
+      const r = await api.get("/api/v1/admin/dealers", { params:{ limit:200 } });
+      const all = r.data?.dealers || r.data?.items || (Array.isArray(r.data)?r.data:[]);
+      all.filter((d:any)=>d.status==="awaiting_approval"||d.status==="pending")
+         .forEach((d:any)=>{ if(!dealerResults.find(x=>x._id===d._id)) dealerResults.push(d); });
+    } catch (e:any) { console.error("dealers load:", e.response?.data); }
 
-      // SECONDARY: get DEALER_ADMIN users who haven't submitted setup yet — show separately
-      try {
-        const r = await api.get("/api/v1/admin/users", { params:{ role:"DEALER_ADMIN", limit:200 } });
-        const users = r.data?.users || r.data?.items || (Array.isArray(r.data)?r.data:[]);
-        const pending = users.filter((u:any)=>
-          u.status==="pending"||u.status==="awaiting_approval"||u.status==="inactive"||u.isActive===false||!u.is_active
-        );
-        // Only show users who are NOT already in dealer results
-        const dealerEmails = new Set(dealerResults.map((d:any)=>d.email));
-        setNotSetup(pending.filter((u:any)=>!dealerEmails.has(u.email)));
-      } catch {}
+    setDealers(dealerResults);
+
+    // Users who registered as DEALER_ADMIN but haven't done setup (no dealer profile)
+    try {
+      const r = await api.get("/api/v1/admin/users", { params:{ role:"DEALER_ADMIN", limit:200 } });
+      const users = r.data?.users || r.data?.items || (Array.isArray(r.data)?r.data:[]);
+      const dealerEmails = new Set(dealerResults.map((d:any)=>d.email));
+      const noProfileUsers = users.filter((u:any)=>
+        (u.status==="pending"||u.status==="awaiting_approval"||u.status==="inactive"||u.isActive===false) &&
+        !dealerEmails.has(u.email)
+      );
+      setNoProfile(noProfileUsers);
     } catch {}
+
     setLoading(false);
   };
 
   useEffect(()=>{ load(); },[]);
 
-  // Approve a dealer who HAS submitted setup — use dealer _id
   const approve = async (dealer: any) => {
     setActionLoading(dealer._id);
     try {
+      // This endpoint WORKS - confirmed in dealers/page.tsx
       await api.post(`/api/v1/admin/dealers/${dealer._id}/approve`);
-      showMsg(`${dealer.companyName} approved! They now have full access to the platform.`, "success");
+      showMsg(`${dealer.companyName} approved! They now have full dealer access.`, "success");
       setExpanded(null); load();
     } catch (err: any) {
       const detail = err.response?.data?.detail || "";
-      showMsg(`Approval failed: ${detail || "Check that this dealer profile exists"}`, "error");
-      console.error("Approve failed:", err.response?.data);
+      showMsg(`Approval failed: ${detail || "Unknown error. Check the browser console."}`, "error");
+      console.error("Approve error:", err.response?.data);
     } finally { setActionLoading(null); }
   };
 
@@ -85,7 +74,7 @@ export default function ApprovalsPage() {
     } finally { setActionLoading(null); }
   };
 
-  const fmtDate = (iso:string) => { try { return new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}); } catch { return iso||"-"; } };
+  const fmtDate = (iso:string) => { try { return new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}); } catch { return "-"; } };
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:"1.5rem",fontFamily:"var(--font-body)"}}>
@@ -93,7 +82,7 @@ export default function ApprovalsPage() {
         <div>
           <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.6rem",letterSpacing:"0.04em",color:"#1A1A1A",lineHeight:1}}>Pending Approvals</h2>
           <p style={{fontSize:"0.8rem",color:"#737373",marginTop:"0.3rem"}}>
-            {loading?"Loading...":`${dealers.length} dealer${dealers.length!==1?"s":""} ready to approve${notSetup.length>0?`, ${notSetup.length} registered but setup not done`:""}`}
+            {loading?"Loading...":`${dealers.length} dealer${dealers.length!==1?"s":""} to approve${noProfile.length>0?` · ${noProfile.length} registered (setup pending)`:""}`}
           </p>
         </div>
         <button onClick={load} style={{background:"#fff",border:"1.5px solid #E5E5E5",color:"#737373",borderRadius:"8px",padding:"0.6rem 1.25rem",fontSize:"0.875rem",cursor:"pointer",fontFamily:"var(--font-body)"}}>Refresh</button>
@@ -113,117 +102,114 @@ export default function ApprovalsPage() {
         </div>
       ):(
         <>
-          {/* DEALERS WHO COMPLETED SETUP — CAN BE APPROVED */}
-          {dealers.length===0&&notSetup.length===0?(
+          {dealers.length===0&&noProfile.length===0&&(
             <div style={{padding:"3rem",textAlign:"center",background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px",display:"flex",flexDirection:"column",alignItems:"center",gap:"0.875rem"}}>
               <div style={{fontSize:"2rem"}}>&#10003;</div>
               <div style={{fontSize:"0.9rem",fontWeight:600,color:"#1A1A1A"}}>No pending approvals</div>
-              <p style={{fontSize:"0.825rem",color:"#737373",maxWidth:"420px",lineHeight:1.6}}>All dealer applications have been reviewed. New dealers will appear here after they register and complete their setup profile.</p>
+              <p style={{fontSize:"0.825rem",color:"#737373",maxWidth:"420px",lineHeight:1.6}}>
+                All applications have been reviewed. New dealers appear here once they register and complete their dealership setup.
+              </p>
             </div>
-          ):(
-            <>
-              {dealers.length>0&&(
-                <div style={{display:"flex",flexDirection:"column",gap:"1rem"}}>
-                  <div style={{fontSize:"0.72rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#737373"}}>
-                    Ready to Approve — Profile Submitted ({dealers.length})
-                  </div>
-                  {dealers.map((d)=>(
-                    <div key={d._id} style={{background:"#fff",border:`1.5px solid ${expanded===d._id?"#F47B20":"#E5E5E5"}`,borderRadius:"12px",overflow:"hidden"}}>
-                      <div style={{padding:"1.25rem 1.5rem",display:"flex",alignItems:"flex-start",gap:"1rem",cursor:"pointer"}} onClick={()=>setExpanded(expanded===d._id?null:d._id)}>
-                        <div style={{width:"48px",height:"48px",borderRadius:"8px",background:"#FFF7ED",border:"1.5px solid rgba(244,123,32,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--font-display)",fontSize:"1.3rem",color:"#F47B20",flexShrink:0,overflow:"hidden"}}>
-                          {d.logo?<img src={d.logo} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:(d.companyName?.charAt(0)||"?")}
-                        </div>
-                        <div style={{flex:1,minWidth:0}}>
-                          <div style={{fontWeight:700,fontSize:"0.975rem",color:"#1A1A1A"}}>{d.companyName}</div>
-                          <div style={{fontSize:"0.78rem",color:"#737373",marginTop:"0.2rem"}}>{d.ownerName} &middot; {d.email}</div>
-                          <div style={{fontSize:"0.78rem",color:"#737373"}}>{d.phone}{d.city?` &middot; ${d.city}, ${d.state}`:""}</div>
-                          <div style={{display:"flex",gap:"0.5rem",marginTop:"0.4rem",flexWrap:"wrap"}}>
-                            <span style={{fontSize:"0.68rem",background:"#FFF7ED",color:"#C4621A",border:"1px solid rgba(244,123,32,0.3)",borderRadius:"4px",padding:"0.15rem 0.5rem"}}>Applied {fmtDate(d.createdAt)}</span>
-                            {d.dealerId&&<span style={{fontSize:"0.65rem",background:"#F5F5F5",color:"#737373",border:"1px solid #E5E5E5",borderRadius:"4px",padding:"0.15rem 0.5rem",fontFamily:"monospace"}}>{d.dealerId}</span>}
-                          </div>
-                        </div>
-                        <div style={{display:"flex",flexDirection:"column",gap:"0.4rem",flexShrink:0}} onClick={e=>e.stopPropagation()}>
-                          <button onClick={()=>approve(d)} disabled={actionLoading===d._id}
-                            style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"6px",padding:"0.5rem 1.25rem",fontFamily:"var(--font-display)",fontSize:"0.8rem",letterSpacing:"0.06em",cursor:"pointer",opacity:actionLoading===d._id?0.6:1,whiteSpace:"nowrap"}}>
-                            {actionLoading===d._id?"Working...":"Approve"}
-                          </button>
-                          <button onClick={()=>{setRejectModal(d);setRejectReason("");}}
-                            style={{background:"#FEF2F2",border:"1.5px solid rgba(220,38,38,0.3)",color:"#DC2626",borderRadius:"6px",padding:"0.5rem 1.25rem",fontSize:"0.8rem",cursor:"pointer",fontFamily:"var(--font-body)",whiteSpace:"nowrap"}}>
-                            Reject
-                          </button>
-                        </div>
+          )}
+
+          {/* DEALERS WITH PROFILES — CAN APPROVE */}
+          {dealers.length>0&&(
+            <div style={{display:"flex",flexDirection:"column",gap:"1rem"}}>
+              <div style={{fontSize:"0.72rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#737373"}}>
+                Ready to Approve ({dealers.length})
+              </div>
+              {dealers.map((d)=>(
+                <div key={d._id} style={{background:"#fff",border:`1.5px solid ${expanded===d._id?"#F47B20":"#E5E5E5"}`,borderRadius:"12px",overflow:"hidden"}}>
+                  <div style={{padding:"1.25rem 1.5rem",display:"flex",alignItems:"flex-start",gap:"1rem",cursor:"pointer"}} onClick={()=>setExpanded(expanded===d._id?null:d._id)}>
+                    <div style={{width:"48px",height:"48px",borderRadius:"8px",background:"#FFF7ED",border:"1.5px solid rgba(244,123,32,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--font-display)",fontSize:"1.3rem",color:"#F47B20",flexShrink:0,overflow:"hidden"}}>
+                      {d.logo?<img src={d.logo} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:(d.companyName?.charAt(0)||"?")}
+                    </div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontWeight:700,fontSize:"0.975rem",color:"#1A1A1A"}}>{d.companyName}</div>
+                      <div style={{fontSize:"0.78rem",color:"#737373",marginTop:"0.2rem"}}>{d.ownerName} &middot; {d.email}</div>
+                      <div style={{fontSize:"0.78rem",color:"#737373"}}>{d.phone}{d.city?` &middot; ${d.city}, ${d.state}`:""}</div>
+                      <div style={{display:"flex",gap:"0.5rem",marginTop:"0.4rem",flexWrap:"wrap"}}>
+                        <span style={{fontSize:"0.68rem",background:"#FFF7ED",color:"#C4621A",border:"1px solid rgba(244,123,32,0.3)",borderRadius:"4px",padding:"0.15rem 0.5rem"}}>Applied {fmtDate(d.createdAt)}</span>
+                        {d.dealerId&&<span style={{fontSize:"0.65rem",background:"#F5F5F5",color:"#737373",border:"1px solid #E5E5E5",borderRadius:"4px",padding:"0.15rem 0.5rem",fontFamily:"monospace"}}>{d.dealerId}</span>}
                       </div>
-                      {expanded===d._id&&(
-                        <div style={{borderTop:"1px solid #F5F5F5",padding:"1.25rem 1.5rem",background:"#FAFAFA",display:"flex",flexDirection:"column",gap:"1rem"}}>
-                          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(175px,1fr))",gap:"0.75rem"}}>
-                            {[["Name",d.ownerName||"-"],["Email",d.email||"-"],["Phone",d.phone||"-"],["WhatsApp",d.whatsapp||d.phone||"-"],["Address",d.address||"-"],["City/State",d.city&&d.state?`${d.city}, ${d.state}`:(d.city||d.state||"-")],["Status",d.status||"-"],["Dealer ID",d.dealerId||"Not assigned"]].map(([label,val])=>(
-                              <div key={label} style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:"6px",padding:"0.625rem 0.875rem"}}>
-                                <div style={{fontSize:"0.65rem",fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase" as const,color:"#A3A3A3",marginBottom:"0.2rem"}}>{label}</div>
-                                <div style={{fontSize:"0.825rem",color:"#1A1A1A",fontWeight:500,wordBreak:"break-all"}}>{val}</div>
-                              </div>
-                            ))}
+                    </div>
+                    <div style={{display:"flex",flexDirection:"column",gap:"0.4rem",flexShrink:0}} onClick={e=>e.stopPropagation()}>
+                      <button onClick={()=>approve(d)} disabled={actionLoading===d._id}
+                        style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"6px",padding:"0.5rem 1.25rem",fontFamily:"var(--font-display)",fontSize:"0.8rem",letterSpacing:"0.06em",cursor:"pointer",opacity:actionLoading===d._id?0.6:1,whiteSpace:"nowrap"}}>
+                        {actionLoading===d._id?"Working...":"Approve"}
+                      </button>
+                      <button onClick={()=>{setRejectModal(d);setRejectReason("");}}
+                        style={{background:"#FEF2F2",border:"1.5px solid rgba(220,38,38,0.3)",color:"#DC2626",borderRadius:"6px",padding:"0.5rem 1.25rem",fontSize:"0.8rem",cursor:"pointer",fontFamily:"var(--font-body)",whiteSpace:"nowrap"}}>
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+
+                  {expanded===d._id&&(
+                    <div style={{borderTop:"1px solid #F5F5F5",padding:"1.25rem 1.5rem",background:"#FAFAFA",display:"flex",flexDirection:"column",gap:"1rem"}}>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(175px,1fr))",gap:"0.75rem"}}>
+                        {[["Name",d.ownerName||"-"],["Email",d.email||"-"],["Phone",d.phone||"-"],["WhatsApp",d.whatsapp||d.phone||"-"],["Address",d.address||"-"],["City/State",d.city&&d.state?`${d.city}, ${d.state}`:(d.city||d.state||"-")],["Status",d.status||"-"],["Dealer ID",d.dealerId||"Not assigned"]].map(([label,val])=>(
+                          <div key={label} style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:"6px",padding:"0.625rem 0.875rem"}}>
+                            <div style={{fontSize:"0.65rem",fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase" as const,color:"#A3A3A3",marginBottom:"0.2rem"}}>{label}</div>
+                            <div style={{fontSize:"0.825rem",color:"#1A1A1A",fontWeight:500,wordBreak:"break-all"}}>{val}</div>
                           </div>
-                          {(d.idCardUrl||d.cacUrl)&&(
-                            <div style={{display:"flex",gap:"0.75rem",flexWrap:"wrap"}}>
-                              {d.idCardUrl&&<a href={d.idCardUrl} target="_blank" rel="noreferrer" style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:"6px",padding:"0.625rem 1rem",fontSize:"0.8rem",color:"#1A1A1A",textDecoration:"none"}}>View ID Card</a>}
-                              {d.cacUrl&&<a href={d.cacUrl} target="_blank" rel="noreferrer" style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:"6px",padding:"0.625rem 1rem",fontSize:"0.8rem",color:"#1A1A1A",textDecoration:"none"}}>View CAC</a>}
-                            </div>
-                          )}
-                          {!d.idCardUrl&&!d.cacUrl&&(
-                            <div style={{background:"#FFF7ED",border:"1px solid rgba(244,123,32,0.3)",borderRadius:"8px",padding:"0.875rem",fontSize:"0.825rem",color:"#C4621A",lineHeight:1.5}}>
-                              No documents uploaded yet. You can still approve or contact the dealer to upload their ID and CAC from their Settings page before approving.
-                            </div>
-                          )}
-                          <div style={{display:"flex",gap:"0.75rem",flexWrap:"wrap"}}>
-                            {d.phone&&<a href={`tel:${d.phone}`} style={{background:"#F5F5F5",border:"1px solid #E5E5E5",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#1A1A1A",textDecoration:"none"}}>Call {d.phone}</a>}
-                            {(d.whatsapp||d.phone)&&<a href={`https://wa.me/${(d.whatsapp||d.phone).replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer" style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#15803D",textDecoration:"none"}}>WhatsApp</a>}
-                            {d.email&&<a href={`mailto:${d.email}`} style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#1D4ED8",textDecoration:"none"}}>Email</a>}
-                          </div>
-                          <div style={{display:"flex",gap:"0.75rem",borderTop:"1px solid #E5E5E5",paddingTop:"1rem"}}>
-                            <button onClick={()=>approve(d)} disabled={actionLoading===d._id}
-                              style={{flex:1,background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.875rem",fontFamily:"var(--font-display)",fontSize:"0.9rem",letterSpacing:"0.08em",cursor:"pointer",opacity:actionLoading===d._id?0.6:1}}>
-                              {actionLoading===d._id?"Processing...":"APPROVE DEALER"}
-                            </button>
-                            <button onClick={()=>{setRejectModal(d);setRejectReason("");}}
-                              style={{flex:1,background:"#FEF2F2",border:"1.5px solid rgba(220,38,38,0.3)",color:"#DC2626",borderRadius:"8px",padding:"0.875rem",fontSize:"0.875rem",cursor:"pointer",fontFamily:"var(--font-body)"}}>
-                              Reject
-                            </button>
-                          </div>
+                        ))}
+                      </div>
+                      {(d.idCardUrl||d.cacUrl)&&(
+                        <div style={{display:"flex",gap:"0.75rem",flexWrap:"wrap"}}>
+                          {d.idCardUrl&&<a href={d.idCardUrl} target="_blank" rel="noreferrer" style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:"6px",padding:"0.625rem 1rem",fontSize:"0.8rem",color:"#1A1A1A",textDecoration:"none"}}>View ID Card</a>}
+                          {d.cacUrl&&<a href={d.cacUrl} target="_blank" rel="noreferrer" style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:"6px",padding:"0.625rem 1rem",fontSize:"0.8rem",color:"#1A1A1A",textDecoration:"none"}}>View CAC</a>}
                         </div>
                       )}
+                      {!d.idCardUrl&&!d.cacUrl&&<div style={{background:"#FFF7ED",border:"1px solid rgba(244,123,32,0.3)",borderRadius:"8px",padding:"0.875rem",fontSize:"0.825rem",color:"#C4621A",lineHeight:1.5}}>No documents uploaded yet. You can still approve or ask the dealer to upload from their Settings.</div>}
+                      <div style={{display:"flex",gap:"0.75rem",flexWrap:"wrap"}}>
+                        {d.phone&&<a href={`tel:${d.phone}`} style={{background:"#F5F5F5",border:"1px solid #E5E5E5",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#1A1A1A",textDecoration:"none"}}>Call {d.phone}</a>}
+                        {(d.whatsapp||d.phone)&&<a href={`https://wa.me/${(d.whatsapp||d.phone).replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer" style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#15803D",textDecoration:"none"}}>WhatsApp</a>}
+                        {d.email&&<a href={`mailto:${d.email}`} style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#1D4ED8",textDecoration:"none"}}>Email</a>}
+                      </div>
+                      <div style={{display:"flex",gap:"0.75rem",borderTop:"1px solid #E5E5E5",paddingTop:"1rem"}}>
+                        <button onClick={()=>approve(d)} disabled={actionLoading===d._id}
+                          style={{flex:1,background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.875rem",fontFamily:"var(--font-display)",fontSize:"0.9rem",letterSpacing:"0.08em",cursor:"pointer",opacity:actionLoading===d._id?0.6:1}}>
+                          {actionLoading===d._id?"Processing...":"APPROVE DEALER"}
+                        </button>
+                        <button onClick={()=>{setRejectModal(d);setRejectReason("");}}
+                          style={{flex:1,background:"#FEF2F2",border:"1.5px solid rgba(220,38,38,0.3)",color:"#DC2626",borderRadius:"8px",padding:"0.875rem",fontSize:"0.875rem",cursor:"pointer",fontFamily:"var(--font-body)"}}>
+                          Reject
+                        </button>
+                      </div>
                     </div>
-                  ))}
+                  )}
                 </div>
-              )}
+              ))}
+            </div>
+          )}
 
-              {/* USERS WHO REGISTERED BUT HAVEN'T DONE SETUP — SHOW SEPARATELY, CAN'T APPROVE YET */}
-              {notSetup.length>0&&(
-                <div style={{display:"flex",flexDirection:"column",gap:"0.875rem"}}>
-                  <div style={{fontSize:"0.72rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#737373"}}>
-                    Registered — Setup Not Completed ({notSetup.length})
+          {/* USERS WHO REGISTERED BUT HAVEN'T DONE SETUP */}
+          {noProfile.length>0&&(
+            <div style={{display:"flex",flexDirection:"column",gap:"0.875rem"}}>
+              <div style={{fontSize:"0.72rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#737373"}}>
+                Registered — Setup Not Done ({noProfile.length})
+              </div>
+              <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:"10px",padding:"0.875rem 1rem",fontSize:"0.825rem",color:"#1D4ED8",lineHeight:1.6}}>
+                These users registered as dealers but have not completed their dealership profile setup. Contact them via WhatsApp or email to ask them to sign in and complete setup. They will appear in the Ready to Approve section above once they finish.
+              </div>
+              {noProfile.map((u)=>(
+                <div key={u._id} style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",padding:"1rem 1.25rem",display:"flex",alignItems:"center",gap:"1rem",flexWrap:"wrap"}}>
+                  <div style={{width:"40px",height:"40px",borderRadius:"50%",background:"#E5E5E5",color:"#737373",fontFamily:"var(--font-display)",fontSize:"1.1rem",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    {(u.fullName||u.username||"?").charAt(0).toUpperCase()}
                   </div>
-                  <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:"10px",padding:"0.875rem 1rem",fontSize:"0.825rem",color:"#1D4ED8",lineHeight:1.6}}>
-                    These dealers registered accounts but have not completed their dealership profile setup yet. Contact them via WhatsApp or email to ask them to sign in and complete setup. They cannot be approved until setup is done.
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:600,fontSize:"0.9rem",color:"#1A1A1A"}}>{u.fullName||u.username||"Unknown"}</div>
+                    <div style={{fontSize:"0.78rem",color:"#737373"}}>{u.email}</div>
+                    <div style={{fontSize:"0.72rem",color:"#A3A3A3"}}>Registered {fmtDate(u.createdAt||u.created_at)}</div>
                   </div>
-                  {notSetup.map((u)=>(
-                    <div key={u._id} style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",padding:"1rem 1.25rem",display:"flex",alignItems:"center",gap:"1rem",flexWrap:"wrap"}}>
-                      <div style={{width:"40px",height:"40px",borderRadius:"50%",background:"#E5E5E5",color:"#737373",fontFamily:"var(--font-display)",fontSize:"1.1rem",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                        {(u.fullName||u.username||"?").charAt(0).toUpperCase()}
-                      </div>
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontWeight:600,fontSize:"0.9rem",color:"#1A1A1A"}}>{u.fullName||u.username||"Unknown"}</div>
-                        <div style={{fontSize:"0.78rem",color:"#737373"}}>{u.email}</div>
-                        <div style={{fontSize:"0.72rem",color:"#A3A3A3"}}>Registered {fmtDate(u.createdAt||u.created_at)}</div>
-                      </div>
-                      <div style={{display:"flex",gap:"0.5rem",flexShrink:0,flexWrap:"wrap"}}>
-                        {(u.whatsapp||u.phone)&&<a href={`https://wa.me/${(u.whatsapp||u.phone).replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer" style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"6px",padding:"0.4rem 0.75rem",fontSize:"0.78rem",color:"#15803D",textDecoration:"none",whiteSpace:"nowrap"}}>WhatsApp</a>}
-                        {u.email&&<a href={`mailto:${u.email}`} style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:"6px",padding:"0.4rem 0.75rem",fontSize:"0.78rem",color:"#1D4ED8",textDecoration:"none",whiteSpace:"nowrap"}}>Email</a>}
-                      </div>
-                    </div>
-                  ))}
+                  <div style={{display:"flex",gap:"0.5rem",flexShrink:0,flexWrap:"wrap"}}>
+                    {(u.whatsapp||u.phone)&&<a href={`https://wa.me/${(u.whatsapp||u.phone).replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer" style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"6px",padding:"0.4rem 0.75rem",fontSize:"0.78rem",color:"#15803D",textDecoration:"none",whiteSpace:"nowrap"}}>WhatsApp</a>}
+                    {u.email&&<a href={`mailto:${u.email}`} style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:"6px",padding:"0.4rem 0.75rem",fontSize:"0.78rem",color:"#1D4ED8",textDecoration:"none",whiteSpace:"nowrap"}}>Email</a>}
+                  </div>
                 </div>
-              )}
-            </>
+              ))}
+            </div>
           )}
         </>
       )}

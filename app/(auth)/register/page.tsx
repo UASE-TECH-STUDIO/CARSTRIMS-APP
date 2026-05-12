@@ -30,11 +30,8 @@ export default function RegisterPage() {
       const lower = raw.toLowerCase();
       if (lower.includes("already registered") || lower.includes("already exists") || lower.includes("email already")) {
         setError("An account with this email already exists. Please sign in instead.");
-      } else if (raw) {
-        setError(raw);
-      } else {
-        setError("Registration failed. Please check your details and try again.");
-      }
+      } else if (raw) { setError(raw); }
+      else { setError("Registration failed. Please check your details and try again."); }
     } finally { setLoading(false); }
   };
 
@@ -42,26 +39,22 @@ export default function RegisterPage() {
     <div style={{minHeight:"100vh",background:"#F5F5F5",display:"flex",alignItems:"center",justifyContent:"center",padding:"2rem",fontFamily:"var(--font-body)"}}>
       <div style={{maxWidth:"480px",width:"100%",background:"#fff",borderRadius:"16px",padding:"2.5rem",boxShadow:"0 4px 24px rgba(0,0,0,0.08)",display:"flex",flexDirection:"column",gap:"1.5rem",alignItems:"center",textAlign:"center"}}>
         <div style={{fontFamily:"var(--font-display)",fontSize:"1.3rem",letterSpacing:"0.2em",color:"#F47B20"}}>CARSTRIMS</div>
-        <div style={{width:"72px",height:"72px",borderRadius:"50%",background:"#F0FDF4",border:"2px solid #16A34A",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"2rem"}}>&#10003;</div>
+        <div style={{width:"72px",height:"72px",borderRadius:"50%",background:"#F0FDF4",border:"2px solid #16A34A",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"2.5rem"}}>&#10003;</div>
         <div>
           <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.6rem",letterSpacing:"0.04em",color:"#1A1A1A"}}>Account Created!</h2>
           <p style={{fontSize:"0.9rem",color:"#737373",marginTop:"0.5rem",lineHeight:"1.7"}}>
-            {role === "DEALER_ADMIN"
-              ? "Your dealer account has been created. Sign in now to complete your dealership setup profile."
-              : "Your account is ready. Sign in to access your dashboard."}
+            {role === "DEALER_ADMIN" ? "Your dealer account has been created. Sign in to complete your dealership setup profile." : "Your account is ready. Sign in to access your dashboard."}
           </p>
         </div>
         {role === "DEALER_ADMIN" && (
-          <div style={{background:"#FFF7ED",border:"1px solid rgba(244,123,32,0.3)",borderRadius:"10px",padding:"1.25rem",width:"100%",textAlign:"left",fontSize:"0.85rem",color:"#C4621A",lineHeight:1.7}}>
-            <strong>Next steps after signing in:</strong><br/>
-            1. Complete your dealership profile setup<br/>
-            2. Add your first car listing<br/>
-            3. Wait for admin approval (1-2 business days)<br/>
-            4. Get full access once approved
+          <div style={{background:"#FFF7ED",border:"1px solid rgba(244,123,32,0.3)",borderRadius:"10px",padding:"1.25rem",width:"100%",textAlign:"left",fontSize:"0.85rem",color:"#C4621A",lineHeight:1.8}}>
+            <strong>After signing in you will:</strong><br/>
+            1. Complete your dealership profile<br/>
+            2. Get access to your dealer dashboard<br/>
+            3. Await admin approval (your listings will be hidden until then)
           </div>
         )}
-        <button onClick={() => router.push("/login")}
-          style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.875rem 2rem",fontFamily:"var(--font-display)",fontSize:"0.95rem",letterSpacing:"0.12em",cursor:"pointer",width:"100%"}}>
+        <button onClick={() => router.push("/login")} style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.875rem 2rem",fontFamily:"var(--font-display)",fontSize:"0.95rem",letterSpacing:"0.12em",cursor:"pointer",width:"100%"}}>
           SIGN IN NOW
         </button>
       </div>
@@ -75,11 +68,7 @@ export default function RegisterPage() {
         <div className="rg-mid">
           <h1 className="rg-title">JOIN THE PLATFORM TODAY</h1>
           <p className="rg-sub">Whether you are a dealer, partner or buyer - CARSTRIMS gives you the tools to succeed in the Nigerian automotive market.</p>
-          <div className="rg-feats">
-            {["Free to join","Verified dealers only","Real-time inventory","Secure messaging"].map((f) => (
-              <div key={f} className="rg-feat"><span className="rg-dot" />{f}</div>
-            ))}
-          </div>
+          <div className="rg-feats">{["Free to join","Verified dealers only","Real-time inventory","Secure messaging"].map((f)=>(<div key={f} className="rg-feat"><span className="rg-dot"/>{f}</div>))}</div>
         </div>
         <div className="rg-foot">Built by <strong>UASE TECH STUDIO</strong> &middot; CARSTRIMS 2026</div>
       </div>
@@ -87,46 +76,36 @@ export default function RegisterPage() {
         <div className="rg-card">
           <div className="rg-mobile-brand">CARSTRIMS</div>
           <div className="rg-steps">
-            <div className={`rg-step ${step >= 1 ? "active" : ""}`}>1</div>
-            <div className="rg-step-line" />
-            <div className={`rg-step ${step >= 2 ? "active" : ""}`}>2</div>
+            <div className={`rg-step ${step>=1?"active":""}`}>1</div>
+            <div className="rg-step-line"/>
+            <div className={`rg-step ${step>=2?"active":""}`}>2</div>
           </div>
           <div>
-            <h2 className="rg-card-title">{step === 1 ? "Choose Account Type" : "Create Your Account"}</h2>
-            <p className="rg-card-sub">{step === 1 ? "Select how you will use CARSTRIMS" : "Fill in your details below"}</p>
+            <h2 className="rg-card-title">{step===1?"Choose Account Type":"Create Your Account"}</h2>
+            <p className="rg-card-sub">{step===1?"Select how you will use CARSTRIMS":"Fill in your details below"}</p>
           </div>
-          {error && <div className="rg-err">{error}</div>}
-          {step === 1 ? (
+          {error&&<div className="rg-err">{error}</div>}
+          {step===1?(
             <div className="rg-roles">
-              {ROLES.map((r) => (
-                <button key={r.value} className={`rg-role ${role === r.value ? "sel" : ""}`} onClick={() => setRole(r.value)}>
-                  <div className="rg-role-body">
-                    <div className="rg-role-label">{r.label}</div>
-                    <div className="rg-role-desc">{r.desc}</div>
-                  </div>
-                  {role === r.value && <span className="rg-check">Selected</span>}
-                </button>
-              ))}
-              <button className="rg-btn" onClick={() => setStep(2)} disabled={!role}>CONTINUE</button>
+              {ROLES.map((r)=>(<button key={r.value} className={`rg-role ${role===r.value?"sel":""}`} onClick={()=>setRole(r.value)}><div className="rg-role-body"><div className="rg-role-label">{r.label}</div><div className="rg-role-desc">{r.desc}</div></div>{role===r.value&&<span className="rg-check">Selected</span>}</button>))}
+              <button className="rg-btn" onClick={()=>setStep(2)} disabled={!role}>CONTINUE</button>
             </div>
-          ) : (
+          ):(
             <form onSubmit={submit} className="rg-form">
               <div className="rg-row">
-                <div className="rg-field"><label className="rg-lbl">Full Name *</label><input className="rg-input" placeholder="John Doe" value={form.fullName} onChange={(e) => setForm({...form,fullName:e.target.value})} required /></div>
-                <div className="rg-field"><label className="rg-lbl">Username *</label><input className="rg-input" placeholder="johndoe" value={form.username} onChange={(e) => setForm({...form,username:e.target.value})} required /></div>
+                <div className="rg-field"><label className="rg-lbl">Full Name *</label><input className="rg-input" placeholder="John Doe" value={form.fullName} onChange={(e)=>setForm({...form,fullName:e.target.value})} required/></div>
+                <div className="rg-field"><label className="rg-lbl">Username *</label><input className="rg-input" placeholder="johndoe" value={form.username} onChange={(e)=>setForm({...form,username:e.target.value})} required/></div>
               </div>
-              <div className="rg-field"><label className="rg-lbl">Email Address *</label><input type="email" className="rg-input" placeholder="you@example.com" value={form.email} onChange={(e) => setForm({...form,email:e.target.value})} required /></div>
-              <div className="rg-field"><label className="rg-lbl">Password *</label><input type="password" className="rg-input" placeholder="Minimum 8 characters" value={form.password} onChange={(e) => setForm({...form,password:e.target.value})} required minLength={8} /></div>
+              <div className="rg-field"><label className="rg-lbl">Email Address *</label><input type="email" className="rg-input" placeholder="you@example.com" value={form.email} onChange={(e)=>setForm({...form,email:e.target.value})} required/></div>
+              <div className="rg-field"><label className="rg-lbl">Password *</label><input type="password" className="rg-input" placeholder="Minimum 8 characters" value={form.password} onChange={(e)=>setForm({...form,password:e.target.value})} required minLength={8}/></div>
               <div className="rg-row">
-                <div className="rg-field"><label className="rg-lbl">Phone *</label><input className="rg-input" placeholder="+234..." value={form.phone} onChange={(e) => setForm({...form,phone:e.target.value})} required /></div>
-                <div className="rg-field"><label className="rg-lbl">WhatsApp</label><input className="rg-input" placeholder="+234..." value={form.whatsapp} onChange={(e) => setForm({...form,whatsapp:e.target.value})} /></div>
+                <div className="rg-field"><label className="rg-lbl">Phone *</label><input className="rg-input" placeholder="+234..." value={form.phone} onChange={(e)=>setForm({...form,phone:e.target.value})} required/></div>
+                <div className="rg-field"><label className="rg-lbl">WhatsApp</label><input className="rg-input" placeholder="+234..." value={form.whatsapp} onChange={(e)=>setForm({...form,whatsapp:e.target.value})}/></div>
               </div>
-              {role === "DEALER_ADMIN" && (
-                <div className="rg-notice"><strong>Dealer Account:</strong> After signing in you will complete your dealership setup profile. Your account needs admin approval before going fully live.</div>
-              )}
+              {role==="DEALER_ADMIN"&&<div className="rg-notice"><strong>Dealer Account:</strong> After signing in you will complete your dealership setup. Your listings will be hidden until admin approval.</div>}
               <div className="rg-actions">
-                <button type="button" className="rg-back" onClick={() => setStep(1)}>Back</button>
-                <button type="submit" className="rg-btn rg-flex1" disabled={loading}>{loading ? "Creating account..." : "CREATE ACCOUNT"}</button>
+                <button type="button" className="rg-back" onClick={()=>setStep(1)}>Back</button>
+                <button type="submit" className="rg-btn rg-flex1" disabled={loading}>{loading?"Creating account...":"CREATE ACCOUNT"}</button>
               </div>
             </form>
           )}

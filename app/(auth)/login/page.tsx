@@ -23,44 +23,25 @@ export default function LoginPage() {
       const userId = d.userId || d.user_id || d.id || "";
       const role = d.role || "";
       const dealerId = d.dealerId || d.dealer_id || null;
-
-      if (!token) {
-        setError("Login succeeded but no session token received. Please try again.");
-        return;
-      }
-
+      if (!token) { setError("Login succeeded but no session token received. Please try again."); return; }
       setUser({ userId, fullName: d.fullName || d.full_name || "", email: d.email || form.email, role, dealerId, accessToken: token, refreshToken: d.refreshToken || d.refresh_token || "" } as any);
-
-      // Dealers go to dealer dashboard — layout handles setup redirect
-      if (role === "DEALER_ADMIN") {
-        router.push("/dashboard/dealer");
-      } else {
-        router.push(getRoleRedirect(role, dealerId));
-      }
+      if (role === "DEALER_ADMIN") { router.push("/dashboard/dealer"); }
+      else { router.push(getRoleRedirect(role, dealerId)); }
     } catch (err: any) {
       const status = err.response?.status;
       const raw = (err.response?.data?.detail || err.response?.data?.message || "").toString();
       const lower = raw.toLowerCase();
-
-      // Backend blocks pending dealers — show friendly message instead of error
-      if (lower.includes("pending") || lower.includes("approval") || lower.includes("awaiting") ||
-          lower.includes("not approved") || lower.includes("not active") || lower.includes("inactive") ||
-          lower.includes("not verified") || status === 403) {
-        setIsPending(true);
-        return;
+      if (lower.includes("pending") || lower.includes("approval") || lower.includes("awaiting") || lower.includes("not approved") || lower.includes("not active") || lower.includes("inactive") || lower.includes("not verified") || status === 403) {
+        setIsPending(true); return;
       }
-
       if (status === 401 || lower.includes("password") || lower.includes("invalid") || lower.includes("incorrect") || lower.includes("credentials")) {
         setError("Invalid email or password. Please check and try again.");
-      } else if (status === 404 || lower.includes("not found") || lower.includes("no account")) {
+      } else if (status === 404 || lower.includes("not found")) {
         setError("No account found with this email address.");
       } else if (!err.response) {
         setError("Cannot reach the server. Please check your internet connection.");
-      } else if (raw) {
-        setError(raw);
-      } else {
-        setError("Login failed. Please try again.");
-      }
+      } else if (raw) { setError(raw); }
+      else { setError("Login failed. Please try again."); }
     } finally { setLoading(false); }
   };
 
@@ -80,49 +61,24 @@ export default function LoginPage() {
       </div>
       <div className="auth-right">
         <div className="auth-card">
-          <div>
-            <h2 className="card-title">Welcome back</h2>
-            <p className="card-sub">Sign in to your CARSTRIMS account</p>
-          </div>
-
-          {isPending && (
+          <div><h2 className="card-title">Welcome back</h2><p className="card-sub">Sign in to your CARSTRIMS account</p></div>
+          {isPending&&(
             <div style={{background:"#FFF7ED",border:"1.5px solid #F47B20",borderRadius:"10px",padding:"1.25rem",display:"flex",flexDirection:"column",gap:"0.75rem"}}>
               <div style={{fontFamily:"var(--font-display)",fontSize:"0.95rem",letterSpacing:"0.06em",color:"#C4621A"}}>ACCOUNT PENDING APPROVAL</div>
               <p style={{fontSize:"0.875rem",color:"#525252",lineHeight:"1.6"}}>Your dealer account has been received and is currently being reviewed by the CARSTRIMS admin team.</p>
-              <div style={{fontSize:"0.82rem",color:"#737373",lineHeight:"1.6"}}>
-                <strong style={{color:"#C4621A"}}>What to expect:</strong><br/>
-                The admin will verify your details and may contact you. You will receive an email once approved. Review typically takes 1-2 business days.
-              </div>
-              <div style={{fontSize:"0.75rem",color:"#A3A3A3",borderTop:"1px solid rgba(244,123,32,0.2)",paddingTop:"0.625rem"}}>
-                Questions? Contact: <a href="mailto:support@carstrims.com" style={{color:"#F47B20"}}>support@carstrims.com</a>
-              </div>
+              <div style={{fontSize:"0.82rem",color:"#737373",lineHeight:"1.6"}}><strong style={{color:"#C4621A"}}>What to expect:</strong><br/>The admin will verify your details and may contact you. You will be notified by email once approved. Review takes 1-2 business days.</div>
+              <div style={{fontSize:"0.75rem",color:"#A3A3A3",borderTop:"1px solid rgba(244,123,32,0.2)",paddingTop:"0.625rem"}}>Questions? Contact: <a href="mailto:support@carstrims.com" style={{color:"#F47B20"}}>support@carstrims.com</a></div>
             </div>
           )}
-
-          {error && <div className="auth-err">{error}</div>}
-
-          {!isPending && (
+          {error&&<div className="auth-err">{error}</div>}
+          {!isPending&&(
             <form onSubmit={submit} className="auth-form">
-              <div className="field">
-                <label className="fl">Email Address</label>
-                <input type="email" className="fi" placeholder="you@example.com" value={form.email} onChange={(e) => setForm({...form,email:e.target.value})} required />
-              </div>
-              <div className="field">
-                <label className="fl">Password</label>
-                <input type="password" className="fi" placeholder="Your password" value={form.password} onChange={(e) => setForm({...form,password:e.target.value})} required />
-                <Link href="/forgot-password" className="forgot-lnk">Forgot password?</Link>
-              </div>
-              <button type="submit" className="auth-btn" disabled={loading}>{loading ? "Signing in..." : "SIGN IN"}</button>
+              <div className="field"><label className="fl">Email Address</label><input type="email" className="fi" placeholder="you@example.com" value={form.email} onChange={(e)=>setForm({...form,email:e.target.value})} required/></div>
+              <div className="field"><label className="fl">Password</label><input type="password" className="fi" placeholder="Your password" value={form.password} onChange={(e)=>setForm({...form,password:e.target.value})} required/><Link href="/forgot-password" className="forgot-lnk">Forgot password?</Link></div>
+              <button type="submit" className="auth-btn" disabled={loading}>{loading?"Signing in...":"SIGN IN"}</button>
             </form>
           )}
-
-          {isPending && (
-            <button onClick={() => { setIsPending(false); setForm({ email:"", password:"" }); }}
-              style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.875rem",fontSize:"0.875rem",cursor:"pointer",fontFamily:"var(--font-body)"}}>
-              Try a different account
-            </button>
-          )}
-
+          {isPending&&<button onClick={()=>{setIsPending(false);setForm({email:"",password:""});}} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.875rem",fontSize:"0.875rem",cursor:"pointer",fontFamily:"var(--font-body)"}}>Try a different account</button>}
           <p className="auth-switch">No account? <Link href="/register" className="sw-lnk">Create one free</Link></p>
           <Link href="/feed" className="back-feed">Browse cars without signing in</Link>
         </div>

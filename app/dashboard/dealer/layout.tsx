@@ -4,35 +4,37 @@ import AuthGuard from "@/components/layout/AuthGuard";
 import DealerSidebar from "@/components/layout/DealerSidebar";
 import DealerTopbar from "@/components/layout/DealerTopbar";
 import { useRouter, usePathname } from "next/navigation";
+import { useSidebar } from "@/hooks/useSidebar";
 import api from "@/lib/api";
 
 function DealerShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { isOpen, toggle, close } = useSidebar();
   const [ready, setReady] = useState(false);
-  const [dealerStatus, setDealerStatus] = useState<string|null>(null);
+  const [dealerStatus, setDealerStatus] = useState<string | null>(null);
 
   useEffect(() => {
     if (pathname.includes("/setup")) { setReady(true); return; }
     api.get("/api/v1/dealers/me")
-      .then((r) => {
-        setDealerStatus(r.data?.status || null);
-        // Any status with a profile = can enter dashboard
-        setReady(true);
-      })
+      .then((r) => { setDealerStatus(r.data?.status || null); setReady(true); })
       .catch((err) => {
-        // No dealer profile yet = go to setup (unless 401 which AuthGuard handles)
         if (err?.response?.status !== 401) router.replace("/dashboard/dealer/setup");
       });
   }, [pathname, router]);
 
-  if (!ready && !pathname.includes("/setup")) return (
-    <div style={{minHeight:"100vh",background:"#F5F5F5",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:"1rem"}}>
-      <div style={{fontFamily:"var(--font-display)",fontSize:"1.5rem",letterSpacing:"0.2em",color:"#F47B20"}}>CARSTRIMS</div>
-      <div style={{width:"28px",height:"28px",border:"2px solid #E5E5E5",borderTopColor:"#F47B20",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
-  );
+  // Close sidebar on navigation
+  useEffect(() => { close(); }, [pathname]);
+
+  if (!ready && !pathname.includes("/setup")) {
+    return (
+      <div style={{minHeight:"100vh",background:"#F5F5F5",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:"1rem"}}>
+        <div style={{fontFamily:"var(--font-display)",fontSize:"1.5rem",letterSpacing:"0.2em",color:"#F47B20"}}>CARSTRIMS</div>
+        <div style={{width:"28px",height:"28px",border:"2px solid #E5E5E5",borderTopColor:"#F47B20",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      </div>
+    );
+  }
 
   if (pathname.includes("/setup")) return <>{children}</>;
 
@@ -40,24 +42,31 @@ function DealerShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="dealer-shell">
+      {/* Mobile overlay */}
+      {isOpen && <div className="sidebar-overlay" onClick={close} />}
+
       <DealerSidebar />
-      <div className="dealer-main">
-        <DealerTopbar />
+
+      <div className={`dealer-main ${isOpen ? "sidebar-open" : ""}`}>
+        <DealerTopbar onMenuToggle={toggle} isSidebarOpen={isOpen} />
         {isPending && (
-          <div style={{background:"#FFF7ED",borderBottom:"2px solid #F47B20",padding:"0.625rem 1.75rem",fontSize:"0.82rem",color:"#C4621A",display:"flex",alignItems:"center",gap:"0.75rem",flexWrap:"wrap"}}>
-            <span style={{fontSize:"1rem",flexShrink:0}}>&#9203;</span>
-            <span>
-              <strong>Pending Approval:</strong> Your account is under review. Your listings are hidden from the public feed. You can add cars, create staff, and set up your dashboard. You will be notified by email once approved.
-            </span>
+          <div style={{background:"#FFF7ED",borderBottom:"2px solid #F47B20",padding:"0.6rem 1.75rem",fontSize:"0.82rem",color:"#C4621A",display:"flex",alignItems:"center",gap:"0.75rem",flexWrap:"wrap"}}>
+            <span>&#9203;</span>
+            <span><strong>Pending Approval:</strong> Your account is under review. Your listings are hidden from buyers until approved. You can add cars, manage staff, and set up your dashboard.</span>
           </div>
         )}
         <main className="dealer-content">{children}</main>
       </div>
+
       <style>{`
-        .dealer-shell{display:flex;min-height:100vh;background:#F5F5F5}
-        .dealer-main{flex:1;margin-left:240px;display:flex;flex-direction:column;min-height:100vh;min-width:0}
+        .dealer-shell{display:flex;min-height:100vh;background:#F5F5F5;position:relative}
+        .sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:90}
+        .dealer-main{flex:1;margin-left:240px;display:flex;flex-direction:column;min-height:100vh;min-width:0;transition:margin 0.2s}
         .dealer-content{flex:1;padding:1.75rem}
-        @media(max-width:768px){.dealer-main{margin-left:0}.dealer-content{padding:1rem}}
+        @media(max-width:768px){
+          .dealer-main{margin-left:0}
+          .dealer-content{padding:1rem}
+        }
       `}</style>
     </div>
   );
