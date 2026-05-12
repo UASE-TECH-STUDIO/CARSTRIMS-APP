@@ -19,35 +19,65 @@ export default function RegisterPage() {
   const [form, setForm] = useState({ fullName:"", username:"", email:"", password:"", phone:"", whatsapp:"" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [registered, setRegistered] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(""); setLoading(true);
     try {
+      // Step 1: Register
       await api.post("/api/v1/auth/register", { ...form, role });
-      const loginRes = await api.post("/api/v1/auth/login", { email: form.email, password: form.password });
-      const d = loginRes.data;
-      const userData = {
-        userId:       d.userId       || d.user_id   || d.id || "",
-        fullName:     d.fullName     || d.full_name  || form.fullName || "",
-        email:        d.email        || form.email,
-        role:         d.role,
-        dealerId:     d.dealerId     || d.dealer_id  || null,
-        accessToken:  d.accessToken  || d.access_token  || "",
-        refreshToken: d.refreshToken || d.refresh_token || "",
-      };
-      if (!userData.accessToken) {
-        setError("Account created but auto-login failed. Please go to the login page and sign in manually.");
-        setLoading(false); return;
+
+      // Step 2: Try auto-login
+      try {
+        const loginRes = await api.post("/api/v1/auth/login", {
+          email: form.email, password: form.password,
+        });
+        const d = loginRes.data;
+        const token = d.accessToken || d.access_token || d.token || "";
+        const userId = d.userId || d.user_id || d.id || "";
+
+        if (token) {
+          setUser({
+            userId, fullName: d.fullName || d.full_name || form.fullName,
+            email: d.email || form.email, role: d.role,
+            dealerId: d.dealerId || d.dealer_id || null,
+            accessToken: token,
+            refreshToken: d.refreshToken || d.refresh_token || "",
+          } as any);
+
+          if (role === "DEALER_ADMIN") {
+            router.push("/dashboard/dealer/setup");
+          } else {
+            router.push(getRoleRedirect(d.role, d.dealerId || null));
+          }
+          return;
+        }
+      } catch (loginErr: any) {
+        // If backend blocks login because account is pending — that is OK
+        // Registration succeeded, just show the appropriate message
+        const raw = (loginErr.response?.data?.detail || "").toString().toLowerCase();
+        const isPending = loginErr.isPendingApproval ||
+          raw.includes("pending") || raw.includes("approval") ||
+          raw.includes("awaiting") || raw.includes("not approved") ||
+          raw.includes("not active") || loginErr.response?.status === 403;
+
+        if (isPending || role === "DEALER_ADMIN") {
+          // Registration worked — show pending screen
+          setRegistered(true);
+          setLoading(false);
+          return;
+        }
+        // For non-dealers, a login failure after register is unexpected
+        setError("Account created! Please go to the login page to sign in.");
+        setLoading(false);
+        return;
       }
-      setUser(userData as any);
-      if (role === "DEALER_ADMIN") {
-        router.push("/dashboard/dealer/setup");
-      } else {
-        router.push(getRoleRedirect(d.role, userData.dealerId));
-      }
+
+      // Fallback — registration worked but no token
+      setRegistered(true);
     } catch (err: any) {
-      const raw = err.response?.data?.detail || err.message || "";
+      const raw = (err.response?.data?.detail || err.message || "").toString();
       const lower = raw.toLowerCase();
       if (lower.includes("already registered") || lower.includes("already exists") || lower.includes("email already")) {
         setError("An account with this email already exists. Please sign in instead.");
@@ -58,6 +88,43 @@ export default function RegisterPage() {
       }
     } finally { setLoading(false); }
   };
+
+  // Show success/pending screen after registration
+  if (registered) {
+    return (
+      <div style={{minHeight:"100vh",background:"#F5F5F5",display:"flex",alignItems:"center",justifyContent:"center",padding:"2rem",fontFamily:"var(--font-body)"}}>
+        <div style={{maxWidth:"480px",width:"100%",background:"#fff",borderRadius:"16px",padding:"2.5rem",boxShadow:"0 4px 24px rgba(0,0,0,0.08)",display:"flex",flexDirection:"column",gap:"1.5rem",alignItems:"center",textAlign:"center"}}>
+          <div style={{fontFamily:"var(--font-display)",fontSize:"1.3rem",letterSpacing:"0.2em",color:"#F47B20"}}>CARSTRIMS</div>
+          <div style={{width:"72px",height:"72px",borderRadius:"50%",background:"#FFF7ED",border:"2px solid #F47B20",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"2rem"}}>
+            &#10003;
+          </div>
+          <div>
+            <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.6rem",letterSpacing:"0.04em",color:"#1A1A1A"}}>
+              {role === "DEALER_ADMIN" ? "Application Submitted!" : "Account Created!"}
+            </h2>
+            <p style={{fontSize:"0.875rem",color:"#737373",marginTop:"0.5rem",lineHeight:"1.7"}}>
+              {role === "DEALER_ADMIN"
+                ? "Your dealer account has been created and submitted for review. The CARSTRIMS admin team will verify your details."
+                : "Your account has been created successfully. You can now sign in."}
+            </p>
+          </div>
+          {role === "DEALER_ADMIN" && (
+            <div style={{background:"#FFF7ED",border:"1px solid rgba(244,123,32,0.3)",borderRadius:"10px",padding:"1.25rem",width:"100%",textAlign:"left"}}>
+              <div style={{fontSize:"0.72rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#F47B20",marginBottom:"0.75rem"}}>What happens next?</div>
+              {["The CARSTRIMS admin reviews your application","You may be contacted for identity verification","Once approved you get full dealer dashboard access","You will be notified by email when approved"].map((t,i)=>(
+                <div key={i} style={{display:"flex",gap:"0.75rem",marginBottom:"0.5rem",fontSize:"0.825rem",color:"#525252"}}>
+                  <span style={{color:"#F47B20",fontWeight:700,flexShrink:0}}>{i+1}.</span><span>{t}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <Link href="/login" style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.875rem 2rem",fontFamily:"var(--font-display)",fontSize:"0.95rem",letterSpacing:"0.12em",textDecoration:"none",width:"100%",textAlign:"center" as const,display:"block"}}>
+            GO TO LOGIN
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rg-root">
@@ -132,7 +199,7 @@ export default function RegisterPage() {
               </div>
               {role === "DEALER_ADMIN" && (
                 <div className="rg-notice">
-                  <strong>Dealer Account:</strong> After registering you will complete your dealership profile. You can use your dashboard right away but your listings will be hidden until a CARSTRIMS admin approves your account.
+                  <strong>Dealer Account:</strong> After submitting, the CARSTRIMS admin will review your application. You will receive an email when approved.
                 </div>
               )}
               <div className="rg-actions">
