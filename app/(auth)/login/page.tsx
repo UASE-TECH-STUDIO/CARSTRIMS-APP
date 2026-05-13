@@ -20,10 +20,14 @@ export default function LoginPage() {
       const d = res.data;
       setUser({ userId:d.userId, fullName:d.fullName, email:d.email, role:d.role, dealerId:d.dealerId, accessToken:d.accessToken, refreshToken:d.refreshToken });
       if (d.role === "DEALER_ADMIN") {
+        if (!d.hasDealerProfile) {
+          router.push("/dashboard/dealer/setup");
+          return;
+        }
         router.push("/dashboard/dealer");
-      } else {
-        router.push(getRoleRedirect(d.role, d.dealerId));
+        return;
       }
+      router.push(getRoleRedirect(d.role, d.dealerId));
     } catch (err: any) {
       const status = err.response?.status;
       const detail = (err.response?.data?.detail || "").toLowerCase();
@@ -31,6 +35,8 @@ export default function LoginPage() {
         setError("Invalid email or password. Please try again.");
       } else if (status === 404 || detail.includes("not found")) {
         setError("No account found with this email address.");
+      } else if (status === 403 && detail.includes("suspended")) {
+        setError("Your account has been suspended. Please contact support@carstrims.com");
       } else {
         setError(err.response?.data?.detail || "Login failed. Please try again.");
       }
@@ -57,15 +63,20 @@ export default function LoginPage() {
             <h2 className="card-title">Welcome back</h2>
             <p className="card-sub">Sign in to your CARSTRIMS account</p>
           </div>
-          {error && <div className="auth-err">{error}</div>}
+          {error && (
+            <div className="auth-err">
+              <span>{error}</span>
+              <button onClick={() => setError("")} style={{ background:"none", border:"none", color:"inherit", cursor:"pointer", fontSize:"1rem" }}>✕</button>
+            </div>
+          )}
           <form onSubmit={submit} className="auth-form">
             <div className="field">
               <label className="fl">Email Address</label>
-              <input type="email" className="fi" placeholder="you@example.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+              <input type="email" className="fi" placeholder="you@example.com" value={form.email} onChange={(e) => setForm({...form,email:e.target.value})} required />
             </div>
             <div className="field">
               <label className="fl">Password</label>
-              <input type="password" className="fi" placeholder="Your password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
+              <input type="password" className="fi" placeholder="Your password" value={form.password} onChange={(e) => setForm({...form,password:e.target.value})} required />
               <Link href="/forgot-password" className="forgot-lnk">Forgot password?</Link>
             </div>
             <button type="submit" className="auth-btn" disabled={loading}>{loading ? "Signing in..." : "SIGN IN"}</button>
@@ -76,11 +87,11 @@ export default function LoginPage() {
       </div>
       <style>{`
         .auth-root{display:flex;min-height:100vh;font-family:var(--font-body);background:#F5F5F5}
-        .auth-left{width:42%;background:linear-gradient(160deg,#E5E5E5 0%,#D4D4D4 55%,#C8C8C8 100%);display:flex;flex-direction:column;justify-content:space-between;padding:2.5rem;position:relative;overflow:hidden}
+        .auth-left{width:42%;background:linear-gradient(160deg,#E5E5E5 0%,#D4D4D4 55%,#C8C8C8 100%);display:flex;flex-direction:column;justify-content:space-between;padding:2.5rem;position:relative;overflow:hidden;flex-shrink:0}
         .auth-left::before{content:"CARSTRIMS";position:absolute;bottom:-20px;right:-20px;font-family:var(--font-display);font-size:120px;color:rgba(244,123,32,0.05);line-height:1;pointer-events:none;white-space:nowrap}
         .brand{font-family:var(--font-display);font-size:1.4rem;letter-spacing:0.2em;color:#F47B20}
         .al-mid{display:flex;flex-direction:column;gap:1.25rem}
-        .al-title{font-family:var(--font-display);font-size:clamp(1.8rem,2.8vw,3rem);line-height:1.05;color:#1A1A1A;letter-spacing:0.02em}
+        .al-title{font-family:var(--font-display);font-size:clamp(1.8rem,2.8vw,3rem);line-height:1.05;color:#1A1A1A}
         .al-sub{font-size:0.9rem;color:#525252;line-height:1.7;max-width:340px}
         .al-stats{display:flex;gap:2rem;padding-top:1.5rem;border-top:1px solid rgba(0,0,0,0.1);margin-top:0.5rem}
         .stat-item{display:flex;flex-direction:column;gap:0.2rem}
@@ -91,19 +102,19 @@ export default function LoginPage() {
         .auth-card{width:100%;max-width:420px;background:#fff;border-radius:16px;padding:2.5rem;box-shadow:0 4px 24px rgba(0,0,0,0.08);display:flex;flex-direction:column;gap:1.5rem}
         .card-title{font-family:var(--font-display);font-size:2rem;letter-spacing:0.04em;color:#1A1A1A}
         .card-sub{font-size:0.875rem;color:#737373;margin-top:0.25rem}
-        .auth-err{background:#FEF2F2;border:1px solid #FCA5A5;color:#DC2626;padding:0.75rem 1rem;border-radius:8px;font-size:0.875rem}
+        .auth-err{background:#FEF2F2;border:1px solid #FCA5A5;color:#DC2626;padding:0.75rem 1rem;border-radius:8px;font-size:0.875rem;display:flex;align-items:flex-start;justify-content:space-between;gap:0.75rem;line-height:1.5}
         .auth-form{display:flex;flex-direction:column;gap:1.25rem}
         .field{display:flex;flex-direction:column;gap:0.4rem}
         .fl{font-size:0.72rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#525252}
-        .fi{background:#F5F5F5;border:1.5px solid #E5E5E5;border-radius:8px;padding:0.875rem 1rem;color:#1A1A1A;font-size:0.95rem;font-family:var(--font-body);outline:none;transition:border-color 0.2s;width:100%}
+        .fi{background:#F5F5F5;border:1.5px solid #E5E5E5;border-radius:8px;padding:0.875rem 1rem;color:#1A1A1A;font-size:0.95rem;font-family:var(--font-body);outline:none;transition:border-color 0.2s;width:100%;box-sizing:border-box}
         .fi:focus{border-color:#F47B20;background:#fff;box-shadow:0 0 0 3px rgba(244,123,32,0.1)}
         .fi::placeholder{color:#A3A3A3}
-        .forgot-lnk{font-size:0.78rem;color:#F47B20;text-align:right;align-self:flex-end}
+        .forgot-lnk{font-size:0.78rem;color:#F47B20;text-align:right;align-self:flex-end;text-decoration:none}
         .auth-btn{background:#F47B20;color:#fff;border:none;border-radius:8px;padding:1rem;font-family:var(--font-display);font-size:1rem;letter-spacing:0.15em;cursor:pointer;transition:background 0.2s;margin-top:0.25rem}
         .auth-btn:hover{background:#FF9340}.auth-btn:disabled{opacity:0.6;cursor:not-allowed}
         .auth-switch{font-size:0.875rem;color:#737373;text-align:center}
-        .sw-lnk{color:#F47B20;font-weight:600}
-        .back-feed{font-size:0.78rem;color:#A3A3A3;text-align:center;display:block;transition:color 0.2s}
+        .sw-lnk{color:#F47B20;font-weight:600;text-decoration:none}
+        .back-feed{font-size:0.78rem;color:#A3A3A3;text-align:center;display:block;text-decoration:none}
         .back-feed:hover{color:#F47B20}
         @media(max-width:768px){.auth-left{display:none}.auth-right{padding:1.5rem;background:#fff}.auth-card{box-shadow:none;padding:1.5rem}}
       `}</style>
