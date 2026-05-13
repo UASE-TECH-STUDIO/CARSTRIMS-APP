@@ -2,28 +2,43 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import api from "@/lib/api";
 
-const BRANDS = ["Toyota","Honda","Mercedes","BMW","Lexus","Ford","Hyundai","Kia","Chevrolet","Audi","Land Rover","Jeep","Volkswagen","Nissan","Mazda","Peugeot","Mitsubishi","Subaru","Isuzu","Opel","Renault","Other"];
+const BRANDS = ["Toyota","Honda","Mercedes","BMW","Lexus","Ford","Hyundai","Kia","Chevrolet","Audi","Land Rover","Jeep","Volkswagen","Nissan","Mazda","Peugeot","Mitsubishi","Subaru","Isuzu","Other"];
 const CONDITIONS = ["brand new","foreign used","locally used","salvage"];
-const STATUSES   = ["available","reserved","sold","out_for_inspection","in_repair","on_promotion"];
-const FUEL_TYPES  = ["petrol","diesel","electric","hybrid","gas","other"];
-const TRANS      = ["automatic","manual","semi-automatic","cvt"];
+const STATUSES = ["available","reserved","sold","out_for_inspection","in_repair","on_promotion"];
+const FUEL_TYPES = ["petrol","diesel","electric","hybrid","gas","other"];
+const TRANS = ["automatic","manual","semi-automatic","cvt"];
 
-interface Car { _id:string; carId:string; brand:string; model:string; year:number; color:string; condition:string; status:string; sellingPrice:number; purchasePrice:number; promoPrice:number; mileage:number; fuelType:string; transmission:string; engineType:string; vin:string; description:string; images:string[]; video:string; city:string; state:string; }
-
-const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dkvj0wjta/auto/upload";
-const CLOUDINARY_PRESET = "carstrims_cars";
-
-async function uploadToCloudinary(file: File): Promise<string> {
-  const fd = new FormData();
-  fd.append("file", file);
-  fd.append("upload_preset", CLOUDINARY_PRESET);
-  const res = await fetch(CLOUDINARY_URL, { method:"POST", body:fd });
-  if (!res.ok) throw new Error("Upload failed");
-  const data = await res.json();
-  return data.secure_url;
+interface Car {
+  _id:string; carId:string; brand:string; model:string; year:number;
+  color:string; condition:string; status:string; sellingPrice:number;
+  purchasePrice:number; promoPrice:number; mileage:number; fuelType:string;
+  transmission:string; engineType:string; vin:string; description:string;
+  images:string[]; video:string; city:string; state:string;
 }
 
-const emptyForm = () => ({ brand:"Toyota", model:"", year:new Date().getFullYear(), color:"", condition:"foreign used", status:"available", sellingPrice:"", purchasePrice:"", promoPrice:"", mileage:"", fuelType:"petrol", transmission:"automatic", engineType:"", vin:"", description:"", city:"", state:"" });
+// Upload via backend (no Cloudinary preset needed - backend handles it)
+async function uploadViaBackend(file: File, endpoint: string): Promise<string> {
+  const fd = new FormData();
+  // Backend expects "files" for images, "file" for video/document
+  const fieldName = endpoint.includes("images") ? "files" : "file";
+  fd.append(fieldName, file);
+  const res = await api.post(endpoint, fd, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  // Images endpoint returns { images: [...] }, video returns { video: "url" }
+  if (res.data.images && Array.isArray(res.data.images)) {
+    return res.data.images[res.data.images.length - 1] || "";
+  }
+  return res.data.video || res.data.url || res.data.secure_url || "";
+}
+
+const emptyForm = () => ({
+  brand:"Toyota", model:"", year:new Date().getFullYear(), color:"",
+  condition:"foreign used", status:"available", sellingPrice:"",
+  purchasePrice:"", promoPrice:"", mileage:"", fuelType:"petrol",
+  transmission:"automatic", engineType:"", vin:"", description:"",
+  city:"", state:"",
+});
 
 export default function DealerCarsPage() {
   const [cars, setCars] = useState<Car[]>([]);
@@ -31,24 +46,23 @@ export default function DealerCarsPage() {
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<"add"|"edit"|null>(null);
   const [editCar, setEditCar] = useState<Car|null>(null);
-  const [formRef] = useState(() => ({ current: emptyForm() }));
+  const [form, setForm] = useState<any>(emptyForm());
   const [images, setImages] = useState<string[]>([]);
   const [video, setVideo] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState("");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
+  const [savedCarId, setSavedCarId] = useState<string|null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [rerender, setRerender] = useState(0);
   const imgInputRef = useRef<HTMLInputElement>(null);
   const vidInputRef = useRef<HTMLInputElement>(null);
-  const formData = formRef.current;
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const params: any = { limit:30 };
+      const params: any = { limit: 30 };
       if (search) params.search = search;
       if (statusFilter !== "all") params.status = statusFilter;
       const r = await api.get("/api/v1/cars/", { params });
@@ -59,14 +73,12 @@ export default function DealerCarsPage() {
   useEffect(() => { load(); }, [load]);
 
   const openAdd = () => {
-    formRef.current = emptyForm();
-    setImages([]); setVideo(""); setErr("");
-    setModal("add"); setEditCar(null);
-    setRerender(r=>r+1);
+    setForm(emptyForm()); setImages([]); setVideo(""); setErr("");
+    setSavedCarId(null); setModal("add"); setEditCar(null);
   };
 
   const openEdit = (car: Car) => {
-    formRef.current = {
+    setForm({
       brand:car.brand||"Toyota", model:car.model||"", year:car.year||2024,
       color:car.color||"", condition:car.condition||"foreign used",
       status:car.status||"available", sellingPrice:String(car.sellingPrice||""),
@@ -75,110 +87,142 @@ export default function DealerCarsPage() {
       transmission:car.transmission||"automatic", engineType:car.engineType||"",
       vin:car.vin||"", description:car.description||"",
       city:car.city||"", state:car.state||"",
-    };
+    });
     setImages(car.images||[]); setVideo(car.video||""); setErr("");
-    setEditCar(car); setModal("edit");
-    setRerender(r=>r+1);
+    setSavedCarId(car.carId); setEditCar(car); setModal("edit");
   };
 
-  const closeModal = () => { setModal(null); setEditCar(null); setErr(""); };
+  const closeModal = () => { setModal(null); setEditCar(null); setErr(""); setSavedCarId(null); };
+
+  // Save car first to get carId, then upload images via backend
+  const ensureCarSaved = async (): Promise<string|null> => {
+    if (savedCarId) return savedCarId;
+    if (!form.model.trim()) { setErr("Please enter the car model before uploading photos"); return null; }
+    setSaving(true);
+    try {
+      const payload = {
+        ...form,
+        year:Number(form.year), sellingPrice:Number(form.sellingPrice)||0,
+        purchasePrice:Number(form.purchasePrice)||0, promoPrice:Number(form.promoPrice)||0,
+        mileage:Number(form.mileage)||0, images:[], video: undefined,
+      };
+      const res = await api.post("/api/v1/cars/", payload);
+      const cid = res.data.carId || res.data.car?.carId;
+      setSavedCarId(cid);
+      return cid;
+    } catch(ex:any) {
+      setErr(ex.response?.data?.detail || "Save car info first before uploading photos");
+      return null;
+    } finally { setSaving(false); }
+  };
 
   const handleImgFiles = async (files: FileList) => {
-    if (images.length + files.length > 10) { setErr("Maximum 10 photos allowed"); return; }
-    setUploading(true); setUploadProgress("Uploading photos...");
+    if (images.length + files.length > 6) { setErr("Maximum 6 photos allowed"); return; }
+    setUploading(true);
     try {
-      const urls: string[] = [];
+      // Get or create carId first
+      const carId = await ensureCarSaved();
+      if (!carId) { setUploading(false); return; }
+      const newUrls: string[] = [];
       for (let i = 0; i < files.length; i++) {
         setUploadProgress(`Uploading photo ${i+1} of ${files.length}...`);
-        const url = await uploadToCloudinary(files[i]);
-        urls.push(url);
+        try {
+          const url = await uploadViaBackend(files[i], `/api/v1/upload/car/${carId}/images`);
+          if (url) newUrls.push(url);
+        } catch(e: any) {
+          setErr(`Photo ${i+1} failed: ${e.response?.data?.detail || e.message}`);
+        }
       }
-      setImages(prev => [...prev, ...urls]);
-      setErr("");
-    } catch(_){ setErr("Photo upload failed. Please try again."); }
-    finally { setUploading(false); setUploadProgress(""); if(imgInputRef.current) imgInputRef.current.value=""; }
+      // Refresh car images from backend
+      if (newUrls.length > 0) {
+        const r = await api.get("/api/v1/cars/", { params: { carId } }).catch(() => null);
+        const updatedCar = r?.data?.cars?.find((c: any) => c.carId === carId);
+        if (updatedCar?.images) {
+          setImages(updatedCar.images);
+        } else {
+          setImages(prev => [...prev, ...newUrls]);
+        }
+      }
+      if (imgInputRef.current) imgInputRef.current.value = "";
+    } catch(e: any) {
+      setErr(e.response?.data?.detail || "Photo upload failed. Please try again.");
+    } finally { setUploading(false); setUploadProgress(""); }
   };
 
   const handleVideoFile = async (file: File) => {
-    if (file.size > 50 * 1024 * 1024) { setErr("Video must be under 50MB"); return; }
+    if (file.size > 100 * 1024 * 1024) { setErr("Video must be under 100MB"); return; }
     setUploading(true); setUploadProgress("Uploading video...");
     try {
-      const url = await uploadToCloudinary(file);
-      setVideo(url); setErr("");
-    } catch(_){ setErr("Video upload failed. Please try again."); }
-    finally { setUploading(false); setUploadProgress(""); if(vidInputRef.current) vidInputRef.current.value=""; }
+      const carId = await ensureCarSaved();
+      if (!carId) { setUploading(false); return; }
+      const url = await uploadViaBackend(file, `/api/v1/upload/car/${carId}/video`);
+      setVideo(url);
+      if (vidInputRef.current) vidInputRef.current.value = "";
+    } catch(e: any) {
+      setErr(e.response?.data?.detail || "Video upload failed. Please try again.");
+    } finally { setUploading(false); setUploadProgress(""); }
   };
 
-  const removeImage = (idx: number) => setImages(prev => prev.filter((_,i)=>i!==idx));
-  const removeVideo = () => setVideo("");
-
   const handleSave = async () => {
-    const f = formRef.current;
-    if (!f.model.trim()) { setErr("Car model is required"); return; }
-    if (!f.sellingPrice) { setErr("Selling price is required"); return; }
+    if (!form.model.trim()) { setErr("Car model is required"); return; }
+    if (!form.sellingPrice) { setErr("Selling price is required"); return; }
     setSaving(true); setErr("");
     try {
       const payload = {
-        ...f,
-        year: Number(f.year),
-        sellingPrice: Number(f.sellingPrice),
-        purchasePrice: Number(f.purchasePrice)||0,
-        promoPrice: Number(f.promoPrice)||0,
-        mileage: Number(f.mileage)||0,
-        images,
-        video: video||undefined,
+        ...form,
+        year:Number(form.year), sellingPrice:Number(form.sellingPrice),
+        purchasePrice:Number(form.purchasePrice)||0, promoPrice:Number(form.promoPrice)||0,
+        mileage:Number(form.mileage)||0,
       };
-      if (modal === "add") {
-        await api.post("/api/v1/cars/", payload);
-      } else if (editCar) {
+      if (savedCarId && modal === "add") {
+        // Already saved (to get carId for uploads), just patch with final data
+        await api.patch(`/api/v1/cars/${savedCarId}`, payload);
+      } else if (modal === "edit" && editCar) {
         await api.patch(`/api/v1/cars/${editCar.carId}`, payload);
+      } else {
+        await api.post("/api/v1/cars/", payload);
       }
-      await load();
-      closeModal();
-    } catch(ex:any){ setErr(ex.response?.data?.detail||"Save failed. Please try again."); }
+      await load(); closeModal();
+    } catch(ex:any) { setErr(ex.response?.data?.detail || "Save failed."); }
     finally { setSaving(false); }
   };
 
   const handleDelete = async (carId: string) => {
-    if (!confirm("Delete this car permanently?")) return;
+    if (!confirm("Delete this car permanently? This cannot be undone.")) return;
     try { await api.delete(`/api/v1/cars/${carId}`); await load(); }
-    catch(_){ alert("Delete failed"); }
+    catch(_) { alert("Delete failed. Please try again."); }
   };
-
-  const set = (k: string, v: any) => { (formRef.current as any)[k] = v; setRerender(r=>r+1); };
 
   const STATUS_COLORS: Record<string,string> = {
     available:"#16A34A", sold:"#737373", reserved:"#D97706",
     out_for_inspection:"#3B8BD4", in_repair:"#DC2626", on_promotion:"#7C3AED",
   };
 
+  const fi: React.CSSProperties = { width:"100%", background:"#F5F5F5", border:"1.5px solid #E5E5E5", borderRadius:"8px", padding:"0.75rem 1rem", color:"#1A1A1A", fontSize:"0.875rem", fontFamily:"var(--font-body)", outline:"none", boxSizing:"border-box" as const };
+  const lbl: React.CSSProperties = { fontSize:"0.68rem", fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase" as const, color:"#525252", display:"block", marginBottom:"0.35rem" };
+
   return (
     <div style={{display:"flex",flexDirection:"column",gap:"1.5rem",fontFamily:"var(--font-body)"}}>
-      {/* Header */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"1rem",flexWrap:"wrap"}}>
         <div>
           <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.5rem",letterSpacing:"0.05em",color:"#1A1A1A",lineHeight:1}}>Cars & Inventory</h2>
           <p style={{fontSize:"0.8rem",color:"#737373",marginTop:"0.3rem"}}>{total} total vehicles</p>
         </div>
-        <button onClick={openAdd}
-          style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.75rem 1.5rem",fontFamily:"var(--font-display)",fontSize:"0.875rem",letterSpacing:"0.08em",cursor:"pointer"}}>
+        <button onClick={openAdd} style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.75rem 1.5rem",fontFamily:"var(--font-display)",fontSize:"0.875rem",letterSpacing:"0.08em",cursor:"pointer"}}>
           + Add Car
         </button>
       </div>
 
-      {/* Filters */}
       <div style={{display:"flex",gap:"0.75rem",flexWrap:"wrap"}}>
-        <input placeholder="Search by brand, model, ID..." value={search}
-          onChange={e=>setSearch(e.target.value)}
-          style={{flex:1,minWidth:"200px",background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.625rem 1rem",fontSize:"0.875rem",fontFamily:"var(--font-body)",outline:"none",color:"#1A1A1A"}} />
+        <input placeholder="Search brand, model, ID..." value={search} onChange={e=>setSearch(e.target.value)}
+          style={{flex:1,minWidth:"180px",background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.625rem 1rem",fontSize:"0.875rem",fontFamily:"var(--font-body)",outline:"none",color:"#1A1A1A"}} />
         <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}
-          style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.625rem 1rem",fontSize:"0.875rem",fontFamily:"var(--font-body)",outline:"none",cursor:"pointer",color:"#1A1A1A"}}>
+          style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.625rem 1rem",fontSize:"0.875rem",fontFamily:"var(--font-body)",outline:"none",cursor:"pointer"}}>
           <option value="all">All Status</option>
           {STATUSES.map(s=><option key={s} value={s}>{s.replace(/_/g," ")}</option>)}
         </select>
       </div>
 
-      {/* Cars grid */}
       {loading ? (
         <div style={{display:"flex",justifyContent:"center",padding:"3rem"}}>
           <div style={{width:"28px",height:"28px",border:"2.5px solid #E5E5E5",borderTopColor:"#F47B20",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
@@ -188,155 +232,151 @@ export default function DealerCarsPage() {
         <div style={{padding:"3rem",textAlign:"center",background:"#fff",border:"1.5px dashed #E5E5E5",borderRadius:"12px",display:"flex",flexDirection:"column",alignItems:"center",gap:"1rem"}}>
           <div style={{fontSize:"2.5rem"}}>🚗</div>
           <div style={{fontFamily:"var(--font-display)",fontSize:"1.1rem",color:"#1A1A1A"}}>No cars yet</div>
-          <p style={{fontSize:"0.875rem",color:"#737373"}}>Add your first car to start building your inventory</p>
+          <p style={{fontSize:"0.875rem",color:"#737373"}}>Add your first vehicle to start building your inventory</p>
           <button onClick={openAdd} style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.75rem 1.5rem",fontFamily:"var(--font-display)",fontSize:"0.875rem",cursor:"pointer"}}>+ Add First Car</button>
         </div>
       ) : (
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:"1rem"}}>
-          {cars.map(car => (
-            <div key={car._id} style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",overflow:"hidden",transition:"border-color 0.2s",display:"flex",flexDirection:"column"}}>
-              <div style={{height:"160px",background:"#F5F5F5",position:"relative",overflow:"hidden"}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(235px,1fr))",gap:"1rem"}}>
+          {cars.map(car=>(
+            <div key={car._id} style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",overflow:"hidden",display:"flex",flexDirection:"column",transition:"border-color 0.2s"}}>
+              <div style={{height:"155px",background:"#F5F5F5",position:"relative",overflow:"hidden"}}>
                 {car.images?.[0]
                   ? <img src={car.images[0]} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} />
-                  : <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",fontSize:"2rem",opacity:0.3}}>🚗</div>
+                  : <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",fontSize:"2.5rem",opacity:0.2}}>🚗</div>
                 }
                 <div style={{position:"absolute",top:"0.5rem",left:"0.5rem",background:STATUS_COLORS[car.status]||"#737373",color:"#fff",fontSize:"0.6rem",fontWeight:700,padding:"0.2rem 0.5rem",borderRadius:"4px",textTransform:"capitalize"}}>
-                  {car.status.replace(/_/g," ")}
+                  {car.status?.replace(/_/g," ")}
                 </div>
-                {car.images?.length > 1 && (
-                  <div style={{position:"absolute",bottom:"0.5rem",right:"0.5rem",background:"rgba(0,0,0,0.6)",color:"#fff",fontSize:"0.65rem",padding:"0.15rem 0.4rem",borderRadius:"4px"}}>
+                {(car.images?.length||0) > 1 && (
+                  <div style={{position:"absolute",bottom:"0.4rem",right:"0.4rem",background:"rgba(0,0,0,0.55)",color:"#fff",fontSize:"0.62rem",padding:"0.15rem 0.4rem",borderRadius:"4px"}}>
                     +{car.images.length-1} photos
                   </div>
                 )}
               </div>
-              <div style={{padding:"0.875rem",flex:1,display:"flex",flexDirection:"column",gap:"0.3rem"}}>
-                <div style={{fontWeight:700,fontSize:"0.9rem",color:"#1A1A1A"}}>{car.brand} {car.model}</div>
+              <div style={{padding:"0.875rem",flex:1,display:"flex",flexDirection:"column",gap:"0.25rem"}}>
+                <div style={{fontWeight:700,fontSize:"0.875rem",color:"#1A1A1A"}}>{car.brand} {car.model}</div>
                 <div style={{fontSize:"0.72rem",color:"#737373"}}>{car.year} · {car.color} · {car.transmission}</div>
-                {car.city && <div style={{fontSize:"0.7rem",color:"#A3A3A3"}}>{car.city}, {car.state}</div>}
-                <div style={{fontFamily:"var(--font-display)",fontSize:"1.1rem",color:"#F47B20",marginTop:"0.25rem"}}>
-                  ₦{(car.sellingPrice||0).toLocaleString()}
-                </div>
-                <div style={{fontFamily:"var(--font-mono)",fontSize:"0.62rem",color:"#A3A3A3"}}>{car.carId}</div>
+                <div style={{fontFamily:"var(--font-display)",fontSize:"1.05rem",color:"#F47B20",marginTop:"0.25rem"}}>₦{(car.sellingPrice||0).toLocaleString()}</div>
+                <div style={{fontSize:"0.62rem",color:"#A3A3A3",fontFamily:"monospace"}}>{car.carId}</div>
               </div>
               <div style={{display:"flex",gap:"0.5rem",padding:"0.75rem",borderTop:"1px solid #F0F0F0"}}>
-                <button onClick={()=>openEdit(car)}
-                  style={{flex:1,background:"#F5F5F5",border:"1px solid #E5E5E5",borderRadius:"6px",padding:"0.5rem",fontSize:"0.78rem",cursor:"pointer",fontFamily:"var(--font-body)",color:"#525252",transition:"all 0.2s"}}>
-                  Edit
-                </button>
-                <button onClick={()=>handleDelete(car.carId)}
-                  style={{flex:1,background:"#FEF2F2",border:"1px solid rgba(220,38,38,0.25)",borderRadius:"6px",padding:"0.5rem",fontSize:"0.78rem",cursor:"pointer",fontFamily:"var(--font-body)",color:"#DC2626"}}>
-                  Delete
-                </button>
+                <button onClick={()=>openEdit(car)} style={{flex:1,background:"#F5F5F5",border:"1px solid #E5E5E5",borderRadius:"6px",padding:"0.45rem",fontSize:"0.78rem",cursor:"pointer",fontFamily:"var(--font-body)",color:"#525252"}}>Edit</button>
+                <button onClick={()=>handleDelete(car.carId)} style={{flex:1,background:"#FEF2F2",border:"1px solid rgba(220,38,38,0.2)",borderRadius:"6px",padding:"0.45rem",fontSize:"0.78rem",cursor:"pointer",fontFamily:"var(--font-body)",color:"#DC2626"}}>Delete</button>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* ADD / EDIT MODAL */}
       {modal && (
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"flex-start",justifyContent:"center",zIndex:1000,overflowY:"auto",padding:"1rem"}}>
-          <div style={{background:"#fff",borderRadius:"16px",width:"100%",maxWidth:"640px",marginTop:"1rem",marginBottom:"1rem",overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
-            {/* Modal header */}
-            <div style={{padding:"1.25rem 1.5rem",borderBottom:"1.5px solid #E5E5E5",display:"flex",alignItems:"center",justifyContent:"space-between",background:"#fff",position:"sticky",top:0,zIndex:10}}>
-              <h3 style={{fontFamily:"var(--font-display)",fontSize:"1.1rem",letterSpacing:"0.08em",color:"#1A1A1A"}}>{modal==="add"?"ADD NEW CAR":"EDIT CAR"}</h3>
-              <button onClick={closeModal} style={{background:"#F5F5F5",border:"none",borderRadius:"6px",width:"32px",height:"32px",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:"1rem",color:"#737373"}}>✕</button>
+          <div style={{background:"#fff",borderRadius:"16px",width:"100%",maxWidth:"600px",margin:"1rem auto",overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
+            <div style={{padding:"1.25rem 1.5rem",borderBottom:"1.5px solid #E5E5E5",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,background:"#fff",zIndex:10}}>
+              <div>
+                <h3 style={{fontFamily:"var(--font-display)",fontSize:"1.1rem",letterSpacing:"0.08em",color:"#1A1A1A"}}>{modal==="add"?"ADD NEW CAR":"EDIT CAR"}</h3>
+                {savedCarId && modal==="add" && <div style={{fontSize:"0.68rem",color:"#16A34A",marginTop:"0.1rem"}}>✓ Draft saved ({savedCarId}) — uploading photos...</div>}
+              </div>
+              <button onClick={closeModal} style={{background:"#F5F5F5",border:"none",borderRadius:"6px",width:"32px",height:"32px",cursor:"pointer",fontSize:"1rem",color:"#737373"}}>✕</button>
             </div>
 
-            {/* Modal body */}
-            <div style={{padding:"1.5rem",display:"flex",flexDirection:"column",gap:"1.25rem",maxHeight:"70vh",overflowY:"auto"}}>
-              {err && <div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",color:"#DC2626",padding:"0.75rem 1rem",borderRadius:"8px",fontSize:"0.875rem"}}>{err}</div>}
+            <div style={{padding:"1.5rem",display:"flex",flexDirection:"column",gap:"1.25rem",maxHeight:"72vh",overflowY:"auto"}}>
+              {err && <div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",color:"#DC2626",padding:"0.75rem 1rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:"0.5rem"}}><span>{err}</span><button onClick={()=>setErr("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer",flexShrink:0}}>✕</button></div>}
 
-              {/* Images */}
+              {/* PHOTOS */}
               <div>
-                <label style={{fontSize:"0.7rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#525252",display:"block",marginBottom:"0.5rem"}}>Photos ({images.length}/10)</label>
+                <label style={lbl}>Photos ({images.length}/6)</label>
+                {modal==="add" && !savedCarId && (
+                  <div style={{background:"#FFF7ED",border:"1px solid rgba(244,123,32,0.3)",borderRadius:"6px",padding:"0.625rem 0.875rem",fontSize:"0.75rem",color:"#C4621A",marginBottom:"0.5rem",lineHeight:1.5}}>
+                    💡 Fill in the car model and price below, then click "Add Photos" — we'll save the car info first so photos can be attached.
+                  </div>
+                )}
                 <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap",marginBottom:"0.5rem"}}>
                   {images.map((img,i)=>(
-                    <div key={i} style={{position:"relative",width:"72px",height:"56px",borderRadius:"6px",overflow:"hidden",border:"1.5px solid #E5E5E5"}}>
+                    <div key={i} style={{position:"relative",width:"76px",height:"60px",borderRadius:"6px",overflow:"hidden",border:"1.5px solid #E5E5E5"}}>
                       <img src={img} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} />
-                      <button onClick={()=>removeImage(i)} style={{position:"absolute",top:"2px",right:"2px",background:"rgba(220,38,38,0.85)",border:"none",borderRadius:"50%",width:"16px",height:"16px",color:"#fff",fontSize:"0.6rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+                      <button onClick={async()=>{
+                        const carId = savedCarId || editCar?.carId;
+                        if (carId) {
+                          try { await api.delete(`/api/v1/upload/car/${carId}/images`, { data:{ image_url: img } }); }
+                          catch(_) {}
+                        }
+                        setImages(p=>p.filter((_,j)=>j!==i));
+                      }} style={{position:"absolute",top:"2px",right:"2px",background:"rgba(220,38,38,0.85)",border:"none",borderRadius:"50%",width:"18px",height:"18px",color:"#fff",fontSize:"0.6rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
                     </div>
                   ))}
-                  {images.length < 10 && (
+                  {images.length<6 && (
                     <button onClick={()=>imgInputRef.current?.click()} disabled={uploading}
-                      style={{width:"72px",height:"56px",border:"1.5px dashed #D4D4D4",borderRadius:"6px",background:"#FAFAFA",cursor:"pointer",fontSize:"1.25rem",color:"#A3A3A3",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                      +
+                      style={{width:"76px",height:"60px",border:"1.5px dashed #D4D4D4",borderRadius:"6px",background:"#FAFAFA",cursor:uploading?"not-allowed":"pointer",fontSize:"1.4rem",color:"#A3A3A3",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:"2px"}}>
+                      {uploading&&uploadProgress.includes("photo")?"...":"+"}
                     </button>
                   )}
                 </div>
-                <input ref={imgInputRef} type="file" accept="image/*" multiple style={{display:"none"}}
-                  onChange={e=>{ if(e.target.files?.length) handleImgFiles(e.target.files); }} />
+                <input ref={imgInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple style={{display:"none"}} onChange={e=>{if(e.target.files?.length) handleImgFiles(e.target.files);}} />
                 {uploadProgress && <div style={{fontSize:"0.78rem",color:"#F47B20"}}>{uploadProgress}</div>}
               </div>
 
-              {/* Video */}
+              {/* VIDEO */}
               <div>
-                <label style={{fontSize:"0.7rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#525252",display:"block",marginBottom:"0.5rem"}}>Video (optional, max 50MB)</label>
+                <label style={lbl}>Video (optional, max 100MB)</label>
                 {video ? (
-                  <div style={{display:"flex",alignItems:"center",gap:"0.5rem"}}>
-                    <video src={video} style={{width:"120px",height:"70px",objectFit:"cover",borderRadius:"6px",border:"1.5px solid #E5E5E5"}} />
-                    <button onClick={removeVideo} style={{background:"#FEF2F2",border:"1px solid rgba(220,38,38,0.3)",color:"#DC2626",borderRadius:"6px",padding:"0.4rem 0.75rem",fontSize:"0.78rem",cursor:"pointer",fontFamily:"var(--font-body)"}}>Remove</button>
+                  <div style={{display:"flex",alignItems:"center",gap:"0.75rem"}}>
+                    <video src={video} style={{width:"120px",height:"72px",objectFit:"cover",borderRadius:"6px",border:"1.5px solid #E5E5E5"}} />
+                    <button onClick={async()=>{
+                      const carId = savedCarId || editCar?.carId;
+                      if (carId) { try { await api.patch(`/api/v1/cars/${carId}`, { video: null }); } catch(_){} }
+                      setVideo("");
+                    }} style={{background:"#FEF2F2",border:"1px solid rgba(220,38,38,0.3)",color:"#DC2626",borderRadius:"6px",padding:"0.4rem 0.875rem",fontSize:"0.78rem",cursor:"pointer"}}>Remove</button>
                   </div>
                 ) : (
                   <button onClick={()=>vidInputRef.current?.click()} disabled={uploading}
-                    style={{background:"#F5F5F5",border:"1.5px dashed #D4D4D4",borderRadius:"8px",padding:"0.75rem 1.25rem",fontSize:"0.825rem",cursor:"pointer",fontFamily:"var(--font-body)",color:"#737373"}}>
-                    + Upload Video
+                    style={{background:"#F5F5F5",border:"1.5px dashed #D4D4D4",borderRadius:"8px",padding:"0.75rem 1.25rem",fontSize:"0.825rem",cursor:"pointer",color:"#737373"}}>
+                    {uploading&&uploadProgress.includes("video")?"Uploading video...":"+ Upload Video"}
                   </button>
                 )}
-                <input ref={vidInputRef} type="file" accept="video/*" style={{display:"none"}}
-                  onChange={e=>{ if(e.target.files?.[0]) handleVideoFile(e.target.files[0]); }} />
+                <input ref={vidInputRef} type="file" accept="video/mp4,video/quicktime,video/webm" style={{display:"none"}} onChange={e=>{if(e.target.files?.[0]) handleVideoFile(e.target.files[0]);}} />
               </div>
 
-              {/* Form fields */}
+              {/* FORM FIELDS */}
               {[
-                { label:"Brand *", key:"brand", type:"select", opts:BRANDS },
-                { label:"Model *", key:"model", placeholder:"e.g. Camry, Accord..." },
-                { label:"Year", key:"year", type:"number" },
-                { label:"Color", key:"color", placeholder:"e.g. Black, White, Red..." },
-                { label:"Condition", key:"condition", type:"select", opts:CONDITIONS },
-                { label:"Status", key:"status", type:"select", opts:STATUSES },
-                { label:"Selling Price (₦) *", key:"sellingPrice", type:"number" },
-                { label:"Purchase Price (₦)", key:"purchasePrice", type:"number" },
-                { label:"Promo Price (₦)", key:"promoPrice", type:"number" },
-                { label:"Mileage (km)", key:"mileage", type:"number" },
-                { label:"Fuel Type", key:"fuelType", type:"select", opts:FUEL_TYPES },
-                { label:"Transmission", key:"transmission", type:"select", opts:TRANS },
-                { label:"Engine Type", key:"engineType", placeholder:"e.g. V6 3.5L, 2.0T..." },
-                { label:"VIN", key:"vin", placeholder:"Vehicle Identification Number" },
-                { label:"City", key:"city", placeholder:"e.g. Lagos, Abuja..." },
-                { label:"State", key:"state", placeholder:"e.g. Lagos, FCT..." },
-              ].map(f => (
+                {label:"Brand *",key:"brand",type:"select",opts:BRANDS},
+                {label:"Model *",key:"model",placeholder:"e.g. Camry, Accord..."},
+                {label:"Year",key:"year",type:"number"},
+                {label:"Color",key:"color",placeholder:"e.g. Black, White..."},
+                {label:"Condition",key:"condition",type:"select",opts:CONDITIONS},
+                {label:"Status",key:"status",type:"select",opts:STATUSES},
+                {label:"Selling Price (₦) *",key:"sellingPrice",type:"number"},
+                {label:"Purchase Price (₦)",key:"purchasePrice",type:"number"},
+                {label:"Promo Price (₦)",key:"promoPrice",type:"number"},
+                {label:"Mileage (km)",key:"mileage",type:"number"},
+                {label:"Fuel Type",key:"fuelType",type:"select",opts:FUEL_TYPES},
+                {label:"Transmission",key:"transmission",type:"select",opts:TRANS},
+                {label:"Engine",key:"engineType",placeholder:"e.g. V6 3.5L..."},
+                {label:"VIN",key:"vin",placeholder:"Vehicle Identification Number"},
+                {label:"City",key:"city",placeholder:"e.g. Lagos..."},
+                {label:"State",key:"state",placeholder:"e.g. Lagos, FCT..."},
+              ].map((f:any)=>(
                 <div key={f.key}>
-                  <label style={{fontSize:"0.7rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#525252",display:"block",marginBottom:"0.35rem"}}>{f.label}</label>
-                  {f.type==="select" ? (
-                    <select value={(formData as any)[f.key]} onChange={e=>set(f.key,e.target.value)}
-                      style={{width:"100%",background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.75rem 1rem",color:"#1A1A1A",fontSize:"0.875rem",fontFamily:"var(--font-body)",outline:"none",cursor:"pointer",textTransform:"capitalize" as const}}>
-                      {(f.opts||[]).map(o=><option key={o} value={o}>{o}</option>)}
-                    </select>
-                  ) : (
-                    <input type={f.type||"text"} value={(formData as any)[f.key]} onChange={e=>set(f.key,e.target.value)}
-                      placeholder={(f as any).placeholder||""}
-                      style={{width:"100%",background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.75rem 1rem",color:"#1A1A1A",fontSize:"0.875rem",fontFamily:"var(--font-body)",outline:"none",boxSizing:"border-box" as const}} />
-                  )}
+                  <label style={lbl}>{f.label}</label>
+                  {f.type==="select"
+                    ? <select value={form[f.key]||""} onChange={e=>setForm((p:any)=>({...p,[f.key]:e.target.value}))} style={{...fi,cursor:"pointer",textTransform:"capitalize" as const}}>
+                        {(f.opts||[]).map((o:string)=><option key={o} value={o}>{o}</option>)}
+                      </select>
+                    : <input type={f.type||"text"} value={form[f.key]||""} onChange={e=>setForm((p:any)=>({...p,[f.key]:e.target.value}))} placeholder={f.placeholder||""} style={fi} />
+                  }
                 </div>
               ))}
 
-              {/* Description */}
               <div>
-                <label style={{fontSize:"0.7rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#525252",display:"block",marginBottom:"0.35rem"}}>Description</label>
-                <textarea value={formData.description} onChange={e=>set("description",e.target.value)}
-                  placeholder="Describe the car, features, condition, service history..."
-                  rows={4}
-                  style={{width:"100%",background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.75rem 1rem",color:"#1A1A1A",fontSize:"0.875rem",fontFamily:"var(--font-body)",outline:"none",resize:"vertical" as const,boxSizing:"border-box" as const}} />
+                <label style={lbl}>Description</label>
+                <textarea value={form.description||""} onChange={e=>setForm((p:any)=>({...p,description:e.target.value}))} placeholder="Describe the car, features, condition, history..." rows={4} style={{...fi,resize:"vertical" as const}} />
               </div>
             </div>
 
-            {/* Modal footer */}
             <div style={{padding:"1rem 1.5rem",borderTop:"1.5px solid #E5E5E5",display:"flex",gap:"0.75rem",background:"#FAFAFA"}}>
               <button onClick={closeModal} style={{flex:1,background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.875rem",fontSize:"0.875rem",cursor:"pointer",fontFamily:"var(--font-body)"}}>Cancel</button>
               <button onClick={handleSave} disabled={saving||uploading}
                 style={{flex:2,background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.875rem",fontFamily:"var(--font-display)",fontSize:"0.9rem",letterSpacing:"0.08em",cursor:"pointer",opacity:(saving||uploading)?0.6:1}}>
-                {saving?"Saving...":(modal==="add"?"ADD CAR":"SAVE CHANGES")}
+                {saving?"Saving...":(modal==="add"?"SAVE CAR":"SAVE CHANGES")}
               </button>
             </div>
           </div>
