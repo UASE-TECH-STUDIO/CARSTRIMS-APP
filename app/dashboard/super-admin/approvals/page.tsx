@@ -4,10 +4,13 @@ import api from "@/lib/api";
 
 function PreviewModal({ src, type, onClose }: { src:string; type:"image"|"pdf"; onClose:()=>void }) {
   return (
-    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.9)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
       <div onClick={e=>e.stopPropagation()} style={{position:"relative",maxWidth:"90vw",maxHeight:"90vh"}}>
-        <button onClick={onClose} style={{position:"absolute",top:"-2rem",right:0,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:"50%",width:"32px",height:"32px",color:"#fff",fontSize:"1rem",cursor:"pointer"}}>✕</button>
-        {type==="image"?<img src={src} alt="" style={{maxWidth:"88vw",maxHeight:"88vh",objectFit:"contain",borderRadius:"8px",display:"block"}}/>:<iframe src={src} style={{width:"80vw",height:"85vh",border:"none",borderRadius:"8px"}}/>}
+        <button onClick={onClose} style={{position:"absolute",top:"-2.5rem",right:0,background:"rgba(255,255,255,0.2)",border:"none",borderRadius:"50%",width:"36px",height:"36px",color:"#fff",fontSize:"1.1rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+        {type==="image"
+          ? <img src={src} alt="" style={{maxWidth:"88vw",maxHeight:"85vh",objectFit:"contain",borderRadius:"8px",display:"block"}}/>
+          : <iframe src={src} style={{width:"80vw",height:"85vh",border:"none",borderRadius:"8px"}}/>
+        }
       </div>
     </div>
   );
@@ -16,44 +19,41 @@ function PreviewModal({ src, type, onClose }: { src:string; type:"image"|"pdf"; 
 export default function ApprovalsPage() {
   const [dealers, setDealers] = useState<any[]>([]);
   const [noProfile, setNoProfile] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading]   = useState(true);
   const [actionLoading, setActionLoading] = useState<string|null>(null);
   const [expanded, setExpanded] = useState<string|null>(null);
   const [rejectModal, setRejectModal] = useState<any>(null);
   const [cancelModal, setCancelModal] = useState<any>(null);
   const [rejectReason, setRejectReason] = useState("");
-  const [msg, setMsg] = useState("");
-  const [msgType, setMsgType] = useState<"success"|"error">("success");
-  const [preview, setPreview] = useState<{src:string;type:"image"|"pdf"}|null>(null);
+  const [msg, setMsg]           = useState("");
+  const [msgType, setMsgType]   = useState<"success"|"error">("success");
+  const [preview, setPreview]   = useState<{src:string;type:"image"|"pdf"}|null>(null);
 
-  const showMsg = (text: string, type: "success"|"error") => {
+  const showMsg = (text:string, type:"success"|"error") => {
     setMsg(text); setMsgType(type); setTimeout(()=>setMsg(""),8000);
   };
 
   const load = async () => {
     setLoading(true);
-    const results: any[] = [];
     try {
       const r = await api.get("/api/v1/admin/dealers", { params:{ status:"awaiting_approval", limit:100 } });
-      (r.data?.dealers||[]).forEach((d:any)=>{ if(!results.find(x=>x._id===d._id)) results.push(d); });
-    } catch(e:any) { console.error("approvals load:", e.response?.data); }
-    setDealers(results);
+      setDealers(r.data?.dealers||[]);
+    } catch(e:any) { console.error("Approvals load:", e.response?.data); }
     try {
       const r = await api.get("/api/v1/admin/users", { params:{ role:"DEALER_ADMIN", limit:200 } });
       const users = r.data?.users||[];
-      const emails = new Set(results.map((d:any)=>d.email));
-      setNoProfile(users.filter((u:any)=>(u.status==="pending_setup"||u.status==="pending")&&!emails.has(u.email)));
+      setNoProfile(users.filter((u:any)=>u.status==="pending_setup"||u.status==="pending"));
     } catch {}
     setLoading(false);
   };
 
   useEffect(()=>{ load(); },[]);
 
-  const approve = async (dealer: any) => {
+  const approve = async (dealer:any) => {
     setActionLoading(dealer._id);
     try {
       await api.post(`/api/v1/admin/dealers/${dealer._id}/approve`);
-      showMsg(`${dealer.companyName} approved! ✅`,"success");
+      showMsg(`${dealer.companyName} approved ✅`,"success");
       setExpanded(null); load();
     } catch(err:any) { showMsg(`Approval failed: ${err.response?.data?.detail||"Unknown error"}`,"error"); }
     finally { setActionLoading(null); }
@@ -66,15 +66,14 @@ export default function ApprovalsPage() {
       await api.post(`/api/v1/admin/dealers/${rejectModal._id}/reject`, { reason:rejectReason||"Your application does not meet our requirements." });
       showMsg(`${rejectModal.companyName} rejected.`,"success");
       setRejectModal(null); setRejectReason(""); setExpanded(null); load();
-    } catch(err:any) { showMsg(`Reject failed: ${err.response?.data?.detail||"Unknown error"}`,"error"); }
+    } catch(err:any) { showMsg(`Reject failed: ${err.response?.data?.detail||"Error"}`,"error"); }
     finally { setActionLoading(null); }
   };
 
-  const cancelUser = async (user: any) => {
+  const cancelUser = async (user:any) => {
     setActionLoading(user._id);
     try {
-      try { await api.delete(`/api/v1/admin/users/${user._id}`); }
-      catch { await api.post(`/api/v1/admin/users/${user._id}/suspend`, { reason:"Registration cancelled" }); }
+      await api.post(`/api/v1/admin/users/${user._id}/suspend`,{ reason:"Registration cancelled" });
       showMsg(`${user.fullName||user.username}'s registration cancelled.`,"success");
       setCancelModal(null); load();
     } catch { showMsg("Could not cancel registration.","error"); }
@@ -83,23 +82,45 @@ export default function ApprovalsPage() {
 
   const fmtDate = (iso:string) => { try { return new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}); } catch { return "-"; } };
 
-  const DocBadge = ({ url, label, icon }: { url:string; label:string; icon:string }) => {
-    const isPdf = url.toLowerCase().includes(".pdf") || url.toLowerCase().includes("raw");
+  // Render a single document/image with preview
+  const DocItem = ({ url, label, isPdf=false }: { url:string; label:string; isPdf?:boolean }) => {
+    const type = isPdf||url?.toLowerCase().includes(".pdf") ? "pdf" : "image";
     return (
       <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.4rem"}}>
-        {!isPdf && (
-          <img src={url} alt={label} onClick={()=>setPreview({src:url,type:"image"})}
-            style={{width:"80px",height:"64px",objectFit:"cover",borderRadius:"6px",border:"2px solid #E5E5E5",cursor:"zoom-in",transition:"border-color 0.2s"}}
-            onMouseOver={e=>(e.currentTarget.style.borderColor="#F47B20")} onMouseOut={e=>(e.currentTarget.style.borderColor="#E5E5E5")}/>
+        {type==="image" ? (
+          <img src={url} alt={label}
+            onClick={()=>setPreview({src:url,type:"image"})}
+            style={{width:"90px",height:"72px",objectFit:"cover",borderRadius:"8px",border:"2px solid #E5E5E5",cursor:"zoom-in",transition:"border-color 0.2s"}}
+            onMouseOver={e=>(e.currentTarget.style.borderColor="#F47B20")}
+            onMouseOut={e=>(e.currentTarget.style.borderColor="#E5E5E5")}
+          />
+        ) : (
+          <div onClick={()=>setPreview({src:url,type:"pdf"})}
+            style={{width:"90px",height:"72px",border:"2px solid #E5E5E5",borderRadius:"8px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"zoom-in",background:"#FAFAFA",fontSize:"1.75rem",gap:"0.25rem"}}
+            onMouseOver={e=>(e.currentTarget.style.borderColor="#F47B20")}
+            onMouseOut={e=>(e.currentTarget.style.borderColor="#E5E5E5")}>
+            📄
+            <span style={{fontSize:"0.58rem",color:"#737373"}}>PDF</span>
+          </div>
         )}
-        <button onClick={()=>setPreview({src:url,type:isPdf?"pdf":"image"})}
-          style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:"6px",padding:"0.35rem 0.6rem",fontSize:"0.75rem",color:"#1A1A1A",cursor:"pointer",display:"flex",alignItems:"center",gap:"0.35rem",transition:"all 0.2s"}}
-          onMouseOver={e=>{e.currentTarget.style.borderColor="#F47B20";e.currentTarget.style.color="#F47B20";}} onMouseOut={e=>{e.currentTarget.style.borderColor="#E5E5E5";e.currentTarget.style.color="#1A1A1A";}}>
-          {icon} {label}
-        </button>
+        <span style={{fontSize:"0.65rem",color:"#737373",fontWeight:600,textAlign:"center"}}>{label}</span>
       </div>
     );
   };
+
+  // Passport photo — always shown as circular portrait
+  const PassportItem = ({ url }: { url:string }) => (
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.4rem"}}>
+      <div
+        onClick={()=>setPreview({src:url,type:"image"})}
+        style={{width:"80px",height:"80px",borderRadius:"50%",overflow:"hidden",border:"2.5px solid #F47B20",cursor:"zoom-in",transition:"border-color 0.2s"}}
+        onMouseOver={e=>(e.currentTarget.style.borderColor="#FF9340")}
+        onMouseOut={e=>(e.currentTarget.style.borderColor="#F47B20")}>
+        <img src={url} alt="Passport" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+      </div>
+      <span style={{fontSize:"0.65rem",color:"#737373",fontWeight:600}}>Passport Photo</span>
+    </div>
+  );
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:"1.5rem",fontFamily:"var(--font-body)"}}>
@@ -116,25 +137,25 @@ export default function ApprovalsPage() {
       </div>
 
       {msg&&(
-        <div style={{background:msgType==="success"?"#F0FDF4":"#FEF2F2",border:`1px solid ${msgType==="success"?"#86EFAC":"#FCA5A5"}`,color:msgType==="success"?"#15803D":"#DC2626",padding:"0.875rem 1.25rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between",gap:"1rem",lineHeight:1.5}}>
+        <div style={{background:msgType==="success"?"#F0FDF4":"#FEF2F2",border:`1px solid ${msgType==="success"?"#86EFAC":"#FCA5A5"}`,color:msgType==="success"?"#15803D":"#DC2626",padding:"0.875rem 1.25rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between",gap:"1rem"}}>
           <span>{msg}</span><button onClick={()=>setMsg("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}>✕</button>
         </div>
       )}
 
-      {loading?(
+      {loading ? (
         <div style={{display:"flex",justifyContent:"center",padding:"3rem"}}>
           <div style={{width:"28px",height:"28px",border:"2.5px solid #E5E5E5",borderTopColor:"#F47B20",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
           <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
         </div>
-      ):(
+      ) : (
         <>
-          {dealers.length===0&&noProfile.length===0&&(
+          {dealers.length===0&&noProfile.length===0 ? (
             <div style={{padding:"3rem",textAlign:"center",background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px",display:"flex",flexDirection:"column",alignItems:"center",gap:"0.875rem"}}>
               <div style={{fontSize:"2rem"}}>✅</div>
               <div style={{fontSize:"0.9rem",fontWeight:600,color:"#1A1A1A"}}>No pending approvals</div>
               <p style={{fontSize:"0.825rem",color:"#737373",maxWidth:"420px",lineHeight:1.6}}>New dealers appear here after they register and complete their dealership setup.</p>
             </div>
-          )}
+          ) : null}
 
           {dealers.length>0&&(
             <div style={{display:"flex",flexDirection:"column",gap:"1rem"}}>
@@ -145,22 +166,31 @@ export default function ApprovalsPage() {
                 <div key={d._id} style={{background:"#fff",border:`1.5px solid ${expanded===d._id?"#F47B20":"#E5E5E5"}`,borderRadius:"12px",overflow:"hidden",transition:"border-color 0.2s"}}>
                   {/* Card header */}
                   <div style={{padding:"1.25rem 1.5rem",display:"flex",alignItems:"flex-start",gap:"1rem",cursor:"pointer"}} onClick={()=>setExpanded(expanded===d._id?null:d._id)}>
-                    <div style={{width:"52px",height:"52px",borderRadius:"8px",overflow:"hidden",background:"#FFF7ED",border:"1.5px solid rgba(244,123,32,0.25)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                      {d.logo?<img src={d.logo} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontFamily:"var(--font-display)",fontSize:"1.4rem",color:"#F47B20"}}>{d.companyName?.charAt(0)||"?"}</span>}
+                    {/* Logo preview — small */}
+                    <div style={{width:"52px",height:"52px",borderRadius:"8px",overflow:"hidden",background:"#FFF7ED",border:"1.5px solid rgba(244,123,32,0.25)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:d.logo?"zoom-in":"default"}}
+                      onClick={e=>{if(d.logo){e.stopPropagation();setPreview({src:d.logo,type:"image"})}}}>
+                      {d.logo
+                        ? <img src={d.logo} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                        : <span style={{fontFamily:"var(--font-display)",fontSize:"1.4rem",color:"#F47B20"}}>{d.companyName?.charAt(0)||"?"}</span>
+                      }
                     </div>
+
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontWeight:700,fontSize:"0.975rem",color:"#1A1A1A"}}>{d.companyName}</div>
                       <div style={{fontSize:"0.78rem",color:"#737373",marginTop:"0.2rem"}}>{d.ownerName} · {d.email}</div>
                       <div style={{fontSize:"0.78rem",color:"#737373"}}>{d.phone}{d.city?` · ${d.city}, ${d.state}`:""}</div>
-                      <div style={{display:"flex",gap:"0.4rem",marginTop:"0.5rem",flexWrap:"wrap"}}>
-                        <span style={{fontSize:"0.68rem",background:"#FFF7ED",color:"#C4621A",border:"1px solid rgba(244,123,32,0.3)",borderRadius:"4px",padding:"0.15rem 0.5rem"}}>Applied {fmtDate(d.createdAt)}</span>
-                        {d.passportPhoto&&<span style={{fontSize:"0.68rem",background:"#F0FDF4",color:"#15803D",border:"1px solid #86EFAC",borderRadius:"4px",padding:"0.15rem 0.5rem"}}>✓ Passport</span>}
-                        {d.logo&&<span style={{fontSize:"0.68rem",background:"#F0FDF4",color:"#15803D",border:"1px solid #86EFAC",borderRadius:"4px",padding:"0.15rem 0.5rem"}}>✓ Logo</span>}
-                        {d.idCardUrl&&<span style={{fontSize:"0.68rem",background:"#F0FDF4",color:"#15803D",border:"1px solid #86EFAC",borderRadius:"4px",padding:"0.15rem 0.5rem"}}>✓ ID Card</span>}
-                        {d.cacUrl&&<span style={{fontSize:"0.68rem",background:"#F0FDF4",color:"#15803D",border:"1px solid #86EFAC",borderRadius:"4px",padding:"0.15rem 0.5rem"}}>✓ CAC</span>}
-                        {d.dealerId&&<span style={{fontSize:"0.65rem",background:"#F5F5F5",color:"#737373",border:"1px solid #E5E5E5",borderRadius:"4px",padding:"0.15rem 0.5rem",fontFamily:"monospace"}}>{d.dealerId}</span>}
+
+                      {/* Document presence badges */}
+                      <div style={{display:"flex",gap:"0.35rem",marginTop:"0.5rem",flexWrap:"wrap"}}>
+                        <span style={{fontSize:"0.65rem",background:"#FFF7ED",color:"#C4621A",border:"1px solid rgba(244,123,32,0.3)",borderRadius:"4px",padding:"0.15rem 0.5rem"}}>Applied {fmtDate(d.createdAt)}</span>
+                        {d.passportPhoto&&<span style={{fontSize:"0.65rem",background:"#F0FDF4",color:"#15803D",border:"1px solid #86EFAC",borderRadius:"4px",padding:"0.15rem 0.5rem"}}>✓ Passport</span>}
+                        {d.logo&&<span style={{fontSize:"0.65rem",background:"#F0FDF4",color:"#15803D",border:"1px solid #86EFAC",borderRadius:"4px",padding:"0.15rem 0.5rem"}}>✓ Logo</span>}
+                        {d.idCardUrl&&<span style={{fontSize:"0.65rem",background:"#F0FDF4",color:"#15803D",border:"1px solid #86EFAC",borderRadius:"4px",padding:"0.15rem 0.5rem"}}>✓ ID Card</span>}
+                        {d.cacUrl&&<span style={{fontSize:"0.65rem",background:"#F0FDF4",color:"#15803D",border:"1px solid #86EFAC",borderRadius:"4px",padding:"0.15rem 0.5rem"}}>✓ CAC</span>}
+                        {d.dealerId&&<span style={{fontSize:"0.62rem",background:"#F5F5F5",color:"#737373",border:"1px solid #E5E5E5",borderRadius:"4px",padding:"0.15rem 0.5rem",fontFamily:"monospace"}}>{d.dealerId}</span>}
                       </div>
                     </div>
+
                     <div style={{display:"flex",flexDirection:"column",gap:"0.4rem",flexShrink:0}} onClick={e=>e.stopPropagation()}>
                       <button onClick={()=>approve(d)} disabled={actionLoading===d._id}
                         style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"6px",padding:"0.5rem 1.25rem",fontFamily:"var(--font-display)",fontSize:"0.8rem",letterSpacing:"0.06em",cursor:"pointer",opacity:actionLoading===d._id?0.6:1,whiteSpace:"nowrap"}}>
@@ -177,69 +207,59 @@ export default function ApprovalsPage() {
                   {expanded===d._id&&(
                     <div style={{borderTop:"1px solid #F5F5F5",padding:"1.5rem",background:"#FAFAFA",display:"flex",flexDirection:"column",gap:"1.5rem"}}>
 
-                      {/* Basic info grid */}
+                      {/* ALL UPLOADED DOCS — Passport, Logo, ID, CAC */}
+                      <div>
+                        <div style={{fontSize:"0.7rem",fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase" as const,color:"#737373",marginBottom:"0.75rem"}}>
+                          Uploaded Photos & Documents
+                          <span style={{fontSize:"0.65rem",fontWeight:400,color:"#A3A3A3",marginLeft:"0.5rem",textTransform:"none" as const}}>— click any to view full size</span>
+                        </div>
+
+                        {(d.passportPhoto||d.logo||d.idCardUrl||d.cacUrl) ? (
+                          <div style={{display:"flex",gap:"1.5rem",flexWrap:"wrap",alignItems:"flex-start"}}>
+                            {/* Passport photo — circular */}
+                            {d.passportPhoto && <PassportItem url={d.passportPhoto}/>}
+                            {/* Business logo */}
+                            {d.logo && <DocItem url={d.logo} label="Business Logo"/>}
+                            {/* ID Card */}
+                            {d.idCardUrl && <DocItem url={d.idCardUrl} label="ID Card" isPdf={d.idCardUrl?.toLowerCase().includes(".pdf")}/>}
+                            {/* CAC */}
+                            {d.cacUrl && <DocItem url={d.cacUrl} label="CAC Document" isPdf={d.cacUrl?.toLowerCase().includes(".pdf")}/>}
+                          </div>
+                        ) : (
+                          <div style={{background:"#FFF7ED",border:"1px solid rgba(244,123,32,0.3)",borderRadius:"8px",padding:"0.875rem",fontSize:"0.825rem",color:"#C4621A",lineHeight:1.5}}>
+                            No documents uploaded yet. You can still approve or contact the dealer.
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Business info grid */}
                       <div>
                         <div style={{fontSize:"0.7rem",fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase" as const,color:"#737373",marginBottom:"0.75rem"}}>Business Information</div>
                         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:"0.75rem"}}>
                           {[
-                            ["Company Name",d.companyName||"-"],["Owner",d.ownerName||"-"],
+                            ["Company",d.companyName||"-"],["Owner",d.ownerName||"-"],
                             ["Email",d.email||"-"],["Phone",d.phone||"-"],
-                            ["WhatsApp",d.whatsapp||d.phone||"-"],["Address",d.address||"-"],
-                            ["City",d.city||"-"],["State",d.state||"-"],
-                            ["Country",d.country||"Nigeria"],["Description",d.description||"Not provided"],
-                            ["Dealer ID",d.dealerId||"Not assigned"],["Applied",fmtDate(d.createdAt)],
+                            ["WhatsApp",d.whatsapp||"-"],["City",d.city||"-"],
+                            ["State",d.state||"-"],["Country",d.country||"Nigeria"],
+                            ["Description",d.description||"Not provided"],
+                            ["Dealer ID",d.dealerId||"Not assigned"],
                           ].map(([label,val])=>(
                             <div key={label} style={{background:"#fff",border:"1px solid #E5E5E5",borderRadius:"6px",padding:"0.625rem 0.875rem"}}>
                               <div style={{fontSize:"0.62rem",fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase" as const,color:"#A3A3A3",marginBottom:"0.2rem"}}>{label}</div>
-                              <div style={{fontSize:"0.8rem",color:"#1A1A1A",fontWeight:500,wordBreak:"break-all"}}>{val}</div>
+                              <div style={{fontSize:"0.8rem",color:"#1A1A1A",wordBreak:"break-all"}}>{val}</div>
                             </div>
                           ))}
                         </div>
-                      </div>
-
-                      {/* Photos + Documents */}
-                      <div>
-                        <div style={{fontSize:"0.7rem",fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase" as const,color:"#737373",marginBottom:"0.75rem"}}>
-                          Uploaded Photos & Documents
-                          <span style={{fontSize:"0.65rem",fontWeight:400,textTransform:"none" as const,color:"#A3A3A3",marginLeft:"0.5rem"}}>— click any to view full size</span>
-                        </div>
-                        {(d.passportPhoto||d.logo||d.idCardUrl||d.cacUrl||d.businessIdUrl)?(
-                          <div style={{display:"flex",gap:"1.25rem",flexWrap:"wrap",alignItems:"flex-start"}}>
-                            {d.passportPhoto&&(
-                              <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.5rem"}}>
-                                <div style={{width:"80px",height:"80px",borderRadius:"50%",overflow:"hidden",border:"2.5px solid #F47B20",cursor:"zoom-in"}} onClick={()=>setPreview({src:d.passportPhoto,type:"image"})}>
-                                  <img src={d.passportPhoto} alt="Passport" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                                </div>
-                                <span style={{fontSize:"0.65rem",color:"#737373",fontWeight:600}}>Passport Photo</span>
-                              </div>
-                            )}
-                            {d.logo&&(
-                              <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.5rem"}}>
-                                <div style={{width:"80px",height:"80px",borderRadius:"8px",overflow:"hidden",border:"2.5px solid #E5E5E5",cursor:"zoom-in"}} onClick={()=>setPreview({src:d.logo,type:"image"})}>
-                                  <img src={d.logo} alt="Logo" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                                </div>
-                                <span style={{fontSize:"0.65rem",color:"#737373",fontWeight:600}}>Business Logo</span>
-                              </div>
-                            )}
-                            {d.idCardUrl&&<DocBadge url={d.idCardUrl} label="ID Card" icon="🪪"/>}
-                            {d.cacUrl&&<DocBadge url={d.cacUrl} label="CAC Document" icon="🏢"/>}
-                            {d.businessIdUrl&&<DocBadge url={d.businessIdUrl} label="Business ID" icon="📋"/>}
-                          </div>
-                        ):(
-                          <div style={{background:"#FFF7ED",border:"1px solid rgba(244,123,32,0.3)",borderRadius:"8px",padding:"0.875rem",fontSize:"0.825rem",color:"#C4621A",lineHeight:1.5}}>
-                            No verification documents uploaded. You can still approve or contact the dealer.
-                          </div>
-                        )}
                       </div>
 
                       {/* Contact actions */}
                       <div style={{display:"flex",gap:"0.75rem",flexWrap:"wrap"}}>
                         {d.phone&&<a href={`tel:${d.phone}`} style={{background:"#F5F5F5",border:"1px solid #E5E5E5",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#1A1A1A",textDecoration:"none"}}>📞 Call</a>}
                         {(d.whatsapp||d.phone)&&<a href={`https://wa.me/${(d.whatsapp||d.phone).replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer" style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#15803D",textDecoration:"none"}}>💬 WhatsApp</a>}
-                        {d.email&&<a href={`mailto:${d.email}`} style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#1D4ED8",textDecoration:"none"}}>✉️ Email</a>}
+                        {d.email&&<a href={`mailto:${d.email}`} style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#1D4ED8",textDecoration:"none"}}>✉ Email</a>}
                       </div>
 
-                      {/* Final action buttons */}
+                      {/* Approve / Reject */}
                       <div style={{display:"flex",gap:"0.75rem",borderTop:"1px solid #E5E5E5",paddingTop:"1rem"}}>
                         <button onClick={()=>approve(d)} disabled={actionLoading===d._id}
                           style={{flex:2,background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.875rem",fontFamily:"var(--font-display)",fontSize:"0.9rem",letterSpacing:"0.08em",cursor:"pointer",opacity:actionLoading===d._id?0.6:1}}>
@@ -285,13 +305,13 @@ export default function ApprovalsPage() {
         </>
       )}
 
+      {/* Reject modal */}
       {rejectModal&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:"12px",padding:"1.5rem",maxWidth:"440px",width:"100%",display:"flex",flexDirection:"column",gap:"1.25rem",boxShadow:"0 16px 48px rgba(0,0,0,0.2)"}}>
             <h3 style={{fontFamily:"var(--font-display)",fontSize:"1.1rem",letterSpacing:"0.08em",color:"#1A1A1A"}}>REJECT APPLICATION</h3>
             <p style={{fontSize:"0.875rem",color:"#737373"}}>Rejecting <strong>{rejectModal.companyName}</strong>. Provide a reason.</p>
-            <textarea style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.875rem",color:"#1A1A1A",fontSize:"0.875rem",fontFamily:"var(--font-body)",outline:"none",width:"100%",minHeight:"100px",resize:"vertical" as const,boxSizing:"border-box" as const}}
-              placeholder="Reason for rejection..." value={rejectReason} onChange={e=>setRejectReason(e.target.value)}/>
+            <textarea style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.875rem",color:"#1A1A1A",fontSize:"0.875rem",fontFamily:"var(--font-body)",outline:"none",width:"100%",minHeight:"100px",resize:"vertical" as const,boxSizing:"border-box" as const}} placeholder="Reason for rejection..." value={rejectReason} onChange={e=>setRejectReason(e.target.value)}/>
             <div style={{display:"flex",gap:"0.75rem"}}>
               <button onClick={()=>setRejectModal(null)} style={{flex:1,background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.875rem",fontSize:"0.875rem",cursor:"pointer",fontFamily:"var(--font-body)"}}>Cancel</button>
               <button onClick={reject} disabled={actionLoading===rejectModal._id}
@@ -303,6 +323,7 @@ export default function ApprovalsPage() {
         </div>
       )}
 
+      {/* Cancel modal */}
       {cancelModal&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:"12px",padding:"1.5rem",maxWidth:"400px",width:"100%",display:"flex",flexDirection:"column",gap:"1.25rem",boxShadow:"0 16px 48px rgba(0,0,0,0.2)"}}>

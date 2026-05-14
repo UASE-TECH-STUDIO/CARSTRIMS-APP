@@ -5,24 +5,25 @@ import api from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import Link from "next/link";
 
-export default function CarDetailPage() {
+export default function VehicleDetailPage() {
   const params = useParams();
   const router = useRouter();
   const carId  = params?.carId as string;
   const { user, isAuthenticated } = useAuthStore();
-  const [car, setCar]             = useState<any>(null);
-  const [loading, setLoading]     = useState(true);
-  const [activeImage, setActiveImage] = useState(0);
-  const [liked, setLiked]         = useState(false);
-  const [favorited, setFavorited] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
-  const [comments, setComments]   = useState<any[]>([]);
-  const [commentText, setCommentText] = useState("");
-  const [submittingComment, setSubmittingComment] = useState(false);
-  const [showContact, setShowContact] = useState(false);
-  const [replyTo, setReplyTo]     = useState<string|null>(null);
-  const [replyText, setReplyText] = useState("");
-  const [startingMsg, setStartingMsg] = useState(false);
+
+  const [car, setCar]                   = useState<any>(null);
+  const [loading, setLoading]           = useState(true);
+  const [activeImage, setActiveImage]   = useState(0);
+  const [liked, setLiked]               = useState(false);
+  const [favorited, setFavorited]       = useState(false);
+  const [likeCount, setLikeCount]       = useState(0);
+  const [comments, setComments]         = useState<any[]>([]);
+  const [commentText, setCommentText]   = useState("");
+  const [submittingComment, setSubmitting] = useState(false);
+  const [showContact, setShowContact]   = useState(false);
+  const [replyTo, setReplyTo]           = useState<string|null>(null);
+  const [replyText, setReplyText]       = useState("");
+  const [startingMsg, setStartingMsg]   = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const isAdmin = user?.role === "SYSTEM_ADMIN";
@@ -41,7 +42,8 @@ export default function CarDetailPage() {
         if (isAuthenticated) {
           try {
             const lr = await api.get(`/api/v1/public/cars/${carId}/likes/me`);
-            setLiked(lr.data.liked); setFavorited(lr.data.favorited);
+            setLiked(lr.data.liked);
+            setFavorited(lr.data.favorited);
           } catch {}
         }
       } catch {} finally { setLoading(false); }
@@ -69,31 +71,63 @@ export default function CarDetailPage() {
     if (!isAuthenticated) { router.push("/login"); return; }
     setStartingMsg(true);
     try {
-      const dealerUserId = car.dealer?.userId || car.dealer?._id;
+      // The public car endpoint may not include dealer.userId directly.
+      // Strategy: get dealer profile to find the userId.
+      let dealerUserId: string | null = null;
+
+      // Option 1: userId directly in car.dealer
+      if (car.dealer?.userId) {
+        dealerUserId = car.dealer.userId;
+      }
+
+      // Option 2: fetch dealer by dealerId to get userId
+      if (!dealerUserId && car.dealer?.dealerId) {
+        try {
+          const dealerRes = await api.get(`/api/v1/public/dealers/${car.dealer.dealerId}`);
+          dealerUserId = dealerRes.data?.userId || dealerRes.data?.ownerUserId || null;
+        } catch {}
+      }
+
+      // Option 3: dealer _id is stored as MongoDB ObjectId string → use as receiverId
+      if (!dealerUserId && car.dealer?._id) {
+        dealerUserId = car.dealer._id;
+      }
+
+      if (!dealerUserId) {
+        alert("Could not find dealer contact. Please use the phone or WhatsApp button instead.");
+        return;
+      }
+
       await api.post("/api/v1/messages/start", {
         receiverId: dealerUserId,
         message: `Hi, I am interested in your ${car.brand} ${car.model} ${car.year} (${car.carId}). Is it still available?`,
       });
-      router.push("/dashboard/user/messages");
-    } catch (e:any) { alert(e.response?.data?.detail || "Could not start conversation"); }
-    finally { setStartingMsg(false); }
+
+      // Redirect to messages — works for all roles
+      if (user?.role === "DEALER_ADMIN") router.push("/dashboard/dealer/messages");
+      else if (user?.role === "DEALER_STAFF") router.push("/dashboard/staff/messages");
+      else if (user?.role === "PARTNER_USER") router.push("/dashboard/partner/messages");
+      else router.push("/dashboard/user/messages");
+    } catch (e: any) {
+      alert(e.response?.data?.detail || "Could not start conversation. Try again.");
+    } finally { setStartingMsg(false); }
   };
 
   const handleAdminDeleteCar = async () => {
-    if (!window.confirm("Delete this car listing? This cannot be undone.")) return;
+    if (!window.confirm("Delete this vehicle listing? This cannot be undone.")) return;
     try { await api.delete(`/api/v1/admin/cars/${carId}`); router.push("/feed"); }
-    catch (e:any) { alert(e.response?.data?.detail || "Delete failed"); }
+    catch (e: any) { alert(e.response?.data?.detail || "Delete failed"); }
   };
 
   const handleComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAuthenticated) { router.push("/login"); return; }
     if (!commentText.trim()) return;
-    setSubmittingComment(true);
+    setSubmitting(true);
     try {
       const r = await api.post(`/api/v1/public/cars/${carId}/comments`, { text: commentText });
       setComments(p => [r.data, ...p]); setCommentText("");
-    } catch {} finally { setSubmittingComment(false); }
+    } catch {} finally { setSubmitting(false); }
   };
 
   const handleDeleteComment = async (commentId: string) => {
@@ -125,8 +159,8 @@ export default function CarDetailPage() {
 
   const prev = () => setActiveImage(i => i===0 ? car.images.length-1 : i-1);
   const next = () => setActiveImage(i => i===car.images.length-1 ? 0 : i+1);
-  const fmt = (n:number) => `NGN ${(n||0).toLocaleString()}`;
-  const fmtTime = (iso:string) => {
+  const fmt      = (n: number) => `₦${(n||0).toLocaleString()}`;
+  const fmtTime  = (iso: string) => {
     const d = Date.now()-new Date(iso).getTime(); const m = Math.floor(d/60000);
     return m<1?"just now":m<60?`${m}m ago`:m<1440?`${Math.floor(m/60)}h ago`:new Date(iso).toLocaleDateString();
   };
@@ -140,7 +174,7 @@ export default function CarDetailPage() {
 
   if (!car) return (
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"1rem",padding:"4rem",textAlign:"center",minHeight:"100vh",background:"#F5F5F5",justifyContent:"center"}}>
-      <h2 style={{fontFamily:"var(--font-display)",color:"#1A1A1A"}}>Car not found</h2>
+      <h2 style={{fontFamily:"var(--font-display)",color:"#1A1A1A"}}>Vehicle not found</h2>
       <Link href="/feed" style={{color:"#F47B20",textDecoration:"none"}}>← Back to feed</Link>
     </div>
   );
@@ -153,7 +187,7 @@ export default function CarDetailPage() {
           <button className={`action-btn ${liked?"liked":""}`} onClick={handleLike}>{liked?"♥":"♡"} {likeCount}</button>
           <button className={`action-btn ${favorited?"faved":""}`} onClick={handleFavorite}>{favorited?"★ Saved":"☆ Save"}</button>
           <button className="action-btn" onClick={handleShare}>Share</button>
-          {isAdmin && <button className="action-btn admin-del" onClick={handleAdminDeleteCar}>🗑 Delete</button>}
+          {isAdmin && <button className="action-btn admin-del" onClick={handleAdminDeleteCar}>🗑 Remove</button>}
         </div>
       </header>
 
@@ -179,7 +213,7 @@ export default function CarDetailPage() {
 
           {car.images?.length > 1 && (
             <div className="thumb-row">
-              {car.images.map((img:string, i:number) => (
+              {car.images.map((img:string,i:number)=>(
                 <button key={i} className={`thumb ${activeImage===i?"active":""}`} onClick={()=>setActiveImage(i)}>
                   <img src={img} alt=""/>
                 </button>
@@ -205,13 +239,13 @@ export default function CarDetailPage() {
             </div>
             <div className="specs-grid">
               {[
-                {label:"Mileage",value:car.mileage?`${car.mileage?.toLocaleString()} km`:"N/A"},
+                {label:"Mileage",    value:car.mileage?`${car.mileage?.toLocaleString()} km`:"N/A"},
                 {label:"Transmission",value:car.transmission||"N/A"},
-                {label:"Fuel Type",value:car.fuelType||"N/A"},
-                {label:"Engine",value:car.engineType||"N/A"},
-                {label:"Location",value:car.city?`${car.city}, ${car.state}`:(car.state||"N/A")},
-                {label:"VIN",value:car.vin||"N/A"},
-              ].map(s => (
+                {label:"Fuel Type",  value:car.fuelType||"N/A"},
+                {label:"Engine",     value:car.engineType||"N/A"},
+                {label:"Location",   value:car.city?`${car.city}, ${car.state}`:(car.state||"N/A")},
+                {label:"VIN",        value:car.vin||"N/A"},
+              ].map(s=>(
                 <div key={s.label} className="spec-item">
                   <span className="spec-label">{s.label}</span>
                   <span className="spec-val">{s.value}</span>
@@ -230,20 +264,23 @@ export default function CarDetailPage() {
             <div className="dealer-card">
               <Link href={`/dealers/${car.dealer.dealerId}`} className="dealer-top">
                 <div className="dealer-logo">
-                  {car.dealer.logo ? <img src={car.dealer.logo} alt=""/> : <span>{car.dealer.companyName?.charAt(0)}</span>}
+                  {car.dealer.logo
+                    ? <img src={car.dealer.logo} alt=""/>
+                    : <span>{car.dealer.companyName?.charAt(0)}</span>}
                 </div>
                 <div className="dealer-info">
                   <div className="dealer-name">{car.dealer.companyName}</div>
                   <div className="dealer-loc">{car.dealer.city||"N/A"}, {car.dealer.state||"N/A"}</div>
-                  <span className="view-dealer">View all cars from this dealer →</span>
+                  <span className="view-dealer">View all vehicles from this dealer →</span>
                 </div>
                 {car.dealer.qrCode && <img src={car.dealer.qrCode} alt="QR" className="dealer-qr-mini"/>}
               </Link>
-              {car.status === "available" && (
+
+              {car.status==="available" && (
                 <div className="contact-section">
                   {isAuthenticated && user?.role !== "DEALER_ADMIN" && user?.role !== "DEALER_STAFF" && (
                     <button className="msg-dealer-btn" onClick={handleMessageDealer} disabled={startingMsg}>
-                      {startingMsg ? "Opening chat..." : "Message Dealer"}
+                      {startingMsg?"Opening chat...":"💬 Message Dealer"}
                     </button>
                   )}
                   <button className="contact-toggle" onClick={()=>setShowContact(!showContact)}>
@@ -253,7 +290,7 @@ export default function CarDetailPage() {
                     <div className="contact-buttons">
                       {car.dealer.phone && <a href={`tel:${car.dealer.phone}`} className="cta-btn phone">📞 Call</a>}
                       {car.dealer.whatsapp && (
-                        <a href={`https://wa.me/${car.dealer.whatsapp}?text=Hi, interested in ${car.brand} ${car.model} ${car.year} (${car.carId})`}
+                        <a href={`https://wa.me/${car.dealer.whatsapp}?text=Hi, I am interested in your ${car.brand} ${car.model} ${car.year} (${car.carId}). Is it still available?`}
                           target="_blank" rel="noreferrer" className="cta-btn whatsapp">💬 WhatsApp</a>
                       )}
                       {car.dealer.email && <a href={`mailto:${car.dealer.email}`} className="cta-btn email">✉ Email</a>}
@@ -277,55 +314,56 @@ export default function CarDetailPage() {
             </div>
           </form>
         ) : (
-          <div className="login-prompt"><Link href="/login" className="login-link">Sign in to comment, like, and save cars</Link></div>
+          <div className="login-prompt"><Link href="/login" className="login-link">Sign in to comment, like, and save vehicles</Link></div>
         )}
         <div className="comments-list">
-          {comments.length === 0 ? (
-            <div className="no-comments">Be the first to comment</div>
-          ) : comments.map(c => (
-            <div key={c._id} className="comment-item">
-              <div className="comment-avatar-sm">{c.userName?.charAt(0).toUpperCase()||"?"}</div>
-              <div className="comment-content">
-                <div className="comment-header">
-                  <Link href={`/users/${c.userId}`} className="comment-author">{c.userName}</Link>
-                  <span className="comment-time">{fmtTime(c.createdAt)}</span>
-                  {(isAdmin||(user&&c.userId===user.userId)) && (
-                    <button className="delete-comment" onClick={()=>handleDeleteComment(c.commentId)}>✕</button>
-                  )}
-                </div>
-                <div className="comment-text">{c.text}</div>
-                {c.replies?.length > 0 && (
-                  <div className="replies">
-                    {c.replies.map((r:any) => (
-                      <div key={r.replyId} className="reply">
-                        <div className="reply-avatar">{r.userName?.charAt(0)||"?"}</div>
-                        <div>
-                          <Link href={`/users/${r.userId}`} className="reply-author">{r.userName}</Link>
-                          <div className="reply-text">{r.text}</div>
-                        </div>
+          {comments.length===0
+            ? <div className="no-comments">Be the first to comment</div>
+            : comments.map(c=>(
+                <div key={c._id} className="comment-item">
+                  <div className="comment-avatar-sm">{c.userName?.charAt(0).toUpperCase()||"?"}</div>
+                  <div className="comment-content">
+                    <div className="comment-header">
+                      <Link href={`/users/${c.userId}`} className="comment-author">{c.userName}</Link>
+                      <span className="comment-time">{fmtTime(c.createdAt)}</span>
+                      {(isAdmin||(user&&c.userId===user.userId)) && (
+                        <button className="delete-comment" onClick={()=>handleDeleteComment(c.commentId)}>✕</button>
+                      )}
+                    </div>
+                    <div className="comment-text">{c.text}</div>
+                    {c.replies?.length>0&&(
+                      <div className="replies">
+                        {c.replies.map((r:any)=>(
+                          <div key={r.replyId} className="reply">
+                            <div className="reply-avatar">{r.userName?.charAt(0)||"?"}</div>
+                            <div>
+                              <Link href={`/users/${r.userId}`} className="reply-author">{r.userName}</Link>
+                              <div className="reply-text">{r.text}</div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
+                    {isAuthenticated&&(
+                      <button className="reply-btn" onClick={()=>setReplyTo(replyTo===c.commentId?null:c.commentId)}>Reply</button>
+                    )}
+                    {replyTo===c.commentId&&(
+                      <div className="reply-form">
+                        <input className="reply-input" placeholder="Write a reply..." value={replyText} onChange={e=>setReplyText(e.target.value)}/>
+                        <button className="reply-submit" onClick={()=>handleReply(c.commentId)} disabled={!replyText.trim()}>Post</button>
+                        <button className="reply-cancel" onClick={()=>setReplyTo(null)}>Cancel</button>
+                      </div>
+                    )}
                   </div>
-                )}
-                {isAuthenticated && (
-                  <button className="reply-btn" onClick={()=>setReplyTo(replyTo===c.commentId?null:c.commentId)}>Reply</button>
-                )}
-                {replyTo === c.commentId && (
-                  <div className="reply-form">
-                    <input className="reply-input" placeholder="Write a reply..." value={replyText} onChange={e=>setReplyText(e.target.value)}/>
-                    <button className="reply-submit" onClick={()=>handleReply(c.commentId)} disabled={!replyText.trim()}>Post</button>
-                    <button className="reply-cancel" onClick={()=>setReplyTo(null)}>Cancel</button>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
+                </div>
+              ))
+          }
         </div>
       </div>
 
-      {lightboxOpen && car.images?.length > 0 && (
+      {lightboxOpen && car.images?.length>0 && (
         <div className="lightbox" onClick={()=>setLightboxOpen(false)}>
-          <button className="lb-close" onClick={()=>setLightboxOpen(false)}>✕</button>
+          <button className="lb-close">✕</button>
           <button className="lb-arrow left" onClick={e=>{e.stopPropagation();prev()}}>‹</button>
           <img src={car.images[activeImage]} alt="" className="lb-img" onClick={e=>e.stopPropagation()}/>
           <button className="lb-arrow right" onClick={e=>{e.stopPropagation();next()}}>›</button>
@@ -391,9 +429,9 @@ export default function CarDetailPage() {
         .view-dealer{font-size:0.72rem;color:#F47B20}
         .dealer-qr-mini{width:44px;height:44px;border-radius:6px;border:1.5px solid #E5E5E5;flex-shrink:0}
         .contact-section{display:flex;flex-direction:column;gap:0.625rem}
-        .msg-dealer-btn{background:#1A1A1A;color:#fff;border:none;border-radius:8px;padding:0.75rem;font-family:var(--font-display);font-size:0.875rem;letter-spacing:0.08em;cursor:pointer}
+        .msg-dealer-btn{background:#1A1A1A;color:#fff;border:none;border-radius:8px;padding:0.75rem;font-family:var(--font-display);font-size:0.875rem;letter-spacing:0.08em;cursor:pointer;width:100%;transition:background 0.2s}
         .msg-dealer-btn:hover{background:#333}.msg-dealer-btn:disabled{opacity:0.6;cursor:not-allowed}
-        .contact-toggle{background:#FFF7ED;border:1.5px solid rgba(244,123,32,0.3);color:#C4621A;border-radius:8px;padding:0.7rem;font-family:var(--font-body);font-size:0.875rem;cursor:pointer}
+        .contact-toggle{background:#FFF7ED;border:1.5px solid rgba(244,123,32,0.3);color:#C4621A;border-radius:8px;padding:0.7rem;font-family:var(--font-body);font-size:0.875rem;cursor:pointer;width:100%}
         .contact-toggle:hover{background:#F47B20;color:#fff}
         .contact-buttons{display:flex;gap:0.5rem;flex-wrap:wrap}
         .cta-btn{flex:1;min-width:80px;padding:0.6rem 0.5rem;border-radius:6px;font-size:0.78rem;font-weight:500;text-align:center;text-decoration:none;cursor:pointer;border:none;display:block;transition:all 0.2s;white-space:nowrap}

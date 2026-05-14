@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
@@ -7,53 +7,71 @@ import Link from "next/link";
 export default function UserHomePage() {
   const { user } = useAuthStore();
   const [me, setMe] = useState<any>(null);
-  const [favCount, setFavCount] = useState(0);
-  const [reqCount, setReqCount] = useState(0);
-  const [aptCount, setAptCount] = useState(0);
+  const [favCount, setFavCount]   = useState(0);
+  const [reqCount, setReqCount]   = useState(0);
+  const [aptCount, setAptCount]   = useState(0);
 
   useEffect(() => {
-    api.get("/api/v1/auth/me").then((r) => setMe(r.data)).catch(() => {});
-    api.get("/api/v1/users/favorites").then((r) => setFavCount((r.data||[]).length)).catch(() => {});
-    api.get("/api/v1/users/requests").then((r) => setReqCount((r.data||[]).length)).catch(() => {});
-    api.get("/api/v1/users/appointments").then((r) => setAptCount((r.data||[]).length)).catch(() => {});
+    api.get("/api/v1/auth/me").then(r=>setMe(r.data)).catch(()=>{});
+
+    // Favorites count — from unified collection
+    api.get("/api/v1/users/favorites")
+      .then(r => setFavCount(Array.isArray(r.data) ? r.data.length : 0))
+      .catch(()=>setFavCount(0));
+
+    // Pre-orders (requests) — defensive: only count if array returned
+    api.get("/api/v1/users/requests")
+      .then(r => {
+        const data = r.data;
+        if (Array.isArray(data)) setReqCount(data.length);
+        else if (data?.requests) setReqCount(Array.isArray(data.requests) ? data.requests.length : 0);
+        else setReqCount(0);
+      })
+      .catch(()=>setReqCount(0));
+
+    // Appointments — defensive
+    api.get("/api/v1/users/appointments")
+      .then(r => {
+        const data = r.data;
+        if (Array.isArray(data)) setAptCount(data.length);
+        else if (data?.appointments) setAptCount(Array.isArray(data.appointments) ? data.appointments.length : 0);
+        else setAptCount(0);
+      })
+      .catch(()=>setAptCount(0));
   }, []);
 
-  // Stats — these count and link
   const STATS = [
-    { label:"Saved Cars",   val:favCount, icon:"❤️", href:"/dashboard/user/favorites", color:"#DC2626" },
-    { label:"My Requests",  val:reqCount, icon:"📩", href:"/dashboard/user/requests",  color:"#F47B20" },
-    { label:"Appointments", val:aptCount, icon:"📅", href:"/dashboard/user/appointments", color:"#3B8BD4" },
+    { label:"Saved Vehicles", val:favCount, icon:"❤️", href:"/dashboard/user/favorites", color:"#DC2626" },
+    { label:"Pre-Orders",     val:reqCount, icon:"📋", href:"/dashboard/user/preorders",  color:"#F47B20" },
+    { label:"Appointments",   val:aptCount, icon:"📅", href:"/dashboard/user/appointments", color:"#3B8BD4" },
   ];
 
-  // Quick actions — different from stats, no overlap
   const ACTIONS = [
-    { label:"Browse Cars",    icon:"🚗", href:"/feed" },
-    { label:"Messages",       icon:"💬", href:"/dashboard/user/messages" },
-    { label:"Notifications",  icon:"🔔", href:"/dashboard/user/notifications" },
-    { label:"My Profile",     icon:"👤", href:"/dashboard/user/profile" },
-    { label:"Settings",       icon:"⚙️", href:"/dashboard/user/settings" },
+    { label:"Browse Vehicles", icon:"🚗", href:"/feed" },
+    { label:"Messages",        icon:"💬", href:"/dashboard/user/messages" },
+    { label:"Notifications",   icon:"🔔", href:"/dashboard/user/notifications" },
+    { label:"My Profile",      icon:"👤", href:"/dashboard/user/profile" },
+    { label:"Settings",        icon:"⚙️", href:"/dashboard/user/settings" },
   ];
 
   return (
     <div className="home">
-      {/* Welcome */}
       <div className="welcome-card">
         <div className="welcome-avatar">
           {me?.profilePicture
-            ? <img src={me.profilePicture} alt="" className="welcome-pic" />
+            ? <img src={me.profilePicture} alt="" className="welcome-pic"/>
             : <span>{(me?.fullName||user?.fullName||"U").charAt(0).toUpperCase()}</span>
           }
         </div>
         <div>
-          <h2 className="welcome-name">Hello, {me?.fullName?.split(" ")[0] || "there"}!</h2>
+          <h2 className="welcome-name">Hello, {me?.fullName?.split(" ")[0]||"there"}!</h2>
           <p className="welcome-sub">Welcome to your CARSTRIMS dashboard</p>
         </div>
       </div>
 
-      {/* Stats — clickable counts */}
       <div className="section-title">YOUR ACTIVITY</div>
       <div className="stats-row">
-        {STATS.map((c) => (
+        {STATS.map(c=>(
           <Link key={c.label} href={c.href} className="stat-card">
             <span className="sc-icon">{c.icon}</span>
             <div className="sc-val" style={{color:c.color}}>{c.val}</div>
@@ -63,10 +81,9 @@ export default function UserHomePage() {
         ))}
       </div>
 
-      {/* Quick actions — navigate to other pages */}
       <div className="section-title">QUICK ACTIONS</div>
       <div className="actions-grid">
-        {ACTIONS.map((a) => (
+        {ACTIONS.map(a=>(
           <Link key={a.label} href={a.href} className="action-card">
             <span className="ac-icon">{a.icon}</span>
             <span className="ac-label">{a.label}</span>
@@ -83,7 +100,7 @@ export default function UserHomePage() {
         .welcome-sub{font-size:0.825rem;color:#888;margin-top:0.3rem}
         .section-title{font-size:0.7rem;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:#888;margin-top:0.25rem}
         .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:0.875rem}
-        .stat-card{background:#fff;border:1.5px solid #E5E5E5;border-radius:10px;padding:1rem;display:flex;flex-direction:column;align-items:center;gap:0.25rem;text-decoration:none;transition:all 0.2s;position:relative}
+        .stat-card{background:#fff;border:1.5px solid #E5E5E5;border-radius:10px;padding:1rem;display:flex;flex-direction:column;align-items:center;gap:0.25rem;text-decoration:none;transition:all 0.2s}
         .stat-card:hover{border-color:#F47B20;transform:translateY(-2px);box-shadow:0 4px 16px rgba(244,123,32,0.1)}
         .sc-icon{font-size:1.3rem}
         .sc-val{font-family:var(--font-display);font-size:1.8rem;line-height:1}
