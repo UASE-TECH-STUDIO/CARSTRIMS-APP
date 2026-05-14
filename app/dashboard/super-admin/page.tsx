@@ -3,16 +3,10 @@ import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import Link from "next/link";
 
-interface Stats {
-  totalDealers: number; activeDealers: number; pendingDealers: number;
-  totalUsers: number; totalPartners: number; totalStaff: number;
-  totalCars: number; totalSales: number;
-}
-
 export default function SuperAdminOverview() {
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [stats, setStats]   = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [topDealers, setTopDealers] = useState<any[]>([]);
+  const [topDealers, setTopDealers]       = useState<any[]>([]);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
 
   useEffect(() => {
@@ -27,7 +21,25 @@ export default function SuperAdminOverview() {
     }).finally(() => setLoading(false));
   }, []);
 
-  const fmt = (n: number) => `${(n || 0).toLocaleString()}`;
+  // ── Safely pull values from EITHER response shape ──────────
+  // Shape A (old): { totalDealers, activeDealers, pendingDealers, ... }
+  // Shape B (new): { dealers:{total,active,pending}, users:{total}, ... }
+  const safe = (n: any) => Number(n) || 0;
+
+  const totalDealers   = safe(stats?.totalDealers   ?? stats?.dealers?.total);
+  const activeDealers  = safe(stats?.activeDealers  ?? stats?.dealers?.active);
+  const pendingDealers = safe(stats?.pendingDealers  ?? stats?.dealers?.pending);
+  const suspendedDealers = safe(stats?.suspendedDealers ?? stats?.dealers?.suspended);
+  const totalUsers     = safe(stats?.totalUsers     ?? stats?.users?.total);
+  const totalPartners  = safe(stats?.totalPartners  ?? stats?.partners?.total);
+  const totalStaff     = safe(stats?.totalStaff     ?? stats?.staff?.total);
+  const totalCars      = safe(stats?.totalCars      ?? stats?.inventory?.totalCars);
+  const totalSales     = safe(stats?.totalSales     ?? stats?.inventory?.totalSold);
+  const revenueAll     = safe(stats?.revenue?.allTime ?? stats?.revenueAllTime);
+  const revenueMonth   = safe(stats?.revenue?.thisMonth ?? stats?.revenueThisMonth);
+
+  const fmt     = (n: number) => `${n.toLocaleString()}`;
+  const fmtNaira = (n: number) => `₦${n.toLocaleString()}`;
   const fmtTime = (iso: string) => {
     if (!iso) return "";
     const d = Date.now() - new Date(iso).getTime();
@@ -35,22 +47,22 @@ export default function SuperAdminOverview() {
     return m < 1 ? "just now" : m < 60 ? `${m}m ago` : m < 1440 ? `${Math.floor(m / 60)}h ago` : new Date(iso).toLocaleDateString();
   };
 
-  const STAT_CARDS = stats ? [
-    { label:"Total Dealers", value:stats.totalDealers, sub:`${stats.activeDealers} active · ${stats.pendingDealers} pending`, href:"/dashboard/super-admin/dealers", color:"#F47B20" },
-    { label:"Total Users", value:stats.totalUsers, sub:"Registered buyers", href:"/dashboard/super-admin/users", color:"#F47B20" },
-    { label:"Partners", value:stats.totalPartners, sub:"Asset owners", href:"/dashboard/super-admin/users", color:"#F47B20" },
-    { label:"Staff Members", value:stats.totalStaff, sub:"Across all dealers", href:"/dashboard/super-admin/users", color:"#F47B20" },
-    { label:"Cars Listed", value:stats.totalCars, sub:"Total inventory", href:"/dashboard/super-admin/dealers", color:"#F47B20" },
-    { label:"Total Sales", value:stats.totalSales, sub:"Completed transactions", href:"/dashboard/super-admin/analytics", color:"#F47B20" },
-  ] : [];
+  const STAT_CARDS = [
+    { label:"Total Dealers",    value:totalDealers,   sub:`${activeDealers} active · ${pendingDealers} pending`, href:"/dashboard/super-admin/dealers",              color:"#F47B20" },
+    { label:"Total Users",      value:totalUsers,     sub:"Registered buyers",                                   href:"/dashboard/super-admin/users",                color:"#F47B20" },
+    { label:"Partners",         value:totalPartners,  sub:"Asset owners",                                        href:"/dashboard/super-admin/users",                color:"#F47B20" },
+    { label:"Staff Members",    value:totalStaff,     sub:"Across all dealers",                                  href:"/dashboard/super-admin/users",                color:"#F47B20" },
+    { label:"Cars Listed",      value:totalCars,      sub:"Total inventory",                                     href:"/dashboard/super-admin/dealers",              color:"#F47B20" },
+    { label:"Total Sales",      value:totalSales,     sub:"Completed transactions",                              href:"/dashboard/super-admin/analytics",            color:"#F47B20" },
+  ];
 
   const QUICK_LINKS = [
-    { label:"Pending Approvals", href:"/dashboard/super-admin/approvals", icon:"⏳", desc:"Review dealer applications" },
-    { label:"Broadcast Message", href:"/dashboard/super-admin/broadcast", icon:"📢", desc:"Message all users" },
-    { label:"Create Dealer", href:"/dashboard/super-admin/create-dealer", icon:"➕", desc:"Add new dealer account" },
-    { label:"Analytics", href:"/dashboard/super-admin/analytics", icon:"📊", desc:"Platform performance" },
-    { label:"Activity Log", href:"/dashboard/super-admin/activity", icon:"📡", desc:"Recent platform events" },
-    { label:"Settings", href:"/dashboard/super-admin/settings", icon:"⚙️", desc:"Platform configuration" },
+    { label:"Pending Approvals", href:"/dashboard/super-admin/approvals",     icon:"⏳", desc:"Review dealer applications" },
+    { label:"Broadcast Message", href:"/dashboard/super-admin/broadcast",     icon:"📢", desc:"Message all users" },
+    { label:"Create Dealer",     href:"/dashboard/super-admin/create-dealer", icon:"➕", desc:"Add new dealer account" },
+    { label:"Analytics",         href:"/dashboard/super-admin/analytics",     icon:"📊", desc:"Platform performance" },
+    { label:"Activity Log",      href:"/dashboard/super-admin/activity",      icon:"📡", desc:"Recent platform events" },
+    { label:"Settings",          href:"/dashboard/super-admin/settings",      icon:"⚙️", desc:"Platform configuration" },
   ];
 
   return (
@@ -74,18 +86,32 @@ export default function SuperAdminOverview() {
           {STAT_CARDS.map((s) => (
             <Link key={s.label} href={s.href} className="stat-card">
               <div className="sc-label">{s.label}</div>
-              <div className="sc-value" style={{color:s.color}}>{s.value.toLocaleString()}</div>
+              <div className="sc-value" style={{color:s.color}}>{fmt(s.value)}</div>
               <div className="sc-sub">{s.sub}</div>
             </Link>
           ))}
         </div>
       )}
 
+      {/* Revenue row — only shows if data exists */}
+      {!loading && (revenueAll > 0 || revenueMonth > 0) && (
+        <div className="rev-row">
+          <div className="rev-card">
+            <div className="sc-label">ALL-TIME REVENUE</div>
+            <div className="sc-value" style={{color:"#16A34A"}}>{fmtNaira(revenueAll)}</div>
+          </div>
+          <div className="rev-card">
+            <div className="sc-label">THIS MONTH REVENUE</div>
+            <div className="sc-value" style={{color:"#F47B20"}}>{fmtNaira(revenueMonth)}</div>
+          </div>
+        </div>
+      )}
+
       {/* Pending approvals alert */}
-      {stats && stats.pendingDealers > 0 && (
+      {!loading && pendingDealers > 0 && (
         <Link href="/dashboard/super-admin/approvals" className="pending-alert">
           <span className="pa-dot" />
-          <span><strong>{stats.pendingDealers} dealer application{stats.pendingDealers > 1 ? "s" : ""}</strong> waiting for your approval</span>
+          <span><strong>{pendingDealers} dealer application{pendingDealers > 1 ? "s" : ""}</strong> waiting for your approval</span>
           <span className="pa-arrow">→</span>
         </Link>
       )}
@@ -106,7 +132,9 @@ export default function SuperAdminOverview() {
         {/* Top Dealers */}
         <div className="panel">
           <div className="panel-title">TOP DEALERS</div>
-          {topDealers.length === 0 ? (
+          {loading ? (
+            <div className="panel-empty">Loading...</div>
+          ) : topDealers.length === 0 ? (
             <div className="panel-empty">No sales data yet</div>
           ) : (
             <div className="dealer-list">
@@ -131,7 +159,9 @@ export default function SuperAdminOverview() {
         {/* Recent Activity */}
         <div className="panel">
           <div className="panel-title">RECENT ACTIVITY</div>
-          {recentActivity.length === 0 ? (
+          {loading ? (
+            <div className="panel-empty">Loading...</div>
+          ) : recentActivity.length === 0 ? (
             <div className="panel-empty">No recent activity</div>
           ) : (
             <div className="act-list">
@@ -166,6 +196,8 @@ export default function SuperAdminOverview() {
         .sc-label { font-size:0.72rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-muted); }
         .sc-value { font-family:var(--font-display); font-size:2.2rem; line-height:1; margin-top:0.25rem; }
         .sc-sub { font-size:0.72rem; color:var(--text-dim); }
+        .rev-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+        .rev-card { background:var(--surface); border:1.5px solid var(--border); border-radius:12px; padding:1.25rem; display:flex; flex-direction:column; gap:0.35rem; }
         .pending-alert { display:flex; align-items:center; gap:0.875rem; background:var(--orange-pale); border:1.5px solid var(--orange-border); border-radius:10px; padding:1rem 1.25rem; color:var(--orange-dim); text-decoration:none; font-size:0.875rem; transition:all 0.2s; }
         .pending-alert:hover { background:#FFE8D0; }
         .pa-dot { width:10px; height:10px; border-radius:50%; background:var(--orange); flex-shrink:0; animation:blink 1.5s infinite; }
@@ -201,7 +233,7 @@ export default function SuperAdminOverview() {
         .act-title { font-size:0.8rem; font-weight:500; color:var(--text); }
         .act-msg { font-size:0.72rem; color:var(--text-muted); margin-top:0.1rem; }
         .act-time { font-size:0.65rem; color:var(--text-dim); font-family:var(--font-mono); flex-shrink:0; white-space:nowrap; }
-        @media(max-width:768px) { .two-col{grid-template-columns:1fr} .stats-grid{grid-template-columns:repeat(2,1fr)} }
+        @media(max-width:768px) { .two-col{grid-template-columns:1fr} .stats-grid{grid-template-columns:repeat(2,1fr)} .rev-row{grid-template-columns:1fr} }
       `}</style>
     </div>
   );
