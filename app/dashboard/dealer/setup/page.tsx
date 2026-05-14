@@ -14,15 +14,39 @@ const STEPS = [
 const STATES = ["Abia","Adamawa","Akwa Ibom","Anambra","Bauchi","Bayelsa","Benue","Borno","Cross River","Delta","Ebonyi","Edo","Ekiti","Enugu","FCT","Gombe","Imo","Jigawa","Kaduna","Kano","Katsina","Kebbi","Kogi","Kwara","Lagos","Nasarawa","Niger","Ogun","Ondo","Osun","Oyo","Plateau","Rivers","Sokoto","Taraba","Yobe","Zamfara"];
 const PERMISSIONS = ["view_inventory","add_cars","edit_cars","view_sales","record_sales","view_staff","view_partners","view_cctv","view_movements","view_reports"];
 
-// Upload via backend endpoint — NO Cloudinary preset needed
-async function uploadFile(file: File, endpoint: string, fieldName = "file"): Promise<string> {
+// ── Temp upload — no dealer profile needed ──
+async function tempUploadImage(file: File, folder: string): Promise<string> {
   const fd = new FormData();
-  fd.append(fieldName, file);
-  const res = await api.post(endpoint, fd, {
+  fd.append("file", file);
+  fd.append("folder", folder);
+  const res = await api.post("/api/v1/upload/temp/image", fd, {
     headers: { "Content-Type": "multipart/form-data" },
   });
-  // Each endpoint returns different field names
-  return res.data.logo || res.data.profilePicture || res.data.url || res.data.idCardUrl || res.data.secure_url || "";
+  return res.data.url || "";
+}
+
+async function tempUploadDocument(file: File, folder: string): Promise<string> {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("folder", folder);
+  const res = await api.post("/api/v1/upload/temp/document", fd, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data.url || "";
+}
+
+// ── Preview modal ──
+function PreviewModal({ src, type, onClose }: { src: string; type: "image"|"video"|"pdf"; onClose: () => void }) {
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#1A1A1A",borderRadius:"12px",overflow:"hidden",maxWidth:"90vw",maxHeight:"90vh",position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+        <button onClick={onClose} style={{position:"absolute",top:"0.5rem",right:"0.5rem",background:"rgba(255,255,255,0.15)",border:"none",borderRadius:"50%",width:"32px",height:"32px",color:"#fff",fontSize:"1rem",cursor:"pointer",zIndex:10}}>✕</button>
+        {type==="image" && <img src={src} alt="" style={{maxWidth:"85vw",maxHeight:"85vh",objectFit:"contain",display:"block"}} />}
+        {type==="video" && <video src={src} controls autoPlay style={{maxWidth:"85vw",maxHeight:"85vh"}} />}
+        {type==="pdf" && <iframe src={src} style={{width:"80vw",height:"85vh",border:"none"}} />}
+      </div>
+    </div>
+  );
 }
 
 export default function DealerSetupPage() {
@@ -32,6 +56,7 @@ export default function DealerSetupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [uploadingLabel, setUploadingLabel] = useState("");
+  const [preview, setPreview] = useState<{src:string;type:"image"|"video"|"pdf"}|null>(null);
 
   // Step 1
   const [logoUrl, setLogoUrl] = useState("");
@@ -63,10 +88,15 @@ export default function DealerSetupPage() {
       .catch(() => setChecking(false));
   }, [router]);
 
-  const doUpload = async (file: File, endpoint: string, setter: (u:string)=>void, label: string, fieldName="file") => {
+  const doUpload = async (file: File, setter: (u:string)=>void, label: string, isDoc=false, folder="") => {
     setUploadingLabel(label); setError("");
     try {
-      const url = await uploadFile(file, endpoint, fieldName);
+      let url = "";
+      if (isDoc) {
+        url = await tempUploadDocument(file, folder || "documents");
+      } else {
+        url = await tempUploadImage(file, folder || "logos");
+      }
       if (url) setter(url);
       else setError(`${label}: upload succeeded but no URL returned`);
     } catch(e:any) {
@@ -139,28 +169,41 @@ export default function DealerSetupPage() {
   const lbl: React.CSSProperties = { fontSize:"0.68rem", fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase" as const, color:"#525252", display:"block", marginBottom:"0.35rem" };
   const row: React.CSSProperties = { display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem" };
 
-  const UploadBox = ({ label, url, inputRef, onFile, accept="image/*", note="" }: { label:string, url:string, inputRef:React.RefObject<HTMLInputElement>, onFile:(f:File)=>void, accept?:string, note?:string }) => (
-    <div
-      onClick={()=>!uploadingLabel&&inputRef.current?.click()}
-      style={{border:`1.5px dashed ${url?"#16A34A":uploadingLabel===label?"#F47B20":"#D4D4D4"}`, borderRadius:"10px", padding:"1.25rem 1rem", background:url?"#F0FDF4":uploadingLabel===label?"#FFF7ED":"#FAFAFA", display:"flex", flexDirection:"column", alignItems:"center", gap:"0.625rem", cursor:uploadingLabel?"not-allowed":"pointer", textAlign:"center", transition:"all 0.2s", minHeight:"110px", justifyContent:"center"}}>
+  // Upload box with preview
+  const UploadBox = ({
+    label, url, inputRef, onFile, accept="image/*", note="", previewType="image" as "image"|"video"|"pdf"
+  }: {
+    label:string; url:string; inputRef:React.RefObject<HTMLInputElement>;
+    onFile:(f:File)=>void; accept?:string; note?:string; previewType?:"image"|"video"|"pdf";
+  }) => (
+    <div style={{border:`1.5px dashed ${url?"#16A34A":uploadingLabel===label?"#F47B20":"#D4D4D4"}`,borderRadius:"10px",padding:"1rem",background:url?"#F0FDF4":uploadingLabel===label?"#FFF7ED":"#FAFAFA",display:"flex",flexDirection:"column",alignItems:"center",gap:"0.5rem",textAlign:"center",minHeight:"100px",justifyContent:"center"}}>
       {uploadingLabel===label ? (
         <>
-          <div style={{width:"24px",height:"24px",border:"2.5px solid #E5E5E5",borderTopColor:"#F47B20",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
+          <div style={{width:"22px",height:"22px",border:"2.5px solid #E5E5E5",borderTopColor:"#F47B20",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
           <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-          <div style={{fontSize:"0.75rem",color:"#F47B20",fontWeight:600}}>Uploading {label}...</div>
+          <div style={{fontSize:"0.75rem",color:"#F47B20",fontWeight:600}}>Uploading...</div>
         </>
       ) : url ? (
         <>
-          {accept.includes("image") && <img src={url} alt="" style={{width:"64px",height:"64px",objectFit:"cover",borderRadius:"8px",border:"2px solid #86EFAC"}}/>}
-          <div style={{fontSize:"0.75rem",color:"#15803D",fontWeight:600}}>✓ {label} uploaded</div>
-          <div style={{fontSize:"0.68rem",color:"#86EFAC",background:"#15803D",padding:"0.15rem 0.5rem",borderRadius:"4px"}}>Click to change</div>
+          {(previewType==="image") && (
+            <img src={url} alt="" onClick={()=>setPreview({src:url,type:"image"})}
+              style={{width:"72px",height:"56px",objectFit:"cover",borderRadius:"6px",border:"2px solid #86EFAC",cursor:"zoom-in"}} />
+          )}
+          {previewType==="video" && (
+            <button onClick={()=>setPreview({src:url,type:"video"})} style={{background:"#15803D",color:"#fff",border:"none",borderRadius:"6px",padding:"0.3rem 0.75rem",fontSize:"0.75rem",cursor:"pointer"}}>▶ Preview Video</button>
+          )}
+          {previewType==="pdf" && (
+            <button onClick={()=>setPreview({src:url,type:"pdf"})} style={{background:"#15803D",color:"#fff",border:"none",borderRadius:"6px",padding:"0.3rem 0.75rem",fontSize:"0.75rem",cursor:"pointer"}}>👁 View Document</button>
+          )}
+          <div style={{fontSize:"0.72rem",color:"#15803D",fontWeight:600}}>✓ {label} uploaded</div>
+          <button onClick={()=>inputRef.current?.click()} style={{background:"none",border:"1px solid #86EFAC",color:"#16A34A",borderRadius:"4px",padding:"0.15rem 0.5rem",fontSize:"0.68rem",cursor:"pointer"}}>Change</button>
         </>
       ) : (
         <>
-          <div style={{fontSize:"1.75rem",opacity:0.35}}>{accept.includes("image")?"📷":"📄"}</div>
-          <div style={{fontSize:"0.8rem",color:"#525252",fontWeight:600}}>{label}</div>
-          {note&&<div style={{fontSize:"0.7rem",color:"#A3A3A3"}}>{note}</div>}
-          <div style={{fontSize:"0.72rem",color:"#F47B20",fontWeight:600,border:"1px solid rgba(244,123,32,0.3)",borderRadius:"4px",padding:"0.2rem 0.6rem"}}>Click to upload</div>
+          <div style={{fontSize:"1.75rem",opacity:0.3}}>{accept.includes("video")?"🎬":accept.includes("pdf")||accept.includes("application")?"📄":"📷"}</div>
+          <div style={{fontSize:"0.78rem",color:"#525252",fontWeight:600}}>{label}</div>
+          {note && <div style={{fontSize:"0.68rem",color:"#A3A3A3"}}>{note}</div>}
+          <button onClick={()=>inputRef.current?.click()} style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"5px",padding:"0.3rem 0.75rem",fontSize:"0.75rem",cursor:"pointer",marginTop:"0.25rem"}}>Click to upload</button>
         </>
       )}
       <input ref={inputRef} type="file" accept={accept} style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0]; if(f) onFile(f); e.target.value="";}} />
@@ -177,7 +220,9 @@ export default function DealerSetupPage() {
 
   return (
     <div style={{minHeight:"100vh",background:"#F5F5F5",fontFamily:"var(--font-body)"}}>
-      {/* Header + progress */}
+      {preview && <PreviewModal src={preview.src} type={preview.type} onClose={()=>setPreview(null)} />}
+
+      {/* Header */}
       <div style={{background:"#fff",borderBottom:"1.5px solid #E5E5E5",padding:"1rem 1.5rem",position:"sticky",top:0,zIndex:50}}>
         <div style={{maxWidth:"720px",margin:"0 auto"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"0.875rem"}}>
@@ -191,9 +236,7 @@ export default function DealerSetupPage() {
                   <div style={{width:"26px",height:"26px",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.72rem",fontWeight:700,background:step>s.num?"#16A34A":step===s.num?"#F47B20":"#E5E5E5",color:step>=s.num?"#fff":"#737373",transition:"all 0.25s",flexShrink:0}}>
                     {step>s.num?"✓":s.num}
                   </div>
-                  <span style={{fontSize:"0.65rem",color:step===s.num?"#F47B20":step>s.num?"#16A34A":"#A3A3A3",fontWeight:step===s.num?700:400,whiteSpace:"nowrap"}}>
-                    {s.label}
-                  </span>
+                  <span style={{fontSize:"0.65rem",color:step===s.num?"#F47B20":step>s.num?"#16A34A":"#A3A3A3",fontWeight:step===s.num?700:400,whiteSpace:"nowrap"}}>{s.label}</span>
                 </div>
                 {i<STEPS.length-1&&<div style={{flex:1,height:"2px",background:step>s.num?"#16A34A":"#E5E5E5",margin:"0 0.4rem",transition:"background 0.25s"}}/>}
               </div>
@@ -210,22 +253,23 @@ export default function DealerSetupPage() {
           </div>
         )}
 
-        {/* ─── STEP 1: Company + Passport ─── */}
+        {/* ─── STEP 1 ─── */}
         {step===1&&(
           <div style={{background:"#fff",borderRadius:"16px",padding:"2rem",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
             <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.4rem",letterSpacing:"0.04em",color:"#1A1A1A",marginBottom:"0.25rem"}}>Company & Personal Details</h2>
-            <p style={{fontSize:"0.85rem",color:"#737373",marginBottom:"1.5rem",lineHeight:1.6}}>Set up your dealership profile. Your logo and passport are required for verification.</p>
+            <p style={{fontSize:"0.85rem",color:"#737373",marginBottom:"1.5rem",lineHeight:1.6}}>Set up your dealership profile. Logo and passport are required for admin verification.</p>
             <form onSubmit={handleStep1} style={{display:"flex",flexDirection:"column",gap:"1.25rem"}}>
               <div>
-                <label style={lbl}>Business Logo & Your Passport Photo *</label>
+                <label style={lbl}>Business Logo & Passport Photo *</label>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem"}}>
                   <UploadBox label="Business Logo" url={logoUrl} inputRef={logoRef}
-                    onFile={f=>doUpload(f, "/api/v1/upload/dealer/logo", setLogoUrl, "Business Logo")}
-                    note="Your dealership logo or brand image" />
+                    onFile={f=>doUpload(f,setLogoUrl,"Business Logo",false,"logos")}
+                    note="Your dealership logo" />
                   <UploadBox label="Your Passport Photo" url={passportUrl} inputRef={passportRef}
-                    onFile={f=>doUpload(f, "/api/v1/upload/profile/picture", setPassportUrl, "Your Passport Photo")}
-                    note="Clear face photo for verification" />
+                    onFile={f=>doUpload(f,setPassportUrl,"Your Passport Photo",false,"passports")}
+                    note="Clear face photo" />
                 </div>
+                <p style={{fontSize:"0.72rem",color:"#A3A3A3",marginTop:"0.5rem"}}>💡 Click an uploaded photo to preview it</p>
               </div>
               <div style={row}>
                 <div><label style={lbl}>Company / Business Name *</label><input style={fi} placeholder="e.g. Ayo Motors Ltd" value={company.companyName} onChange={e=>setCompany({...company,companyName:e.target.value})} required /></div>
@@ -253,24 +297,29 @@ export default function DealerSetupPage() {
           </div>
         )}
 
-        {/* ─── STEP 2: Documents ─── */}
+        {/* ─── STEP 2 ─── */}
         {step===2&&(
           <div style={{background:"#fff",borderRadius:"16px",padding:"2rem",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
             <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.4rem",letterSpacing:"0.04em",color:"#1A1A1A",marginBottom:"0.25rem"}}>Verification Documents</h2>
-            <p style={{fontSize:"0.85rem",color:"#737373",marginBottom:"1.5rem",lineHeight:1.6}}>Upload your ID for faster approval. You can take a photo or upload from gallery. All documents are securely encrypted.</p>
+            <p style={{fontSize:"0.85rem",color:"#737373",marginBottom:"1.5rem",lineHeight:1.6}}>Upload your ID for faster approval. All documents are securely encrypted.</p>
             <div style={{display:"flex",flexDirection:"column",gap:"1.5rem"}}>
               <div>
                 <label style={lbl}>Government-Issued ID * <span style={{color:"#F47B20"}}>(Required)</span></label>
-                <p style={{fontSize:"0.75rem",color:"#737373",marginBottom:"0.5rem",marginTop:"0.1rem"}}>NIN, Voter's Card, Driver's Licence, or International Passport</p>
+                <p style={{fontSize:"0.75rem",color:"#737373",marginBottom:"0.5rem"}}>NIN, Voter Card, Driver Licence, or International Passport</p>
                 <UploadBox label="Upload ID Card" url={idUrl} inputRef={idRef}
-                  onFile={f=>doUpload(f, "/api/v1/upload/document", setIdUrl, "ID Card")}
+                  onFile={f=>{
+                    const isPdf = f.type==="application/pdf";
+                    doUpload(f,setIdUrl,"ID Card",isPdf,"identity-docs");
+                  }}
                   accept="image/jpeg,image/png,application/pdf"
-                  note="JPG, PNG or PDF — up to 10MB" />
+                  note="JPG, PNG or PDF — up to 10MB"
+                  previewType={idUrl.endsWith(".pdf")?"pdf":"image"} />
+                <p style={{fontSize:"0.72rem",color:"#A3A3A3",marginTop:"0.4rem"}}>💡 Click the uploaded document to preview it before continuing</p>
               </div>
               <div>
                 <label style={lbl}>Is your business registered with CAC?</label>
                 <div style={{display:"flex",gap:"0.75rem",marginBottom:"0.75rem",marginTop:"0.4rem"}}>
-                  {[{v:true,l:"Yes, it is registered"},{v:false,l:"No, not registered"}].map(o=>(
+                  {[{v:true,l:"Yes, registered"},{v:false,l:"No, not registered"}].map(o=>(
                     <button key={String(o.v)} onClick={()=>setIsRegistered(o.v)} type="button"
                       style={{flex:1,padding:"0.75rem",borderRadius:"8px",border:`1.5px solid ${isRegistered===o.v?"#F47B20":"#E5E5E5"}`,background:isRegistered===o.v?"#FFF7ED":"#F5F5F5",color:isRegistered===o.v?"#C4621A":"#525252",fontSize:"0.85rem",cursor:"pointer",fontFamily:"var(--font-body)",fontWeight:isRegistered===o.v?600:400,transition:"all 0.2s"}}>
                       {o.l}
@@ -281,9 +330,13 @@ export default function DealerSetupPage() {
                   <div>
                     <label style={{...lbl,marginBottom:"0.5rem"}}>CAC Certificate <span style={{color:"#A3A3A3",fontWeight:400,textTransform:"none" as const}}>(optional)</span></label>
                     <UploadBox label="Upload CAC Document" url={cacUrl} inputRef={cacRef}
-                      onFile={f=>doUpload(f, "/api/v1/upload/document", setCacUrl, "CAC Document")}
+                      onFile={f=>{
+                        const isPdf = f.type==="application/pdf";
+                        doUpload(f,setCacUrl,"CAC Document",isPdf,"cac-docs");
+                      }}
                       accept="image/jpeg,image/png,application/pdf"
-                      note="CAC registration certificate or form" />
+                      note="CAC certificate or registration form"
+                      previewType={cacUrl.endsWith(".pdf")?"pdf":"image"} />
                   </div>
                 )}
               </div>
@@ -299,7 +352,7 @@ export default function DealerSetupPage() {
           </div>
         )}
 
-        {/* ─── STEP 3: First Car ─── */}
+        {/* ─── STEP 3 ─── */}
         {step===3&&(
           <div style={{background:"#fff",borderRadius:"16px",padding:"2rem",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
             <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.4rem",letterSpacing:"0.04em",color:"#1A1A1A",marginBottom:"0.25rem"}}>Add Your First Car</h2>
@@ -353,11 +406,11 @@ export default function DealerSetupPage() {
           </div>
         )}
 
-        {/* ─── STEP 4: First Staff ─── */}
+        {/* ─── STEP 4 ─── */}
         {step===4&&(
           <div style={{background:"#fff",borderRadius:"16px",padding:"2rem",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
             <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.4rem",letterSpacing:"0.04em",color:"#1A1A1A",marginBottom:"0.25rem"}}>Create First Staff Account</h2>
-            <p style={{fontSize:"0.85rem",color:"#737373",marginBottom:"1.5rem",lineHeight:1.6}}>Add a team member and set their permissions. They can sign in immediately with these details.</p>
+            <p style={{fontSize:"0.85rem",color:"#737373",marginBottom:"1.5rem",lineHeight:1.6}}>Add a team member and set their permissions. They can sign in immediately.</p>
             <form onSubmit={handleStep4} style={{display:"flex",flexDirection:"column",gap:"1.25rem"}}>
               <div style={row}>
                 <div><label style={lbl}>Full Name *</label><input style={fi} placeholder="John Doe" value={staff.fullName} onChange={e=>setStaff({...staff,fullName:e.target.value})} required /></div>
@@ -393,11 +446,11 @@ export default function DealerSetupPage() {
           </div>
         )}
 
-        {/* ─── STEP 5: CCTV ─── */}
+        {/* ─── STEP 5 ─── */}
         {step===5&&(
           <div style={{background:"#fff",borderRadius:"16px",padding:"2rem",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
             <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.4rem",letterSpacing:"0.04em",color:"#1A1A1A",marginBottom:"0.25rem"}}>CCTV Setup <span style={{fontSize:"0.85rem",color:"#A3A3A3",fontWeight:400}}>(Optional)</span></h2>
-            <p style={{fontSize:"0.85rem",color:"#737373",marginBottom:"1.5rem",lineHeight:1.6}}>Connect a security camera to monitor your dealership. You can add more from Settings later.</p>
+            <p style={{fontSize:"0.85rem",color:"#737373",marginBottom:"1.5rem",lineHeight:1.6}}>Connect a security camera. You can add more from Settings later.</p>
             <div style={{display:"flex",flexDirection:"column",gap:"1.25rem"}}>
               <div style={row}>
                 <div><label style={lbl}>Camera Name</label><input style={fi} placeholder="Main Gate" value={cctv.cameraName} onChange={e=>setCctv({...cctv,cameraName:e.target.value})} /></div>
@@ -409,14 +462,12 @@ export default function DealerSetupPage() {
                   {["rtsp","hls","ip"].map(t=><option key={t} value={t}>{t.toUpperCase()}</option>)}
                 </select>
               </div>
-
-              {/* Summary */}
               <div style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"10px",padding:"1.25rem"}}>
                 <div style={{fontFamily:"var(--font-display)",fontSize:"0.75rem",letterSpacing:"0.1em",color:"#15803D",marginBottom:"0.75rem"}}>SETUP COMPLETE — SUMMARY</div>
                 {[
                   {label:"Company profile saved",done:true},
                   {label:"Business logo uploaded",done:!!logoUrl},
-                  {label:"Documents uploaded",done:!!idUrl},
+                  {label:"ID document uploaded",done:!!idUrl},
                   {label:"First car listed",done:!!car.model},
                   {label:"First staff created",done:!!staff.email},
                 ].map(item=>(
@@ -425,10 +476,9 @@ export default function DealerSetupPage() {
                   </div>
                 ))}
                 <div style={{marginTop:"0.75rem",paddingTop:"0.75rem",borderTop:"1px solid rgba(22,163,74,0.2)",fontSize:"0.78rem",color:"#15803D",lineHeight:1.6}}>
-                  You will have immediate access to your full dashboard. Your car listings appear on the public feed once a CARSTRIMS admin approves your account.
+                  You will have immediate dashboard access. Your listings appear on the public feed once a CARSTRIMS admin approves your account.
                 </div>
               </div>
-
               <div style={{display:"flex",gap:"0.75rem"}}>
                 <button onClick={()=>setStep(4)} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.875rem 1.25rem",fontSize:"0.875rem",cursor:"pointer",fontFamily:"var(--font-body)"}}>← Back</button>
                 <button onClick={()=>handleStep5()} disabled={loading}
