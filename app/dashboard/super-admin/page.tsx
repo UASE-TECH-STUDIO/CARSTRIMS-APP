@@ -1,208 +1,137 @@
-"use client";
+﻿"use client";
 import { useEffect, useState } from "react";
-import api from "@/lib/api";
 import Link from "next/link";
-
-interface Stats {
-  totalDealers: number; activeDealers: number; pendingDealers: number;
-  totalUsers: number; totalPartners: number; totalStaff: number;
-  totalCars: number; totalSales: number;
-}
+import api from "@/lib/api";
 
 export default function SuperAdminOverview() {
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [stats,  setStats]  = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [topDealers, setTopDealers] = useState<any[]>([]);
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [error,  setError]  = useState("");
 
   useEffect(() => {
-    Promise.all([
-      api.get("/api/v1/admin/stats").catch(() => ({ data: null })),
-      api.get("/api/v1/admin/top-dealers").catch(() => ({ data: [] })),
-      api.get("/api/v1/admin/activity?limit=5").catch(() => ({ data: { activities: [] } })),
-    ]).then(([s, t, a]) => {
-      if (s.data) setStats(s.data);
-      setTopDealers(Array.isArray(t.data) ? t.data : []);
-      setRecentActivity(a.data?.activities || []);
-    }).finally(() => setLoading(false));
+    api.get("/api/v1/admin/stats")
+      .then(r => setStats(r.data))
+      .catch(e => setError(e?.response?.data?.detail || "Could not load stats"))
+      .finally(() => setLoading(false));
   }, []);
 
-  const fmt = (n: number) => `₦${(n || 0).toLocaleString()}`;
-  const fmtTime = (iso: string) => {
-    if (!iso) return "—";
-    const d = Date.now() - new Date(iso).getTime();
-    const m = Math.floor(d / 60000);
-    return m < 1 ? "just now" : m < 60 ? `${m}m ago` : m < 1440 ? `${Math.floor(m / 60)}h ago` : new Date(iso).toLocaleDateString();
-  };
+  const fmt = (n: number) => `₦${(n||0).toLocaleString()}`;
 
   const STAT_CARDS = stats ? [
-    { label:"Total Dealers", value:stats.totalDealers, sub:`${stats.activeDealers} active · ${stats.pendingDealers} pending`, href:"/dashboard/super-admin/dealers", color:"#F47B20" },
-    { label:"Total Users", value:stats.totalUsers, sub:"Registered buyers", href:"/dashboard/super-admin/users", color:"#F47B20" },
-    { label:"Partners", value:stats.totalPartners, sub:"Asset owners", href:"/dashboard/super-admin/users", color:"#F47B20" },
-    { label:"Staff Members", value:stats.totalStaff, sub:"Across all dealers", href:"/dashboard/super-admin/users", color:"#F47B20" },
-    { label:"Cars Listed", value:stats.totalCars, sub:"Total inventory", href:"/dashboard/super-admin/dealers", color:"#F47B20" },
-    { label:"Total Sales", value:stats.totalSales, sub:"Completed transactions", href:"/dashboard/super-admin/analytics", color:"#F47B20" },
+    { label:"Total Dealers",     value:stats.dealers?.total||0,     icon:"🏢", color:"#F47B20", href:"/dashboard/super-admin/dealers" },
+    { label:"Active Dealers",    value:stats.dealers?.active||0,    icon:"✅", color:"#16A34A", href:"/dashboard/super-admin/dealers?status=approved" },
+    { label:"Pending Approval",  value:stats.dealers?.pending||0,   icon:"⏳", color:"#D97706", href:"/dashboard/super-admin/approvals" },
+    { label:"Suspended",         value:stats.dealers?.suspended||0, icon:"⛔", color:"#DC2626", href:"/dashboard/super-admin/dealers?status=suspended" },
+    { label:"Total Users",       value:stats.users?.total||0,       icon:"👥", color:"#3B8BD4", href:"/dashboard/super-admin/users" },
+    { label:"Total Cars",        value:stats.inventory?.totalCars||0,icon:"🚗", color:"#7B68EE", href:"/dashboard/super-admin/dealers" },
+    { label:"Cars Sold",         value:stats.inventory?.totalSold||0,icon:"🏷️",color:"#1D9E75", href:"/dashboard/super-admin/dealers" },
+    { label:"New This Month",    value:stats.dealers?.thisMonth||0, icon:"✨", color:"#F47B20", href:"/dashboard/super-admin/dealers" },
   ] : [];
 
-  const QUICK_LINKS = [
-    { label:"Pending Approvals", href:"/dashboard/super-admin/approvals", icon:"⏳", desc:"Review dealer applications" },
-    { label:"Broadcast Message", href:"/dashboard/super-admin/broadcast", icon:"📢", desc:"Message all users" },
-    { label:"Create Dealer", href:"/dashboard/super-admin/create-dealer", icon:"➕", desc:"Add new dealer account" },
-    { label:"Analytics", href:"/dashboard/super-admin/analytics", icon:"📊", desc:"Platform performance" },
-    { label:"Activity Log", href:"/dashboard/super-admin/activity", icon:"📡", desc:"Recent platform events" },
-    { label:"Settings", href:"/dashboard/super-admin/settings", icon:"⚙️", desc:"Platform configuration" },
+  const QUICK = [
+    { label:"Pending Approvals", icon:"⏳", href:"/dashboard/super-admin/approvals", color:"#D97706" },
+    { label:"All Dealers",       icon:"🏢", href:"/dashboard/super-admin/dealers",   color:"#F47B20" },
+    { label:"All Users",         icon:"👥", href:"/dashboard/super-admin/users",     color:"#3B8BD4" },
+    { label:"Analytics",         icon:"📊", href:"/dashboard/super-admin/analytics", color:"#16A34A" },
+    { label:"Broadcast",         icon:"📢", href:"/dashboard/super-admin/broadcast", color:"#7B68EE" },
+    { label:"Activity Log",      icon:"📋", href:"/dashboard/super-admin/activity",  color:"#737373" },
   ];
 
   return (
-    <div className="overview">
-      {/* Header */}
-      <div className="ov-header">
-        <div>
-          <h1 className="ov-title">PLATFORM OVERVIEW</h1>
-          <p className="ov-sub">CARSTRIMS Super Admin Dashboard · {new Date().toLocaleDateString("en-NG", { weekday:"long", year:"numeric", month:"long", day:"numeric" })}</p>
-        </div>
-        <Link href="/feed" className="feed-link">View Public Feed →</Link>
+    <div style={{display:"flex",flexDirection:"column",gap:"1.75rem",fontFamily:"var(--font-body)"}}>
+
+      <div>
+        <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.6rem",letterSpacing:"0.04em",color:"#1A1A1A",lineHeight:1}}>
+          Platform Overview
+        </h2>
+        <p style={{fontSize:"0.8rem",color:"#737373",marginTop:"0.3rem"}}>
+          CARSTRIMS — Admin Control Panel
+        </p>
       </div>
 
-      {/* Stats grid */}
+      {error && (
+        <div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",color:"#DC2626",padding:"0.875rem 1.25rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between"}}>
+          <span>⚠️ {error}</span>
+          <button onClick={() => setError("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}>✕</button>
+        </div>
+      )}
+
       {loading ? (
-        <div className="stats-grid">
-          {[...Array(6)].map((_,i) => <div key={i} className="stat-skel" />)}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:"1rem"}}>
+          {[...Array(8)].map((_,i) => (
+            <div key={i} style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px",padding:"1.25rem",height:"110px",animation:"shimmer 1.5s infinite",backgroundImage:"linear-gradient(90deg,#F0F0F0 25%,#E5E5E5 50%,#F0F0F0 75%)",backgroundSize:"400% 100%"}}/>
+          ))}
+          <style>{`@keyframes shimmer{0%{background-position:400% 0}100%{background-position:-400% 0}}`}</style>
         </div>
       ) : (
-        <div className="stats-grid">
-          {STAT_CARDS.map((s) => (
-            <Link key={s.label} href={s.href} className="stat-card">
-              <div className="sc-label">{s.label}</div>
-              <div className="sc-value" style={{color:s.color}}>{s.value.toLocaleString()}</div>
-              <div className="sc-sub">{s.sub}</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:"1rem"}}>
+          {STAT_CARDS.map(s => (
+            <Link key={s.label} href={s.href}
+              style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px",padding:"1.25rem",display:"flex",flexDirection:"column",gap:"0.35rem",textDecoration:"none",transition:"all 0.2s",position:"relative",overflow:"hidden"}}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLElement).style.borderColor = s.color;
+                (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
+                (e.currentTarget as HTMLElement).style.boxShadow = `0 6px 20px ${s.color}22`;
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.borderColor = "#E5E5E5";
+                (e.currentTarget as HTMLElement).style.transform = "";
+                (e.currentTarget as HTMLElement).style.boxShadow = "";
+              }}>
+              <div style={{display:"flex",alignItems:"center",gap:"0.5rem",marginBottom:"0.2rem"}}>
+                <span style={{fontSize:"1.1rem"}}>{s.icon}</span>
+                <span style={{fontSize:"0.68rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:"#A3A3A3"}}>{s.label}</span>
+              </div>
+              <div style={{fontFamily:"var(--font-display)",fontSize:"2.2rem",letterSpacing:"0.02em",color:s.color,lineHeight:1}}>
+                {s.value}
+              </div>
+              <span style={{position:"absolute",bottom:"0.875rem",right:"1rem",fontSize:"0.8rem",color:"#DDD"}}>→</span>
             </Link>
           ))}
         </div>
       )}
 
-      {/* Pending approvals alert */}
-      {stats && stats.pendingDealers > 0 && (
-        <Link href="/dashboard/super-admin/approvals" className="pending-alert">
-          <span className="pa-dot" />
-          <span><strong>{stats.pendingDealers} dealer application{stats.pendingDealers > 1 ? "s" : ""}</strong> waiting for your approval</span>
-          <span className="pa-arrow">→</span>
-        </Link>
+      {/* Revenue */}
+      {stats && (
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem"}}>
+          <div style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px",padding:"1.25rem"}}>
+            <div style={{fontSize:"0.68rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:"#A3A3A3",marginBottom:"0.5rem"}}>ALL-TIME REVENUE</div>
+            <div style={{fontFamily:"var(--font-display)",fontSize:"2rem",color:"#16A34A"}}>{fmt(stats.revenue?.allTime||0)}</div>
+            <div style={{fontSize:"0.72rem",color:"#A3A3A3",marginTop:"0.25rem"}}>{stats.revenue?.totalTransactions||0} transactions total</div>
+          </div>
+          <div style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px",padding:"1.25rem"}}>
+            <div style={{fontSize:"0.68rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:"#A3A3A3",marginBottom:"0.5rem"}}>THIS MONTH REVENUE</div>
+            <div style={{fontFamily:"var(--font-display)",fontSize:"2rem",color:"#F47B20"}}>{fmt(stats.revenue?.thisMonth||0)}</div>
+            <div style={{fontSize:"0.72rem",color:"#A3A3A3",marginTop:"0.25rem"}}>{stats.revenue?.monthTransactions||0} transactions this month</div>
+          </div>
+        </div>
       )}
 
-      {/* Quick links */}
-      <div className="section-title">QUICK ACTIONS</div>
-      <div className="quick-grid">
-        {QUICK_LINKS.map((q) => (
-          <Link key={q.label} href={q.href} className="quick-card">
-            <span className="qc-icon">{q.icon}</span>
-            <div className="qc-label">{q.label}</div>
-            <div className="qc-desc">{q.desc}</div>
-          </Link>
-        ))}
-      </div>
-
-      <div className="two-col">
-        {/* Top Dealers */}
-        <div className="panel">
-          <div className="panel-title">TOP DEALERS</div>
-          {topDealers.length === 0 ? (
-            <div className="panel-empty">No sales data yet</div>
-          ) : (
-            <div className="dealer-list">
-              {topDealers.slice(0,5).map((d: any, i: number) => (
-                <div key={i} className="dealer-row">
-                  <div className="dr-rank">{i + 1}</div>
-                  <div className="dr-info">
-                    <div className="dr-name">{d.dealerName || d.companyName || "—"}</div>
-                    <div className="dr-id">{d.dealerId}</div>
-                  </div>
-                  <div className="dr-stats">
-                    <div className="dr-sales">{d.totalSales || 0} sales</div>
-                    <div className="dr-rev">{fmt(d.totalRevenue || 0)}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          <Link href="/dashboard/super-admin/dealers" className="panel-link">View all dealers →</Link>
-        </div>
-
-        {/* Recent Activity */}
-        <div className="panel">
-          <div className="panel-title">RECENT ACTIVITY</div>
-          {recentActivity.length === 0 ? (
-            <div className="panel-empty">No recent activity</div>
-          ) : (
-            <div className="act-list">
-              {recentActivity.slice(0,6).map((a: any, i: number) => (
-                <div key={i} className="act-row">
-                  <div className="act-icon">{a.type === "dealer_approved" ? "✅" : a.type === "general" ? "📢" : "🔔"}</div>
-                  <div className="act-body">
-                    <div className="act-title">{a.title}</div>
-                    <div className="act-msg">{a.message?.slice(0, 60)}{a.message?.length > 60 ? "..." : ""}</div>
-                  </div>
-                  <div className="act-time">{fmtTime(a.createdAt)}</div>
-                </div>
-              ))}
-            </div>
-          )}
-          <Link href="/dashboard/super-admin/activity" className="panel-link">View all activity →</Link>
+      {/* Quick actions */}
+      <div>
+        <p style={{fontFamily:"var(--font-display)",fontSize:"0.72rem",letterSpacing:"0.18em",color:"#A3A3A3",marginBottom:"0.875rem",textTransform:"uppercase"}}>QUICK ACTIONS</p>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:"0.875rem"}}>
+          {QUICK.map(a => (
+            <Link key={a.label} href={a.href}
+              style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",padding:"1rem 0.875rem",display:"flex",flexDirection:"column",alignItems:"center",gap:"0.5rem",textDecoration:"none",transition:"all 0.2s"}}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLElement).style.borderColor = a.color;
+                (e.currentTarget as HTMLElement).style.background = `${a.color}11`;
+                (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.borderColor = "#E5E5E5";
+                (e.currentTarget as HTMLElement).style.background = "#fff";
+                (e.currentTarget as HTMLElement).style.transform = "";
+              }}>
+              <span style={{fontSize:"1.5rem"}}>{a.icon}</span>
+              <span style={{fontSize:"0.72rem",fontWeight:500,color:"#666",textAlign:"center",lineHeight:1.3}}>{a.label}</span>
+            </Link>
+          ))}
         </div>
       </div>
 
-      <style>{`
-        .overview { display:flex; flex-direction:column; gap:1.5rem; }
-        .ov-header { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
-        .ov-title { font-family:var(--font-display); font-size:1.8rem; letter-spacing:0.06em; color:var(--text); line-height:1; }
-        .ov-sub { font-size:0.8rem; color:var(--text-muted); margin-top:0.3rem; }
-        .feed-link { font-size:0.825rem; color:var(--orange); border:1px solid var(--orange-border); border-radius:6px; padding:0.5rem 1rem; white-space:nowrap; transition:all 0.2s; }
-        .feed-link:hover { background:var(--orange-pale); }
-        .stats-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:1rem; }
-        .stat-card { background:var(--surface); border:1.5px solid var(--border); border-radius:12px; padding:1.25rem; display:flex; flex-direction:column; gap:0.35rem; text-decoration:none; transition:all 0.2s; }
-        .stat-card:hover { border-color:var(--orange); transform:translateY(-2px); box-shadow:0 4px 16px rgba(244,123,32,0.1); }
-        .stat-skel { background:var(--grey-100); border-radius:12px; height:110px; animation:pulse 1.5s infinite; }
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
-        .sc-label { font-size:0.72rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-muted); }
-        .sc-value { font-family:var(--font-display); font-size:2.2rem; line-height:1; margin-top:0.25rem; }
-        .sc-sub { font-size:0.72rem; color:var(--text-dim); }
-        .pending-alert { display:flex; align-items:center; gap:0.875rem; background:var(--orange-pale); border:1.5px solid var(--orange-border); border-radius:10px; padding:1rem 1.25rem; color:var(--orange-dim); text-decoration:none; font-size:0.875rem; transition:all 0.2s; }
-        .pending-alert:hover { background:#FFE8D0; }
-        .pa-dot { width:10px; height:10px; border-radius:50%; background:var(--orange); flex-shrink:0; animation:blink 1.5s infinite; }
-        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-        .pa-arrow { margin-left:auto; font-weight:700; color:var(--orange); }
-        .section-title { font-family:var(--font-display); font-size:0.78rem; letter-spacing:0.15em; color:var(--text-muted); }
-        .quick-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:0.875rem; }
-        .quick-card { background:var(--surface); border:1.5px solid var(--border); border-radius:10px; padding:1.25rem 1rem; display:flex; flex-direction:column; gap:0.4rem; text-decoration:none; transition:all 0.2s; }
-        .quick-card:hover { border-color:var(--orange); background:var(--orange-pale); }
-        .qc-icon { font-size:1.5rem; }
-        .qc-label { font-family:var(--font-display); font-size:0.85rem; letter-spacing:0.06em; color:var(--text); }
-        .qc-desc { font-size:0.72rem; color:var(--text-muted); line-height:1.4; }
-        .two-col { display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; }
-        .panel { background:var(--surface); border:1.5px solid var(--border); border-radius:12px; padding:1.25rem; display:flex; flex-direction:column; gap:1rem; }
-        .panel-title { font-family:var(--font-display); font-size:0.78rem; letter-spacing:0.15em; color:var(--text-muted); }
-        .panel-empty { font-size:0.825rem; color:var(--text-dim); padding:1rem; text-align:center; }
-        .panel-link { font-size:0.8rem; color:var(--orange); text-align:right; }
-        .dealer-list { display:flex; flex-direction:column; gap:0.5rem; }
-        .dealer-row { display:flex; align-items:center; gap:0.75rem; padding:0.625rem 0; border-bottom:1px solid var(--border); }
-        .dealer-row:last-child { border-bottom:none; }
-        .dr-rank { width:24px; height:24px; border-radius:50%; background:var(--orange-pale); color:var(--orange); font-size:0.78rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-        .dr-info { flex:1; }
-        .dr-name { font-size:0.825rem; font-weight:500; color:var(--text); }
-        .dr-id { font-family:var(--font-mono); font-size:0.68rem; color:var(--text-dim); }
-        .dr-stats { text-align:right; }
-        .dr-sales { font-size:0.72rem; color:var(--text-muted); }
-        .dr-rev { font-size:0.825rem; font-weight:600; color:var(--orange); }
-        .act-list { display:flex; flex-direction:column; gap:0.5rem; }
-        .act-row { display:flex; align-items:flex-start; gap:0.75rem; padding:0.5rem 0; border-bottom:1px solid var(--border); }
-        .act-row:last-child { border-bottom:none; }
-        .act-icon { font-size:1rem; flex-shrink:0; margin-top:2px; }
-        .act-body { flex:1; }
-        .act-title { font-size:0.8rem; font-weight:500; color:var(--text); }
-        .act-msg { font-size:0.72rem; color:var(--text-muted); margin-top:0.1rem; }
-        .act-time { font-size:0.65rem; color:var(--text-dim); font-family:var(--font-mono); flex-shrink:0; white-space:nowrap; }
-        @media(max-width:768px) { .two-col{grid-template-columns:1fr} .stats-grid{grid-template-columns:repeat(2,1fr)} }
-      `}</style>
+      <style>{`@media(max-width:640px){div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}}`}</style>
     </div>
   );
 }
