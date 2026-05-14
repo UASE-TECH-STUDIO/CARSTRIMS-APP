@@ -1,14 +1,20 @@
-"use client";
+﻿"use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
 const ROLES = ["all","DEALER_ADMIN","DEALER_STAFF","PARTNER_USER","PUBLIC_USER","SYSTEM_ADMIN"];
-const ROLE_COLORS: Record<string,string> = { SYSTEM_ADMIN:"#E05252",DEALER_ADMIN:"#C9A84C",DEALER_STAFF:"#1D9E75",PARTNER_USER:"#3B8BD4",PUBLIC_USER:"#888" };
+const ROLE_COLORS: Record<string,string> = {
+  SYSTEM_ADMIN:"#E05252",DEALER_ADMIN:"#C9A84C",DEALER_STAFF:"#1D9E75",
+  PARTNER_USER:"#3B8BD4",PUBLIC_USER:"#888",
+};
+const STATUS_COLORS: Record<string,string> = {
+  active:"#16A34A",suspended:"#DC2626",deleted:"#888",pending:"#F47B20",
+  awaiting_approval:"#F47B20",rejected:"#888",
+};
 
 const genPassword = () => {
   const chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$";
-  let pw = "";
-  for (let i = 0; i < 12; i++) pw += chars[Math.floor(Math.random()*chars.length)];
+  let pw = ""; for (let i=0;i<12;i++) pw+=chars[Math.floor(Math.random()*chars.length)];
   return pw;
 };
 
@@ -19,9 +25,11 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [skip, setSkip] = useState(0);
-  const [resetting, setResetting] = useState<string|null>(null);
-  const [resetResult, setResetResult] = useState<{userId:string;password:string;user:any}|null>(null);
-  const [sendingPw, setSendingPw] = useState<string|null>(null);
+  const [actionModal, setActionModal] = useState<{type:string;user:any}|null>(null);
+  const [actionNote, setActionNote] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
+  const [resetResult, setResetResult] = useState<{password:string;user:any}|null>(null);
+  const [msg, setMsg] = useState("");
   const LIMIT = 20;
 
   const fetchUsers = async () => {
@@ -37,98 +45,193 @@ export default function AdminUsersPage() {
 
   useEffect(() => { fetchUsers(); }, [search, roleFilter, skip]);
 
-  const handleResetPw = async (user: any) => {
-    setResetting(user._id);
-    const newPassword = genPassword();
-    try {
-      try { await api.post(`/api/v1/admin/users/${user._id}/reset-password`, { newPassword }); }
-      catch { await api.post(`/api/v1/admin/dealers/${user._id}/reset-password`, { newPassword }); }
-    } catch {}
-    setResetResult({ userId:user._id, password:newPassword, user });
-    setResetting(null);
-  };
+  const showMsg = (text: string) => { setMsg(text); setTimeout(()=>setMsg(""), 5000); };
 
-  const sendPasswordVia = async (method: "email"|"whatsapp") => {
-    if (!resetResult) return;
-    setSendingPw(method);
+  const handleAction = async () => {
+    if (!actionModal) return;
+    setActionLoading(true);
     try {
-      await api.post("/api/v1/admin/users/send-password", { userId:resetResult.userId, newPassword:resetResult.password, method });
-      alert(`Password sent via ${method==="email"?"Email":"WhatsApp"} to ${resetResult.user.fullName}`);
-      setResetResult(null);
-    } catch (e: any) {
-      const detail = (e.response?.data?.detail||"").toLowerCase();
-      if (method==="email"&&(detail.includes("email")||detail.includes("invalid"))) alert("Could not send - the email address on this account may be invalid or unreachable.");
-      else if (method==="whatsapp"&&(detail.includes("phone")||detail.includes("whatsapp"))) alert("Could not send - no valid WhatsApp/phone number is registered for this user.");
-      else alert(`Failed to send via ${method}. Copy the password and share it manually.`);
-    } finally { setSendingPw(null); }
+      const id = actionModal.user._id;
+      if (actionModal.type==="suspend") {
+        await api.post(`/api/v1/admin/users/${id}/suspend`, { reason: actionNote });
+        showMsg(`${actionModal.user.fullName} suspended.`);
+      } else if (actionModal.type==="unsuspend") {
+        await api.post(`/api/v1/admin/users/${id}/unsuspend`);
+        showMsg(`${actionModal.user.fullName} reactivated.`);
+      } else if (actionModal.type==="warn") {
+        await api.post(`/api/v1/admin/users/${id}/warn`, { reason: actionNote });
+        showMsg(`Warning sent to ${actionModal.user.fullName}.`);
+      } else if (actionModal.type==="delete") {
+        await api.delete(`/api/v1/admin/users/${id}`);
+        showMsg(`${actionModal.user.fullName} deleted.`);
+      } else if (actionModal.type==="reset") {
+        const newPassword = genPassword();
+        await api.post(`/api/v1/admin/users/${id}/reset-password`, { newPassword });
+        setResetResult({ password:newPassword, user:actionModal.user });
+      }
+      setActionModal(null); setActionNote("");
+      fetchUsers();
+    } catch (err:any) {
+      showMsg("Action failed: " + (err.response?.data?.detail || "Unknown error"));
+    } finally { setActionLoading(false); }
   };
 
   const fmtDate = (iso: string) => iso ? new Date(iso).toLocaleDateString("en-NG") : "-";
 
   return (
-    <div className="users-page">
-      <div className="page-header">
+    <div style={{display:"flex",flexDirection:"column",gap:"1.5rem",fontFamily:"var(--font-body)"}}>
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"1rem",flexWrap:"wrap"}}>
         <div>
-          <h2 className="page-heading">All Users</h2>
-          <p className="page-sub">{total} registered user{total!==1?"s":""}</p>
+          <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.6rem",letterSpacing:"0.05em",color:"#1A1A1A",lineHeight:1}}>All Users</h2>
+          <p style={{fontSize:"0.8rem",color:"#737373",marginTop:"0.3rem"}}>{total} registered user{total!==1?"s":""}</p>
         </div>
       </div>
 
+      {msg&&(
+        <div style={{background:"#F0FDF4",border:"1px solid #86EFAC",color:"#15803D",padding:"0.75rem 1rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between"}}>
+          <span>{msg}</span><button onClick={()=>setMsg("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}>✕</button>
+        </div>
+      )}
+
+      {/* Reset result modal */}
       {resetResult&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
-          <div style={{background:"#fff",borderRadius:"12px",padding:"1.75rem",maxWidth:"480px",width:"100%",display:"flex",flexDirection:"column",gap:"1.25rem",boxShadow:"0 16px 48px rgba(0,0,0,0.2)"}}>
-            <h3 style={{fontFamily:"var(--font-display)",fontSize:"1.2rem",letterSpacing:"0.08em",color:"#1A1A1A"}}>PASSWORD RESET</h3>
-            <p style={{fontSize:"0.875rem",color:"#737373"}}>New password generated for <strong>{resetResult.user.fullName}</strong>. Share it via:</p>
+          <div style={{background:"#fff",borderRadius:"12px",padding:"1.75rem",maxWidth:"440px",width:"100%",display:"flex",flexDirection:"column",gap:"1.25rem",boxShadow:"0 16px 48px rgba(0,0,0,0.2)"}}>
+            <h3 style={{fontFamily:"var(--font-display)",fontSize:"1.1rem",color:"#1A1A1A",letterSpacing:"0.08em"}}>PASSWORD RESET</h3>
+            <p style={{fontSize:"0.875rem",color:"#737373"}}>New password for <strong>{resetResult.user.fullName}</strong>:</p>
             <div style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"1rem",display:"flex",alignItems:"center",justifyContent:"space-between",gap:"1rem"}}>
-              <code style={{fontFamily:"var(--font-mono)",fontSize:"1.1rem",color:"#1A1A1A",letterSpacing:"0.08em"}}>{resetResult.password}</code>
+              <code style={{fontFamily:"monospace",fontSize:"1.1rem",color:"#1A1A1A",letterSpacing:"0.08em"}}>{resetResult.password}</code>
               <button onClick={()=>{navigator.clipboard.writeText(resetResult.password);alert("Copied!");}} style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"6px",padding:"0.4rem 0.875rem",fontSize:"0.75rem",cursor:"pointer",whiteSpace:"nowrap"}}>Copy</button>
             </div>
-            <div style={{display:"flex",gap:"0.75rem"}}>
-              <button onClick={()=>sendPasswordVia("email")} disabled={!!sendingPw} style={{flex:1,background:"#EFF6FF",border:"1.5px solid #3B8BD4",color:"#1D4ED8",borderRadius:"8px",padding:"0.75rem",fontSize:"0.875rem",cursor:"pointer",opacity:sendingPw?"0.6":"1"}}>
-                {sendingPw==="email"?"Sending...":"Send via Email"}
-              </button>
-              <button onClick={()=>sendPasswordVia("whatsapp")} disabled={!!sendingPw} style={{flex:1,background:"#F0FDF4",border:"1.5px solid #16A34A",color:"#15803D",borderRadius:"8px",padding:"0.75rem",fontSize:"0.875rem",cursor:"pointer",opacity:sendingPw?"0.6":"1"}}>
-                {sendingPw==="whatsapp"?"Sending...":"Send via WhatsApp"}
-              </button>
-            </div>
-            <button onClick={()=>setResetResult(null)} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.75rem",fontSize:"0.875rem",cursor:"pointer"}}>Close</button>
+            <p style={{fontSize:"0.78rem",color:"#737373",lineHeight:1.5}}>Share this with the user. They should change it after logging in. A notification has been sent to them.</p>
+            <button onClick={()=>setResetResult(null)} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.75rem",fontSize:"0.875rem",cursor:"pointer"}}>Done</button>
           </div>
         </div>
       )}
 
-      <div className="filters">
-        <input className="search-input" placeholder="Search name, email, username..." value={search} onChange={(e)=>{setSearch(e.target.value);setSkip(0);}} />
-        <div className="role-tabs">
-          {ROLES.map((r)=>(
-            <button key={r} className={`role-tab ${roleFilter===r?"active":""}`} onClick={()=>{setRoleFilter(r);setSkip(0);}}>
-              {r==="all"?"All":r.replace("_"," ")}
+      {/* Action modal */}
+      {actionModal&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:"12px",padding:"1.5rem",maxWidth:"440px",width:"100%",display:"flex",flexDirection:"column",gap:"1.25rem",boxShadow:"0 16px 48px rgba(0,0,0,0.2)"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <h3 style={{fontFamily:"var(--font-display)",fontSize:"1rem",letterSpacing:"0.08em",color:"#1A1A1A"}}>
+                {actionModal.type==="suspend"?"⛔ SUSPEND USER":actionModal.type==="unsuspend"?"✅ REACTIVATE USER":actionModal.type==="warn"?"⚠️ WARN USER":actionModal.type==="delete"?"🗑 DELETE USER":"🔑 RESET PASSWORD"}
+              </h3>
+              <button onClick={()=>setActionModal(null)} style={{background:"none",border:"none",cursor:"pointer",fontSize:"1rem",color:"#737373"}}>✕</button>
+            </div>
+            <div style={{background:"#F5F5F5",borderRadius:"6px",padding:"0.75rem",display:"flex",flexDirection:"column",gap:"0.2rem"}}>
+              <strong style={{fontSize:"0.875rem",color:"#1A1A1A"}}>{actionModal.user.fullName}</strong>
+              <span style={{fontSize:"0.78rem",color:"#737373"}}>{actionModal.user.email} · {actionModal.user.role?.replace(/_/g," ")}</span>
+            </div>
+            {["suspend","warn"].includes(actionModal.type)&&(
+              <div style={{display:"flex",flexDirection:"column",gap:"0.4rem"}}>
+                <label style={{fontSize:"0.7rem",fontWeight:600,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#525252"}}>{actionModal.type==="warn"?"Warning Message":"Reason for Suspension"}</label>
+                <textarea style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.75rem",color:"#1A1A1A",fontSize:"0.875rem",fontFamily:"var(--font-body)",outline:"none",width:"100%",minHeight:"80px",resize:"vertical" as const,boxSizing:"border-box" as const}}
+                  placeholder={actionModal.type==="warn"?"Write your warning to this user...":"Reason for suspension..."}
+                  value={actionNote} onChange={e=>setActionNote(e.target.value)}/>
+              </div>
+            )}
+            {actionModal.type==="delete"&&(
+              <div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",borderRadius:"8px",padding:"0.75rem",fontSize:"0.825rem",color:"#DC2626",lineHeight:1.5}}>
+                ⚠️ This will mark the account as deleted. The user will not be able to log in.
+              </div>
+            )}
+            <div style={{display:"flex",gap:"0.75rem"}}>
+              <button onClick={()=>setActionModal(null)} style={{flex:1,background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.875rem",fontSize:"0.875rem",cursor:"pointer",fontFamily:"var(--font-body)"}}>Cancel</button>
+              <button onClick={handleAction} disabled={actionLoading}
+                style={{flex:1,background:actionModal.type==="delete"?"#DC2626":actionModal.type==="unsuspend"?"#16A34A":"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.875rem",fontFamily:"var(--font-display)",fontSize:"0.875rem",letterSpacing:"0.06em",cursor:"pointer",opacity:actionLoading?0.6:1}}>
+                {actionLoading?"Working...":"Confirm"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Filters */}
+      <div style={{display:"flex",gap:"0.75rem",alignItems:"center",flexWrap:"wrap"}}>
+        <input placeholder="Search name, email, username..." value={search} onChange={e=>{setSearch(e.target.value);setSkip(0);}}
+          style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.65rem 1rem",color:"#1A1A1A",fontSize:"0.875rem",fontFamily:"var(--font-body)",outline:"none",width:"280px"}}/>
+        <div style={{display:"flex",gap:"0.3rem",flexWrap:"wrap"}}>
+          {ROLES.map(r=>(
+            <button key={r} onClick={()=>{setRoleFilter(r);setSkip(0);}}
+              style={{background:roleFilter===r?"#1A1A1A":"transparent",border:`1px solid ${roleFilter===r?"#1A1A1A":"#E5E5E5"}`,borderRadius:"20px",padding:"0.3rem 0.75rem",fontSize:"0.72rem",cursor:"pointer",color:roleFilter===r?"#fff":"#737373",fontFamily:"var(--font-body)",textTransform:"capitalize" as const,transition:"all 0.2s"}}>
+              {r==="all"?"All":r.replace(/_/g," ")}
             </button>
           ))}
         </div>
       </div>
 
-      {loading?(<div className="loading-state"><div className="spinner"/></div>
-      ):users.length===0?(<div className="empty-state"><div className="empty-icon">&#128101;</div><h3>No users found</h3></div>
+      {loading?(
+        <div style={{display:"flex",justifyContent:"center",padding:"3rem"}}>
+          <div style={{width:"28px",height:"28px",border:"2.5px solid #E5E5E5",borderTopColor:"#F47B20",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        </div>
+      ):users.length===0?(
+        <div style={{padding:"3rem",textAlign:"center",border:"1.5px dashed #E5E5E5",borderRadius:"12px",color:"#737373"}}>No users found</div>
       ):(
-        <div className="users-table-wrap">
-          <table className="users-table">
-            <thead><tr><th>User</th><th>Role</th><th>Contact</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+        <div style={{overflowX:"auto",border:"1.5px solid #E5E5E5",borderRadius:"10px",background:"#fff"}}>
+          <table style={{width:"100%",borderCollapse:"collapse",minWidth:"800px"}}>
+            <thead>
+              <tr style={{background:"#F5F5F5"}}>
+                {["User","Role","Contact","Status","Joined","Actions"].map(h=>(
+                  <th key={h} style={{padding:"0.75rem 1rem",textAlign:"left",fontSize:"0.68rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#737373",borderBottom:"1.5px solid #E5E5E5"}}>{h}</th>
+                ))}
+              </tr>
+            </thead>
             <tbody>
-              {users.map((u)=>(
-                <tr key={u._id}>
-                  <td><div className="user-name">{u.fullName}</div><div className="user-username">@{u.username||"-"}</div><div className="user-email">{u.email}</div></td>
-                  <td><span className="role-pill" style={{color:ROLE_COLORS[u.role]||"#888",borderColor:(ROLE_COLORS[u.role]||"#888")+"44",background:(ROLE_COLORS[u.role]||"#888")+"11"}}>{u.role?.replace(/_/g," ")}</span></td>
-                  <td>
-                    <div className="contact-row">
-                      {u.phone&&<a href={`tel:${u.phone}`} className="contact-icon">&#128222;</a>}
-                      {u.email&&<a href={`mailto:${u.email}`} className="contact-icon">&#9993;</a>}
-                      {(u.whatsapp||u.phone)&&<a href={`https://wa.me/${(u.whatsapp||u.phone).replace(/[^0-9]/g,"")}`} target="_blank" className="contact-icon" rel="noreferrer">&#128172;</a>}
-                    </div>
-                    <div className="user-phone">{u.phone||"-"}</div>
+              {users.map(u=>(
+                <tr key={u._id} style={{borderBottom:"1px solid #F5F5F5"}}>
+                  <td style={{padding:"0.875rem 1rem",verticalAlign:"top"}}>
+                    <div style={{fontWeight:600,fontSize:"0.875rem",color:"#1A1A1A"}}>{u.fullName||"—"}</div>
+                    <div style={{fontSize:"0.72rem",color:"#A3A3A3",fontFamily:"monospace"}}>@{u.username||"-"}</div>
+                    <div style={{fontSize:"0.75rem",color:"#737373"}}>{u.email}</div>
                   </td>
-                  <td><span className={`status-pill ${u.status}`}>{u.status}</span></td>
-                  <td className="date-cell">{fmtDate(u.createdAt)}</td>
-                  <td><button className="act-btn" onClick={()=>handleResetPw(u)} disabled={resetting===u._id}>{resetting===u._id?"...":"Reset PW"}</button></td>
+                  <td style={{padding:"0.875rem 1rem",verticalAlign:"top"}}>
+                    <span style={{padding:"0.2rem 0.6rem",borderRadius:"20px",fontSize:"0.68rem",fontWeight:500,textTransform:"capitalize" as const,border:"1px solid",color:ROLE_COLORS[u.role]||"#888",borderColor:(ROLE_COLORS[u.role]||"#888")+"44",background:(ROLE_COLORS[u.role]||"#888")+"11"}}>
+                      {u.role?.replace(/_/g," ")}
+                    </span>
+                  </td>
+                  <td style={{padding:"0.875rem 1rem",verticalAlign:"top"}}>
+                    <div style={{display:"flex",gap:"0.3rem",marginBottom:"0.2rem"}}>
+                      {u.phone&&<a href={`tel:${u.phone}`} style={{fontSize:"0.9rem",textDecoration:"none"}}>📞</a>}
+                      {u.email&&<a href={`mailto:${u.email}`} style={{fontSize:"0.9rem",textDecoration:"none"}}>✉️</a>}
+                      {(u.whatsapp||u.phone)&&<a href={`https://wa.me/${(u.whatsapp||u.phone).replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer" style={{fontSize:"0.9rem",textDecoration:"none"}}>💬</a>}
+                    </div>
+                    <div style={{fontSize:"0.75rem",color:"#737373"}}>{u.phone||"-"}</div>
+                  </td>
+                  <td style={{padding:"0.875rem 1rem",verticalAlign:"top"}}>
+                    <span style={{padding:"0.2rem 0.6rem",borderRadius:"20px",fontSize:"0.68rem",fontWeight:500,border:"1px solid",color:STATUS_COLORS[u.status]||"#888",borderColor:(STATUS_COLORS[u.status]||"#888")+"44",background:(STATUS_COLORS[u.status]||"#888")+"11"}}>
+                      {u.status}
+                    </span>
+                  </td>
+                  <td style={{padding:"0.875rem 1rem",fontSize:"0.75rem",color:"#737373",whiteSpace:"nowrap" as const,verticalAlign:"top"}}>{fmtDate(u.createdAt)}</td>
+                  <td style={{padding:"0.875rem 1rem",verticalAlign:"top"}}>
+                    <div style={{display:"flex",flexDirection:"column",gap:"0.3rem",minWidth:"90px"}}>
+                      {u.status==="suspended"?(
+                        <button onClick={()=>{setActionModal({type:"unsuspend",user:u});setActionNote("");}}
+                          style={{background:"transparent",border:"1px solid #E5E5E5",borderRadius:"4px",padding:"0.25rem 0.5rem",fontSize:"0.72rem",cursor:"pointer",color:"#737373",fontFamily:"var(--font-body)",textAlign:"left" as const,transition:"all 0.2s"}}>
+                          ✅ Reactivate
+                        </button>
+                      ):(
+                        <button onClick={()=>{setActionModal({type:"suspend",user:u});setActionNote("");}}
+                          style={{background:"transparent",border:"1px solid #E5E5E5",borderRadius:"4px",padding:"0.25rem 0.5rem",fontSize:"0.72rem",cursor:"pointer",color:"#737373",fontFamily:"var(--font-body)",textAlign:"left" as const,transition:"all 0.2s"}}>
+                          ⛔ Suspend
+                        </button>
+                      )}
+                      <button onClick={()=>{setActionModal({type:"warn",user:u});setActionNote("");}}
+                        style={{background:"transparent",border:"1px solid #E5E5E5",borderRadius:"4px",padding:"0.25rem 0.5rem",fontSize:"0.72rem",cursor:"pointer",color:"#737373",fontFamily:"var(--font-body)",textAlign:"left" as const}}>
+                        ⚠️ Warn
+                      </button>
+                      <button onClick={()=>setActionModal({type:"reset",user:u})}
+                        style={{background:"transparent",border:"1px solid #E5E5E5",borderRadius:"4px",padding:"0.25rem 0.5rem",fontSize:"0.72rem",cursor:"pointer",color:"#737373",fontFamily:"var(--font-body)",textAlign:"left" as const}}>
+                        🔑 Reset PW
+                      </button>
+                      <button onClick={()=>setActionModal({type:"delete",user:u})}
+                        style={{background:"transparent",border:"1px solid #E5E5E5",borderRadius:"4px",padding:"0.25rem 0.5rem",fontSize:"0.72rem",cursor:"pointer",color:"#DC2626",fontFamily:"var(--font-body)",textAlign:"left" as const}}>
+                        🗑 Delete
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -136,54 +239,13 @@ export default function AdminUsersPage() {
         </div>
       )}
 
-      <div className="pagination">
-        <button className="pg-btn" onClick={()=>setSkip(Math.max(0,skip-LIMIT))} disabled={skip===0}>Prev</button>
-        <span className="pg-info">{Math.floor(skip/LIMIT)+1} / {Math.max(1,Math.ceil(total/LIMIT))}</span>
-        <button className="pg-btn" onClick={()=>setSkip(skip+LIMIT)} disabled={skip+LIMIT>=total}>Next</button>
+      <div style={{display:"flex",alignItems:"center",gap:"1rem",justifyContent:"center"}}>
+        <button onClick={()=>setSkip(Math.max(0,skip-LIMIT))} disabled={skip===0}
+          style={{background:"#fff",border:"1.5px solid #E5E5E5",color:"#737373",padding:"0.5rem 1rem",borderRadius:"6px",cursor:"pointer",fontSize:"0.825rem",fontFamily:"var(--font-body)",opacity:skip===0?0.4:1}}>← Prev</button>
+        <span style={{fontSize:"0.825rem",color:"#737373",fontFamily:"monospace"}}>{Math.floor(skip/LIMIT)+1} / {Math.max(1,Math.ceil(total/LIMIT))}</span>
+        <button onClick={()=>setSkip(skip+LIMIT)} disabled={skip+LIMIT>=total}
+          style={{background:"#fff",border:"1.5px solid #E5E5E5",color:"#737373",padding:"0.5rem 1rem",borderRadius:"6px",cursor:"pointer",fontSize:"0.825rem",fontFamily:"var(--font-body)",opacity:skip+LIMIT>=total?0.4:1}}>Next →</button>
       </div>
-
-      <style>{`
-        .users-page{display:flex;flex-direction:column;gap:1.5rem}
-        .page-header{display:flex;align-items:flex-start;justify-content:space-between}
-        .page-heading{font-family:var(--font-display);font-size:1.6rem;letter-spacing:0.05em;color:var(--text);line-height:1}
-        .page-sub{font-size:0.8rem;color:var(--text-muted);margin-top:0.3rem}
-        .filters{display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap}
-        .search-input{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:0.65rem 1rem;color:var(--text);font-size:0.875rem;font-family:var(--font-body);outline:none;width:280px}
-        .role-tabs{display:flex;gap:0.3rem;flex-wrap:wrap}
-        .role-tab{background:transparent;border:1px solid var(--border);border-radius:20px;padding:0.3rem 0.75rem;color:var(--text-muted);font-size:0.72rem;cursor:pointer;font-family:var(--font-body);text-transform:capitalize}
-        .role-tab.active{background:var(--error);color:#fff;border-color:var(--error)}
-        .loading-state{display:flex;align-items:center;justify-content:center;min-height:200px}
-        .spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--error);border-radius:50%;animation:spin 0.8s linear infinite}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        .empty-state{display:flex;flex-direction:column;align-items:center;gap:0.75rem;padding:3rem;text-align:center;border:1px dashed var(--border);border-radius:12px}
-        .empty-icon{font-size:2.5rem}
-        .empty-state h3{font-family:var(--font-display);font-size:1.2rem;color:var(--text)}
-        .users-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px}
-        .users-table{width:100%;border-collapse:collapse;min-width:700px}
-        .users-table th{padding:0.75rem 1rem;text-align:left;font-size:0.68rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);background:var(--surface-2);border-bottom:1px solid var(--border)}
-        .users-table td{padding:0.875rem 1rem;border-bottom:1px solid var(--border);font-size:0.825rem;color:var(--text);vertical-align:top}
-        .users-table tr:last-child td{border-bottom:none}
-        .users-table tr:hover td{background:var(--surface-2)}
-        .user-name{font-weight:600;font-size:0.875rem}
-        .user-username{font-size:0.72rem;color:var(--text-muted);font-family:var(--font-mono)}
-        .user-email{font-size:0.75rem;color:var(--text-dim)}
-        .role-pill{padding:0.2rem 0.6rem;border-radius:20px;font-size:0.68rem;font-weight:500;text-transform:capitalize;border:1px solid;white-space:nowrap}
-        .contact-row{display:flex;gap:0.35rem;margin-bottom:0.2rem}
-        .contact-icon{font-size:0.9rem;text-decoration:none}
-        .user-phone{font-size:0.75rem;color:var(--text-muted)}
-        .status-pill{padding:0.15rem 0.5rem;border-radius:20px;font-size:0.68rem;text-transform:capitalize}
-        .status-pill.active{background:rgba(76,175,130,0.1);color:var(--success);border:1px solid rgba(76,175,130,0.3)}
-        .status-pill.pending,.status-pill.awaiting_approval{background:rgba(244,123,32,0.1);color:#F47B20;border:1px solid rgba(244,123,32,0.3)}
-        .status-pill.suspended,.status-pill.deleted{background:rgba(224,82,82,0.1);color:var(--error);border:1px solid rgba(224,82,82,0.3)}
-        .date-cell{color:var(--text-muted);font-size:0.75rem;white-space:nowrap}
-        .act-btn{background:transparent;border:1px solid var(--border);border-radius:5px;padding:0.3rem 0.65rem;color:var(--text-muted);font-size:0.75rem;cursor:pointer;font-family:var(--font-body);white-space:nowrap}
-        .act-btn:hover{border-color:#F47B20;color:#F47B20}
-        .act-btn:disabled{opacity:0.5;cursor:not-allowed}
-        .pagination{display:flex;align-items:center;gap:1rem;justify-content:center}
-        .pg-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-muted);padding:0.5rem 1rem;border-radius:6px;cursor:pointer;font-size:0.825rem;font-family:var(--font-body)}
-        .pg-btn:disabled{opacity:0.4;cursor:not-allowed}
-        .pg-info{font-size:0.825rem;color:var(--text-muted);font-family:var(--font-mono)}
-      `}</style>
     </div>
   );
 }

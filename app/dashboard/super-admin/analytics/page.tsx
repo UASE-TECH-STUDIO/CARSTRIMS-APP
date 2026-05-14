@@ -7,9 +7,11 @@ export default function AdminAnalyticsPage() {
   const [growth, setGrowth] = useState<any[]>([]);
   const [topDealers, setTopDealers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
 
-  useEffect(() => {
-    const fetch = async () => {
+  useEffect(()=>{
+    const fetchAll = async () => {
+      setLoading(true); setErr("");
       try {
         const [sRes, gRes, tRes] = await Promise.all([
           api.get("/api/v1/admin/stats"),
@@ -17,150 +19,199 @@ export default function AdminAnalyticsPage() {
           api.get("/api/v1/admin/top-dealers?limit=10"),
         ]);
         setStats(sRes.data);
-        setGrowth(gRes.data);
-        setTopDealers(tRes.data);
-      } catch { } finally { setLoading(false); }
+        setGrowth(Array.isArray(gRes.data)?gRes.data:[]);
+        setTopDealers(Array.isArray(tRes.data)?tRes.data:[]);
+      } catch(e:any) {
+        setErr("Failed to load analytics: "+(e.response?.data?.detail||e.message));
+      } finally { setLoading(false); }
     };
-    fetch();
-  }, []);
+    fetchAll();
+  },[]);
 
-  const fmt = (n: number) => `₦${(n || 0).toLocaleString()}`;
-  const maxRev = Math.max(...growth.map((g) => g.revenue), 1);
-  const maxDealers = Math.max(...growth.map((g) => g.newDealers), 1);
+  const fmt = (n: number) => `₦${(n||0).toLocaleString()}`;
+  const maxRev = Math.max(...growth.map(g=>g.revenue||0),1);
+  const maxDealers = Math.max(...growth.map(g=>g.newDealers||0),1);
+  const maxUsers = Math.max(...growth.map(g=>g.newUsers||0),1);
 
-  if (loading) return <div className="loading-state"><div className="spinner" /></div>;
+  if (loading) return (
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"60vh",flexDirection:"column",gap:"1rem"}}>
+      <div style={{width:"32px",height:"32px",border:"3px solid #E5E5E5",borderTopColor:"#F47B20",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <div style={{fontSize:"0.825rem",color:"#737373"}}>Loading analytics...</div>
+    </div>
+  );
+
+  if (err) return (
+    <div style={{padding:"2rem",background:"#FEF2F2",border:"1px solid #FCA5A5",borderRadius:"12px",color:"#DC2626",fontSize:"0.875rem"}}>
+      {err}<br/><button onClick={()=>window.location.reload()} style={{marginTop:"0.75rem",background:"#DC2626",color:"#fff",border:"none",borderRadius:"6px",padding:"0.5rem 1rem",cursor:"pointer",fontFamily:"var(--font-body)"}}>Retry</button>
+    </div>
+  );
+
+  const statCards = [
+    {label:"Total Dealers",value:stats?.dealers?.total||0,sub:`${stats?.dealers?.active||0} active`,color:"#F47B20",icon:"🏢"},
+    {label:"Pending Approval",value:stats?.dealers?.pending||0,sub:"Awaiting review",color:"#D97706",icon:"⏳"},
+    {label:"Suspended",value:stats?.dealers?.suspended||0,sub:"Restricted accounts",color:"#DC2626",icon:"⛔"},
+    {label:"Total Users",value:stats?.users?.total||0,sub:`${stats?.users?.staff||0} staff`,color:"#3B8BD4",icon:"👥"},
+    {label:"Total Cars",value:stats?.inventory?.totalCars||0,sub:`${stats?.inventory?.totalSold||0} sold`,color:"#7C3AED",icon:"🚗"},
+    {label:"All-time Revenue",value:fmt(stats?.revenue?.allTime||0),sub:`${stats?.revenue?.totalTransactions||0} transactions`,color:"#16A34A",icon:"💰"},
+    {label:"This Month Revenue",value:fmt(stats?.revenue?.thisMonth||0),sub:`${stats?.revenue?.monthTransactions||0} sales this month`,color:"#F47B20",icon:"📈"},
+    {label:"New Dealers (Month)",value:stats?.dealers?.thisMonth||0,sub:"Registered this month",color:"#1D9E75",icon:"✨"},
+  ];
 
   return (
-    <div className="analytics-page">
-      <div className="page-header">
-        <h2 className="page-heading">Platform Analytics</h2>
-        <p className="page-sub">Full platform performance overview</p>
+    <div style={{display:"flex",flexDirection:"column",gap:"1.75rem",fontFamily:"var(--font-body)"}}>
+      <div>
+        <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.6rem",letterSpacing:"0.05em",color:"#1A1A1A",lineHeight:1}}>Platform Analytics</h2>
+        <p style={{fontSize:"0.8rem",color:"#737373",marginTop:"0.3rem"}}>Live platform performance overview</p>
       </div>
 
-      <div className="analytics-grid">
-        <div className="an-card wide">
-          <h3 className="card-title">MONTHLY REVENUE (6 MONTHS)</h3>
-          <div className="bar-chart">
-            {growth.map((g, i) => (
-              <div key={i} className="bar-col">
-                <div className="bar-tooltip">{fmt(g.revenue)}<br />{g.sales} sales</div>
-                <div className="bar rev-bar" style={{ height:`${Math.max(6,(g.revenue/maxRev)*160)}px` }} />
-                <div className="bar-label">{g.month}</div>
+      {/* Stat cards */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:"1rem"}}>
+        {statCards.map(s=>(
+          <div key={s.label} style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",padding:"1.1rem 1.25rem",display:"flex",flexDirection:"column",gap:"0.4rem",position:"relative",overflow:"hidden"}}>
+            <div style={{display:"flex",alignItems:"center",gap:"0.5rem"}}>
+              <span style={{fontSize:"1rem"}}>{s.icon}</span>
+              <span style={{fontSize:"0.68rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#737373"}}>{s.label}</span>
+            </div>
+            <div style={{fontFamily:"var(--font-display)",fontSize:"1.8rem",letterSpacing:"0.02em",color:s.color,lineHeight:1}}>{s.value}</div>
+            <div style={{fontSize:"0.72rem",color:"#A3A3A3"}}>{s.sub}</div>
+            <div style={{position:"absolute",top:0,left:0,width:"3px",height:"100%",background:s.color,opacity:0.4}}/>
+          </div>
+        ))}
+      </div>
+
+      {/* Revenue chart */}
+      {growth.length>0&&(
+        <div style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px",padding:"1.5rem"}}>
+          <div style={{fontFamily:"var(--font-display)",fontSize:"0.78rem",letterSpacing:"0.15em",color:"#737373",marginBottom:"1.25rem"}}>MONTHLY REVENUE (6 MONTHS)</div>
+          {growth.every(g=>g.revenue===0)?(
+            <div style={{textAlign:"center",padding:"2rem",color:"#A3A3A3",fontSize:"0.875rem"}}>No sales data yet. Revenue will appear here as cars are sold.</div>
+          ):(
+            <div style={{display:"flex",alignItems:"flex-end",gap:"12px",height:"180px",paddingBottom:"1.5rem",overflowX:"auto"}}>
+              {growth.map((g,i)=>(
+                <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"4px",minWidth:"52px",position:"relative",flex:1}}>
+                  <div style={{fontSize:"0.68rem",color:"#1A1A1A",fontWeight:600,position:"absolute",bottom:"calc(100% + 2px)",whiteSpace:"nowrap",fontSize:"0.62rem"}}>{g.revenue>0?`₦${(g.revenue/1000).toFixed(0)}k`:""}</div>
+                  <div style={{background:"rgba(244,123,32,0.6)",borderRadius:"4px 4px 0 0",width:"100%",minHeight:"4px",transition:"height 0.3s",height:`${Math.max(4,(g.revenue/maxRev)*150)}px`}}/>
+                  <div style={{fontSize:"0.7rem",color:"#737373",marginTop:"2px"}}>{g.month}</div>
+                  {g.sales>0&&<div style={{fontSize:"0.6rem",color:"#A3A3A3"}}>{g.sales} sales</div>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Dealer + User registrations */}
+      {growth.length>0&&(
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1.25rem"}}>
+          <div style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px",padding:"1.5rem"}}>
+            <div style={{fontFamily:"var(--font-display)",fontSize:"0.78rem",letterSpacing:"0.15em",color:"#737373",marginBottom:"1.25rem"}}>NEW DEALER REGISTRATIONS</div>
+            {growth.every(g=>g.newDealers===0)?(
+              <div style={{textAlign:"center",padding:"1.5rem",color:"#A3A3A3",fontSize:"0.825rem"}}>No registrations in this period yet.</div>
+            ):(
+              <div style={{display:"flex",alignItems:"flex-end",gap:"8px",height:"120px",paddingBottom:"1.25rem"}}>
+                {growth.map((g,i)=>(
+                  <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"3px",flex:1,minWidth:"36px"}}>
+                    {g.newDealers>0&&<div style={{fontSize:"0.6rem",color:"#D97706",fontWeight:600}}>{g.newDealers}</div>}
+                    <div style={{background:"rgba(201,168,76,0.6)",borderRadius:"3px 3px 0 0",width:"100%",minHeight:"3px",height:`${Math.max(3,(g.newDealers/maxDealers)*100)}px`}}/>
+                    <div style={{fontSize:"0.65rem",color:"#737373"}}>{g.month}</div>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
+          </div>
+          <div style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px",padding:"1.5rem"}}>
+            <div style={{fontFamily:"var(--font-display)",fontSize:"0.78rem",letterSpacing:"0.15em",color:"#737373",marginBottom:"1.25rem"}}>NEW USER REGISTRATIONS</div>
+            {growth.every(g=>g.newUsers===0)?(
+              <div style={{textAlign:"center",padding:"1.5rem",color:"#A3A3A3",fontSize:"0.825rem"}}>No registrations in this period yet.</div>
+            ):(
+              <div style={{display:"flex",alignItems:"flex-end",gap:"8px",height:"120px",paddingBottom:"1.25rem"}}>
+                {growth.map((g,i)=>(
+                  <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"3px",flex:1,minWidth:"36px"}}>
+                    {g.newUsers>0&&<div style={{fontSize:"0.6rem",color:"#3B8BD4",fontWeight:600}}>{g.newUsers}</div>}
+                    <div style={{background:"rgba(59,139,212,0.6)",borderRadius:"3px 3px 0 0",width:"100%",minHeight:"3px",height:`${Math.max(3,(g.newUsers/maxUsers)*100)}px`}}/>
+                    <div style={{fontSize:"0.65rem",color:"#737373"}}>{g.month}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
+      )}
 
-        <div className="an-card wide">
-          <h3 className="card-title">NEW DEALER REGISTRATIONS (6 MONTHS)</h3>
-          <div className="bar-chart">
-            {growth.map((g, i) => (
-              <div key={i} className="bar-col">
-                <div className="bar-tooltip">{g.newDealers} new dealers</div>
-                <div className="bar dealer-bar" style={{ height:`${Math.max(6,(g.newDealers/maxDealers)*120)}px` }} />
-                <div className="bar-label">{g.month}</div>
-              </div>
-            ))}
-          </div>
+      {/* Dealer breakdown */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1.25rem"}}>
+        <div style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px",padding:"1.5rem",display:"flex",flexDirection:"column",gap:"0.75rem"}}>
+          <div style={{fontFamily:"var(--font-display)",fontSize:"0.78rem",letterSpacing:"0.15em",color:"#737373"}}>DEALER BREAKDOWN</div>
+          {[
+            {label:"Approved / Active",val:stats?.dealers?.active||0,color:"#16A34A"},
+            {label:"Awaiting Approval",val:stats?.dealers?.pending||0,color:"#D97706"},
+            {label:"Suspended",val:stats?.dealers?.suspended||0,color:"#DC2626"},
+            {label:"Total Dealers",val:stats?.dealers?.total||0,color:"#1A1A1A"},
+          ].map(b=>(
+            <div key={b.label} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0.625rem 0",borderBottom:"1px solid #F5F5F5"}}>
+              <span style={{fontSize:"0.825rem",color:"#737373"}}>{b.label}</span>
+              <span style={{fontFamily:"var(--font-display)",fontSize:"1.4rem",color:b.color,letterSpacing:"0.02em"}}>{b.val}</span>
+            </div>
+          ))}
         </div>
-
-        <div className="an-card">
-          <h3 className="card-title">DEALER BREAKDOWN</h3>
-          <div className="breakdown">
-            {[
-              { label:"Active", val: stats?.dealers?.active || 0, color:"var(--success)" },
-              { label:"Pending", val: stats?.dealers?.pending || 0, color:"var(--gold)" },
-              { label:"Suspended", val: stats?.dealers?.suspended || 0, color:"var(--error)" },
-              { label:"Total", val: stats?.dealers?.total || 0, color:"var(--text)" },
-            ].map((b) => (
-              <div key={b.label} className="breakdown-row">
-                <span className="bd-label">{b.label}</span>
-                <span className="bd-val" style={{ color: b.color }}>{b.val}</span>
-              </div>
-            ))}
-          </div>
+        <div style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px",padding:"1.5rem",display:"flex",flexDirection:"column",gap:"0.75rem"}}>
+          <div style={{fontFamily:"var(--font-display)",fontSize:"0.78rem",letterSpacing:"0.15em",color:"#737373"}}>REVENUE SUMMARY</div>
+          {[
+            {label:"All-time Revenue",val:fmt(stats?.revenue?.allTime||0),color:"#16A34A"},
+            {label:"This Month",val:fmt(stats?.revenue?.thisMonth||0),color:"#F47B20"},
+            {label:"Total Transactions",val:(stats?.revenue?.totalTransactions||0).toString(),color:"#3B8BD4"},
+            {label:"Cars Sold",val:(stats?.inventory?.totalSold||0).toString(),color:"#7C3AED"},
+          ].map(b=>(
+            <div key={b.label} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0.625rem 0",borderBottom:"1px solid #F5F5F5"}}>
+              <span style={{fontSize:"0.825rem",color:"#737373"}}>{b.label}</span>
+              <span style={{fontFamily:"var(--font-display)",fontSize:"1.2rem",color:b.color,letterSpacing:"0.02em"}}>{b.val}</span>
+            </div>
+          ))}
         </div>
+      </div>
 
-        <div className="an-card">
-          <h3 className="card-title">REVENUE SUMMARY</h3>
-          <div className="breakdown">
-            {[
-              { label:"All-time Revenue", val: fmt(stats?.revenue?.allTime || 0) },
-              { label:"This Month", val: fmt(stats?.revenue?.thisMonth || 0) },
-              { label:"Total Transactions", val: stats?.revenue?.totalTransactions || 0 },
-              { label:"Cars Sold", val: stats?.inventory?.totalSold || 0 },
-            ].map((b) => (
-              <div key={b.label} className="breakdown-row">
-                <span className="bd-label">{b.label}</span>
-                <span className="bd-val" style={{ color:"var(--gold)" }}>{b.val}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="an-card wide">
-          <h3 className="card-title">TOP 10 DEALERS BY SALES</h3>
-          <div className="top-table-wrap">
-            <table className="top-table">
+      {/* Top dealers */}
+      {topDealers.length>0&&(
+        <div style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px",padding:"1.5rem"}}>
+          <div style={{fontFamily:"var(--font-display)",fontSize:"0.78rem",letterSpacing:"0.15em",color:"#737373",marginBottom:"1.25rem"}}>TOP 10 DEALERS BY SALES</div>
+          <div style={{overflowX:"auto"}}>
+            <table style={{width:"100%",borderCollapse:"collapse",minWidth:"600px"}}>
               <thead>
-                <tr><th>#</th><th>Company</th><th>Location</th><th>Cars Sold</th><th>Revenue</th><th>Status</th></tr>
+                <tr>
+                  {["#","Company","Location","Cars Sold","Revenue","Status"].map(h=>(
+                    <th key={h} style={{padding:"0.65rem 0.875rem",textAlign:"left",fontSize:"0.68rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#737373",borderBottom:"1.5px solid #E5E5E5"}}>{h}</th>
+                  ))}
+                </tr>
               </thead>
               <tbody>
-                {topDealers.map((d) => (
-                  <tr key={d._id}>
-                    <td className="rank-cell">#{d.rank}</td>
-                    <td>
-                      <div style={{ fontWeight:500 }}>{d.companyName}</div>
-                      <div style={{ fontSize:"0.72rem", color:"var(--text-dim)", fontFamily:"var(--font-mono)" }}>{d.dealerId}</div>
+                {topDealers.map(d=>(
+                  <tr key={d._id} style={{borderBottom:"1px solid #F5F5F5"}}>
+                    <td style={{padding:"0.75rem 0.875rem",fontFamily:"monospace",fontSize:"0.75rem",color:"#F47B20",fontWeight:700}}>#{d.rank}</td>
+                    <td style={{padding:"0.75rem 0.875rem"}}>
+                      <div style={{fontWeight:500,fontSize:"0.875rem",color:"#1A1A1A"}}>{d.companyName}</div>
+                      <div style={{fontSize:"0.68rem",color:"#A3A3A3",fontFamily:"monospace"}}>{d.dealerId}</div>
                     </td>
-                    <td style={{ color:"var(--text-muted)", fontSize:"0.8rem" }}>{d.city || "—"}, {d.state || "—"}</td>
-                    <td style={{ textAlign:"center", fontFamily:"var(--font-mono)" }}>{d.totalCarsSold}</td>
-                    <td style={{ color:"var(--success)", fontWeight:500 }}>{fmt(d.totalRevenue)}</td>
-                    <td><span className={`st-pill ${d.status}`}>{d.status}</span></td>
+                    <td style={{padding:"0.75rem 0.875rem",fontSize:"0.8rem",color:"#737373"}}>{d.city||"—"}, {d.state||"—"}</td>
+                    <td style={{padding:"0.75rem 0.875rem",textAlign:"center",fontFamily:"monospace",fontSize:"0.875rem"}}>{d.totalCarsSold||0}</td>
+                    <td style={{padding:"0.75rem 0.875rem",color:"#16A34A",fontWeight:500,fontSize:"0.875rem"}}>{fmt(d.totalRevenue||0)}</td>
+                    <td style={{padding:"0.75rem 0.875rem"}}>
+                      <span style={{padding:"0.2rem 0.5rem",borderRadius:"20px",fontSize:"0.65rem",textTransform:"capitalize" as const,border:"1px solid #E5E5E5",color:"#737373"}}>{d.status}</span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </div>
-      </div>
+      )}
+      {topDealers.length===0&&!loading&&(
+        <div style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px",padding:"2rem",textAlign:"center",color:"#A3A3A3",fontSize:"0.875rem"}}>
+          Top dealers table will appear here once dealers have recorded sales.
+        </div>
+      )}
 
-      <style>{`
-        .analytics-page{display:flex;flex-direction:column;gap:1.5rem}
-        .page-header{display:flex;flex-direction:column;gap:0.3rem}
-        .page-heading{font-family:var(--font-display);font-size:1.6rem;letter-spacing:0.05em;color:var(--text);line-height:1}
-        .page-sub{font-size:0.8rem;color:var(--text-muted)}
-        .loading-state{display:flex;align-items:center;justify-content:center;min-height:300px}
-        .spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--error);border-radius:50%;animation:spin 0.8s linear infinite}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        .analytics-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
-        .an-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem;display:flex;flex-direction:column;gap:1rem}
-        .an-card.wide{grid-column:1/-1}
-        .card-title{font-family:var(--font-display);font-size:0.78rem;letter-spacing:0.15em;color:var(--text-muted)}
-        .bar-chart{display:flex;align-items:flex-end;gap:8px;height:180px;overflow-x:auto;padding-bottom:1.5rem}
-        .bar-col{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:48px;position:relative}
-        .bar-col:hover .bar-tooltip{display:block}
-        .bar-tooltip{display:none;position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);background:var(--surface-3);border:1px solid var(--border);padding:0.35rem 0.5rem;border-radius:4px;font-size:0.65rem;color:var(--text);white-space:nowrap;z-index:10;text-align:center;line-height:1.5}
-        .bar{border-radius:3px 3px 0 0;min-width:32px;min-height:6px;cursor:pointer;transition:opacity 0.2s}
-        .rev-bar{background:rgba(224,82,82,0.5)}
-        .dealer-bar{background:rgba(201,168,76,0.5)}
-        .bar-col:hover .bar{opacity:0.8}
-        .bar-label{font-size:0.7rem;color:var(--text-dim)}
-        .breakdown{display:flex;flex-direction:column;gap:0.5rem}
-        .breakdown-row{display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0;border-bottom:1px solid var(--border)}
-        .breakdown-row:last-child{border-bottom:none}
-        .bd-label{font-size:0.825rem;color:var(--text-muted)}
-        .bd-val{font-family:var(--font-display);font-size:1.2rem;letter-spacing:0.03em}
-        .top-table-wrap{overflow-x:auto}
-        .top-table{width:100%;border-collapse:collapse}
-        .top-table th{padding:0.65rem 0.875rem;text-align:left;font-size:0.68rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border)}
-        .top-table td{padding:0.75rem 0.875rem;border-bottom:1px solid var(--border);font-size:0.825rem;color:var(--text)}
-        .top-table tr:last-child td{border-bottom:none}
-        .top-table tr:hover td{background:var(--surface-2)}
-        .rank-cell{font-family:var(--font-mono);font-size:0.75rem;color:var(--error)}
-        .st-pill{padding:0.2rem 0.5rem;border-radius:20px;font-size:0.68rem;text-transform:capitalize;border:1px solid var(--border);color:var(--text-muted)}
-        @media(max-width:900px){.analytics-grid{grid-template-columns:1fr}}
-      `}</style>
+      <style>{`@media(max-width:768px){div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}}`}</style>
     </div>
   );
 }
