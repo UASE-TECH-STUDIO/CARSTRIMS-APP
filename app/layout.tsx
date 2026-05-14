@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  icons: { icon: '/logo.png', shortcut: '/logo.png', apple: '/logo.png' },
   title: "CARSTRIMS - Premium Car Dealer Platform",
   description: "Multi-tenant car dealer management platform by UASE TECH STUDIO",
 };

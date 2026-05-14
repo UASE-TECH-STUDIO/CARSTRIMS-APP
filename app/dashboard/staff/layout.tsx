@@ -1,4 +1,4 @@
-import AuthGuard from "@/components/layout/AuthGuard";
+﻿import AuthGuard from "@/components/layout/AuthGuard";
 import StaffShell from "@/components/layout/StaffShell";
 
 export default function StaffLayout({ children }: { children: React.ReactNode }) {
