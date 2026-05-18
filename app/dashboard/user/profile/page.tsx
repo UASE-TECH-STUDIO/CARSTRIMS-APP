@@ -1,5 +1,6 @@
-﻿import NotificationSettings from "@/components/ui/NotificationSettings";
 "use client";
+
+import NotificationSettings from "@/components/ui/NotificationSettings";
 import { useEffect, useRef, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
@@ -271,4 +272,6 @@ export default function UserProfilePage() {
     </div>
   );
 }
+
+
 
