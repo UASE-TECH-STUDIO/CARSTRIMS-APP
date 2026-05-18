@@ -1,3 +1,4 @@
+﻿import MessagesWidget from "@/components/shared/MessagesWidget";
 "use client";
 import { ReactNode, useEffect, useState } from "react";
 import AuthGuard from "@/components/layout/AuthGuard";
@@ -59,7 +60,7 @@ export default function UserLayout({ children }: { children: ReactNode }) {
       const overlay = document.createElement("div");
       overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem";
       const closeBtn = document.createElement("button");
-      closeBtn.innerText = "✕ Close Camera";
+      closeBtn.innerText = "âœ• Close Camera";
       closeBtn.style.cssText = "background:#F47B20;color:#fff;border:none;padding:0.75rem 1.5rem;border-radius:8px;font-size:1rem;cursor:pointer;margin-top:1rem";
       closeBtn.onclick = () => {
         stream.getTracks().forEach((t) => t.stop());
@@ -110,7 +111,7 @@ export default function UserLayout({ children }: { children: ReactNode }) {
       <div className="user-shell">
         {/* Topbar */}
         <header className="user-topbar">
-          <Link href="/feed" className="topbar-brand">◈ CARSTRIMS</Link>
+          <Link href="/feed" className="topbar-brand">â—ˆ CARSTRIMS</Link>
           <div className="topbar-right">
             <span className="greeting">{getGreeting()}, <strong>{me?.fullName?.split(" ")[0]||"User"}</strong></span>
             <NotificationBell />
@@ -125,7 +126,7 @@ export default function UserLayout({ children }: { children: ReactNode }) {
               }
             </button>
             <button className="logout-topbar-btn" onClick={() => { logout(); router.push("/login"); }} title="Sign Out">
-              ↩
+              â†©
             </button>
           </div>
         </header>
@@ -136,7 +137,7 @@ export default function UserLayout({ children }: { children: ReactNode }) {
         {/* Footer */}
         <footer className="user-footer">
           <div className="uf-inner">
-            <span>© 2026 CARSTRIMS</span>
+            <span>Â© 2026 CARSTRIMS</span>
             <span className="uf-dev">Developed by <strong>UASE TECH STUDIO</strong></span>
           </div>
         </footer>
@@ -144,21 +145,21 @@ export default function UserLayout({ children }: { children: ReactNode }) {
         {/* Bottom Nav */}
         <nav className="bottom-nav">
           <Link href="/feed" className={`bni ${isActive("/feed")?"active":""}`}>
-            <span className="bni-icon">🏠</span>
+            <span className="bni-icon">ðŸ </span>
             <span className="bni-label">Feed</span>
           </Link>
           <Link href="/dashboard/user/favorites" className={`bni ${pathname.includes("favorites")?"active":""}`}>
-            <span className="bni-icon">❤️</span>
+            <span className="bni-icon">â¤ï¸</span>
             <span className="bni-label">Saved</span>
           </Link>
           <button className="bni qr-center" onClick={handleCameraQR}>
             <div className="qr-circle">
-              <span style={{fontSize:"1.1rem"}}>📷</span>
+              <span style={{fontSize:"1.1rem"}}>ðŸ“·</span>
             </div>
             <span className="bni-label">Scan QR</span>
           </button>
           <Link href="/dashboard/user/messages" className={`bni ${pathname.includes("messages")?"active":""}`}>
-            <span className="bni-icon">💬</span>
+            <span className="bni-icon">ðŸ’¬</span>
             <span className="bni-label">Messages</span>
           </Link>
           <Link href="/dashboard/user/profile" className={`bni ${pathname.includes("profile")?"active":""}`}>
@@ -178,10 +179,10 @@ export default function UserLayout({ children }: { children: ReactNode }) {
             <div className="scan-modal" onClick={(e) => e.stopPropagation()}>
               <div className="scan-header">
                 <h3 className="scan-title">SCAN / ENTER DEALER ID</h3>
-                <button className="scan-close" onClick={() => setShowScan(false)}>✕</button>
+                <button className="scan-close" onClick={() => setShowScan(false)}>âœ•</button>
               </div>
               <div className="scan-body">
-                <div className="scan-icon-big">📷</div>
+                <div className="scan-icon-big">ðŸ“·</div>
                 <p className="scan-desc">Enter a Dealer ID or paste a dealer link</p>
                 <input
                   className="scan-input"
@@ -192,10 +193,10 @@ export default function UserLayout({ children }: { children: ReactNode }) {
                   autoFocus
                 />
                 <button className="scan-go" onClick={handleScan} disabled={!scanInput.trim()}>
-                  Go to Dealer Page →
+                  Go to Dealer Page â†’
                 </button>
                 <button className="scan-camera-btn" onClick={handleCameraQR}>
-                  📷 Open Camera to Scan
+                  ðŸ“· Open Camera to Scan
                 </button>
               </div>
             </div>
@@ -249,3 +250,4 @@ export default function UserLayout({ children }: { children: ReactNode }) {
     </AuthGuard>
   );
 }
+
