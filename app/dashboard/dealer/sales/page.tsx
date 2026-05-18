@@ -400,10 +400,9 @@ export default function SalesPage() {
         .no-history{padding:1rem;text-align:center;color:#AAA;font-size:0.875rem}
         @media(max-width:640px){.form-row{grid-template-columns:1fr}}
       `}</style>
-    </div>
+   
 
-  
+    </div>
     </>
-  
-    </>
-);
+  );
+}

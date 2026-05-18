@@ -35,17 +35,19 @@ export default function InvoiceGenerator({ transactionId, onClose }: Props) {
     win.document.close();
   };
 
-  const downloadJpg = async () => {
-    if (!printRef.current) return;
-    try {
-      const { default: html2canvas } = await import("html2canvas").catch(() => ({ default: null }));
-      if (!html2canvas) { alert("Export as JPG: open the print dialog and save as PDF/image from there."); return; }
-      const canvas = await html2canvas(printRef.current, { scale: 2, backgroundColor: "#fff" });
-      const link = document.createElement("a");
-      link.download = `CARSTRIMS-${docType}-${transactionId}.jpg`;
-      link.href = canvas.toDataURL("image/jpeg", 0.92);
-      link.click();
-    } catch { alert("Could not export as image. Use Print → Save as PDF instead."); }
+  const downloadJpg = () => {
+    // Opens print dialog — user can Save as PDF or use browser print-to-image
+    printDoc();
+    setTimeout(() => {
+      if (typeof window !== "undefined") {
+        const msg = "Tip: In the print dialog, choose \u2018Save as PDF\u2019 to download. For JPG, take a screenshot of the document area.";
+        // Only show once
+        if (!sessionStorage.getItem("jpgTipShown")) {
+          sessionStorage.setItem("jpgTipShown", "1");
+          alert(msg);
+        }
+      }
+    }, 300);
   };
 
   const shareDoc = () => {
@@ -175,3 +177,4 @@ export default function InvoiceGenerator({ transactionId, onClose }: Props) {
     </div>
   );
 }
+
