@@ -1,5 +1,6 @@
-"use client";
+﻿"use client";
 import { useEffect, useState, useRef, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
 
@@ -273,7 +274,7 @@ export default function MessagesPage() {
                           <div className="uo-av">{u.profilePicture?<img src={u.profilePicture} alt=""/>:u.fullName?.charAt(0)||"?"}</div>
                           <div className="uo-info">
                             <div className="uo-name">{u.fullName}</div>
-                            <div className="uo-meta">{u.role?.replace(/_/g," ")} · {u.email}</div>
+                            <div className="uo-meta">{u.role?.replace(/_/g," ")} Â· {u.email}</div>
                           </div>
                         </div>
                       ))}
@@ -381,3 +382,4 @@ export default function MessagesPage() {
     </div>
   );
 }
+
