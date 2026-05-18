@@ -1,5 +1,6 @@
-﻿import Link from "next/link";
 "use client";
+
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
@@ -291,4 +292,5 @@ export default function AdminDealersPage() {
     </div>
   );
 }
+
 

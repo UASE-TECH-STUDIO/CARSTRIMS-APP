@@ -36,8 +36,23 @@ const emptyForm = () => ({
 });
 
 // ── Preview modal ──
-function PreviewModal({ src, type, onClose }: { src:string; type:"image"|"video"; onClose:()=>void }) {
-  return (
+function PreviewModal({ src, type, onClose }: { src:string; type:"image"|"video"; onClose:()=>void }) {  return (
+    <>
+      {markSoldCar && (
+        <MarkSoldModal
+          car={markSoldCar}
+          onClose={() => setMarkSoldCar(null)}
+          onSold={async (txn) => {
+            setMarkSoldCar(null);
+            // refresh car list
+            try { const r = await api.get("/api/v1/cars/"); setCars?.(r.data?.cars || r.data || []); } catch {}
+            alert(`Sale recorded! Transaction: ${txn.transactionId || "done"}`);
+          }}
+        />
+      )}
+      {reportCarId && (
+        <CarFinancialReport carId={reportCarId} onClose={() => setReportCarId(null)} />
+      )}
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
       <div onClick={e=>e.stopPropagation()} style={{position:"relative",maxWidth:"92vw",maxHeight:"92vh",display:"flex",alignItems:"center",justifyContent:"center"}}>
         <button onClick={onClose} style={{position:"absolute",top:"-2rem",right:0,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:"50%",width:"32px",height:"32px",color:"#fff",fontSize:"1rem",cursor:"pointer",zIndex:10}}>✕</button>
@@ -165,9 +180,23 @@ export default function DealerCarsPage() {
 
   const STATUS_COLORS: Record<string,string> = { available:"#16A34A", sold:"#737373", reserved:"#D97706", out_for_inspection:"#3B8BD4", in_repair:"#DC2626", on_promotion:"#7C3AED" };
   const fi: React.CSSProperties = { width:"100%", background:"#F5F5F5", border:"1.5px solid #E5E5E5", borderRadius:"8px", padding:"0.75rem 1rem", color:"#1A1A1A", fontSize:"0.875rem", fontFamily:"var(--font-body)", outline:"none", boxSizing:"border-box" as const };
-  const lbl: React.CSSProperties = { fontSize:"0.68rem", fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase" as const, color:"#525252", display:"block", marginBottom:"0.35rem" };
-
-  return (
+  const lbl: React.CSSProperties = { fontSize:"0.68rem", fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase" as const, color:"#525252", display:"block", marginBottom:"0.35rem" };  return (
+    <>
+      {markSoldCar && (
+        <MarkSoldModal
+          car={markSoldCar}
+          onClose={() => setMarkSoldCar(null)}
+          onSold={async (txn) => {
+            setMarkSoldCar(null);
+            // refresh car list
+            try { const r = await api.get("/api/v1/cars/"); setCars?.(r.data?.cars || r.data || []); } catch {}
+            alert(`Sale recorded! Transaction: ${txn.transactionId || "done"}`);
+          }}
+        />
+      )}
+      {reportCarId && (
+        <CarFinancialReport carId={reportCarId} onClose={() => setReportCarId(null)} />
+      )}
     <div style={{display:"flex",flexDirection:"column",gap:"1.5rem",fontFamily:"var(--font-body)"}}>
       {preview && <PreviewModal src={preview.src} type={preview.type} onClose={()=>setPreview(null)} />}
 
@@ -359,4 +388,6 @@ export default function DealerCarsPage() {
     </div>
   );
 }
+
+
 

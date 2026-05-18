@@ -1,5 +1,6 @@
-﻿import InvoiceGenerator from "@/components/dealer/InvoiceGenerator";
 "use client";
+
+import InvoiceGenerator from "@/components/dealer/InvoiceGenerator";
 import { useEffect, useState, useRef } from "react";
 import api from "@/lib/api";
 
@@ -27,7 +28,7 @@ export default function SalesPage() {
   const [total, setTotal] = useState(0);
   const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [invoiceTxn, setInvoiceTxn] = useState<string|null>(null);
+  const [invoiceTxn, setInvoiceTxn] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [skip, setSkip] = useState(0);
   const [showManual, setShowManual] = useState(false);
@@ -110,7 +111,15 @@ export default function SalesPage() {
   const fmt = (n: number) => `₦${(n || 0).toLocaleString()}`;
   const fmtDate = (iso: string) => iso ? new Date(iso).toLocaleDateString("en-NG", { day:"numeric", month:"short", year:"numeric" }) : "—";
 
+
   return (
+    <>
+      {invoiceTxn && (
+        <InvoiceGenerator
+          transactionId={invoiceTxn}
+          onClose={() => setInvoiceTxn(null)}
+        />
+      )}
     <div className="sales-page">
       <div className="page-header">
         <div>
@@ -392,11 +401,9 @@ export default function SalesPage() {
         @media(max-width:640px){.form-row{grid-template-columns:1fr}}
       `}</style>
     </div>
-  return (
-    <>
-      {invoiceTxn && <InvoiceGenerator transactionId={invoiceTxn} onClose={() => setInvoiceTxn(null)} />}
-      {/* Original return content below — wrapped in fragment */}
 
-  );
-}
-
+  
+    </>
+  
+    </>
+);
