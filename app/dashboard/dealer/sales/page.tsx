@@ -1,4 +1,5 @@
-"use client";
+﻿"use client";
+import CarIdSearch from "@/components/dealer/CarIdSearch";
 
 import InvoiceGenerator from "@/components/dealer/InvoiceGenerator";
 import { useEffect, useState, useRef } from "react";
@@ -108,8 +109,8 @@ export default function SalesPage() {
     URL.revokeObjectURL(url);
   };
 
-  const fmt = (n: number) => `₦${(n || 0).toLocaleString()}`;
-  const fmtDate = (iso: string) => iso ? new Date(iso).toLocaleDateString("en-NG", { day:"numeric", month:"short", year:"numeric" }) : "—";
+  const fmt = (n: number) => `â‚¦${(n || 0).toLocaleString()}`;
+  const fmtDate = (iso: string) => iso ? new Date(iso).toLocaleDateString("en-NG", { day:"numeric", month:"short", year:"numeric" }) : "â€”";
 
 
   return (
@@ -127,7 +128,7 @@ export default function SalesPage() {
           <p className="page-sub">{total} transaction{total!==1?"s":""}</p>
         </div>
         <div className="header-btns">
-          <button className="btn-outline" onClick={exportCSV}>⬇ Export CSV</button>
+          <button className="btn-outline" onClick={exportCSV}>â¬‡ Export CSV</button>
           <button className="btn-primary" onClick={() => { setShowManual(true); setError(""); }}>+ Add Sale</button>
         </div>
       </div>
@@ -135,10 +136,10 @@ export default function SalesPage() {
       {summary && (
         <div className="summary-row">
           {[
-            { label:"Total Sales", value: summary.totalSales||0, icon:"🏷️", fmt:false },
-            { label:"Revenue", value: summary.totalRevenue||0, icon:"💰", fmt:true },
-            { label:"Gross Profit", value: summary.totalProfit||0, icon:"📈", fmt:true },
-            { label:"Net Profit", value: summary.totalNetProfit||0, icon:"✅", fmt:true },
+            { label:"Total Sales", value: summary.totalSales||0, icon:"ðŸ·ï¸", fmt:false },
+            { label:"Revenue", value: summary.totalRevenue||0, icon:"ðŸ’°", fmt:true },
+            { label:"Gross Profit", value: summary.totalProfit||0, icon:"ðŸ“ˆ", fmt:true },
+            { label:"Net Profit", value: summary.totalNetProfit||0, icon:"âœ…", fmt:true },
           ].map((s) => (
             <div key={s.label} className="sum-card">
               <div className="sum-top"><span>{s.icon}</span><span className="sum-label">{s.label}</span></div>
@@ -155,7 +156,7 @@ export default function SalesPage() {
 
       {loading ? <div className="loading"><div className="spinner" /></div>
       : sales.length === 0 ? (
-        <div className="empty"><div className="ei">💰</div><h3>No sales yet</h3><p>Sales recorded when cars are marked as sold or manually added here</p></div>
+        <div className="empty"><div className="ei">ðŸ’°</div><h3>No sales yet</h3><p>Sales recorded when cars are marked as sold or manually added here</p></div>
       ) : (
         <>
           <div className="table-wrap">
@@ -176,7 +177,7 @@ export default function SalesPage() {
                       <div className="car-id-cell">{s.carId}</div>
                     </td>
                     <td>
-                      <div className="buyer-name">{s.buyerName||"—"}</div>
+                      <div className="buyer-name">{s.buyerName||"â€”"}</div>
                       {s.buyerPhone && <div className="buyer-phone">{s.buyerPhone}</div>}
                     </td>
                     <td className="price-cell">{fmt(s.sellingPrice)}</td>
@@ -198,6 +199,7 @@ export default function SalesPage() {
                         {s.editHistory && s.editHistory.length > 0 && (
                           <button className="act-btn history" onClick={() => setShowHistory(s)}>History</button>
                         )}
+                        <button className="act-btn receipt" onClick={() => setInvoiceTxn(s.transactionId)}>Receipt</button>
                       </div>
                     </td>
                   </tr>
@@ -206,9 +208,9 @@ export default function SalesPage() {
             </table>
           </div>
           <div className="pagination">
-            <button className="pg-btn" onClick={() => setSkip(Math.max(0,skip-LIMIT))} disabled={skip===0}>← Prev</button>
+            <button className="pg-btn" onClick={() => setSkip(Math.max(0,skip-LIMIT))} disabled={skip===0}>â† Prev</button>
             <span className="pg-info">{Math.floor(skip/LIMIT)+1} / {Math.max(1,Math.ceil(total/LIMIT))}</span>
-            <button className="pg-btn" onClick={() => setSkip(skip+LIMIT)} disabled={skip+LIMIT>=total}>Next →</button>
+            <button className="pg-btn" onClick={() => setSkip(skip+LIMIT)} disabled={skip+LIMIT>=total}>Next â†’</button>
           </div>
         </>
       )}
@@ -219,7 +221,7 @@ export default function SalesPage() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">ADD MANUAL SALE</h3>
-              <button className="modal-close" onClick={() => setShowManual(false)}>✕</button>
+              <button className="modal-close" onClick={() => setShowManual(false)}>âœ•</button>
             </div>
             {error && <div className="form-error">{error}</div>}
             <form onSubmit={handleManualSale} className="modal-form">
@@ -229,11 +231,27 @@ export default function SalesPage() {
               </div>
               <div className="form-row">
                 <div className="field"><label className="fl">Year</label><input type="number" className="fi" value={manualForm.carYear} onChange={(e) => setManualForm({...manualForm,carYear:e.target.value as any})} /></div>
-                <div className="field"><label className="fl">Car ID (if listed)</label><input className="fi" placeholder="CAR-XXXXXXXX" value={manualForm.carId} onChange={(e) => setManualForm({...manualForm,carId:e.target.value})} /></div>
+                <div className="field" style={{gridColumn:"1/-1"}}>
+  <label className="fl">Search Car ID (optional — picks details automatically)</label>
+  <CarIdSearch
+    value={manualForm.carId ? `${manualForm.carBrand} ${manualForm.carModel} — ${manualForm.carId}` : ""}
+    placeholder="Search by Car ID, brand or model..."
+    onSelect={(car) => setManualForm({
+      ...manualForm,
+      carId: car.carId,
+      carBrand: car.brand || manualForm.carBrand,
+      carModel: car.model || manualForm.carModel,
+      carYear: car.year || manualForm.carYear,
+      sellingPrice: car.sellingPrice?.toString() || manualForm.sellingPrice,
+      purchasePrice: car.purchasePrice?.toString() || manualForm.purchasePrice,
+    })}
+  />
+  {manualForm.carId && <div style={{marginTop:"0.3rem",fontSize:"0.72rem",color:"#16A34A",fontWeight:600}}>✓ Car ID: {manualForm.carId}</div>}
+</div>
               </div>
               <div className="form-row">
-                <div className="field"><label className="fl">Selling Price (₦) *</label><input type="number" className="fi" value={manualForm.sellingPrice} onChange={(e) => setManualForm({...manualForm,sellingPrice:e.target.value})} required /></div>
-                <div className="field"><label className="fl">Purchase Price (₦)</label><input type="number" className="fi" value={manualForm.purchasePrice} onChange={(e) => setManualForm({...manualForm,purchasePrice:e.target.value})} /></div>
+                <div className="field"><label className="fl">Selling Price (â‚¦) *</label><input type="number" className="fi" value={manualForm.sellingPrice} onChange={(e) => setManualForm({...manualForm,sellingPrice:e.target.value})} required /></div>
+                <div className="field"><label className="fl">Purchase Price (â‚¦)</label><input type="number" className="fi" value={manualForm.purchasePrice} onChange={(e) => setManualForm({...manualForm,purchasePrice:e.target.value})} /></div>
               </div>
               <div className="form-row">
                 <div className="field"><label className="fl">Buyer Name</label><input className="fi" value={manualForm.buyerName} onChange={(e) => setManualForm({...manualForm,buyerName:e.target.value})} /></div>
@@ -248,7 +266,7 @@ export default function SalesPage() {
               <div className="field"><label className="fl">Notes</label><textarea className="fi fi-ta" rows={2} value={manualForm.notes} onChange={(e) => setManualForm({...manualForm,notes:e.target.value})} /></div>
               {manualForm.sellingPrice && manualForm.purchasePrice && (
                 <div className="profit-preview">
-                  Estimated profit: <strong>₦{(Number(manualForm.sellingPrice)-Number(manualForm.purchasePrice)).toLocaleString()}</strong>
+                  Estimated profit: <strong>â‚¦{(Number(manualForm.sellingPrice)-Number(manualForm.purchasePrice)).toLocaleString()}</strong>
                 </div>
               )}
               <div className="modal-footer">
@@ -266,12 +284,12 @@ export default function SalesPage() {
           <div className="modal modal-sm" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">EDIT SALE</h3>
-              <button className="modal-close" onClick={() => setShowEdit(null)}>✕</button>
+              <button className="modal-close" onClick={() => setShowEdit(null)}>âœ•</button>
             </div>
-            <div className="edit-info">{showEdit.transactionId}{showEdit.isEdited ? " · edited" : ""}</div>
+            <div className="edit-info">{showEdit.transactionId}{showEdit.isEdited ? " Â· edited" : ""}</div>
             {error && <div className="form-error">{error}</div>}
             <form onSubmit={handleEditSale} className="modal-form">
-              <div className="field"><label className="fl">Selling Price (₦)</label><input type="number" className="fi" value={editForm.sellingPrice} onChange={(e) => setEditForm({...editForm,sellingPrice:e.target.value})} /></div>
+              <div className="field"><label className="fl">Selling Price (â‚¦)</label><input type="number" className="fi" value={editForm.sellingPrice} onChange={(e) => setEditForm({...editForm,sellingPrice:e.target.value})} /></div>
               <div className="form-row">
                 <div className="field"><label className="fl">Buyer Name</label><input className="fi" value={editForm.buyerName} onChange={(e) => setEditForm({...editForm,buyerName:e.target.value})} /></div>
                 <div className="field"><label className="fl">Buyer Phone</label><input className="fi" value={editForm.buyerPhone} onChange={(e) => setEditForm({...editForm,buyerPhone:e.target.value})} /></div>
@@ -298,8 +316,8 @@ export default function SalesPage() {
         <div className="modal-overlay" onClick={() => setShowHistory(null)}>
           <div className="modal modal-sm" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title">EDIT HISTORY — {showHistory.transactionId}</h3>
-              <button className="modal-close" onClick={() => setShowHistory(null)}>✕</button>
+              <h3 className="modal-title">EDIT HISTORY â€” {showHistory.transactionId}</h3>
+              <button className="modal-close" onClick={() => setShowHistory(null)}>âœ•</button>
             </div>
             <div className="history-list">
               {showHistory.editHistory?.length === 0 ? (
@@ -309,8 +327,8 @@ export default function SalesPage() {
                   <div className="hi-time">{new Date(h.editedAt).toLocaleString("en-NG")}</div>
                   <div className="hi-reason">Reason: {h.reason}</div>
                   <div className="hi-prev">
-                    Previous: Price ₦{(h.previous?.sellingPrice||0).toLocaleString()}
-                    {h.previous?.buyerName ? ` · ${h.previous.buyerName}` : ""}
+                    Previous: Price â‚¦{(h.previous?.sellingPrice||0).toLocaleString()}
+                    {h.previous?.buyerName ? ` Â· ${h.previous.buyerName}` : ""}
                   </div>
                 </div>
               ))}
@@ -369,6 +387,8 @@ export default function SalesPage() {
         .act-btn:hover{border-color:#F47B20;color:#F47B20;background:#FFF7ED}
         .act-btn.revert:hover{border-color:#DC2626;color:#DC2626;background:#FEF2F2}
         .act-btn.history:hover{border-color:#3B8BD4;color:#3B8BD4;background:#EFF6FF}
+        .act-btn.receipt{background:#FFF7ED;border-color:rgba(244,123,32,0.4);color:#C4621A}
+        .act-btn.receipt:hover{background:#F47B20;color:#fff;border-color:#F47B20}
         .pagination{display:flex;align-items:center;gap:1rem;justify-content:center}
         .pg-btn{background:#fff;border:1.5px solid #DDD;color:#666;padding:0.5rem 1rem;border-radius:6px;cursor:pointer;font-size:0.825rem;font-family:var(--font-body);transition:all 0.2s}
         .pg-btn:hover:not(:disabled){border-color:#F47B20;color:#F47B20}
@@ -406,3 +426,4 @@ export default function SalesPage() {
     </>
   );
 }
+

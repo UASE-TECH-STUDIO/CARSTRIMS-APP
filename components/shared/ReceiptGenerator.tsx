@@ -13,7 +13,7 @@ export default function ReceiptGenerator({ transactionId, onClose }: Props) {
   const [type, setType] = useState<"receipt"|"invoice"|"proforma">("receipt");
   const printRef = useRef<HTMLDivElement>(null);
 
-  useState(() => {
+  useEffect(() => {
     api.get(`/api/v1/inventory/sales/${transactionId}/receipt`)
       .then(r => setData(r.data))
       .catch(() => {})
@@ -181,3 +181,4 @@ export default function ReceiptGenerator({ transactionId, onClose }: Props) {
     </div>
   );
 }
+

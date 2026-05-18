@@ -1,9 +1,12 @@
 ﻿"use client";
+import { useState as _useState } from "react";
+import CarFinancialReport from "@/components/dealer/CarFinancialReport";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
 export default function ReportsPage() {
   const [data, setData] = useState<any>(null);
+  const [reportCarId, setReportCarId] = useState<string|null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -86,6 +89,8 @@ export default function ReportsPage() {
   const maxMonthRev = Math.max(...(data.monthlySales||[]).map((m: any) => m.revenue), 1);
 
   return (
+    <>
+      {reportCarId && <CarFinancialReport carId={reportCarId} onClose={() => setReportCarId(null)} />}
     <div className="reports-page">
       <div className="page-header">
         <div>
@@ -243,8 +248,20 @@ export default function ReportsPage() {
         .red-val{color:#DC2626}
         .no-data{font-size:0.825rem;color:#AAA;text-align:center;padding:1rem}
         @media(max-width:900px){.two-col{grid-template-columns:1fr}}
-        @media(max-width:640px){.summary-grid{grid-template-columns:1fr 1fr}.bar-chart{gap:0.5rem}}
+        @media(max-width:640px){
+  .summary-grid{grid-template-columns:1fr 1fr}
+  .bar-chart{gap:0.5rem}
+  .two-col{grid-template-columns:1fr}
+  .sc-val{font-size:1.2rem}
+}
+@media(max-width:480px){
+  .summary-grid{grid-template-columns:1fr}
+  .page-header{flex-direction:column;align-items:flex-start}
+  .btn-export{align-self:flex-start}
+}
       `}</style>
     </div>
+    </>
   );
 }
+
