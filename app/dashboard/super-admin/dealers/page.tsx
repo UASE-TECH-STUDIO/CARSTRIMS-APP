@@ -1,4 +1,5 @@
-﻿"use client";
+﻿import Link from "next/link";
+"use client";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
@@ -102,7 +103,7 @@ export default function AdminDealersPage() {
               {dealers.map((d) => (
                 <tr key={d._id}>
                   <td>
-                    <div className="co-name">{d.companyName}</div>
+                    <Link href={`/dashboard/super-admin/dealers/${d._id}`} style={{fontWeight:600,color:"#F47B20",textDecoration:"none",fontSize:"0.875rem"}} onMouseOver={e=>e.currentTarget.style.textDecoration="underline"} onMouseOut={e=>e.currentTarget.style.textDecoration="none"}>{d.companyName}</Link>
                     <div className="co-id">{d.dealerId}</div>
                   </td>
                   <td>
@@ -290,3 +291,4 @@ export default function AdminDealersPage() {
     </div>
   );
 }
+

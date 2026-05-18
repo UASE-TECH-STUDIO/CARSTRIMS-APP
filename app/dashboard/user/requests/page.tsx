@@ -1,340 +1,184 @@
 ﻿"use client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 
-const STATUS_COLORS: Record<string,string> = {
-  pending:"#D97706", responded:"#16A34A", closed:"#888", rejected:"#DC2626"
-};
-
-const emptyForm = {
-  carBrand:"", carModel:"", carYear:"", carColor:"", budget:"",
-  paymentType:"full", description:"", dealerId:"",
+const STATUS_C: Record<string,{bg:string;color:string}> = {
+  pending:   {bg:"#FFF7ED",color:"#D97706"},
+  responded: {bg:"#F0FDF4",color:"#16A34A"},
+  rejected:  {bg:"#FEF2F2",color:"#DC2626"},
+  completed: {bg:"#EFF6FF",color:"#3B8BD4"},
 };
 
 export default function UserRequestsPage() {
+  const router = useRouter();
   const [requests, setRequests] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState(emptyForm);
+  const [loading, setLoading]   = useState(true);
+  const [showNew, setShowNew]   = useState(false);
+  const [dealers, setDealers]   = useState<any[]>([]);
   const [dealerSearch, setDealerSearch] = useState("");
-  const [dealerResults, setDealerResults] = useState<any[]>([]);
-  const [selectedDealer, setSelectedDealer] = useState<any>(null);
-  const [searchingDealers, setSearchingDealers] = useState(false);
+  const [form, setForm] = useState({ carBrand:"Toyota", carModel:"", carYear:new Date().getFullYear(), carColor:"", budget:"", paymentType:"full", description:"", dealerId:"" });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [showDetail, setShowDetail] = useState<any>(null);
-  const [rejectingId, setRejectingId] = useState<string | null>(null);
-  const [acceptingId, setAcceptingId] = useState<string | null>(null);
 
-  const load = () => {
-    api.get("/api/v1/users/requests")
-      .then((r) => setRequests(r.data || []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+  const load = async () => {
+    try {
+      const r = await api.get("/api/v1/users/requests");
+      setRequests(Array.isArray(r.data) ? r.data : []);
+    } catch {} finally { setLoading(false); }
   };
 
   useEffect(() => { load(); }, []);
 
   useEffect(() => {
-    if (dealerSearch.length < 2) { setDealerResults([]); return; }
+    if (dealerSearch.length < 2) { setDealers([]); return; }
     const t = setTimeout(async () => {
-      setSearchingDealers(true);
       try {
-        const res = await api.get("/api/v1/public/dealers", { params: { search: dealerSearch, limit: 8 } });
-        setDealerResults(res.data.dealers || []);
-      } catch { } finally { setSearchingDealers(false); }
+        const r = await api.get("/api/v1/public/dealers", { params: { search: dealerSearch, limit: 10 } });
+        setDealers(r.data.dealers || []);
+      } catch {}
     }, 300);
     return () => clearTimeout(t);
   }, [dealerSearch]);
 
-  const selectDealer = (d: any) => {
-    setSelectedDealer(d);
-    setForm({ ...form, dealerId: d._id });
-    setDealerSearch(d.companyName);
-    setDealerResults([]);
-  };
-
   const submit = async (e: React.FormEvent) => {
-    e.preventDefault(); setSubmitting(true); setError("");
+    e.preventDefault(); setError(""); setSubmitting(true);
     try {
-      await api.post("/api/v1/users/requests", {
-        ...form,
-        carYear: form.carYear ? Number(form.carYear) : undefined,
-        budget: form.budget ? Number(form.budget) : undefined,
-        dealerId: form.dealerId || undefined,
-      });
-      setShowForm(false);
-      setForm(emptyForm);
-      setSelectedDealer(null);
-      setDealerSearch("");
+      await api.post("/api/v1/users/requests", { ...form, budget: form.budget ? Number(form.budget) : undefined, carYear: Number(form.carYear) });
+      setShowNew(false);
+      setForm({ carBrand:"Toyota", carModel:"", carYear:new Date().getFullYear(), carColor:"", budget:"", paymentType:"full", description:"", dealerId:"" });
       load();
-    } catch (err: any) { setError(err.response?.data?.detail || "Failed"); }
+    } catch (err: any) { setError(err.response?.data?.detail || "Failed. Please try again."); }
     finally { setSubmitting(false); }
   };
 
-  const acceptRecommendation = async (reqId: string) => {
-    setAcceptingId(reqId);
-    try {
-      await api.post(`/api/v1/users/requests/${reqId}/accept`).catch(() => {});
-      load();
-    } finally { setAcceptingId(null); }
-  };
-
-  const rejectRecommendation = async (reqId: string) => {
-    setRejectingId(reqId);
-    try {
-      await api.post(`/api/v1/users/requests/${reqId}/reject`).catch(() => {});
-      load();
-    } finally { setRejectingId(null); }
-  };
-
-  const fmtDate = (iso: string) => iso ? new Date(iso).toLocaleDateString("en-NG") : "—";
+  const fmtDate = (iso: string) => iso ? new Date(iso).toLocaleDateString("en-NG", { day:"numeric", month:"short", year:"numeric" }) : "—";
+  const fi: React.CSSProperties = {background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.75rem 1rem",color:"#1A1A1A",fontSize:"0.9rem",fontFamily:"var(--font-body)",outline:"none",width:"100%",boxSizing:"border-box" as const,transition:"border-color 0.2s"};
+  const lbl: React.CSSProperties = {fontSize:"0.7rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#525252",display:"block",marginBottom:"0.35rem"};
 
   return (
-    <div className="req-page">
-      <div className="page-header">
+    <div style={{display:"flex",flexDirection:"column",gap:"1.5rem",fontFamily:"var(--font-body)"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"1rem",flexWrap:"wrap"}}>
         <div>
-          <h2 className="page-heading">Special Requests</h2>
-          <p className="page-sub">{requests.length} request{requests.length!==1?"s":""}</p>
+          <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.5rem",letterSpacing:"0.05em",color:"#1A1A1A",lineHeight:1}}>Vehicle Requests</h2>
+          <p style={{fontSize:"0.8rem",color:"#737373",marginTop:"0.3rem"}}>Request a specific vehicle from one dealer or broadcast to all dealers</p>
         </div>
-        <button className="btn-primary" onClick={() => { setShowForm(true); setError(""); }}>+ New Request</button>
+        <button onClick={()=>setShowNew(true)}
+          style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.7rem 1.25rem",fontFamily:"var(--font-display)",fontSize:"0.9rem",letterSpacing:"0.08em",cursor:"pointer",whiteSpace:"nowrap"}}>
+          + New Request
+        </button>
       </div>
 
-      {loading ? <div className="loading"><div className="spinner" /></div>
-      : requests.length === 0 ? (
-        <div className="empty">
-          <div className="ei">📩</div>
-          <h3>No requests yet</h3>
-          <p>Can&apos;t find the car you want? Place a request and let dealers find it for you</p>
-          <button className="btn-primary" onClick={() => setShowForm(true)}>Place First Request</button>
+      {loading ? (
+        <div style={{display:"flex",justifyContent:"center",padding:"3rem"}}>
+          <div style={{width:"28px",height:"28px",border:"2.5px solid #E5E5E5",borderTopColor:"#F47B20",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        </div>
+      ) : requests.length === 0 ? (
+        <div style={{padding:"3rem",textAlign:"center",border:"1.5px dashed #E5E5E5",borderRadius:"12px",background:"#fff",display:"flex",flexDirection:"column",alignItems:"center",gap:"1rem"}}>
+          <div style={{fontSize:"2.5rem"}}>📩</div>
+          <h3 style={{fontFamily:"var(--font-display)",fontSize:"1.1rem",color:"#1A1A1A"}}>No requests yet</h3>
+          <p style={{fontSize:"0.875rem",color:"#737373",lineHeight:1.6,maxWidth:"380px"}}>Can't find the car you're looking for? Place a request and dealers will respond with matching vehicles.</p>
+          <button onClick={()=>setShowNew(true)} style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.75rem 1.5rem",fontFamily:"var(--font-display)",fontSize:"0.875rem",cursor:"pointer"}}>
+            Place a Request
+          </button>
         </div>
       ) : (
-        <div className="req-list">
-          {requests.map((r) => (
-            <div key={r._id} className="req-card" onClick={() => setShowDetail(r)}>
-              <div className="req-header">
-                <div>
-                  <div className="req-car">{r.carBrand} {r.carModel} {r.carYear||""}</div>
-                  <div className="req-id">{r.requestId}</div>
-                  {r.dealerName && <div className="req-dealer">🏢 {r.dealerName}</div>}
+        <div style={{display:"flex",flexDirection:"column",gap:"0.875rem"}}>
+          {requests.map(r => {
+            const sc = STATUS_C[r.status] || STATUS_C.pending;
+            return (
+              <div key={r._id||r.requestId} style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px",padding:"1.25rem",display:"flex",flexDirection:"column",gap:"0.75rem"}}>
+                <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"1rem",flexWrap:"wrap"}}>
+                  <div>
+                    <div style={{fontWeight:700,fontSize:"0.95rem",color:"#1A1A1A"}}>{r.carBrand} {r.carModel} {r.carYear||""}</div>
+                    {r.carColor && <div style={{fontSize:"0.78rem",color:"#737373",marginTop:"0.1rem"}}>Color: {r.carColor}</div>}
+                    {r.budget   && <div style={{fontSize:"0.78rem",color:"#F47B20",fontWeight:600,fontFamily:"var(--font-display)",marginTop:"0.2rem"}}>Budget: ₦{Number(r.budget).toLocaleString()}</div>}
+                    {r.dealerName && <div style={{fontSize:"0.78rem",color:"#525252",marginTop:"0.1rem"}}>Dealer: {r.dealerName}</div>}
+                    {!r.dealerId && <div style={{fontSize:"0.72rem",color:"#A3A3A3"}}>Broadcast to all dealers</div>}
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:"0.4rem",flexShrink:0}}>
+                    <span style={{background:sc.bg,color:sc.color,padding:"0.25rem 0.75rem",borderRadius:"20px",fontSize:"0.7rem",fontWeight:700,textTransform:"capitalize" as const}}>
+                      {r.status}
+                    </span>
+                    <span style={{fontSize:"0.68rem",color:"#A3A3A3"}}>{fmtDate(r.createdAt)}</span>
+                  </div>
                 </div>
-                <div className="req-right-top">
-                  <span className="req-status" style={{color:STATUS_COLORS[r.status]||"#888",background:(STATUS_COLORS[r.status]||"#888")+"15",border:`1px solid ${(STATUS_COLORS[r.status]||"#888")}44`}}>
-                    {r.status}
-                  </span>
-                  <div className="req-date">{fmtDate(r.createdAt)}</div>
-                </div>
+                {r.description && <div style={{fontSize:"0.82rem",color:"#525252",lineHeight:1.55,background:"#F5F5F5",borderRadius:"6px",padding:"0.625rem 0.875rem"}}>{r.description}</div>}
+                {r.dealerResponse && (
+                  <div style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"8px",padding:"0.875rem",display:"flex",flexDirection:"column",gap:"0.25rem"}}>
+                    <div style={{fontSize:"0.68rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#16A34A"}}>Dealer Response</div>
+                    <div style={{fontSize:"0.875rem",color:"#1A1A1A",lineHeight:1.55}}>{r.dealerResponse}</div>
+                  </div>
+                )}
               </div>
-              {r.budget && <div className="req-budget">Budget: ₦{Number(r.budget).toLocaleString()} · {r.paymentType}</div>}
-              {r.dealerResponse && (
-                <div className="dealer-response">
-                  <div className="dr-label">Dealer responded:</div>
-                  <div className="dr-text">{r.dealerResponse}</div>
-                  {r.status === "responded" && (
-                    <div className="dr-actions">
-                      <button className="dr-btn accept" onClick={(e)=>{ e.stopPropagation(); acceptRecommendation(r.requestId); }} disabled={acceptingId===r.requestId}>
-                        {acceptingId===r.requestId?"...":"✅ Accept"}
-                      </button>
-                      <button className="dr-btn reject" onClick={(e)=>{ e.stopPropagation(); rejectRecommendation(r.requestId); }} disabled={rejectingId===r.requestId}>
-                        {rejectingId===r.requestId?"...":"✕ Reject / Counter"}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-              <div className="view-hint">Click to view details →</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      {/* NEW REQUEST MODAL */}
-      {showForm && (
-        <div className="modal-overlay" onClick={() => setShowForm(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="modal-title">PLACE SPECIAL REQUEST</h3>
-              <button className="modal-close" onClick={() => setShowForm(false)}>✕</button>
+      {/* New request modal */}
+      {showNew && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:"16px",width:"100%",maxWidth:"520px",maxHeight:"90vh",overflowY:"auto",boxShadow:"0 16px 48px rgba(0,0,0,0.2)"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"1.25rem 1.5rem",background:"#1A1A1A",borderRadius:"16px 16px 0 0"}}>
+              <div style={{fontFamily:"var(--font-display)",fontSize:"1rem",letterSpacing:"0.1em",color:"#F47B20"}}>NEW VEHICLE REQUEST</div>
+              <button onClick={()=>setShowNew(false)} style={{background:"rgba(255,255,255,0.12)",border:"none",color:"#fff",width:"32px",height:"32px",borderRadius:"50%",cursor:"pointer",fontSize:"1rem"}}>✕</button>
             </div>
-            {error && <div className="form-error">{error}</div>}
-            <form onSubmit={submit} className="modal-form">
-              <div className="form-row">
-                <div className="field"><label className="fl">Brand *</label><input className="fi" placeholder="Toyota" value={form.carBrand} onChange={(e)=>setForm({...form,carBrand:e.target.value})} required /></div>
-                <div className="field"><label className="fl">Model *</label><input className="fi" placeholder="Camry" value={form.carModel} onChange={(e)=>setForm({...form,carModel:e.target.value})} required /></div>
+            <form onSubmit={submit} style={{padding:"1.5rem",display:"flex",flexDirection:"column",gap:"1rem"}}>
+              {error && <div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",color:"#DC2626",padding:"0.75rem",borderRadius:"8px",fontSize:"0.875rem"}}>{error}</div>}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem"}}>
+                <div><label style={lbl}>Brand *</label>
+                  <select style={fi} value={form.carBrand} onChange={e=>setForm({...form,carBrand:e.target.value})}>
+                    {["Toyota","Honda","Mercedes","BMW","Lexus","Ford","Hyundai","Kia","Nissan","Audi","Land Rover","Jeep","Peugeot","Mitsubishi","Other"].map(b=><option key={b}>{b}</option>)}
+                  </select>
+                </div>
+                <div><label style={lbl}>Model *</label><input style={fi} placeholder="e.g. Camry" value={form.carModel} onChange={e=>setForm({...form,carModel:e.target.value})} required onFocus={ev=>ev.target.style.borderColor="#F47B20"} onBlur={ev=>ev.target.style.borderColor="#E5E5E5"}/></div>
               </div>
-              <div className="form-row">
-                <div className="field"><label className="fl">Year</label><input type="number" className="fi" placeholder="2020" value={form.carYear} onChange={(e)=>setForm({...form,carYear:e.target.value})} /></div>
-                <div className="field"><label className="fl">Color</label><input className="fi" placeholder="Black" value={form.carColor} onChange={(e)=>setForm({...form,carColor:e.target.value})} /></div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem"}}>
+                <div><label style={lbl}>Year</label><input type="number" style={fi} value={form.carYear} onChange={e=>setForm({...form,carYear:Number(e.target.value)})} onFocus={ev=>ev.target.style.borderColor="#F47B20"} onBlur={ev=>ev.target.style.borderColor="#E5E5E5"}/></div>
+                <div><label style={lbl}>Color (optional)</label><input style={fi} placeholder="e.g. Black" value={form.carColor} onChange={e=>setForm({...form,carColor:e.target.value})} onFocus={ev=>ev.target.style.borderColor="#F47B20"} onBlur={ev=>ev.target.style.borderColor="#E5E5E5"}/></div>
               </div>
-              <div className="form-row">
-                <div className="field"><label className="fl">Budget (₦)</label><input type="number" className="fi" value={form.budget} onChange={(e)=>setForm({...form,budget:e.target.value})} /></div>
-                <div className="field"><label className="fl">Payment</label>
-                  <select className="fi" value={form.paymentType} onChange={(e)=>setForm({...form,paymentType:e.target.value})}>
-                    <option value="full">Full Payment</option>
-                    <option value="installment">Installment</option>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem"}}>
+                <div><label style={lbl}>Budget (₦)</label><input type="number" style={fi} placeholder="Your max budget" value={form.budget} onChange={e=>setForm({...form,budget:e.target.value})} onFocus={ev=>ev.target.style.borderColor="#F47B20"} onBlur={ev=>ev.target.style.borderColor="#E5E5E5"}/></div>
+                <div><label style={lbl}>Payment Type</label>
+                  <select style={fi} value={form.paymentType} onChange={e=>setForm({...form,paymentType:e.target.value})}>
+                    {["full","installment","lease"].map(p=><option key={p} value={p}>{p.charAt(0).toUpperCase()+p.slice(1)}</option>)}
                   </select>
                 </div>
               </div>
-              <div className="field"><label className="fl">Description / Requirements</label><textarea className="fi fi-ta" rows={3} value={form.description} onChange={(e)=>setForm({...form,description:e.target.value})} placeholder="Specific trim, features, year range..." /></div>
-
-              <div className="field">
-                <label className="fl">Specific Dealer (optional — search or leave blank to send to all)</label>
-                <div className="dealer-search-wrap">
-                  <input className="fi" placeholder="Search dealer by name or city..."
-                    value={dealerSearch}
-                    onChange={(e) => { setDealerSearch(e.target.value); setSelectedDealer(null); setForm({...form, dealerId:""}); }} />
-                  {searchingDealers && <div className="ds-loading">...</div>}
-                  {dealerResults.length > 0 && (
-                    <div className="dealer-dropdown">
-                      {dealerResults.map((d) => (
-                        <div key={d._id} className="dealer-option" onClick={() => selectDealer(d)}>
-                          <div className="do-logo">{d.logo?<img src={d.logo} alt=""/>:d.companyName?.charAt(0)}</div>
-                          <div>
-                            <div className="do-name">{d.companyName}</div>
-                            <div className="do-loc">{d.city||"—"}, {d.state||"—"} · {d.dealerId}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {selectedDealer && (
-                  <div className="selected-dealer">
-                    ✅ {selectedDealer.companyName} — {selectedDealer.city||"—"}
-                    <button type="button" onClick={() => { setSelectedDealer(null); setDealerSearch(""); setForm({...form,dealerId:""}); }} style={{background:"none",border:"none",cursor:"pointer",color:"#DC2626",marginLeft:"0.5rem"}}>✕</button>
+              {/* Dealer search */}
+              <div style={{position:"relative"}}>
+                <label style={lbl}>Specific Dealer (leave blank to broadcast to all)</label>
+                <input style={fi} placeholder="Search dealer name..." value={dealerSearch} onChange={e=>{setDealerSearch(e.target.value);setForm({...form,dealerId:""});}} onFocus={ev=>ev.target.style.borderColor="#F47B20"} onBlur={ev=>ev.target.style.borderColor="#E5E5E5"}/>
+                {dealers.length > 0 && (
+                  <div style={{position:"absolute",top:"calc(100%+4px)",left:0,right:0,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"8px",zIndex:50,maxHeight:"160px",overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,0.1)"}}>
+                    {dealers.map(d=>(
+                      <div key={d._id} onClick={()=>{setForm({...form,dealerId:d._id});setDealerSearch(d.companyName);setDealers([]);}}
+                        style={{padding:"0.75rem 1rem",cursor:"pointer",borderBottom:"1px solid #F5F5F5",fontSize:"0.875rem",color:"#1A1A1A",fontWeight:500,transition:"background 0.15s"}}
+                        onMouseOver={e=>e.currentTarget.style.background="#FFF7ED"}
+                        onMouseOut={e=>e.currentTarget.style.background=""}>
+                        {d.companyName} <span style={{color:"#A3A3A3",fontSize:"0.72rem",fontWeight:400}}>· {d.city||""}</span>
+                      </div>
+                    ))}
                   </div>
                 )}
-                {!selectedDealer && <p className="dealer-note">Leave blank to broadcast to all dealers</p>}
+                {form.dealerId && <div style={{marginTop:"0.35rem",fontSize:"0.72rem",color:"#16A34A",fontWeight:600}}>✓ Sending to: {dealerSearch}</div>}
+                {!form.dealerId && !dealerSearch && <div style={{marginTop:"0.35rem",fontSize:"0.72rem",color:"#A3A3A3"}}>Will be sent to all dealers on the platform</div>}
               </div>
-
-              <div className="modal-footer">
-                <button type="button" className="btn-outline" onClick={() => setShowForm(false)}>Cancel</button>
-                <button type="submit" className="btn-primary" disabled={submitting}>{submitting?"Sending...":"Submit Request"}</button>
+              <div><label style={lbl}>Additional Details</label>
+                <textarea style={{...fi,minHeight:"80px",resize:"vertical" as const}} placeholder="Any specific features, trim level, condition preference..." value={form.description} onChange={e=>setForm({...form,description:e.target.value})} onFocus={ev=>ev.target.style.borderColor="#F47B20"} onBlur={ev=>ev.target.style.borderColor="#E5E5E5"}/>
+              </div>
+              <div style={{display:"flex",gap:"0.75rem",marginTop:"0.5rem"}}>
+                <button type="button" onClick={()=>setShowNew(false)} style={{flex:1,background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"10px",padding:"0.875rem",fontFamily:"var(--font-body)",fontSize:"0.9rem",cursor:"pointer"}}>Cancel</button>
+                <button type="submit" disabled={submitting||!form.carModel} style={{flex:2,background:submitting||!form.carModel?"#D4D4D4":"#F47B20",color:"#fff",border:"none",borderRadius:"10px",padding:"0.875rem",fontFamily:"var(--font-display)",fontSize:"0.95rem",letterSpacing:"0.1em",cursor:submitting||!form.carModel?"not-allowed":"pointer"}}>
+                  {submitting?"Sending...":"SEND REQUEST"}
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
-
-      {/* REQUEST DETAIL MODAL */}
-      {showDetail && (
-        <div className="modal-overlay" onClick={() => setShowDetail(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="modal-title">{showDetail.carBrand} {showDetail.carModel} — {showDetail.requestId}</h3>
-              <button className="modal-close" onClick={() => setShowDetail(null)}>✕</button>
-            </div>
-            <div className="modal-form">
-              <div className="detail-grid">
-                {[
-                  ["Brand", showDetail.carBrand], ["Model", showDetail.carModel],
-                  ["Year", showDetail.carYear||"Any"], ["Color", showDetail.carColor||"Any"],
-                  ["Budget", showDetail.budget ? `₦${Number(showDetail.budget).toLocaleString()}` : "Flexible"],
-                  ["Payment", showDetail.paymentType], ["Status", showDetail.status],
-                  ["Dealer", showDetail.dealerName||"All dealers"],
-                ].map(([k,v]) => (
-                  <div key={k as string} className="dg-item">
-                    <div className="dg-label">{k}</div>
-                    <div className="dg-val">{v}</div>
-                  </div>
-                ))}
-              </div>
-              {showDetail.description && (
-                <div className="detail-desc">
-                  <div className="dd-label">Your requirements:</div>
-                  <p className="dd-text">{showDetail.description}</p>
-                </div>
-              )}
-              {showDetail.dealerResponse && (
-                <div className="dealer-response" style={{margin:0}}>
-                  <div className="dr-label">Dealer&apos;s Response:</div>
-                  <div className="dr-text">{showDetail.dealerResponse}</div>
-                  {showDetail.status === "responded" && (
-                    <div className="dr-actions">
-                      <button className="dr-btn accept" onClick={() => { acceptRecommendation(showDetail.requestId); setShowDetail(null); }}>✅ Accept Offer</button>
-                      <button className="dr-btn reject" onClick={() => { rejectRecommendation(showDetail.requestId); setShowDetail(null); }}>✕ Decline</button>
-                    </div>
-                  )}
-                </div>
-              )}
-              <div className="modal-footer">
-                <button className="btn-outline" onClick={() => setShowDetail(null)}>Close</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <style>{`
-        .req-page{display:flex;flex-direction:column;gap:1.25rem;padding-bottom:1rem}
-        .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}
-        .page-heading{font-family:var(--font-display);font-size:1.5rem;letter-spacing:0.05em;color:#1A1A1A}
-        .page-sub{font-size:0.8rem;color:#888;margin-top:0.3rem}
-        .btn-primary{background:#F47B20;color:#fff;border:none;border-radius:6px;padding:0.65rem 1.25rem;font-family:var(--font-display);font-size:0.875rem;letter-spacing:0.08em;cursor:pointer;white-space:nowrap}
-        .btn-primary:disabled{opacity:0.6;cursor:not-allowed}
-        .btn-outline{background:#fff;color:#666;border:1.5px solid #DDD;border-radius:6px;padding:0.65rem 1.25rem;font-family:var(--font-body);font-size:0.875rem;cursor:pointer}
-        .loading{display:flex;align-items:center;justify-content:center;min-height:200px}
-        .spinner{width:28px;height:28px;border:2.5px solid #E5E5E5;border-top-color:#F47B20;border-radius:50%;animation:spin 0.8s linear infinite}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        .empty{display:flex;flex-direction:column;align-items:center;gap:0.875rem;padding:3rem;text-align:center;border:1.5px dashed #E5E5E5;border-radius:12px;background:#fff}
-        .ei{font-size:3rem}
-        .empty h3{font-family:var(--font-display);font-size:1.2rem;color:#1A1A1A}
-        .empty p{color:#888;font-size:0.875rem;max-width:300px;line-height:1.5}
-        .req-list{display:flex;flex-direction:column;gap:0.875rem}
-        .req-card{background:#fff;border:1.5px solid #E5E5E5;border-radius:10px;padding:1.25rem;display:flex;flex-direction:column;gap:0.75rem;cursor:pointer;transition:all 0.2s}
-        .req-card:hover{border-color:#F47B20;box-shadow:0 2px 12px rgba(244,123,32,0.1)}
-        .req-header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}
-        .req-car{font-weight:700;font-size:0.95rem;color:#1A1A1A}
-        .req-id{font-family:var(--font-mono);font-size:0.65rem;color:#AAA}
-        .req-dealer{font-size:0.75rem;color:#888;margin-top:0.15rem}
-        .req-right-top{display:flex;flex-direction:column;align-items:flex-end;gap:0.3rem;flex-shrink:0}
-        .req-status{padding:0.2rem 0.65rem;border-radius:20px;font-size:0.7rem;font-weight:600;text-transform:capitalize}
-        .req-date{font-size:0.68rem;color:#AAA;font-family:var(--font-mono)}
-        .req-budget{font-size:0.78rem;color:#888}
-        .dealer-response{background:#FFF7ED;border:1px solid #F47B20;border-radius:8px;padding:0.875rem}
-        .dr-label{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;color:#F47B20;margin-bottom:0.3rem;font-weight:600}
-        .dr-text{font-size:0.825rem;color:#555;line-height:1.4}
-        .dr-actions{display:flex;gap:0.5rem;margin-top:0.75rem}
-        .dr-btn{border:none;border-radius:5px;padding:0.4rem 0.875rem;font-size:0.78rem;cursor:pointer;font-family:var(--font-body);font-weight:500;transition:opacity 0.2s}
-        .dr-btn:disabled{opacity:0.6;cursor:not-allowed}
-        .dr-btn.accept{background:#F0FDF4;color:#16A34A;border:1px solid rgba(22,163,74,0.3)}
-        .dr-btn.reject{background:#FEF2F2;color:#DC2626;border:1px solid rgba(220,38,38,0.3)}
-        .view-hint{font-size:0.7rem;color:#AAA;text-align:right}
-        .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:1000;padding:1rem}
-        .modal{background:#fff;border-radius:12px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.15)}
-        .modal-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid #E5E5E5;position:sticky;top:0;background:#fff;z-index:1}
-        .modal-title{font-family:var(--font-display);font-size:0.95rem;letter-spacing:0.08em;color:#1A1A1A}
-        .modal-close{background:none;border:none;color:#AAA;font-size:1rem;cursor:pointer}
-        .form-error{margin:0.75rem 1.5rem 0;background:#FEF2F2;border:1px solid #FCA5A5;color:#DC2626;padding:0.65rem 1rem;border-radius:6px;font-size:0.825rem}
-        .modal-form{padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1rem}
-        .form-row{display:grid;grid-template-columns:1fr 1fr;gap:0.875rem}
-        .field{display:flex;flex-direction:column;gap:0.4rem}
-        .fl{font-size:0.68rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#888}
-        .fi{background:#F5F5F5;border:1.5px solid #DDD;border-radius:6px;padding:0.7rem;color:#1A1A1A;font-size:0.875rem;font-family:var(--font-body);outline:none;transition:border-color 0.2s;width:100%}
-        .fi:focus{border-color:#F47B20;background:#fff}
-        .fi-ta{resize:vertical;min-height:75px}
-        .dealer-search-wrap{position:relative}
-        .ds-loading{position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);font-size:0.75rem;color:#AAA}
-        .dealer-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1.5px solid #DDD;border-radius:8px;z-index:50;max-height:200px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.15)}
-        .dealer-option{display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;cursor:pointer;transition:background 0.15s;border-bottom:1px solid #F0F0F0}
-        .dealer-option:last-child{border-bottom:none}
-        .dealer-option:hover{background:#FFF7ED}
-        .do-logo{width:28px;height:28px;border-radius:5px;background:#F47B20;color:#fff;font-size:0.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
-        .do-logo img{width:100%;height:100%;object-fit:cover}
-        .do-name{font-size:0.825rem;font-weight:500;color:#1A1A1A}
-        .do-loc{font-size:0.72rem;color:#888}
-        .selected-dealer{background:#FFF7ED;border:1px solid #F47B20;color:#C4621A;padding:0.5rem 0.75rem;border-radius:6px;font-size:0.8rem;display:flex;align-items:center}
-        .dealer-note{font-size:0.7rem;color:#AAA;font-style:italic}
-        .modal-footer{display:flex;gap:0.75rem;justify-content:flex-end;padding-top:0.5rem;border-top:1px solid #E5E5E5}
-        .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.5rem}
-        .dg-item{background:#FAFAFA;border:1px solid #F0F0F0;border-radius:6px;padding:0.6rem}
-        .dg-label{font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;color:#AAA;margin-bottom:0.2rem}
-        .dg-val{font-size:0.825rem;color:#1A1A1A;text-transform:capitalize}
-        .detail-desc{background:#FAFAFA;border:1px solid #F0F0F0;border-radius:6px;padding:0.875rem}
-        .dd-label{font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;color:#AAA;margin-bottom:0.4rem}
-        .dd-text{font-size:0.875rem;color:#555;line-height:1.6}
-        @media(max-width:480px){.form-row{grid-template-columns:1fr}}
-      `}</style>
     </div>
   );
 }

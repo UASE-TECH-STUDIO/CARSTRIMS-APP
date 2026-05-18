@@ -1,4 +1,6 @@
-﻿"use client";
+﻿import CarFinancialReport from "@/components/dealer/CarFinancialReport";
+import MarkSoldModal from "@/components/shared/MarkSoldModal";
+"use client";
 import { useEffect, useRef, useState, useCallback } from "react";
 import api from "@/lib/api";
 
@@ -52,6 +54,8 @@ export default function DealerCarsPage() {
   const [cars, setCars] = useState<Car[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [reportCarId, setReportCarId] = useState<string|null>(null);
+  const [markSoldCar, setMarkSoldCar] = useState<any|null>(null);
   const [modal, setModal] = useState<"add"|"edit"|null>(null);
   const [editCar, setEditCar] = useState<Car|null>(null);
   const [form, setForm] = useState<any>(emptyForm());
@@ -355,3 +359,4 @@ export default function DealerCarsPage() {
     </div>
   );
 }
+
