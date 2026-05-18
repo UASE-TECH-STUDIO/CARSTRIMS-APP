@@ -109,8 +109,8 @@ export default function DealerSetupPage() {
     if (!company.companyName.trim()) { setError("Company name is required"); return; }
     if (!company.phone.trim()) { setError("Phone number is required"); return; }
     if (!company.state) { setError("Please select your state"); return; }
-    if (!logoUrl) { setError("Please upload your business logo"); return; }
-    if (!passportUrl) { setError("Please upload your passport photograph"); return; }
+    // Logo optional — can be uploaded later from Settings
+    // Passport optional — can be uploaded later from Settings
     setLoading(true); setError("");
     try {
       await api.post("/api/v1/dealers/setup", { ...company, logo: logoUrl, passportPhoto: passportUrl });
@@ -264,10 +264,10 @@ export default function DealerSetupPage() {
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem"}}>
                   <UploadBox label="Business Logo" url={logoUrl} inputRef={logoRef}
                     onFile={f=>doUpload(f,setLogoUrl,"Business Logo",false,"logos")}
-                    note="Your dealership logo" />
+                    note="Optional — can be added from Settings" />
                   <UploadBox label="Your Passport Photo" url={passportUrl} inputRef={passportRef}
                     onFile={f=>doUpload(f,setPassportUrl,"Your Passport Photo",false,"passports")}
-                    note="Clear face photo" />
+                    note="Optional — can be added from Settings" />
                 </div>
                 <p style={{fontSize:"0.72rem",color:"#A3A3A3",marginTop:"0.5rem"}}>💡 Click an uploaded photo to preview it</p>
               </div>
@@ -494,3 +494,4 @@ export default function DealerSetupPage() {
     </div>
   );
 }
+

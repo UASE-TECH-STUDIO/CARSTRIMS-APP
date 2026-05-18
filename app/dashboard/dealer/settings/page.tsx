@@ -1,4 +1,5 @@
-﻿"use client";
+﻿import NotificationSettings from "@/components/ui/NotificationSettings";
+"use client";
 import { useEffect, useState, useRef } from "react";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
@@ -190,7 +191,12 @@ export default function SettingsPage() {
           </form>
         </div>
 
-        {/* Account Info */}
+        {/* Notifications */}
+      <div className="settings-card wide">
+        <h3 className="card-title">NOTIFICATIONS & LOCATION</h3>
+        <NotificationSettings/>
+      </div>
+      {/* Account Info */}
         <div className="settings-card">
           <h3 className="card-title">ACCOUNT INFORMATION</h3>
           <div className="info-list">
@@ -251,4 +257,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
 

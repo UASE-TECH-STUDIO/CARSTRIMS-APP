@@ -1,4 +1,5 @@
-﻿"use client";
+﻿import Link from "next/link";
+"use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
@@ -249,3 +250,4 @@ export default function AdminUsersPage() {
     </div>
   );
 }
+

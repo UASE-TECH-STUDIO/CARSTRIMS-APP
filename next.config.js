@@ -1,7 +1,10 @@
-/** @type {import("next").NextConfig} */
+﻿/** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: { ignoreDuringBuilds: true },
+  // Forces a clean path structure for dynamic metadata images like apple-icon
+  trailingSlash: true,
+  // Skip ESLint and Type checks during production build to keep it fast
   typescript: { ignoreBuildErrors: true },
-  images: { unoptimized: true },
+  eslint: { ignoreDuringBuilds: true },
 };
-module.exports = nextConfig;
+
+export default nextConfig;

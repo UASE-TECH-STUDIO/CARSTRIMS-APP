@@ -1,4 +1,5 @@
-﻿"use client";
+﻿import NotificationSettings from "@/components/ui/NotificationSettings";
+"use client";
 import { useEffect, useRef, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
@@ -99,7 +100,13 @@ export default function UserProfilePage() {
   if(loading) return (
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"260px"}}>
       <div style={{width:"28px",height:"28px",border:"2.5px solid #E5E5E5",borderTopColor:"#F47B20",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      {activeTab===("notifications" as any) && (
+  <div style={{display:"flex",flexDirection:"column",gap:"1rem"}}>
+    <div style={{fontSize:"0.68rem",fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#A3A3A3",marginBottom:"0.5rem"}}>NOTIFICATIONS & LOCATION</div>
+    <NotificationSettings/>
+  </div>
+)}
+<style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 
@@ -110,7 +117,7 @@ export default function UserProfilePage() {
     {key:"personal",  label:"Personal",  icon:"👤"},
     {key:"social",    label:"Social",    icon:"🔗"},
     {key:"security",  label:"Security",  icon:"🔒"},
-    {key:"account",   label:"Account",   icon:"ℹ️"},
+    {key:"account", label:"Account", icon:"ℹ️"},{key:"notifications" as any, label:"Notifications", icon:"🔔"},
   ];
 
   return (
@@ -227,7 +234,7 @@ export default function UserProfilePage() {
           </form>
         )}
 
-        {activeTab==="account" && (
+        {activeTab==="notifications" && (
           <div style={{display:"flex",flexDirection:"column",gap:"1rem"}}>
             <div style={{fontSize:"0.68rem",fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase" as const,color:"#A3A3A3",marginBottom:"0.5rem"}}>ACCOUNT INFORMATION</div>
             {[
@@ -249,7 +256,13 @@ export default function UserProfilePage() {
         )}
       </div>
 
-      <style>{`
+      {activeTab===("notifications" as any) && (
+  <div style={{display:"flex",flexDirection:"column",gap:"1rem"}}>
+    <div style={{fontSize:"0.68rem",fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#A3A3A3",marginBottom:"0.5rem"}}>NOTIFICATIONS & LOCATION</div>
+    <NotificationSettings/>
+  </div>
+)}
+<style>{`
         input:focus,select:focus,textarea:focus{border-color:#F47B20!important;background:#fff!important}
         @media(max-width:640px){
           div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}
@@ -258,3 +271,4 @@ export default function UserProfilePage() {
     </div>
   );
 }
+
