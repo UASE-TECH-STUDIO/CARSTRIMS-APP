@@ -42,7 +42,7 @@ export default function UserHomePage() {
 
   const STATS = [
     { label:"Saved Vehicles", val:favCount, icon:"❤️", href:"/dashboard/user/favorites", color:"#DC2626" },
-    { label:"Pre-Orders",     val:reqCount, icon:"📋", href:"/dashboard/user/preorders",  color:"#F47B20" },
+    { label:"Pre-Orders",     val:reqCount, icon:"📋", href:"/dashboard/user/requests",  color:"#F47B20" },
     { label:"Appointments",   val:aptCount, icon:"📅", href:"/dashboard/user/appointments", color:"#3B8BD4" },
   ];
 
@@ -116,3 +116,4 @@ export default function UserHomePage() {
     </div>
   );
 }
+

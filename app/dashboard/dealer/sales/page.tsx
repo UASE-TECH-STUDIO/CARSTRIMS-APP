@@ -1,8 +1,5 @@
 ﻿"use client";
-import CarIdSearch from "@/components/dealer/CarIdSearch";
-
-import InvoiceGenerator from "@/components/dealer/InvoiceGenerator";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
 const PAYMENT_COLORS: Record<string,string> = {
@@ -10,47 +7,44 @@ const PAYMENT_COLORS: Record<string,string> = {
 };
 
 interface Sale {
-  _id: string; transactionId: string; carId: string;
-  carBrand?: string; carModel?: string; carYear?: number;
-  sellingPrice: number; purchasePrice: number; profit: number;
-  paymentMethod: string; buyerName?: string; buyerPhone?: string;
-  notes?: string; soldAt: string; isEdited?: boolean; isManual?: boolean;
-  editHistory?: any[];
+  _id:string; transactionId:string; carId:string;
+  carBrand?:string; carModel?:string; carYear?:number;
+  sellingPrice:number; purchasePrice:number; profit:number;
+  paymentMethod:string; buyerName?:string; buyerPhone?:string;
+  notes?:string; soldAt:string; isEdited?:boolean; isManual?:boolean;
+  editHistory?:any[];
 }
 
 const emptyManual = {
-  carBrand:"", carModel:"", carYear: new Date().getFullYear(),
+  carBrand:"", carModel:"", carYear:new Date().getFullYear(),
   sellingPrice:"", purchasePrice:"", buyerName:"", buyerPhone:"",
   paymentMethod:"cash", notes:"", carId:"",
 };
 
 export default function SalesPage() {
-  const [sales, setSales] = useState<Sale[]>([]);
-  const [total, setTotal] = useState(0);
+  const [sales, setSales]   = useState<Sale[]>([]);
+  const [total, setTotal]   = useState(0);
   const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [invoiceTxn, setInvoiceTxn] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [skip, setSkip] = useState(0);
-  const [showManual, setShowManual] = useState(false);
-  const [showEdit, setShowEdit] = useState<Sale | null>(null);
-  const [showHistory, setShowHistory] = useState<Sale | null>(null);
-  const [manualForm, setManualForm] = useState(emptyManual);
-  const [editForm, setEditForm] = useState({ sellingPrice:"", buyerName:"", buyerPhone:"", paymentMethod:"cash", notes:"", editReason:"" });
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
+  const [skip, setSkip]     = useState(0);
+  const [showManual, setShowManual]   = useState(false);
+  const [showEdit, setShowEdit]       = useState<Sale|null>(null);
+  const [showHistory, setShowHistory] = useState<Sale|null>(null);
+  const [manualForm, setManualForm]   = useState(emptyManual);
+  const [editForm, setEditForm]       = useState({ sellingPrice:"", buyerName:"", buyerPhone:"", paymentMethod:"cash", notes:"", editReason:"" });
+  const [submitting, setSubmitting]   = useState(false);
+  const [error, setError]   = useState("");
   const LIMIT = 20;
 
   const fetchSales = async () => {
     setLoading(true);
     try {
-      const params: any = { skip, limit: LIMIT };
+      const params: any = { skip, limit:LIMIT };
       if (search) params.search = search;
       const res = await api.get("/api/v1/inventory/sales", { params });
-      setSales(res.data.sales);
-      setTotal(res.data.total);
-      setSummary(res.data.summary);
-    } catch { } finally { setLoading(false); }
+      setSales(res.data.sales||[]); setTotal(res.data.total||0); setSummary(res.data.summary||null);
+    } catch {} finally { setLoading(false); }
   };
 
   useEffect(() => { fetchSales(); }, [search, skip]);
@@ -85,42 +79,25 @@ export default function SalesPage() {
 
   const handleRevert = async (txId: string) => {
     if (!confirm("Revert to previous values?")) return;
-    try {
-      await api.post(`/api/v1/inventory/sales/${txId}/revert`);
-      fetchSales();
-    } catch (err: any) { alert(err.response?.data?.detail || "Failed"); }
+    try { await api.post(`/api/v1/inventory/sales/${txId}/revert`); fetchSales(); }
+    catch (err: any) { alert(err.response?.data?.detail || "Failed"); }
   };
 
   const exportCSV = () => {
     const rows = [
       ["TXN ID","Car","Brand","Model","Selling Price","Profit","Buyer","Payment","Date","Edited"],
-      ...sales.map((s) => [
-        s.transactionId, s.carId, s.carBrand||"", s.carModel||"",
-        s.sellingPrice, s.profit, s.buyerName||"",
-        s.paymentMethod, s.soldAt ? new Date(s.soldAt).toLocaleDateString() : "",
-        s.isEdited ? "Yes" : "No",
-      ]),
+      ...sales.map(s=>[s.transactionId,s.carId,s.carBrand||"",s.carModel||"",s.sellingPrice,s.profit,s.buyerName||"",s.paymentMethod,s.soldAt?new Date(s.soldAt).toLocaleDateString():"",s.isEdited?"Yes":"No"]),
     ];
-    const csv = rows.map((r) => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type:"text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url;
-    a.download = `sales-export-${Date.now()}.csv`; a.click();
-    URL.revokeObjectURL(url);
+    const csv = rows.map(r=>r.join(",")).join("\n");
+    const blob = new Blob([csv],{type:"text/csv"});
+    const a = document.createElement("a"); a.href=URL.createObjectURL(blob);
+    a.download=`sales-export-${Date.now()}.csv`; a.click(); URL.revokeObjectURL(a.href);
   };
 
-  const fmt = (n: number) => `â‚¦${(n || 0).toLocaleString()}`;
-  const fmtDate = (iso: string) => iso ? new Date(iso).toLocaleDateString("en-NG", { day:"numeric", month:"short", year:"numeric" }) : "â€”";
-
+  const fmt = (n: number) => `NGN ${(n||0).toLocaleString()}`;
+  const fmtDate = (iso: string) => iso ? new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}) : "-";
 
   return (
-    <>
-      {invoiceTxn && (
-        <InvoiceGenerator
-          transactionId={invoiceTxn}
-          onClose={() => setInvoiceTxn(null)}
-        />
-      )}
     <div className="sales-page">
       <div className="page-header">
         <div>
@@ -128,22 +105,22 @@ export default function SalesPage() {
           <p className="page-sub">{total} transaction{total!==1?"s":""}</p>
         </div>
         <div className="header-btns">
-          <button className="btn-outline" onClick={exportCSV}>â¬‡ Export CSV</button>
-          <button className="btn-primary" onClick={() => { setShowManual(true); setError(""); }}>+ Add Sale</button>
+          <button className="btn-outline" onClick={exportCSV}>Export CSV</button>
+          <button className="btn-primary" onClick={()=>{setShowManual(true);setError("");}}>+ Add Sale</button>
         </div>
       </div>
 
       {summary && (
         <div className="summary-row">
           {[
-            { label:"Total Sales", value: summary.totalSales||0, icon:"ðŸ·ï¸", fmt:false },
-            { label:"Revenue", value: summary.totalRevenue||0, icon:"ðŸ’°", fmt:true },
-            { label:"Gross Profit", value: summary.totalProfit||0, icon:"ðŸ“ˆ", fmt:true },
-            { label:"Net Profit", value: summary.totalNetProfit||0, icon:"âœ…", fmt:true },
-          ].map((s) => (
+            {label:"Total Sales",  value:summary.totalSales||0,    fmt:false},
+            {label:"Revenue",      value:summary.totalRevenue||0,   fmt:true},
+            {label:"Gross Profit", value:summary.totalProfit||0,    fmt:true},
+            {label:"Net Profit",   value:summary.totalNetProfit||0, fmt:true},
+          ].map(s=>(
             <div key={s.label} className="sum-card">
-              <div className="sum-top"><span>{s.icon}</span><span className="sum-label">{s.label}</span></div>
-              <div className="sum-value">{s.fmt ? fmt(s.value) : s.value}</div>
+              <div className="sum-label">{s.label}</div>
+              <div className="sum-value">{s.fmt?fmt(s.value as number):s.value}</div>
             </div>
           ))}
         </div>
@@ -151,12 +128,17 @@ export default function SalesPage() {
 
       <div className="filters">
         <input className="search-input" placeholder="Search TXN ID, car, buyer..."
-          value={search} onChange={(e) => { setSearch(e.target.value); setSkip(0); }} />
+          value={search} onChange={e=>{setSearch(e.target.value);setSkip(0);}} />
       </div>
 
-      {loading ? <div className="loading"><div className="spinner" /></div>
-      : sales.length === 0 ? (
-        <div className="empty"><div className="ei">ðŸ’°</div><h3>No sales yet</h3><p>Sales recorded when cars are marked as sold or manually added here</p></div>
+      {loading ? (
+        <div className="loading"><div className="spinner"/></div>
+      ) : sales.length===0 ? (
+        <div className="empty">
+          <div className="ei">&#x1F4B0;</div>
+          <h3>No sales yet</h3>
+          <p>Sales recorded when cars are marked as sold or manually added here</p>
+        </div>
       ) : (
         <>
           <div className="table-wrap">
@@ -165,41 +147,34 @@ export default function SalesPage() {
                 <tr><th>Transaction</th><th>Car</th><th>Buyer</th><th>Price</th><th>Profit</th><th>Payment</th><th>Date</th><th>Actions</th></tr>
               </thead>
               <tbody>
-                {sales.map((s) => (
+                {sales.map(s=>(
                   <tr key={s._id}>
                     <td>
                       <div className="txn-id">{s.transactionId}</div>
-                      {s.isEdited && <div className="edited-badge">edited</div>}
-                      {s.isManual && <div className="manual-badge">manual</div>}
+                      {s.isEdited&&<div className="edited-badge">edited</div>}
+                      {s.isManual&&<div className="manual-badge">manual</div>}
                     </td>
                     <td>
                       <div className="car-cell">{s.carBrand||""} {s.carModel||""}</div>
                       <div className="car-id-cell">{s.carId}</div>
                     </td>
                     <td>
-                      <div className="buyer-name">{s.buyerName||"â€”"}</div>
-                      {s.buyerPhone && <div className="buyer-phone">{s.buyerPhone}</div>}
+                      <div className="buyer-name">{s.buyerName||"-"}</div>
+                      {s.buyerPhone&&<div className="buyer-phone">{s.buyerPhone}</div>}
                     </td>
                     <td className="price-cell">{fmt(s.sellingPrice)}</td>
                     <td className="profit-cell">+{fmt(s.profit)}</td>
                     <td>
                       <span className="pay-badge" style={{background:(PAYMENT_COLORS[s.paymentMethod]||"#888")+"18",color:PAYMENT_COLORS[s.paymentMethod]||"#888",border:`1px solid ${(PAYMENT_COLORS[s.paymentMethod]||"#888")}44`}}>
-                        {s.paymentMethod?.replace("_"," ")}
+                        {s.paymentMethod?.replace(/_/g," ")}
                       </span>
                     </td>
                     <td className="date-cell">{fmtDate(s.soldAt)}</td>
                     <td>
                       <div className="row-actions">
-                        <button className="act-btn" onClick={() => {
-                          setShowEdit(s);
-                          setEditForm({ sellingPrice:String(s.sellingPrice), buyerName:s.buyerName||"", buyerPhone:s.buyerPhone||"", paymentMethod:s.paymentMethod||"cash", notes:s.notes||"", editReason:"" });
-                          setError("");
-                        }}>Edit</button>
-                        {s.isEdited && <button className="act-btn revert" onClick={() => handleRevert(s.transactionId)}>Revert</button>}
-                        {s.editHistory && s.editHistory.length > 0 && (
-                          <button className="act-btn history" onClick={() => setShowHistory(s)}>History</button>
-                        )}
-                        <button className="act-btn receipt" onClick={() => setInvoiceTxn(s.transactionId)}>Receipt</button>
+                        <button className="act-btn" onClick={()=>{setShowEdit(s);setEditForm({sellingPrice:String(s.sellingPrice),buyerName:s.buyerName||"",buyerPhone:s.buyerPhone||"",paymentMethod:s.paymentMethod||"cash",notes:s.notes||"",editReason:""});setError("");}}>Edit</button>
+                        {s.isEdited&&<button className="act-btn revert" onClick={()=>handleRevert(s.transactionId)}>Revert</button>}
+                        {s.editHistory&&s.editHistory.length>0&&<button className="act-btn history" onClick={()=>setShowHistory(s)}>History</button>}
                       </div>
                     </td>
                   </tr>
@@ -208,69 +183,48 @@ export default function SalesPage() {
             </table>
           </div>
           <div className="pagination">
-            <button className="pg-btn" onClick={() => setSkip(Math.max(0,skip-LIMIT))} disabled={skip===0}>â† Prev</button>
+            <button className="pg-btn" onClick={()=>setSkip(Math.max(0,skip-LIMIT))} disabled={skip===0}>Prev</button>
             <span className="pg-info">{Math.floor(skip/LIMIT)+1} / {Math.max(1,Math.ceil(total/LIMIT))}</span>
-            <button className="pg-btn" onClick={() => setSkip(skip+LIMIT)} disabled={skip+LIMIT>=total}>Next â†’</button>
+            <button className="pg-btn" onClick={()=>setSkip(skip+LIMIT)} disabled={skip+LIMIT>=total}>Next</button>
           </div>
         </>
       )}
 
       {/* MANUAL SALE MODAL */}
-      {showManual && (
-        <div className="modal-overlay" onClick={() => setShowManual(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="modal-title">ADD MANUAL SALE</h3>
-              <button className="modal-close" onClick={() => setShowManual(false)}>âœ•</button>
-            </div>
-            {error && <div className="form-error">{error}</div>}
+      {showManual&&(
+        <div className="modal-overlay" onClick={()=>setShowManual(false)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <div className="modal-header"><h3 className="modal-title">ADD MANUAL SALE</h3><button className="modal-close" onClick={()=>setShowManual(false)}>X</button></div>
+            {error&&<div className="form-error">{error}</div>}
             <form onSubmit={handleManualSale} className="modal-form">
               <div className="form-row">
-                <div className="field"><label className="fl">Brand *</label><input className="fi" placeholder="Toyota" value={manualForm.carBrand} onChange={(e) => setManualForm({...manualForm,carBrand:e.target.value})} required /></div>
-                <div className="field"><label className="fl">Model *</label><input className="fi" placeholder="Camry" value={manualForm.carModel} onChange={(e) => setManualForm({...manualForm,carModel:e.target.value})} required /></div>
+                <div className="field"><label className="fl">Brand *</label><input className="fi" placeholder="Toyota" value={manualForm.carBrand} onChange={e=>setManualForm({...manualForm,carBrand:e.target.value})} required/></div>
+                <div className="field"><label className="fl">Model *</label><input className="fi" placeholder="Camry" value={manualForm.carModel} onChange={e=>setManualForm({...manualForm,carModel:e.target.value})} required/></div>
               </div>
               <div className="form-row">
-                <div className="field"><label className="fl">Year</label><input type="number" className="fi" value={manualForm.carYear} onChange={(e) => setManualForm({...manualForm,carYear:e.target.value as any})} /></div>
-                <div className="field" style={{gridColumn:"1/-1"}}>
-  <label className="fl">Search Car ID (optional — picks details automatically)</label>
-  <CarIdSearch
-    value={manualForm.carId ? `${manualForm.carBrand} ${manualForm.carModel} — ${manualForm.carId}` : ""}
-    placeholder="Search by Car ID, brand or model..."
-    onSelect={(car) => setManualForm({
-      ...manualForm,
-      carId: car.carId,
-      carBrand: car.brand || manualForm.carBrand,
-      carModel: car.model || manualForm.carModel,
-      carYear: car.year || manualForm.carYear,
-      sellingPrice: car.sellingPrice?.toString() || manualForm.sellingPrice,
-      purchasePrice: car.purchasePrice?.toString() || manualForm.purchasePrice,
-    })}
-  />
-  {manualForm.carId && <div style={{marginTop:"0.3rem",fontSize:"0.72rem",color:"#16A34A",fontWeight:600}}>✓ Car ID: {manualForm.carId}</div>}
-</div>
+                <div className="field"><label className="fl">Year</label><input type="number" className="fi" value={manualForm.carYear} onChange={e=>setManualForm({...manualForm,carYear:e.target.value as any})}/></div>
+                <div className="field"><label className="fl">Car ID (if listed)</label><input className="fi" placeholder="CAR-XXXXXXXX" value={manualForm.carId} onChange={e=>setManualForm({...manualForm,carId:e.target.value})}/></div>
               </div>
               <div className="form-row">
-                <div className="field"><label className="fl">Selling Price (â‚¦) *</label><input type="number" className="fi" value={manualForm.sellingPrice} onChange={(e) => setManualForm({...manualForm,sellingPrice:e.target.value})} required /></div>
-                <div className="field"><label className="fl">Purchase Price (â‚¦)</label><input type="number" className="fi" value={manualForm.purchasePrice} onChange={(e) => setManualForm({...manualForm,purchasePrice:e.target.value})} /></div>
+                <div className="field"><label className="fl">Selling Price (NGN) *</label><input type="number" className="fi" value={manualForm.sellingPrice} onChange={e=>setManualForm({...manualForm,sellingPrice:e.target.value})} required/></div>
+                <div className="field"><label className="fl">Purchase Price (NGN)</label><input type="number" className="fi" value={manualForm.purchasePrice} onChange={e=>setManualForm({...manualForm,purchasePrice:e.target.value})}/></div>
               </div>
               <div className="form-row">
-                <div className="field"><label className="fl">Buyer Name</label><input className="fi" value={manualForm.buyerName} onChange={(e) => setManualForm({...manualForm,buyerName:e.target.value})} /></div>
-                <div className="field"><label className="fl">Buyer Phone</label><input className="fi" value={manualForm.buyerPhone} onChange={(e) => setManualForm({...manualForm,buyerPhone:e.target.value})} /></div>
+                <div className="field"><label className="fl">Buyer Name</label><input className="fi" value={manualForm.buyerName} onChange={e=>setManualForm({...manualForm,buyerName:e.target.value})}/></div>
+                <div className="field"><label className="fl">Buyer Phone</label><input className="fi" value={manualForm.buyerPhone} onChange={e=>setManualForm({...manualForm,buyerPhone:e.target.value})}/></div>
               </div>
               <div className="field"><label className="fl">Payment Method</label>
-                <select className="fi" value={manualForm.paymentMethod} onChange={(e) => setManualForm({...manualForm,paymentMethod:e.target.value})}>
+                <select className="fi" value={manualForm.paymentMethod} onChange={e=>setManualForm({...manualForm,paymentMethod:e.target.value})}>
                   <option value="cash">Cash</option><option value="bank_transfer">Bank Transfer</option>
                   <option value="card">Card</option><option value="installment">Installment</option>
                 </select>
               </div>
-              <div className="field"><label className="fl">Notes</label><textarea className="fi fi-ta" rows={2} value={manualForm.notes} onChange={(e) => setManualForm({...manualForm,notes:e.target.value})} /></div>
-              {manualForm.sellingPrice && manualForm.purchasePrice && (
-                <div className="profit-preview">
-                  Estimated profit: <strong>â‚¦{(Number(manualForm.sellingPrice)-Number(manualForm.purchasePrice)).toLocaleString()}</strong>
-                </div>
+              <div className="field"><label className="fl">Notes</label><textarea className="fi fi-ta" rows={2} value={manualForm.notes} onChange={e=>setManualForm({...manualForm,notes:e.target.value})}/></div>
+              {manualForm.sellingPrice&&manualForm.purchasePrice&&(
+                <div className="profit-preview">Estimated profit: <strong>NGN {(Number(manualForm.sellingPrice)-Number(manualForm.purchasePrice)).toLocaleString()}</strong></div>
               )}
               <div className="modal-footer">
-                <button type="button" className="btn-outline" onClick={() => setShowManual(false)}>Cancel</button>
+                <button type="button" className="btn-outline" onClick={()=>setShowManual(false)}>Cancel</button>
                 <button type="submit" className="btn-primary" disabled={submitting}>{submitting?"Adding...":"Add Sale"}</button>
               </div>
             </form>
@@ -278,32 +232,29 @@ export default function SalesPage() {
         </div>
       )}
 
-      {/* EDIT SALE MODAL */}
-      {showEdit && (
-        <div className="modal-overlay" onClick={() => setShowEdit(null)}>
-          <div className="modal modal-sm" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="modal-title">EDIT SALE</h3>
-              <button className="modal-close" onClick={() => setShowEdit(null)}>âœ•</button>
-            </div>
-            <div className="edit-info">{showEdit.transactionId}{showEdit.isEdited ? " Â· edited" : ""}</div>
-            {error && <div className="form-error">{error}</div>}
+      {/* EDIT MODAL */}
+      {showEdit&&(
+        <div className="modal-overlay" onClick={()=>setShowEdit(null)}>
+          <div className="modal modal-sm" onClick={e=>e.stopPropagation()}>
+            <div className="modal-header"><h3 className="modal-title">EDIT SALE</h3><button className="modal-close" onClick={()=>setShowEdit(null)}>X</button></div>
+            <div className="edit-info">{showEdit.transactionId}{showEdit.isEdited?" · edited":""}</div>
+            {error&&<div className="form-error">{error}</div>}
             <form onSubmit={handleEditSale} className="modal-form">
-              <div className="field"><label className="fl">Selling Price (â‚¦)</label><input type="number" className="fi" value={editForm.sellingPrice} onChange={(e) => setEditForm({...editForm,sellingPrice:e.target.value})} /></div>
+              <div className="field"><label className="fl">Selling Price (NGN)</label><input type="number" className="fi" value={editForm.sellingPrice} onChange={e=>setEditForm({...editForm,sellingPrice:e.target.value})}/></div>
               <div className="form-row">
-                <div className="field"><label className="fl">Buyer Name</label><input className="fi" value={editForm.buyerName} onChange={(e) => setEditForm({...editForm,buyerName:e.target.value})} /></div>
-                <div className="field"><label className="fl">Buyer Phone</label><input className="fi" value={editForm.buyerPhone} onChange={(e) => setEditForm({...editForm,buyerPhone:e.target.value})} /></div>
+                <div className="field"><label className="fl">Buyer Name</label><input className="fi" value={editForm.buyerName} onChange={e=>setEditForm({...editForm,buyerName:e.target.value})}/></div>
+                <div className="field"><label className="fl">Buyer Phone</label><input className="fi" value={editForm.buyerPhone} onChange={e=>setEditForm({...editForm,buyerPhone:e.target.value})}/></div>
               </div>
               <div className="field"><label className="fl">Payment Method</label>
-                <select className="fi" value={editForm.paymentMethod} onChange={(e) => setEditForm({...editForm,paymentMethod:e.target.value})}>
+                <select className="fi" value={editForm.paymentMethod} onChange={e=>setEditForm({...editForm,paymentMethod:e.target.value})}>
                   <option value="cash">Cash</option><option value="bank_transfer">Bank Transfer</option>
                   <option value="card">Card</option><option value="installment">Installment</option>
                 </select>
               </div>
-              <div className="field"><label className="fl">Notes</label><textarea className="fi fi-ta" rows={2} value={editForm.notes} onChange={(e) => setEditForm({...editForm,notes:e.target.value})} /></div>
-              <div className="field"><label className="fl">Reason for Edit *</label><input className="fi" placeholder="Why are you editing this sale?" value={editForm.editReason} onChange={(e) => setEditForm({...editForm,editReason:e.target.value})} required /></div>
+              <div className="field"><label className="fl">Notes</label><textarea className="fi fi-ta" rows={2} value={editForm.notes} onChange={e=>setEditForm({...editForm,notes:e.target.value})}/></div>
+              <div className="field"><label className="fl">Reason for Edit *</label><input className="fi" placeholder="Why are you editing this sale?" value={editForm.editReason} onChange={e=>setEditForm({...editForm,editReason:e.target.value})} required/></div>
               <div className="modal-footer">
-                <button type="button" className="btn-outline" onClick={() => setShowEdit(null)}>Cancel</button>
+                <button type="button" className="btn-outline" onClick={()=>setShowEdit(null)}>Cancel</button>
                 <button type="submit" className="btn-primary" disabled={submitting}>{submitting?"Saving...":"Save Edit"}</button>
               </div>
             </form>
@@ -311,27 +262,22 @@ export default function SalesPage() {
         </div>
       )}
 
-      {/* EDIT HISTORY MODAL */}
-      {showHistory && (
-        <div className="modal-overlay" onClick={() => setShowHistory(null)}>
-          <div className="modal modal-sm" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="modal-title">EDIT HISTORY â€” {showHistory.transactionId}</h3>
-              <button className="modal-close" onClick={() => setShowHistory(null)}>âœ•</button>
-            </div>
+      {/* HISTORY MODAL */}
+      {showHistory&&(
+        <div className="modal-overlay" onClick={()=>setShowHistory(null)}>
+          <div className="modal modal-sm" onClick={e=>e.stopPropagation()}>
+            <div className="modal-header"><h3 className="modal-title">EDIT HISTORY - {showHistory.transactionId}</h3><button className="modal-close" onClick={()=>setShowHistory(null)}>X</button></div>
             <div className="history-list">
-              {showHistory.editHistory?.length === 0 ? (
-                <div className="no-history">No edit history</div>
-              ) : showHistory.editHistory?.map((h: any, i: number) => (
-                <div key={i} className="history-item">
-                  <div className="hi-time">{new Date(h.editedAt).toLocaleString("en-NG")}</div>
-                  <div className="hi-reason">Reason: {h.reason}</div>
-                  <div className="hi-prev">
-                    Previous: Price â‚¦{(h.previous?.sellingPrice||0).toLocaleString()}
-                    {h.previous?.buyerName ? ` Â· ${h.previous.buyerName}` : ""}
+              {!showHistory.editHistory?.length
+                ? <div className="no-history">No edit history</div>
+                : showHistory.editHistory?.map((h:any,i:number)=>(
+                  <div key={i} className="history-item">
+                    <div className="hi-time">{new Date(h.editedAt).toLocaleString("en-NG")}</div>
+                    <div className="hi-reason">Reason: {h.reason}</div>
+                    <div className="hi-prev">Previous: NGN {(h.previous?.sellingPrice||0).toLocaleString()}{h.previous?.buyerName?` · ${h.previous.buyerName}`:""}</div>
                   </div>
-                </div>
-              ))}
+                ))
+              }
             </div>
           </div>
         </div>
@@ -342,21 +288,18 @@ export default function SalesPage() {
         .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap}
         .page-heading{font-family:var(--font-display);font-size:1.6rem;letter-spacing:0.05em;color:#1A1A1A;line-height:1}
         .page-sub{font-size:0.8rem;color:#888;margin-top:0.3rem}
-        .header-btns{display:flex;gap:0.5rem}
+        .header-btns{display:flex;gap:0.5rem;flex-wrap:wrap}
         .btn-primary{background:#F47B20;color:#fff;border:none;border-radius:6px;padding:0.65rem 1.25rem;font-family:var(--font-display);font-size:0.875rem;letter-spacing:0.08em;cursor:pointer;white-space:nowrap;transition:background 0.2s}
-        .btn-primary:hover{background:#FF9340}
-        .btn-primary:disabled{opacity:0.6;cursor:not-allowed}
+        .btn-primary:hover{background:#FF9340}.btn-primary:disabled{opacity:0.6;cursor:not-allowed}
         .btn-outline{background:#fff;color:#666;border:1.5px solid #DDD;border-radius:6px;padding:0.65rem 1.25rem;font-family:var(--font-body);font-size:0.875rem;cursor:pointer;transition:all 0.2s;white-space:nowrap}
         .btn-outline:hover{border-color:#F47B20;color:#F47B20}
-        .summary-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem}
-        .sum-card{background:#fff;border:1.5px solid #E5E5E5;border-radius:10px;padding:1.1rem 1.25rem;display:flex;flex-direction:column;gap:0.5rem}
-        .sum-top{display:flex;align-items:center;gap:0.5rem}
+        .summary-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1rem}
+        .sum-card{background:#fff;border:1.5px solid #E5E5E5;border-radius:10px;padding:1.1rem 1.25rem;display:flex;flex-direction:column;gap:0.4rem}
         .sum-label{font-size:0.7rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#888}
         .sum-value{font-family:var(--font-display);font-size:1.6rem;color:#F47B20;line-height:1}
-        .filters{display:flex;gap:1rem}
-        .search-input{background:#fff;border:1.5px solid #DDD;border-radius:6px;padding:0.65rem 1rem;color:#1A1A1A;font-size:0.875rem;font-family:var(--font-body);outline:none;transition:border-color 0.2s;width:320px}
+        .filters{display:flex;gap:1rem;flex-wrap:wrap}
+        .search-input{background:#fff;border:1.5px solid #DDD;border-radius:6px;padding:0.65rem 1rem;color:#1A1A1A;font-size:0.875rem;font-family:var(--font-body);outline:none;transition:border-color 0.2s;min-width:200px;flex:1}
         .search-input:focus{border-color:#F47B20}
-        .search-input::placeholder{color:#CCC}
         .loading{display:flex;align-items:center;justify-content:center;min-height:200px}
         .spinner{width:28px;height:28px;border:2.5px solid #E5E5E5;border-top-color:#F47B20;border-radius:50%;animation:spin 0.8s linear infinite}
         @keyframes spin{to{transform:rotate(360deg)}}
@@ -365,7 +308,7 @@ export default function SalesPage() {
         .empty h3{font-family:var(--font-display);font-size:1.2rem;color:#1A1A1A}
         .empty p{color:#888;font-size:0.875rem}
         .table-wrap{overflow-x:auto;border:1.5px solid #E5E5E5;border-radius:10px;background:#fff}
-        .sales-table{width:100%;border-collapse:collapse;min-width:800px}
+        .sales-table{width:100%;border-collapse:collapse;min-width:700px}
         .sales-table th{padding:0.75rem 1rem;text-align:left;font-size:0.68rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#888;background:#FAFAFA;border-bottom:1.5px solid #E5E5E5}
         .sales-table td{padding:0.875rem 1rem;border-bottom:1px solid #F0F0F0;font-size:0.825rem;color:#1A1A1A;vertical-align:middle}
         .sales-table tr:last-child td{border-bottom:none}
@@ -387,16 +330,14 @@ export default function SalesPage() {
         .act-btn:hover{border-color:#F47B20;color:#F47B20;background:#FFF7ED}
         .act-btn.revert:hover{border-color:#DC2626;color:#DC2626;background:#FEF2F2}
         .act-btn.history:hover{border-color:#3B8BD4;color:#3B8BD4;background:#EFF6FF}
-        .act-btn.receipt{background:#FFF7ED;border-color:rgba(244,123,32,0.4);color:#C4621A}
-        .act-btn.receipt:hover{background:#F47B20;color:#fff;border-color:#F47B20}
-        .pagination{display:flex;align-items:center;gap:1rem;justify-content:center}
+        .pagination{display:flex;align-items:center;gap:1rem;justify-content:center;flex-wrap:wrap}
         .pg-btn{background:#fff;border:1.5px solid #DDD;color:#666;padding:0.5rem 1rem;border-radius:6px;cursor:pointer;font-size:0.825rem;font-family:var(--font-body);transition:all 0.2s}
         .pg-btn:hover:not(:disabled){border-color:#F47B20;color:#F47B20}
         .pg-btn:disabled{opacity:0.4;cursor:not-allowed}
         .pg-info{font-size:0.825rem;color:#888;font-family:var(--font-mono)}
         .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:1000;padding:1rem}
-        .modal{background:#fff;border-radius:12px;width:100%;max-width:580px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.15)}
-        .modal-sm{max-width:460px}
+        .modal{background:#fff;border-radius:12px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.15)}
+        .modal-sm{max-width:440px}
         .modal-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid #E5E5E5;position:sticky;top:0;background:#fff;z-index:1}
         .modal-title{font-family:var(--font-display);font-size:1rem;letter-spacing:0.1em;color:#1A1A1A}
         .modal-close{background:none;border:none;color:#AAA;font-size:1rem;cursor:pointer}
@@ -406,7 +347,7 @@ export default function SalesPage() {
         .form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
         .field{display:flex;flex-direction:column;gap:0.4rem}
         .fl{font-size:0.7rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#888}
-        .fi{background:#F5F5F5;border:1.5px solid #DDD;border-radius:6px;padding:0.7rem;color:#1A1A1A;font-size:0.875rem;font-family:var(--font-body);outline:none;transition:border-color 0.2s;width:100%}
+        .fi{background:#F5F5F5;border:1.5px solid #DDD;border-radius:6px;padding:0.7rem;color:#1A1A1A;font-size:0.875rem;font-family:var(--font-body);outline:none;transition:border-color 0.2s;width:100%;box-sizing:border-box}
         .fi:focus{border-color:#F47B20;background:#fff}
         .fi-ta{resize:vertical;min-height:70px}
         .profit-preview{background:#F0FDF4;border:1px solid #BBF7D0;border-radius:6px;padding:0.65rem 1rem;font-size:0.825rem;color:#166534}
@@ -420,10 +361,6 @@ export default function SalesPage() {
         .no-history{padding:1rem;text-align:center;color:#AAA;font-size:0.875rem}
         @media(max-width:640px){.form-row{grid-template-columns:1fr}}
       `}</style>
-   
-
     </div>
-    </>
   );
 }
-
