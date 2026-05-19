@@ -188,7 +188,7 @@ export default function DealerCarsPage() {
             <p className="cp-sub">{total} total vehicles</p>
           </div>
           <div className="cp-btns">
-            <button className="btn-outline" onClick={()=>setMarkSoldCar(null as any)}>Record Sale</button>
+            <button className="btn-outline" onClick={()=>setMarkSoldCar({} as Car)}>Record Sale</button>
             <button className="btn-primary" onClick={openAdd}>+ Add Car</button>
           </div>
         </div>
@@ -231,14 +231,14 @@ export default function DealerCarsPage() {
                 <div className="car-id">{car.carId}</div>
               </div>
 
-              {/* Row 1: Edit / Sold / Report / Delete */}
+              {/* Row 1: Edit / Sold OR Report / Del */}
               <div className="car-actions">
                 <button className="ca-btn" onClick={()=>openEdit(car)}>Edit</button>
                 {car.status!=="sold"
                   ?<button className="ca-btn ca-sold" onClick={()=>setMarkSoldCar(car)}>Mark Sold</button>
                   :<button className="ca-btn ca-report" onClick={()=>setReportCarId(car.carId)}>Report</button>
                 }
-                <button className="ca-btn ca-report" onClick={()=>setReportCarId(car.carId)} title="Financial Report">Report</button>
+                <button className="ca-btn ca-report" onClick={()=>setReportCarId(car.carId)} title="Financial Report">&#x1F4CA;</button>
                 <button className="ca-btn ca-del" onClick={()=>handleDelete(car.carId)}>Del</button>
               </div>
 
@@ -249,7 +249,7 @@ export default function DealerCarsPage() {
                     onClick={()=>fetchDoc(car.carId,dtype)}
                     disabled={docLoading===`${car.carId}-${dtype}`}
                     title={dtype==="proforma"?"Proforma Invoice (Quote)":dtype==="invoice"?"Standard Invoice (Bill)":"Receipt (Proof of Payment)"}>
-                    {docLoading===`${car.carId}-${dtype}`?"...":{proforma:"Quote",invoice:"Invoice",receipt:"Receipt"}[dtype]}
+                    {docLoading===`${car.carId}-${dtype}`?"...":{proforma:"Proforma",invoice:"Invoice",receipt:"Receipt"}[dtype as "proforma"|"invoice"|"receipt"]}
                   </button>
                 ))}
               </div>
@@ -417,4 +417,5 @@ export default function DealerCarsPage() {
     </>
   );
 }
+
 

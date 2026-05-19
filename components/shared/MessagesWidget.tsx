@@ -258,7 +258,7 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
           {showNew && (
             <div className="new-conv-overlay" onClick={()=>setShowNew(false)}>
               <div className="new-conv" onClick={e=>e.stopPropagation()}>
-                <div className="nc-header"><span>New Conversation</span><button onClick={()=>setShowNew(false)}>✕</button></div>
+                <div className="nc-header"><span>New Conversation</span><button onClick={()=>setShowNew(false)} style={{background:"rgba(255,255,255,0.15)",border:"none",color:"#fff",borderRadius:"50%",width:"24px",height:"24px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.75rem"}}>✕</button></div>
                 <div className="nc-body">
                   <div style={{position:"relative"}}>
                     <input className="nc-input" placeholder="Search by name or email..." value={userSearch} onChange={e=>{setUserSearch(e.target.value);setSelUser(null);}} autoFocus/>
@@ -314,14 +314,14 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
         .ch-name{font-size:0.825rem;font-weight:600;color:#171717;flex:1}
         .chat-msgs{flex:1;overflow-y:auto;padding:0.875rem;min-height:0}
         .chat-start{text-align:center;color:#A3A3A3;font-size:0.875rem;padding:2rem 0}
-        .chat-input{display:flex;gap:0.375rem;padding:0.75rem;border-top:1px solid #E5E5E5;flex-shrink:0}
+        .chat-input{display:flex;gap:0.375rem;padding:0.75rem;border-top:1px solid #E5E5E5;flex-shrink:0;position:relative;z-index:20}
         .chat-input input{flex:1;background:#F5F5F5;border:1.5px solid #E5E5E5;border-radius:20px;padding:0.5rem 0.875rem;color:#171717;font-size:0.825rem;font-family:var(--font-body);outline:none}
         .chat-input input:focus{border-color:var(--accent,#F47B20);background:#fff}
         .chat-input button{background:var(--accent,#F47B20);color:#fff;border:none;border-radius:20px;padding:0.5rem 1rem;font-family:var(--font-display);font-size:0.75rem;cursor:pointer}
         .chat-input button:disabled{opacity:0.5;cursor:not-allowed}
         .pw-tip{padding:0.3rem 0.75rem 0.5rem;font-size:0.63rem;color:#A3A3A3;border-top:1px solid #F5F5F5;flex-shrink:0}
         .pw-tip code{background:#F5F5F5;padding:0 0.3rem;border-radius:3px;font-size:0.7rem;color:#555}
-        .new-conv-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:10;border-radius:16px}
+        .new-conv-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:15;border-radius:16px}
         .new-conv{background:#fff;border-radius:12px;width:92%;overflow:hidden;max-height:90%}
         .nc-header{display:flex;align-items:center;justify-content:space-between;padding:0.875rem 1rem;background:var(--accent,#F47B20);color:#fff}
         .nc-header span{font-family:var(--font-display);font-size:0.875rem}
@@ -345,4 +345,5 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
     </>
   );
 }
+
 
