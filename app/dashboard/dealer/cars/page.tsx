@@ -411,9 +411,10 @@ export default function DealerCarsPage() {
             .car-name{font-size:0.85rem}
             .car-price{font-size:1rem}
           }
-          @media(max-width:380px){.cp-grid{grid-template-columns:1fr}}
+          @media(max-width:480px){.cp-grid{grid-template-columns:1fr}.car-actions{grid-template-columns:1fr 1fr auto auto}}
         `}</style>
       </div>
     </>
   );
 }
+

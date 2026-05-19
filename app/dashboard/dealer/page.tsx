@@ -73,7 +73,9 @@ export default function DealerOverviewPage() {
       const notifs = nRes.data?.notifications||nRes.data||[];
       const acts = notifs.map((n:any)=>({
         id:n._id, type:n.type, title:n.title, message:n.message,
-        actor:(()=>{let a=n.actorName||n.senderName||"";if(!a&&n.message){const m=n.message.match(/^([A-Z][^.!?]+?)\s+(liked|commented|started following|sent|requested|posted)/);if(m)a=m[1];}return a||"Someone";})(), actorId:n.actorId||n.senderId,
+        actor:(()=>{let a=n.actorName||n.senderName||"";if(!a&&n.message){const m=n.message.match(/^([A-Z][a-zA-Z ]+?)\s+(liked|commented on|started following|sent|requested|posted|submitted|recorded)/);if(m)a=m[1].trim();}return a||"Someone";})(),
+        verb:verbMap[n.type||"general"]||"interacted with your dealership",
+        actorId:n.actorId||n.senderId,
         targetId:n.data?.carId||n.data?.targetId, targetLabel:n.data?.carName||n.data?.label,
         link:getLinkForActivity(n), createdAt:n.createdAt, isRead:n.isRead,
       }));
@@ -231,8 +233,8 @@ export default function DealerOverviewPage() {
               <div className="activity-body">
                 <div className="activity-msg">
                   {act.count>1
-                    ? <><strong>{act.actors?.[0]||act.actor||"Someone"}</strong> and <strong>{act.count-1} other{act.count>2?"s":""}</strong> {(act.message||"").toLowerCase().replace(/[.!]/g,"")}</>
-                    : <><strong>{act.actor||"Someone"}</strong> {(act.message||"").toLowerCase().replace(/[.!]/g,"")}</>
+                    ? <><strong>{act.actors?.[0]||act.actor||"Someone"}</strong> and <strong>{act.count-1} other{act.count>2?"s":""}</strong> {act.verb||"interacted with your dealership"}</>
+                    : <><strong>{act.actor||"Someone"}</strong> {act.verb||"interacted with your dealership"}</>
                   }
                   {act.targetLabel&&<span className="activity-target"> · {act.targetLabel}</span>}
                 </div>
@@ -323,4 +325,5 @@ export default function DealerOverviewPage() {
     </div>
   );
 }
+
 

@@ -25,8 +25,40 @@ export default function MovementsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  
+  // Search state hooks for Car Search dropdown feature
+  const [movCarSearch, setMovCarSearch] = useState("");
+  const [movCarResults, setMovCarResults] = useState<any[]>([]);
+  const [movCarDrop, setMovCarDrop] = useState(false);
+  
   const idImgRef = useRef<HTMLInputElement>(null);
   const editIdImgRef = useRef<HTMLInputElement>(null);
+
+  // Auto-complete fetch effect for movements search input query
+  useEffect(() => {
+    if (movCarSearch.length < 1) { 
+      setMovCarResults([]); 
+      setMovCarDrop(false); 
+      return; 
+    }
+    const t = setTimeout(async () => {
+      try {
+        const r = await api.get("/api/v1/cars/", { params: { search: movCarSearch, limit: 20 } });
+        setMovCarResults(r.data?.cars || []); 
+        setMovCarDrop(true);
+      } catch { 
+        setMovCarResults([]); 
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [movCarSearch]);
+
+  const selectMovCar = (car: any) => {
+    setForm((f: any) => ({ ...f, carId: car.carId, carBrand: car.brand, carModel: car.model, carYear: car.year }));
+    setMovCarSearch(`${car.brand} ${car.model} ${car.year} — ${car.carId}`);
+    setMovCarResults([]); 
+    setMovCarDrop(false);
+  };
 
   const fetch = async () => {
     setLoading(true);
@@ -57,7 +89,7 @@ export default function MovementsPage() {
     e.preventDefault(); setSubmitting(true); setError("");
     try {
       await api.post("/api/v1/movements/", form);
-      setShowLog(false); setForm(emptyForm); fetch();
+      setShowLog(false); setForm(emptyForm); setMovCarSearch(""); fetch();
     } catch (err: any) { setError(err.response?.data?.detail || "Failed"); }
     finally { setSubmitting(false); }
   };
@@ -113,7 +145,7 @@ export default function MovementsPage() {
         </div>
         <div className="hbtns">
           <button className="btn-outline" onClick={exportCSV}>⬇ Export</button>
-          <button className="btn-primary" onClick={() => { setShowLog(true); setForm(emptyForm); setError(""); }}>+ Log Movement</button>
+          <button className="btn-primary" onClick={() => { setShowLog(true); setForm(emptyForm); setMovCarSearch(""); setError(""); }}>+ Log Movement</button>
         </div>
       </div>
 
@@ -174,8 +206,14 @@ export default function MovementsPage() {
             {error && <div className="form-error">{error}</div>}
             <form onSubmit={handleLog} className="modal-form">
               <div className="form-section">VEHICLE</div>
-              <div className="field"><label className="fl">Car ID *</label><input className="fi" placeholder="CAR-XXXXXXXX" value={form.carId} onChange={(e) => setForm({...form,carId:e.target.value})} required /></div>
-              <div className="form-row"><label className="fl">Purpose</label>
+              <div className="field" style={{position:"relative"}}>
+                <label className="fl">Car ID — search to pick a car *</label>
+                <input className="fi" placeholder="Search by brand, model or Car ID..." value={movCarSearch} onChange={e=>{setMovCarSearch(e.target.value);if(!e.target.value)setForm((f:any)=>({...f,carId:""}));}} required={!form.carId}/>
+                {form.carId&&<div style={{fontSize:"0.7rem",color:"#16A34A",marginTop:"0.2rem",fontWeight:600}}>Selected: {form.carId}</div>}
+                {movCarDrop&&movCarResults.length>0&&(<div style={{position:"absolute",top:"calc(100%+2px)",left:0,right:0,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"8px",zIndex:50,maxHeight:"160px",overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,0.1)"}}>{movCarResults.map((c:any)=>(<button type="button" key={c.carId} onClick={()=>selectMovCar(c)} style={{display:"flex",alignItems:"center",gap:"0.625rem",padding:"0.55rem 0.875rem",background:"none",border:"none",borderBottom:"1px solid #F5F5F5",cursor:"pointer",width:"100%",textAlign:"left"}} onMouseOver={e=>(e.currentTarget as HTMLElement).style.background="#FFF7ED"} onMouseOut={e=>(e.currentTarget as HTMLElement).style.background=""}>{c.images?.[0]&&<img src={c.images[0]} alt="" style={{width:"36px",height:"28px",objectFit:"cover",borderRadius:"4px",flexShrink:0}}/>}<div><div style={{fontSize:"0.825rem",fontWeight:600,color:"#1A1A1A"}}>{c.brand} {c.model} {c.year}</div><div style={{fontSize:"0.68rem",color:"#A3A3A3",fontFamily:"monospace"}}>{c.carId}</div></div></button>))}</div>)}
+              </div>
+              <div className="form-row">
+                <label className="fl">Purpose</label>
                 <div style={{gridColumn:"1/-1"}}>
                   <select className="fi" value={form.purpose} onChange={(e) => setForm({...form,purpose:e.target.value})}>
                     {PURPOSES.map((p) => <option key={p} value={p}>{p.replace(/_/g," ")}</option>)}

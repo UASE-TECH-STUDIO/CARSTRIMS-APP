@@ -53,7 +53,7 @@ export default function InvoiceGenerator({
       <html>
       <head>
         <title>CARSTRIMS ${LABELS[docType]}</title>
-        <style>
+        <style>*{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:24px;color:#1A1A1A;max-width:700px;margin:0 auto}@media print{@page{margin:1cm}.no-print{display:none!important}}
           * {
             box-sizing: border-box;
           }
@@ -97,12 +97,17 @@ export default function InvoiceGenerator({
       </html>
     `;
 
-    const w = window.open("", "_blank");
-
-    if (w) {
-      w.document.write(html);
-      w.document.close();
-    }
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText = "position:fixed;width:0;height:0;border:none;left:-9999px";
+    document.body.appendChild(iframe);
+    iframe.onload = () => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => { document.body.removeChild(iframe); URL.revokeObjectURL(url); }, 2000);
+    };
+    iframe.src = url;
   };
 
   const handlePDF = () => {
@@ -263,7 +268,7 @@ Date: ${fmtDate(data.issuedAt)}
                 borderColor: docType === t ? "#F47B20" : "#E5E5E5",
               }}
             >
-              {t.charAt(0).toUpperCase() + t.slice(1)}
+              {t === "proforma" ? "Proforma Invoice" : t === "invoice" ? "Invoice" : "Receipt"}
             </button>
           ))}
 
