@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import NotificationSettings from "@/components/ui/NotificationSettings";
 import { useEffect, useState, useRef } from "react";
@@ -13,6 +13,8 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [pwSaving, setPwSaving] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
+  const [sigUploading, setSigUploading] = useState(false);
+  const sigRef = useRef<HTMLInputElement>(null);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
   const logoRef = useRef<HTMLInputElement>(null);
@@ -47,6 +49,17 @@ export default function SettingsPage() {
   };
 
   useEffect(() => { loadDealer(); }, []);
+
+  const handleUploadSignature = async (file: File) => {
+    setSigUploading(true);
+    try {
+      const fd = new FormData(); fd.append("file", file);
+      const res = await api.post("/api/v1/upload/dealer/signature", fd, {headers:{"Content-Type":"multipart/form-data"}});
+      setDealer((d:any) => ({...d, signature: res.data.signature || res.data.url}));
+      setSuccess("Signature uploaded successfully!");
+    } catch(e:any) { setError(e.response?.data?.detail||"Upload failed"); }
+    finally { setSigUploading(false); if(sigRef.current) sigRef.current.value=""; }
+  };
 
   const handleSaveDealer = async (e: React.FormEvent) => {
     e.preventDefault(); setSaving(true); setError(""); setSuccess("");
@@ -101,8 +114,8 @@ export default function SettingsPage() {
     <div className="settings-page">
       <h2 className="page-heading">Settings</h2>
 
-      {success && <div className="success-banner">✅ {success}<button onClick={()=>setSuccess("")} className="dismiss">✕</button></div>}
-      {error && <div className="error-banner">❌ {error}<button onClick={()=>setError("")} className="dismiss">✕</button></div>}
+      {success && <div className="success-banner">âœ… {success}<button onClick={()=>setSuccess("")} className="dismiss">âœ•</button></div>}
+      {error && <div className="error-banner">âŒ {error}<button onClick={()=>setError("")} className="dismiss">âœ•</button></div>}
 
       <div className="settings-grid">
         {/* Company Logo */}
@@ -136,7 +149,7 @@ export default function SettingsPage() {
         <div className="settings-card wide">
           <div className="card-title-row">
             <h3 className="card-title">DEALERSHIP INFORMATION</h3>
-            {isApproved && <div className="locked-note">🔒 Company name & address locked after approval</div>}
+            {isApproved && <div className="locked-note">ðŸ”’ Company name & address locked after approval</div>}
           </div>
           <div className="locked-fields">
             {[
@@ -148,7 +161,7 @@ export default function SettingsPage() {
               <div key={f.label} className="locked-field">
                 <span className="lf-label">{f.label}</span>
                 <span className={`lf-val ${f.mono?"mono":""}`}>{f.val}</span>
-                {isApproved && f.label==="Company Name" && <span className="lf-lock">🔒</span>}
+                {isApproved && f.label==="Company Name" && <span className="lf-lock">ðŸ”’</span>}
               </div>
             ))}
           </div>
@@ -258,6 +271,7 @@ export default function SettingsPage() {
     </div>
   );
 }
+
 
 
 

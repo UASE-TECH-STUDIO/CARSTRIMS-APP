@@ -146,7 +146,7 @@ export default function LoginPage() {
         .lg-divider::before,.lg-divider::after{content:"";flex:1;height:1px;background:#E5E5E5}
         .lg-browse-btn{display:block;text-align:center;background:#F5F5F5;border:1.5px solid #E5E5E5;color:#525252;border-radius:10px;padding:0.875rem;font-size:0.875rem;text-decoration:none;font-weight:600;transition:all 0.2s}
         .lg-browse-btn:hover{border-color:#F47B20;color:#F47B20;background:#FFF7ED}
-        .lg-hint{background:#F5F5F5;border-radius:8px;padding:0.75rem 1rem;font-size:0.82rem;color:#737373;line-height:1.5;text-align:center}
+        
         .lg-hint strong{color:#1A1A1A}
         .lg-switch{font-size:0.9rem;color:#737373;text-align:center}
         .lg-link{color:#F47B20;font-weight:700;text-decoration:none}
@@ -161,3 +161,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

@@ -1,4 +1,5 @@
-﻿"use client";
+﻿import DocumentViewer from "@/components/shared/DocumentViewer";
+"use client";
 import CarFinancialReport from "@/components/dealer/CarFinancialReport";
 import MarkSoldModal from "@/components/shared/MarkSoldModal";
 import { useEffect, useRef, useState, useCallback } from "react";
@@ -45,6 +46,9 @@ function PreviewModal({ src, type, onClose }: { src:string; type:"image"|"video"
         }
       </div>
     </div>
+
+      {/* Document Viewer Modal */}
+      {docData && <DocumentViewer doc={docData} onClose={()=>setDocData(null)}/>}
   );
 }
 
@@ -155,6 +159,22 @@ export default function DealerCarsPage() {
   };
 
   const STATUS_C: Record<string,string> = { available:"#16A34A", sold:"#737373", reserved:"#D97706", out_for_inspection:"#3B8BD4", in_repair:"#DC2626", on_promotion:"#7C3AED" };
+  const fetchDoc = async (carId: string, type: string) => {
+    setDocLoading(`${carId}-${type}`);
+    try {
+      const endpoints: Record<string,string> = {
+        proforma: `/api/v1/cars/${carId}/proforma-invoice`,
+        invoice:  `/api/v1/cars/${carId}/invoice`,
+        receipt:  `/api/v1/cars/${carId}/receipt`,
+        report:   `/api/v1/cars/${carId}/report`,
+      };
+      const res = await api.get(endpoints[type]);
+      setDocData(res.data);
+    } catch(e:any) {
+      setErr(e.response?.data?.detail || `Could not generate ${type}. Make sure a sale is recorded first.`);
+    } finally { setDocLoading(null); }
+  };
+
   const fi: React.CSSProperties = { width:"100%", background:"#F5F5F5", border:"1.5px solid #E5E5E5", borderRadius:"8px", padding:"0.75rem 1rem", color:"#1A1A1A", fontSize:"0.875rem", fontFamily:"var(--font-body)", outline:"none", boxSizing:"border-box" as const };
   const lbl: React.CSSProperties = { fontSize:"0.68rem", fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase" as const, color:"#525252", display:"block", marginBottom:"0.35rem" };
 
@@ -451,3 +471,5 @@ export default function DealerCarsPage() {
     </>
   );
 }
+
+

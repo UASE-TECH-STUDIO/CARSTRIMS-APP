@@ -13,7 +13,7 @@ const ROLES = [
 
 // Twilio WhatsApp Sandbox number — update this to your actual Twilio number
 const TWILIO_WHATSAPP_NUMBER = "+14155238886";
-const TWILIO_SANDBOX_KEYWORD = "join carstrims";
+const TWILIO_SANDBOX_KEYWORD = "join ants-whistle";
 
 export default function RegisterPage() {
   const router   = useRouter();
@@ -232,3 +232,4 @@ export default function RegisterPage() {
     </div>
   );
 }
+
