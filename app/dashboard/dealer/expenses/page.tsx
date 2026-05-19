@@ -32,6 +32,30 @@ export default function ExpensesPage() {
 
   const fetchExpenses = async () => {
     setLoading(true);
+  const [carSearch, setCarSearch]     = useState("");
+  const [carResults, setCarResults]   = useState<any[]>([]);
+  const [showCarDrop, setShowCarDrop] = useState(false);
+
+  // Search cars for expense linking
+  const searchCars = async (q: string) => {
+    if (q.length < 1) { setCarResults([]); return; }
+    try {
+      const r = await api.get("/api/v1/cars/", { params: { search: q, limit: 20 } });
+      setCarResults(r.data?.cars || []); setShowCarDrop(true);
+    } catch { setCarResults([]); }
+  };
+
+  useEffect(() => {
+    const t = setTimeout(() => searchCars(carSearch), 300);
+    return () => clearTimeout(t);
+  }, [carSearch]);
+
+  const selectCar = (car: any) => {
+    setForm({ ...form, carId: car.carId });
+    setCarSearch(`${car.brand} ${car.model} ${car.year} — ${car.carId}`);
+    setShowCarDrop(false); setCarResults([]);
+  };
+
     try {
       const params: any = { limit: 100 };
       if (catFilter !== "all") params.category = catFilter;
@@ -400,3 +424,4 @@ export default function ExpensesPage() {
     </div>
   );
 }
+

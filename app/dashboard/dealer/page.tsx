@@ -73,7 +73,7 @@ export default function DealerOverviewPage() {
       const notifs = nRes.data?.notifications||nRes.data||[];
       const acts = notifs.map((n:any)=>({
         id:n._id, type:n.type, title:n.title, message:n.message,
-        actor:n.actorName||n.senderName, actorId:n.actorId||n.senderId,
+        actor:(()=>{let a=n.actorName||n.senderName||"";if(!a&&n.message){const m=n.message.match(/^([A-Z][^.!?]+?)\s+(liked|commented|started following|sent|requested|posted)/);if(m)a=m[1];}return a||"Someone";})(), actorId:n.actorId||n.senderId,
         targetId:n.data?.carId||n.data?.targetId, targetLabel:n.data?.carName||n.data?.label,
         link:getLinkForActivity(n), createdAt:n.createdAt, isRead:n.isRead,
       }));
@@ -323,3 +323,4 @@ export default function DealerOverviewPage() {
     </div>
   );
 }
+
