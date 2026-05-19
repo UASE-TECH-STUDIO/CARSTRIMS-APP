@@ -105,7 +105,7 @@ export default function LoginPage() {
             Browse Cars Without Signing In →
           </Link>
 
-          <p className="lg-hint">You can sign in with your <strong>email address</strong> or <strong>phone number</strong>.</p>
+       
           <p className="lg-switch">New to CARSTRIMS? <Link href="/register" className="lg-link">Create a free account</Link></p>
         </div>
       </div>
