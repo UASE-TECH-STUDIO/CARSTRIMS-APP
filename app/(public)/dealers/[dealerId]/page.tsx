@@ -1,4 +1,6 @@
-﻿import { useState, useEffect } from "react";
+﻿"use client";
+
+import { useState, useEffect } from "react";
 import api from "@/lib/api"; // Adjust based on your exact import path
 import FollowBtn from "@/components/shared/FollowBtn"; // Adjust based on your exact import path
 
