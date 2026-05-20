@@ -168,46 +168,87 @@ export default function SettingsPage() {
   const fl = { fontSize:"0.68rem", fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase" as const, color:"#888", display:"block", marginBottom:"0.4rem" };
 
   /* ─────────────── Upload slot component ─────────────── */
+  // type: "logo" | "profile" | "signature"
   const UploadSlot = ({ label, sub, url, isRound, uploading: upl, onClick, onRemove, preview }: {
     label:string; sub:string; url?:string|null; isRound?:boolean; uploading:boolean;
     onClick:()=>void; onRemove?:()=>void; preview?: "sig";
-  }) => (
-    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.625rem"}}>
-      <div onClick={onClick}
-        style={{width: preview==="sig" ? "180px" : "88px", height:"88px", borderRadius: isRound ? "50%" : preview==="sig" ? "6px" : "12px",
-          overflow:"hidden", border:"2.5px solid #F47B20", background:"#FFF7ED", cursor:"pointer", position:"relative",
-          display:"flex", alignItems:"center", justifyContent:"center", transition:"transform 0.2s"}}
-        onMouseOver={e=>(e.currentTarget as HTMLElement).style.transform="scale(1.03)"}
-        onMouseOut={e=>(e.currentTarget as HTMLElement).style.transform=""}>
-        {upl ? (
-          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.3rem"}}>
-            <div style={{width:"20px",height:"20px",border:"2px solid #E5E5E5",borderTopColor:"#F47B20",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
-            <span style={{fontSize:"0.6rem",color:"#F47B20"}}>Uploading…</span>
+  }) => {
+    const isSig = preview==="sig";
+    const w = isSig ? "240px" : isRound ? "100px" : "100px";
+    const h = isSig ? "100px" : "100px";
+    const radius = isRound ? "50%" : isSig ? "8px" : "12px";
+    return (
+      <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.75rem",width:"100%",maxWidth:isSig?"280px":"120px"}}>
+        {/* Preview area */}
+        <div style={{width:"100%",position:"relative"}}>
+          <div onClick={onClick} style={{
+            width:"100%",height:h,borderRadius:radius,overflow:"hidden",
+            border: url ? `2.5px solid #F47B20` : "2.5px dashed #D4D4D4",
+            background: isSig ? "#FAFAFA" : "#FFF7ED",
+            cursor:"pointer",position:"relative",display:"flex",alignItems:"center",
+            justifyContent:"center",transition:"all 0.2s",
+            boxShadow: url ? "0 4px 16px rgba(244,123,32,0.15)" : "none",
+          }}
+            onMouseOver={e=>{(e.currentTarget as HTMLElement).style.borderColor="#F47B20";(e.currentTarget as HTMLElement).style.boxShadow="0 6px 20px rgba(244,123,32,0.2)";}}
+            onMouseOut={e=>{(e.currentTarget as HTMLElement).style.borderColor=url?"#F47B20":"#D4D4D4";(e.currentTarget as HTMLElement).style.boxShadow=url?"0 4px 16px rgba(244,123,32,0.15)":"none";}}>
+            {upl ? (
+              <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.4rem"}}>
+                <div style={{width:"22px",height:"22px",border:"2.5px solid #E5E5E5",borderTopColor:"#F47B20",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
+                <span style={{fontSize:"0.62rem",color:"#F47B20",fontWeight:600}}>Uploading...</span>
+              </div>
+            ) : url ? (
+              <>
+                {isSig ? (
+                  /* Signature: white background, contain fit, clean doc look */
+                  <div style={{width:"100%",height:"100%",background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",padding:"8px"}}>
+                    <img src={url} alt="Signature" style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",display:"block",filter:"contrast(1.1)"}}/>
+                  </div>
+                ) : (
+                  /* Logo / Profile: cover fit */
+                  <img src={url} alt={label} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
+                )}
+                <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.5)",color:"#fff",fontSize:"0.65rem",fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",opacity:0,transition:"opacity 0.2s",gap:"0.25rem"}}
+                  onMouseOver={e=>e.currentTarget.style.opacity="1"} onMouseOut={e=>e.currentTarget.style.opacity="0"}>
+                  <span style={{fontSize:"1.1rem"}}>✏</span>
+                  <span>Click to replace</span>
+                </div>
+              </>
+            ) : (
+              <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.4rem",color:"#A3A3A3",padding:"0.5rem"}}>
+                <span style={{fontSize:"1.75rem"}}>{isSig?"✍":isRound?"👤":"🖼"}</span>
+                <span style={{fontSize:"0.65rem",fontWeight:600,textAlign:"center",color:"#A3A3A3",lineHeight:1.3}}>Click to upload</span>
+              </div>
+            )}
           </div>
-        ) : url ? (
-          <>
-            <img src={url} alt={label} style={{width:"100%",height:"100%",objectFit: preview==="sig" ? "contain" : "cover", display:"block", padding: preview==="sig"?"4px":0}}/>
-            <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.42)",color:"#fff",fontSize:"0.62rem",display:"flex",alignItems:"center",justifyContent:"center",opacity:0,transition:"opacity 0.2s",textAlign:"center",padding:"0.25rem"}}
-              onMouseOver={e=>e.currentTarget.style.opacity="1"} onMouseOut={e=>e.currentTarget.style.opacity="0"}>
-              Click to replace
-            </div>
-          </>
-        ) : (
-          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.3rem",color:"#F47B20"}}>
-            <span style={{fontSize:"1.5rem"}}>+</span>
-            <span style={{fontSize:"0.6rem",fontWeight:600,textAlign:"center",padding:"0 4px"}}>{label}</span>
+          {/* Appears-in badge */}
+          {url && (
+            <div style={{position:"absolute",top:"-8px",right:"-8px",background:"#16A34A",color:"#fff",borderRadius:"50%",width:"20px",height:"20px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.6rem",fontWeight:700,border:"2px solid #fff",boxShadow:"0 2px 6px rgba(0,0,0,0.15)"}}>✓</div>
+          )}
+        </div>
+
+        {/* Labels */}
+        <div style={{textAlign:"center",width:"100%"}}>
+          <div style={{fontSize:"0.78rem",fontWeight:700,color:"#1A1A1A",marginBottom:"0.15rem"}}>{label}</div>
+          <div style={{fontSize:"0.65rem",color:"#A3A3A3",lineHeight:1.4}}>{sub}</div>
+        </div>
+
+        {/* Where it appears */}
+        {url && (
+          <div style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"6px",padding:"0.4rem 0.625rem",fontSize:"0.62rem",color:"#15803D",fontWeight:600,textAlign:"center",width:"100%"}}>
+            {isSig?"Appears on all documents":"Active — click to replace"}
           </div>
         )}
+
+        {url && onRemove && (
+          <button onClick={e=>{e.stopPropagation();onRemove();}} style={{background:"none",border:"1px solid #FECACA",color:"#DC2626",borderRadius:"5px",padding:"0.3rem 0.75rem",fontSize:"0.68rem",cursor:"pointer",transition:"all 0.2s"}}
+            onMouseOver={e=>{(e.currentTarget as HTMLElement).style.background="#FEF2F2";}}
+            onMouseOut={e=>{(e.currentTarget as HTMLElement).style.background="none";}}>
+            Remove
+          </button>
+        )}
       </div>
-      <div style={{textAlign:"center"}}>
-        <div style={{fontSize:"0.72rem",fontWeight:700,color:"#1A1A1A"}}>{label}</div>
-        <div style={{fontSize:"0.65rem",color:"#A3A3A3",maxWidth:"140px",lineHeight:1.4}}>{sub}</div>
-      </div>
-      {url && onRemove && (
-        <button onClick={onRemove} style={{background:"none",border:"1px solid #DDD",color:"#DC2626",borderRadius:"5px",padding:"0.25rem 0.75rem",fontSize:"0.7rem",cursor:"pointer"}}>Remove</button>
-      )}
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="sp">
@@ -369,3 +410,4 @@ export default function SettingsPage() {
     </div>
   );
 }
+

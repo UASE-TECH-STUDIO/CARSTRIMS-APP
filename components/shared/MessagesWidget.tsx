@@ -255,7 +255,7 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
             </div>
           )}
 
-          {showNew && (
+          {showNew && !activeConv && (
             <div className="new-conv-overlay" onClick={()=>setShowNew(false)}>
               <div className="new-conv" onClick={e=>e.stopPropagation()}>
                 <div className="nc-header"><span>New Conversation</span><button onClick={()=>setShowNew(false)} style={{background:"rgba(255,255,255,0.15)",border:"none",color:"#fff",borderRadius:"50%",width:"24px",height:"24px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.75rem"}}>✕</button></div>
@@ -321,7 +321,7 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
         .chat-input button:disabled{opacity:0.5;cursor:not-allowed}
         .pw-tip{padding:0.3rem 0.75rem 0.5rem;font-size:0.63rem;color:#A3A3A3;border-top:1px solid #F5F5F5;flex-shrink:0}
         .pw-tip code{background:#F5F5F5;padding:0 0.3rem;border-radius:3px;font-size:0.7rem;color:#555}
-        .new-conv-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:15;border-radius:16px}
+        .new-conv-overlay{position:absolute;top:0;left:0;right:0;bottom:60px;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:15;border-radius:16px 16px 0 0}
         .new-conv{background:#fff;border-radius:12px;width:92%;overflow:hidden;max-height:90%}
         .nc-header{display:flex;align-items:center;justify-content:space-between;padding:0.875rem 1rem;background:var(--accent,#F47B20);color:#fff}
         .nc-header span{font-family:var(--font-display);font-size:0.875rem}
@@ -345,5 +345,6 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
     </>
   );
 }
+
 
 

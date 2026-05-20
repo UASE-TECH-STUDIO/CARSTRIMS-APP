@@ -175,7 +175,7 @@ export default function DealerCarsPage() {
 
   return (
     <>
-      {markSoldCar!==null&&<MarkSoldModal car={markSoldCar||undefined} onClose={()=>setMarkSoldCar(null)} onSold={async(txn)=>{setMarkSoldCar(null);await load();}}/>}
+      {markSoldCar!==null&&<MarkSoldModal car={Object.keys(markSoldCar||{}).length===0?undefined:markSoldCar||undefined} onClose={()=>setMarkSoldCar(null)} onSold={async(txn)=>{setMarkSoldCar(null);await load();}}/>}
       {reportCarId&&<CarFinancialReport carId={reportCarId} onClose={()=>setReportCarId(null)}/>}
       {docData&&<DocumentViewer doc={docData} onClose={()=>setDocData(null)}/>}
 
@@ -417,5 +417,6 @@ export default function DealerCarsPage() {
     </>
   );
 }
+
 
 
