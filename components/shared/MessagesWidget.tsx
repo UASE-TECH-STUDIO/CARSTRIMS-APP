@@ -9,6 +9,7 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
   const { user } = useAuthStore();
   const isSuperAdmin = user?.role === "SYSTEM_ADMIN";
   const uid = user?.userId;
+  const { openConvId, openCarContext, clearOpen } = useMessagesStore();
 
   const [open, setOpen]               = useState(false);
   const [conversations, setConvs]     = useState<any[]>([]);
@@ -31,6 +32,30 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
     setCarIdParam(sp.get("carId"));
     setCarImgParam(sp.get("carImg"));
   }, []);
+
+  // Auto-open widget and jump to conversation when triggered from Message Dealer button
+  useEffect(() => {
+    if (!openConvId) return;
+    setOpen(true);
+    // Wait for conversations to load then open the right one
+    const tryOpen = async () => {
+      await loadConvs();
+      setConvs(prev => {
+        const found = prev.find(c => c.conversationId === openConvId);
+        if (found) {
+          openConv(found);
+        }
+        return prev;
+      });
+    };
+    tryOpen();
+    // Set car context from store if available
+    if (openCarContext) {
+      setCarIdParam(openCarContext.carId);
+      setCarImgParam(openCarContext.carImage || null);
+    }
+    clearOpen();
+  }, [openConvId]);
 
   const msgsEndRef   = useRef<HTMLDivElement>(null);
   const pollRef      = useRef<ReturnType<typeof setInterval>|null>(null);
@@ -379,10 +404,3 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
     </>
   );
 }
-
-
-
-
-
-
-

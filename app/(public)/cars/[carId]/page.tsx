@@ -67,8 +67,8 @@ export default function CarDetailPage() {
     } catch {}
   };
 
-  // Message dealer — opens conversation with car context card shown
-  // Does NOT auto-send — user drafts their own message (like WhatsApp status reply)
+  // Message dealer  opens conversation with car context card shown
+  // Does NOT auto-send  user drafts their own message (like WhatsApp status reply)
   const handleMessageDealer = async () => {
     if (!isAuthenticated) { router.push("/login"); return; }
     if (!car?.dealer) { alert("Dealer contact not available."); return; }
@@ -143,7 +143,7 @@ export default function CarDetailPage() {
     else { navigator.clipboard.writeText(url); alert("Link copied!"); }
   };
 
-  const fmt = (n: number) => `₦${(n||0).toLocaleString()}`;
+  const fmt = (n: number) => `NGN ${(n||0).toLocaleString()}`;
   const fmtTime = (iso: string) => {
     const d = Date.now() - new Date(iso).getTime(); const m = Math.floor(d/60000);
     return m<1?"just now":m<60?`${m}m ago`:m<1440?`${Math.floor(m/60)}h ago`:new Date(iso).toLocaleDateString();
@@ -159,9 +159,9 @@ export default function CarDetailPage() {
 
   if (!car) return (
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"1rem",padding:"5rem 1rem",textAlign:"center",minHeight:"100vh",background:"#F5F5F5",justifyContent:"center"}}>
-      <div style={{fontSize:"3rem"}}>🚗</div>
+      <div style={{fontSize:"3rem"}}></div>
       <h2 style={{fontFamily:"var(--font-display)",color:"#1A1A1A"}}>Car not found</h2>
-      <Link href="/feed" style={{color:"#F47B20",fontWeight:600}}>← Back to feed</Link>
+      <Link href="/feed" style={{color:"#F47B20",fontWeight:600}}><- Back to feed</Link>
     </div>
   );
 
@@ -170,19 +170,19 @@ export default function CarDetailPage() {
       {/* Lightbox */}
       {lightbox && (
         <div onClick={()=>setLightbox(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.94)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <button onClick={()=>setLightbox(null)} style={{position:"absolute",top:"1rem",right:"1rem",background:"rgba(255,255,255,0.15)",border:"none",color:"#fff",fontSize:"1.3rem",width:"40px",height:"40px",borderRadius:"50%",cursor:"pointer"}}>✕</button>
+          <button onClick={()=>setLightbox(null)} style={{position:"absolute",top:"1rem",right:"1rem",background:"rgba(255,255,255,0.15)",border:"none",color:"#fff",fontSize:"1.3rem",width:"40px",height:"40px",borderRadius:"50%",cursor:"pointer"}}>x</button>
           <img src={lightbox} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"92vw",maxHeight:"90vh",objectFit:"contain",borderRadius:"8px"}}/>
         </div>
       )}
 
       {/* Topbar */}
       <header className="cd-topbar">
-        <button className="cd-back" onClick={()=>router.back()}>← Back</button>
+        <button className="cd-back" onClick={()=>router.back()}><- Back</button>
         <div className="cd-topbar-right">
-          <button className={`cd-action ${liked?"liked":""}`} onClick={handleLike}>{liked?"♥":"♡"} {likeCount}</button>
-          <button className={`cd-action ${favorited?"faved":""}`} onClick={handleFavorite}>{favorited?"★ Saved":"☆ Save"}</button>
+          <button className={`cd-action ${liked?"liked":""}`} onClick={handleLike}>{liked?"[heart]":"[o]"} {likeCount}</button>
+          <button className={`cd-action ${favorited?"faved":""}`} onClick={handleFavorite}>{favorited?" Saved":" Save"}</button>
           <button className="cd-action" onClick={handleShare}>Share</button>
-          {isAdmin && <button className="cd-action cd-del" onClick={handleAdminDeleteCar}>🗑</button>}
+          {isAdmin && <button className="cd-action cd-del" onClick={handleAdminDeleteCar}>Del</button>}
         </div>
       </header>
 
@@ -192,13 +192,13 @@ export default function CarDetailPage() {
           <div className="cd-main-img" onClick={()=>car.images?.[activeImage]&&setLightbox(car.images[activeImage])}>
             {car.images?.[0]
               ? <img src={car.images[activeImage]} alt={`${car.brand} ${car.model}`} />
-              : <div className="cd-no-img">🚗</div>
+              : <div className="cd-no-img"></div>
             }
             {car.status !== "available" && (
               <div className={`cd-status-overlay ${car.status}`}>{car.status.replace(/_/g," ").toUpperCase()}</div>
             )}
             {car.images?.length > 1 && (
-              <div className="cd-img-count">{activeImage+1}/{car.images.length} · tap to zoom</div>
+              <div className="cd-img-count">{activeImage+1}/{car.images.length} . tap to zoom</div>
             )}
           </div>
           {car.images?.length > 1 && (
@@ -226,7 +226,7 @@ export default function CarDetailPage() {
               <span className="cd-carid">{car.carId}</span>
             </div>
             <h1 className="cd-car-title">{car.brand} {car.model}</h1>
-            <div className="cd-car-meta">{car.year} · {car.color} · {car.condition}</div>
+            <div className="cd-car-meta">{car.year} . {car.color} . {car.condition}</div>
             <div className="cd-price-row">
               <div className="cd-price">{fmt(car.sellingPrice)}</div>
               {car.promoPrice && car.promoPrice < car.sellingPrice && (
@@ -269,7 +269,7 @@ export default function CarDetailPage() {
                 <div className="cd-dealer-info">
                   <div className="cd-dealer-name">{car.dealer.companyName}</div>
                   <div className="cd-dealer-loc">{car.dealer.city||"N/A"}, {car.dealer.state||"N/A"}</div>
-                  <span className="cd-dealer-cta">View all vehicles from this dealer →</span>
+                  <span className="cd-dealer-cta">View all vehicles from this dealer -></span>
                 </div>
               </Link>
 
@@ -277,24 +277,24 @@ export default function CarDetailPage() {
                 <div className="cd-contact-wrap">
                   {isAuthenticated ? (
                     <button className="cd-msg-btn" onClick={handleMessageDealer} disabled={startingMsg}>
-                      {startingMsg ? "Opening chat..." : "💬 Message Dealer"}
+                      {startingMsg ? "Opening chat..." : " Message Dealer"}
                     </button>
                   ) : (
                     <Link href={`/login?redirect=/cars/${carId}`} className="cd-msg-btn" style={{textAlign:"center",display:"block",textDecoration:"none"}}>
-                      💬 Sign in to Message Dealer
+                       Sign in to Message Dealer
                     </Link>
                   )}
                   <button className="cd-toggle-btn" onClick={()=>setShowContact(!showContact)}>
-                    {showContact ? "Hide Contact Info" : "📞 Show Phone & WhatsApp"}
+                    {showContact ? "Hide Contact Info" : " Show Phone & WhatsApp"}
                   </button>
                   {showContact && (
                     <div className="cd-contact-btns">
-                      {car.dealer.phone && <a href={`tel:${car.dealer.phone}`} className="cd-cta phone">📞 Call</a>}
+                      {car.dealer.phone && <a href={`tel:${car.dealer.phone}`} className="cd-cta phone"> Call</a>}
                       {car.dealer.whatsapp && (
                         <a href={`https://wa.me/${car.dealer.whatsapp}?text=Hi, I am interested in your ${car.brand} ${car.model} ${car.year} (${car.carId}). Is it still available?`}
-                          target="_blank" rel="noreferrer" className="cd-cta wa">💬 WhatsApp</a>
+                          target="_blank" rel="noreferrer" className="cd-cta wa"> WhatsApp</a>
                       )}
-                      {car.dealer.email && <a href={`mailto:${car.dealer.email}`} className="cd-cta email">✉ Email</a>}
+                      {car.dealer.email && <a href={`mailto:${car.dealer.email}`} className="cd-cta email"> Email</a>}
                     </div>
                   )}
                 </div>
@@ -335,7 +335,7 @@ export default function CarDetailPage() {
                     {(isAdmin||(user&&c.userId===user.userId)) && (
                       <button className="cd-del-comment" onClick={async()=>{
                         try { await api.delete(`/api/v1/public/cars/${carId}/comments/${c.commentId}`); setComments(p=>p.filter(x=>x.commentId!==c.commentId)); } catch {}
-                      }}>✕</button>
+                      }}>x</button>
                     )}
                   </div>
                   <div className="cd-comment-text">{c.text}</div>
@@ -356,7 +356,7 @@ export default function CarDetailPage() {
                     <div className="cd-reply-form">
                       <input className="cd-reply-input" placeholder="Write a reply..." value={replyText} onChange={e=>setReplyText(e.target.value)} />
                       <button className="cd-reply-send" onClick={()=>handleReply(c.commentId)} disabled={!replyText.trim()}>Post</button>
-                      <button className="cd-reply-cancel" onClick={()=>setReplyTo(null)}>✕</button>
+                      <button className="cd-reply-cancel" onClick={()=>setReplyTo(null)}>x</button>
                     </div>
                   )}
                 </div>
