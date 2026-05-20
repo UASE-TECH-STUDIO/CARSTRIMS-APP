@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import Link from "next/link";
 
 interface Props {
@@ -18,7 +18,7 @@ export default function Logo({ size = "md", href = "/feed", showTagline = false,
 
   const content = (
     <div style={{display:"inline-flex",alignItems:"center",gap:s.gap,textDecoration:"none"}}>
-      {/* Logo mark — orange circle with car icon + wordmark */}
+      {/* Logo mark  orange circle with car icon + wordmark */}
       <div style={{
         width: s.img + "px",
         height: s.img + "px",

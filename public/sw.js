@@ -1,4 +1,4 @@
-﻿const CACHE = "carstrims-v3";
+onst CACHE = "carstrims-v3";
 const STATIC = [
   "/", "/feed", "/login", "/register",
   "/favicon.svg", "/logo.png", "/icon-192.png", "/icon-72.png", "/audio.mp3",
@@ -6,7 +6,7 @@ const STATIC = [
 const NOTIF_ICON  = "/icon-192.png";
 const NOTIF_BADGE = "/icon-72.png";
 
-// Install — pre-cache all static pages immediately
+// Install  pre-cache all static pages immediately
 self.addEventListener("install", (e) => {
   e.waitUntil(
     caches.open(CACHE).then(c => c.addAll(STATIC).catch(() => {}))
@@ -14,7 +14,7 @@ self.addEventListener("install", (e) => {
   self.skipWaiting();
 });
 
-// Activate — remove old caches
+// Activate  remove old caches
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys().then(keys =>
@@ -23,7 +23,7 @@ self.addEventListener("activate", (e) => {
   );
 });
 
-// Fetch — stale-while-revalidate for pages, cache-first for assets
+// Fetch  stale-while-revalidate for pages, cache-first for assets
 self.addEventListener("fetch", (e) => {
   const { request } = e;
   const url = new URL(request.url);
@@ -33,7 +33,7 @@ self.addEventListener("fetch", (e) => {
   if (url.pathname.startsWith("/api/")) return;
   if (request.method !== "GET") return;
 
-  // Assets (js/css/images/fonts) — cache-first
+  // Assets (js/css/images/fonts)  cache-first
   if (/\.(js|css|png|svg|jpg|jpeg|webp|woff2?|ico)$/.test(url.pathname)) {
     e.respondWith(
       caches.match(request).then(cached => cached || fetch(request).then(res => {
@@ -47,7 +47,7 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  // Pages — network-first with cache fallback (users always get fresh data)
+  // Pages  network-first with cache fallback (users always get fresh data)
   e.respondWith(
     fetch(request).then(res => {
       if (res.ok && res.status < 400) {
@@ -59,7 +59,7 @@ self.addEventListener("fetch", (e) => {
   );
 });
 
-// ── PUSH from server (Web Push API) ──────────────────────────
+//  PUSH from server (Web Push API) 
 self.addEventListener("push", (event) => {
   let data = {};
   try { data = event.data?.json() || {}; } catch(_) {

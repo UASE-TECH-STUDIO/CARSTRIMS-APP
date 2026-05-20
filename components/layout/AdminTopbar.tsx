@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 
@@ -23,7 +23,7 @@ export default function AdminTopbar() {
         <p className="page-date">{new Date().toLocaleDateString("en-NG", { weekday:"long", year:"numeric", month:"long", day:"numeric" })}</p>
       </div>
       <div className="topbar-right">
-        <div className="admin-chip">🔴 SUPER ADMIN</div>
+        <div className="admin-chip"> SUPER ADMIN</div>
         <div className="topbar-avatar" style={{ background:"var(--error)" }}>A</div>
       </div>
       <style>{`

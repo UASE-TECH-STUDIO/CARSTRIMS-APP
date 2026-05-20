@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { ReactNode, useEffect, useState } from "react";
 import AuthGuard from "@/components/layout/AuthGuard";
 import DealerSidebar from "@/components/layout/DealerSidebar";
@@ -101,7 +101,7 @@ function DealerShell({ children }: { children: ReactNode }) {
 
         {isPending && (
           <div className="pending-notice">
-            <span>⏳</span>
+            <span></span>
             <span>
               <strong>Pending Approval:</strong> Your account is under review. Listings are hidden until a CARSTRIMS admin approves your account.
             </span>

@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
@@ -59,7 +59,7 @@ export default function StaffStaffPage() {
 
   if (!canView && !canCreate) return (
     <div style={{padding:"3rem",textAlign:"center",color:"#888"}}>
-      <div style={{fontSize:"3rem"}}>🔒</div>
+      <div style={{fontSize:"3rem"}}></div>
       <h3 style={{fontFamily:"var(--font-display)",color:"#1A1A1A"}}>Access Restricted</h3>
       <p>You need <strong style={{color:"#1D9E75"}}>view_staff</strong> permission.</p>
     </div>
@@ -75,11 +75,11 @@ export default function StaffStaffPage() {
         {canCreate && <button className="btn-primary" onClick={()=>{ setShowAdd(true); setError(""); }}>+ Add Staff</button>}
       </div>
 
-      {success && <div className="success-banner">{success}<button onClick={()=>setSuccess("")} style={{background:"none",border:"none",cursor:"pointer",color:"inherit",marginLeft:"1rem"}}>✕</button></div>}
+      {success && <div className="success-banner">{success}<button onClick={()=>setSuccess("")} style={{background:"none",border:"none",cursor:"pointer",color:"inherit",marginLeft:"1rem"}}></button></div>}
 
       {loading ? <div className="loading"><div className="spinner" /></div>
       : staff.length === 0 ? (
-        <div className="empty"><div className="ei">👥</div><h3>No staff found</h3></div>
+        <div className="empty"><div className="ei"></div><h3>No staff found</h3></div>
       ) : (
         <div className="staff-table-wrap">
           <table className="t">
@@ -103,7 +103,7 @@ export default function StaffStaffPage() {
       {showAdd && (
         <div className="modal-overlay" onClick={()=>setShowAdd(false)}>
           <div className="modal" onClick={(e)=>e.stopPropagation()}>
-            <div className="modal-header"><h3 className="modal-title">ADD STAFF MEMBER</h3><button className="modal-close" onClick={()=>setShowAdd(false)}>✕</button></div>
+            <div className="modal-header"><h3 className="modal-title">ADD STAFF MEMBER</h3><button className="modal-close" onClick={()=>setShowAdd(false)}></button></div>
             {error && <div className="form-error">{error}</div>}
             <form onSubmit={handleAdd} className="modal-form">
               <div className="form-row">

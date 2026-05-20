@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState, useRef } from "react";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
@@ -71,8 +71,8 @@ export default function PartnerSettingsPage() {
       <h2 className="page-heading">My Settings</h2>
       <p className="page-sub">Manage your partner account</p>
 
-      {msg && <div className="success-banner">✅ {msg}<button onClick={()=>setMsg("")} className="dismiss">✕</button></div>}
-      {err && <div className="error-banner">❌ {err}<button onClick={()=>setErr("")} className="dismiss">✕</button></div>}
+      {msg && <div className="success-banner"> {msg}<button onClick={()=>setMsg("")} className="dismiss"></button></div>}
+      {err && <div className="error-banner"> {err}<button onClick={()=>setErr("")} className="dismiss"></button></div>}
 
       <div className="settings-grid">
         {/* Photo + Info */}
@@ -92,12 +92,12 @@ export default function PartnerSettingsPage() {
               <button className="remove-photo-btn" onClick={removePhoto}>Remove</button>
             )}
           </div>
-          <div className="info-name">{me?.fullName||"—"}</div>
+          <div className="info-name">{me?.fullName||""}</div>
           <div className="info-role">Partner Account</div>
           <div className="info-email">{user?.email}</div>
 
           <div className="info-list">
-            <div className="info-row"><span className="il">User ID</span><span className="iv mono">{user?.userId?.slice(-8)||"—"}</span></div>
+            <div className="info-row"><span className="il">User ID</span><span className="iv mono">{user?.userId?.slice(-8)||""}</span></div>
             <div className="info-row"><span className="il">Role</span><span className="iv">Partner</span></div>
           </div>
         </div>

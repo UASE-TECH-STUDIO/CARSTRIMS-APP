@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState, useRef } from "react";
 import api from "@/lib/api";
 import Link from "next/link";
@@ -30,11 +30,11 @@ function groupActivity(items: any[]) {
 
 function getActivityIcon(type: string) {
   const m: Record<string,string> = {
-    car_liked:"❤️",like:"❤️",car_commented:"💬",comment:"💬",
-    follow:"👥",new_follower:"👥",car_request:"📩",request:"📩",
-    car_sold:"🏷️",new_message:"✉️",general:"🔔",announcement:"📢",dealer_approved:"✅",
+    car_liked:"",like:"",car_commented:"",comment:"",
+    follow:"",new_follower:"",car_request:"",request:"",
+    car_sold:"",new_message:"",general:"",announcement:"",dealer_approved:"",
   };
-  return m[type]||"🔔";
+  return m[type]||"";
 }
 
 function getLinkForActivity(n: any): string {
@@ -113,23 +113,23 @@ export default function DealerOverviewPage() {
   const pendingRequestCount = requests.filter((r:any)=>r.status==="pending").length;
 
   const STATS = [
-    {label:"Total Cars",  value:stats?.totalCars??0,     icon:"🚗",sub:"All listed vehicles",   href:"/dashboard/dealer/cars",               color:"#F47B20"},
-    {label:"Available",   value:stats?.availableCars??0,  icon:"✅",sub:"Ready for sale",        href:"/dashboard/dealer/cars?status=available",color:"#16A34A"},
-    {label:"Sold",        value:stats?.soldCars??0,       icon:"🏷️",sub:"Completed sales",      href:"/dashboard/dealer/sales",              color:"#3B8BD4"},
-    {label:"Staff",       value:stats?.totalStaff??0,     icon:"👥",sub:"Team members",          href:"/dashboard/dealer/staff",              color:"#7B68EE"},
-    {label:"Partners",    value:stats?.totalPartners??0,  icon:"🤝",sub:"Active partners",       href:"/dashboard/dealer/partners",           color:"#D97706"},
-    {label:"Requests",    value:pendingRequestCount,       icon:"📩",sub:"Pending from customers",href:"/dashboard/dealer/requests",           color:"#DC2626"},
+    {label:"Total Cars",  value:stats?.totalCars??0,     icon:"",sub:"All listed vehicles",   href:"/dashboard/dealer/cars",               color:"#F47B20"},
+    {label:"Available",   value:stats?.availableCars??0,  icon:"",sub:"Ready for sale",        href:"/dashboard/dealer/cars?status=available",color:"#16A34A"},
+    {label:"Sold",        value:stats?.soldCars??0,       icon:"",sub:"Completed sales",      href:"/dashboard/dealer/sales",              color:"#3B8BD4"},
+    {label:"Staff",       value:stats?.totalStaff??0,     icon:"",sub:"Team members",          href:"/dashboard/dealer/staff",              color:"#7B68EE"},
+    {label:"Partners",    value:stats?.totalPartners??0,  icon:"",sub:"Active partners",       href:"/dashboard/dealer/partners",           color:"#D97706"},
+    {label:"Requests",    value:pendingRequestCount,       icon:"",sub:"Pending from customers",href:"/dashboard/dealer/requests",           color:"#DC2626"},
   ];
 
   const ACTIONS = [
-    {label:"Add New Car",  icon:"➕",href:"/dashboard/dealer/cars"},
-    {label:"Record Sale",  icon:"💳",href:"/dashboard/dealer/sales"},
-    {label:"Log Expense",  icon:"📋",href:"/dashboard/dealer/expenses"},
-    {label:"Add Staff",    icon:"👤",href:"/dashboard/dealer/staff"},
-    {label:"Log Movement", icon:"🔄",href:"/dashboard/dealer/movements"},
-    {label:"View Reports", icon:"📊",href:"/dashboard/dealer/reports"},
-    {label:"My Profile",   icon:"🌐",href:`/dealers/${dealer?.dealerId}`},
-    {label:"View Feed",    icon:"🏠",href:"/feed"},
+    {label:"Add New Car",  icon:"",href:"/dashboard/dealer/cars"},
+    {label:"Record Sale",  icon:"",href:"/dashboard/dealer/sales"},
+    {label:"Log Expense",  icon:"",href:"/dashboard/dealer/expenses"},
+    {label:"Add Staff",    icon:"",href:"/dashboard/dealer/staff"},
+    {label:"Log Movement", icon:"",href:"/dashboard/dealer/movements"},
+    {label:"View Reports", icon:"",href:"/dashboard/dealer/reports"},
+    {label:"My Profile",   icon:"",href:`/dealers/${dealer?.dealerId}`},
+    {label:"View Feed",    icon:"",href:"/feed"},
   ];
 
   return (
@@ -137,7 +137,7 @@ export default function DealerOverviewPage() {
       {/* Lightbox for logo */}
       {lightbox && dealer?.logo && (
         <div onClick={()=>setLightbox(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.9)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",cursor:"zoom-out"}}>
-          <button onClick={()=>setLightbox(false)} style={{position:"absolute",top:"1rem",right:"1rem",background:"rgba(255,255,255,0.15)",border:"none",color:"#fff",fontSize:"1.3rem",width:"40px",height:"40px",borderRadius:"50%",cursor:"pointer"}}>✕</button>
+          <button onClick={()=>setLightbox(false)} style={{position:"absolute",top:"1rem",right:"1rem",background:"rgba(255,255,255,0.15)",border:"none",color:"#fff",fontSize:"1.3rem",width:"40px",height:"40px",borderRadius:"50%",cursor:"pointer"}}></button>
           <img src={dealer.logo} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"88vw",maxHeight:"88vh",objectFit:"contain",borderRadius:"12px"}}/>
         </div>
       )}
@@ -145,7 +145,7 @@ export default function DealerOverviewPage() {
       {/* ONE pending banner only */}
       {isPending && (
         <div className="pending-banner">
-          <span className="pb-icon">⏳</span>
+          <span className="pb-icon"></span>
           <div className="pb-text">
             <strong>Account Pending Approval</strong>
             <span>Your dealership is under review. Listings are hidden from the public feed until a CARSTRIMS admin approves your account. You can still add cars, manage staff, and configure your dashboard.</span>
@@ -163,7 +163,7 @@ export default function DealerOverviewPage() {
                 : dealer?.logo ? <img src={dealer.logo} alt=""/> : <span>{dealer?.companyName?.charAt(0)||"D"}</span>
               }
             </div>
-            <button className="ov-logo-edit" onClick={()=>logoRef.current?.click()} title="Change logo">✏️</button>
+            <button className="ov-logo-edit" onClick={()=>logoRef.current?.click()} title="Change logo"></button>
             <input ref={logoRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)handleLogoUpload(f);}}/>
           </div>
           <div>
@@ -172,16 +172,16 @@ export default function DealerOverviewPage() {
             </Link>
             <p className="ov-meta">
               {dealer?.city&&dealer?.state?`${dealer.city}, ${dealer.state}`:"Set location in settings"}
-              {dealer?.dealerId&&<span className="ov-id"> · {dealer.dealerId}</span>}
+              {dealer?.dealerId&&<span className="ov-id">  {dealer.dealerId}</span>}
             </p>
             <div className="ov-meta-links">
-              <Link href={`/dealers/${dealer?.dealerId}`} className="ov-profile-link">View Public Profile →</Link>
-              {(stats as any)?.followerCount>0&&<span className="ov-followers">👥 {(stats as any).followerCount} followers</span>}
+              <Link href={`/dealers/${dealer?.dealerId}`} className="ov-profile-link">View Public Profile </Link>
+              {(stats as any)?.followerCount>0&&<span className="ov-followers"> {(stats as any).followerCount} followers</span>}
             </div>
           </div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:"0.75rem",flexWrap:"wrap",flexShrink:0}}>
-          <Link href="/dashboard/dealer/settings" className="ov-settings-btn">⚙ Settings</Link>
+          <Link href="/dashboard/dealer/settings" className="ov-settings-btn"> Settings</Link>
           <div className={`status-badge ${dealer?.status}`}>
             {dealer?.status?.replace(/_/g," ").toUpperCase()||"PENDING"}
           </div>
@@ -197,20 +197,20 @@ export default function DealerOverviewPage() {
               <div className="stat-top"><span className="stat-icon">{s.icon}</span><span className="stat-label">{s.label}</span></div>
               <div className="stat-value" style={{color:s.color}}>{s.value}</div>
               <div className="stat-sub">{s.sub}</div>
-              <span className="stat-arrow">→</span>
+              <span className="stat-arrow"></span>
             </Link>
           ))}
         </div>
         <div className="wide-grid">
           <Link href="/dashboard/dealer/sales" className="wide-card">
-            <div className="stat-top"><span className="stat-icon">💰</span><span className="stat-label">Revenue</span></div>
-            <div className="stat-value" style={{color:"#F47B20"}}>₦{fmt(stats?.totalRevenue??0)}</div>
-            <div className="stat-sub">All time sales value</div><span className="stat-arrow">→</span>
+            <div className="stat-top"><span className="stat-icon"></span><span className="stat-label">Revenue</span></div>
+            <div className="stat-value" style={{color:"#F47B20"}}>{fmt(stats?.totalRevenue??0)}</div>
+            <div className="stat-sub">All time sales value</div><span className="stat-arrow"></span>
           </Link>
           <Link href="/dashboard/dealer/reports" className="wide-card">
-            <div className="stat-top"><span className="stat-icon">📈</span><span className="stat-label">Net Profit</span></div>
-            <div className="stat-value" style={{color:"#16A34A"}}>₦{fmt(stats?.totalProfit??0)}</div>
-            <div className="stat-sub">After all expenses</div><span className="stat-arrow">→</span>
+            <div className="stat-top"><span className="stat-icon"></span><span className="stat-label">Net Profit</span></div>
+            <div className="stat-value" style={{color:"#16A34A"}}>{fmt(stats?.totalProfit??0)}</div>
+            <div className="stat-sub">After all expenses</div><span className="stat-arrow"></span>
           </Link>
         </div>
       </div>
@@ -219,12 +219,12 @@ export default function DealerOverviewPage() {
       <div>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"0.875rem"}}>
           <p className="section-label" style={{marginBottom:0}}>RECENT ACTIVITY</p>
-          <Link href="/dashboard/dealer/notifications" style={{fontSize:"0.78rem",color:"#F47B20",textDecoration:"none",fontWeight:600}}>See all →</Link>
+          <Link href="/dashboard/dealer/notifications" style={{fontSize:"0.78rem",color:"#F47B20",textDecoration:"none",fontWeight:600}}>See all </Link>
         </div>
         <div className="activity-list">
           {activity.length===0 ? (
             <div style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",padding:"2rem",textAlign:"center",color:"#A3A3A3",fontSize:"0.875rem"}}>
-              <div style={{fontSize:"1.75rem",marginBottom:"0.5rem"}}>🔔</div>
+              <div style={{fontSize:"1.75rem",marginBottom:"0.5rem"}}></div>
               Activity from likes, comments, follows and requests will appear here
             </div>
           ) : activity.slice(0,8).map((act,i)=>(
@@ -236,7 +236,7 @@ export default function DealerOverviewPage() {
                     ? <><strong>{act.actors?.[0]||act.actor||"Someone"}</strong> and <strong>{act.count-1} other{act.count>2?"s":""}</strong> {act.verb||"interacted with your dealership"}</>
                     : <><strong>{act.actor||"Someone"}</strong> {act.verb||"interacted with your dealership"}</>
                   }
-                  {act.targetLabel&&<span className="activity-target"> · {act.targetLabel}</span>}
+                  {act.targetLabel&&<span className="activity-target">  {act.targetLabel}</span>}
                 </div>
                 <div className="activity-time">{fmtTime(act.createdAt)}</div>
               </div>

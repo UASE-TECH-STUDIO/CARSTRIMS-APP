@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
@@ -14,7 +14,7 @@ const STEPS = [
 const STATES = ["Abia","Adamawa","Akwa Ibom","Anambra","Bauchi","Bayelsa","Benue","Borno","Cross River","Delta","Ebonyi","Edo","Ekiti","Enugu","FCT","Gombe","Imo","Jigawa","Kaduna","Kano","Katsina","Kebbi","Kogi","Kwara","Lagos","Nasarawa","Niger","Ogun","Ondo","Osun","Oyo","Plateau","Rivers","Sokoto","Taraba","Yobe","Zamfara"];
 const PERMISSIONS = ["view_inventory","add_cars","edit_cars","view_sales","record_sales","view_staff","view_partners","view_cctv","view_movements","view_reports"];
 
-// ── Temp upload — no dealer profile needed ──
+//  Temp upload  no dealer profile needed 
 async function tempUploadImage(file: File, folder: string): Promise<string> {
   const fd = new FormData();
   fd.append("file", file);
@@ -35,12 +35,12 @@ async function tempUploadDocument(file: File, folder: string): Promise<string> {
   return res.data.url || "";
 }
 
-// ── Preview modal ──
+//  Preview modal 
 function PreviewModal({ src, type, onClose }: { src: string; type: "image"|"video"|"pdf"; onClose: () => void }) {
   return (
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
       <div onClick={e=>e.stopPropagation()} style={{background:"#1A1A1A",borderRadius:"12px",overflow:"hidden",maxWidth:"90vw",maxHeight:"90vh",position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-        <button onClick={onClose} style={{position:"absolute",top:"0.5rem",right:"0.5rem",background:"rgba(255,255,255,0.15)",border:"none",borderRadius:"50%",width:"32px",height:"32px",color:"#fff",fontSize:"1rem",cursor:"pointer",zIndex:10}}>✕</button>
+        <button onClick={onClose} style={{position:"absolute",top:"0.5rem",right:"0.5rem",background:"rgba(255,255,255,0.15)",border:"none",borderRadius:"50%",width:"32px",height:"32px",color:"#fff",fontSize:"1rem",cursor:"pointer",zIndex:10}}></button>
         {type==="image" && <img src={src} alt="" style={{maxWidth:"85vw",maxHeight:"85vh",objectFit:"contain",display:"block"}} />}
         {type==="video" && <video src={src} controls autoPlay style={{maxWidth:"85vw",maxHeight:"85vh"}} />}
         {type==="pdf" && <iframe src={src} style={{width:"80vw",height:"85vh",border:"none"}} />}
@@ -109,8 +109,8 @@ export default function DealerSetupPage() {
     if (!company.companyName.trim()) { setError("Company name is required"); return; }
     if (!company.phone.trim()) { setError("Phone number is required"); return; }
     if (!company.state) { setError("Please select your state"); return; }
-    // Logo optional — can be uploaded later from Settings
-    // Passport optional — can be uploaded later from Settings
+    // Logo optional  can be uploaded later from Settings
+    // Passport optional  can be uploaded later from Settings
     setLoading(true); setError("");
     try {
       await api.post("/api/v1/dealers/setup", { ...company, logo: logoUrl, passportPhoto: passportUrl });
@@ -190,17 +190,17 @@ export default function DealerSetupPage() {
               style={{width:"72px",height:"56px",objectFit:"cover",borderRadius:"6px",border:"2px solid #86EFAC",cursor:"zoom-in"}} />
           )}
           {previewType==="video" && (
-            <button onClick={()=>setPreview({src:url,type:"video"})} style={{background:"#15803D",color:"#fff",border:"none",borderRadius:"6px",padding:"0.3rem 0.75rem",fontSize:"0.75rem",cursor:"pointer"}}>▶ Preview Video</button>
+            <button onClick={()=>setPreview({src:url,type:"video"})} style={{background:"#15803D",color:"#fff",border:"none",borderRadius:"6px",padding:"0.3rem 0.75rem",fontSize:"0.75rem",cursor:"pointer"}}> Preview Video</button>
           )}
           {previewType==="pdf" && (
-            <button onClick={()=>setPreview({src:url,type:"pdf"})} style={{background:"#15803D",color:"#fff",border:"none",borderRadius:"6px",padding:"0.3rem 0.75rem",fontSize:"0.75rem",cursor:"pointer"}}>👁 View Document</button>
+            <button onClick={()=>setPreview({src:url,type:"pdf"})} style={{background:"#15803D",color:"#fff",border:"none",borderRadius:"6px",padding:"0.3rem 0.75rem",fontSize:"0.75rem",cursor:"pointer"}}> View Document</button>
           )}
-          <div style={{fontSize:"0.72rem",color:"#15803D",fontWeight:600}}>✓ {label} uploaded</div>
+          <div style={{fontSize:"0.72rem",color:"#15803D",fontWeight:600}}> {label} uploaded</div>
           <button onClick={()=>inputRef.current?.click()} style={{background:"none",border:"1px solid #86EFAC",color:"#16A34A",borderRadius:"4px",padding:"0.15rem 0.5rem",fontSize:"0.68rem",cursor:"pointer"}}>Change</button>
         </>
       ) : (
         <>
-          <div style={{fontSize:"1.75rem",opacity:0.3}}>{accept.includes("video")?"🎬":accept.includes("pdf")||accept.includes("application")?"📄":"📷"}</div>
+          <div style={{fontSize:"1.75rem",opacity:0.3}}>{accept.includes("video")?"":accept.includes("pdf")||accept.includes("application")?"":""}</div>
           <div style={{fontSize:"0.78rem",color:"#525252",fontWeight:600}}>{label}</div>
           {note && <div style={{fontSize:"0.68rem",color:"#A3A3A3"}}>{note}</div>}
           <button onClick={()=>inputRef.current?.click()} style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"5px",padding:"0.3rem 0.75rem",fontSize:"0.75rem",cursor:"pointer",marginTop:"0.25rem"}}>Click to upload</button>
@@ -227,14 +227,14 @@ export default function DealerSetupPage() {
         <div style={{maxWidth:"720px",margin:"0 auto"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"0.875rem"}}>
             <div style={{fontFamily:"var(--font-display)",fontSize:"1.1rem",letterSpacing:"0.2em",color:"#F47B20"}}>CARSTRIMS</div>
-            <div style={{fontSize:"0.75rem",color:"#737373"}}>Dealership Setup — Step {step} of {STEPS.length}</div>
+            <div style={{fontSize:"0.75rem",color:"#737373"}}>Dealership Setup  Step {step} of {STEPS.length}</div>
           </div>
           <div style={{display:"flex",alignItems:"center"}}>
             {STEPS.map((s,i)=>(
               <div key={s.num} style={{display:"flex",alignItems:"center",flex:i<STEPS.length-1?1:"auto"}}>
                 <div style={{display:"flex",alignItems:"center",gap:"0.4rem",flexShrink:0}}>
                   <div style={{width:"26px",height:"26px",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.72rem",fontWeight:700,background:step>s.num?"#16A34A":step===s.num?"#F47B20":"#E5E5E5",color:step>=s.num?"#fff":"#737373",transition:"all 0.25s",flexShrink:0}}>
-                    {step>s.num?"✓":s.num}
+                    {step>s.num?"":s.num}
                   </div>
                   <span style={{fontSize:"0.65rem",color:step===s.num?"#F47B20":step>s.num?"#16A34A":"#A3A3A3",fontWeight:step===s.num?700:400,whiteSpace:"nowrap"}}>{s.label}</span>
                 </div>
@@ -249,11 +249,11 @@ export default function DealerSetupPage() {
         {error && (
           <div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",color:"#DC2626",padding:"0.875rem 1rem",borderRadius:"8px",fontSize:"0.875rem",marginBottom:"1.25rem",display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:"0.75rem",lineHeight:1.5}}>
             <span>{error}</span>
-            <button onClick={()=>setError("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer",flexShrink:0}}>✕</button>
+            <button onClick={()=>setError("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer",flexShrink:0}}></button>
           </div>
         )}
 
-        {/* ─── STEP 1 ─── */}
+        {/*  STEP 1  */}
         {step===1&&(
           <div style={{background:"#fff",borderRadius:"16px",padding:"2rem",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
             <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.4rem",letterSpacing:"0.04em",color:"#1A1A1A",marginBottom:"0.25rem"}}>Company & Personal Details</h2>
@@ -264,12 +264,12 @@ export default function DealerSetupPage() {
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem"}}>
                   <UploadBox label="Business Logo" url={logoUrl} inputRef={logoRef}
                     onFile={f=>doUpload(f,setLogoUrl,"Business Logo",false,"logos")}
-                    note="Optional — can be added from Settings" />
+                    note="Optional  can be added from Settings" />
                   <UploadBox label="Your Passport Photo" url={passportUrl} inputRef={passportRef}
                     onFile={f=>doUpload(f,setPassportUrl,"Your Passport Photo",false,"passports")}
-                    note="Optional — can be added from Settings" />
+                    note="Optional  can be added from Settings" />
                 </div>
-                <p style={{fontSize:"0.72rem",color:"#A3A3A3",marginTop:"0.5rem"}}>💡 Click an uploaded photo to preview it</p>
+                <p style={{fontSize:"0.72rem",color:"#A3A3A3",marginTop:"0.5rem"}}> Click an uploaded photo to preview it</p>
               </div>
               <div style={row}>
                 <div><label style={lbl}>Company / Business Name *</label><input style={fi} placeholder="e.g. Ayo Motors Ltd" value={company.companyName} onChange={e=>setCompany({...company,companyName:e.target.value})} required /></div>
@@ -291,13 +291,13 @@ export default function DealerSetupPage() {
               <div><label style={lbl}>Description</label><textarea style={{...fi,minHeight:"70px",resize:"vertical" as const}} placeholder="What does your dealership specialise in?" value={company.description} onChange={e=>setCompany({...company,description:e.target.value})} /></div>
               <button type="submit" disabled={loading||!!uploadingLabel}
                 style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"1rem",fontFamily:"var(--font-display)",fontSize:"0.95rem",letterSpacing:"0.1em",cursor:loading||uploadingLabel?"not-allowed":"pointer",opacity:loading||uploadingLabel?0.6:1}}>
-                {loading?"Saving...":uploadingLabel?`Uploading ${uploadingLabel}...`:"CONTINUE →"}
+                {loading?"Saving...":uploadingLabel?`Uploading ${uploadingLabel}...`:"CONTINUE "}
               </button>
             </form>
           </div>
         )}
 
-        {/* ─── STEP 2 ─── */}
+        {/*  STEP 2  */}
         {step===2&&(
           <div style={{background:"#fff",borderRadius:"16px",padding:"2rem",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
             <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.4rem",letterSpacing:"0.04em",color:"#1A1A1A",marginBottom:"0.25rem"}}>Verification Documents</h2>
@@ -312,9 +312,9 @@ export default function DealerSetupPage() {
                     doUpload(f,setIdUrl,"ID Card",isPdf,"identity-docs");
                   }}
                   accept="image/jpeg,image/png,application/pdf"
-                  note="JPG, PNG or PDF — up to 10MB"
+                  note="JPG, PNG or PDF  up to 10MB"
                   previewType={idUrl.endsWith(".pdf")?"pdf":"image"} />
-                <p style={{fontSize:"0.72rem",color:"#A3A3A3",marginTop:"0.4rem"}}>💡 Click the uploaded document to preview it before continuing</p>
+                <p style={{fontSize:"0.72rem",color:"#A3A3A3",marginTop:"0.4rem"}}> Click the uploaded document to preview it before continuing</p>
               </div>
               <div>
                 <label style={lbl}>Is your business registered with CAC?</label>
@@ -341,10 +341,10 @@ export default function DealerSetupPage() {
                 )}
               </div>
               <div style={{display:"flex",gap:"0.75rem"}}>
-                <button onClick={()=>setStep(1)} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.875rem 1.25rem",fontSize:"0.875rem",cursor:"pointer",fontFamily:"var(--font-body)"}}>← Back</button>
+                <button onClick={()=>setStep(1)} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.875rem 1.25rem",fontSize:"0.875rem",cursor:"pointer",fontFamily:"var(--font-body)"}}> Back</button>
                 <button onClick={()=>handleStep2()} disabled={loading||!!uploadingLabel}
                   style={{flex:1,background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.875rem",fontFamily:"var(--font-display)",fontSize:"0.95rem",letterSpacing:"0.08em",cursor:"pointer",opacity:loading||uploadingLabel?0.6:1}}>
-                  {loading?"Saving...":uploadingLabel?`Uploading ${uploadingLabel}...`:"CONTINUE →"}
+                  {loading?"Saving...":uploadingLabel?`Uploading ${uploadingLabel}...`:"CONTINUE "}
                 </button>
                 <button onClick={()=>handleStep2(true)} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#737373",borderRadius:"8px",padding:"0.875rem 1rem",fontSize:"0.8rem",cursor:"pointer",fontFamily:"var(--font-body)",whiteSpace:"nowrap"}}>Skip</button>
               </div>
@@ -352,7 +352,7 @@ export default function DealerSetupPage() {
           </div>
         )}
 
-        {/* ─── STEP 3 ─── */}
+        {/*  STEP 3  */}
         {step===3&&(
           <div style={{background:"#fff",borderRadius:"16px",padding:"2rem",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
             <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.4rem",letterSpacing:"0.04em",color:"#1A1A1A",marginBottom:"0.25rem"}}>Add Your First Car</h2>
@@ -371,8 +371,8 @@ export default function DealerSetupPage() {
                 <div><label style={lbl}>Color</label><input style={fi} placeholder="e.g. Black" value={car.color} onChange={e=>setCar({...car,color:e.target.value})} /></div>
               </div>
               <div style={row}>
-                <div><label style={lbl}>Selling Price (₦) *</label><input type="number" style={fi} placeholder="0" value={car.sellingPrice} onChange={e=>setCar({...car,sellingPrice:e.target.value})} required /></div>
-                <div><label style={lbl}>Purchase Price (₦)</label><input type="number" style={fi} placeholder="0" value={car.purchasePrice} onChange={e=>setCar({...car,purchasePrice:e.target.value})} /></div>
+                <div><label style={lbl}>Selling Price () *</label><input type="number" style={fi} placeholder="0" value={car.sellingPrice} onChange={e=>setCar({...car,sellingPrice:e.target.value})} required /></div>
+                <div><label style={lbl}>Purchase Price ()</label><input type="number" style={fi} placeholder="0" value={car.purchasePrice} onChange={e=>setCar({...car,purchasePrice:e.target.value})} /></div>
               </div>
               <div style={row}>
                 <div><label style={lbl}>Condition</label>
@@ -396,9 +396,9 @@ export default function DealerSetupPage() {
                 </div>
               </div>
               <div style={{display:"flex",gap:"0.75rem"}}>
-                <button type="button" onClick={()=>setStep(2)} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.875rem 1.25rem",fontSize:"0.875rem",cursor:"pointer",fontFamily:"var(--font-body)"}}>← Back</button>
+                <button type="button" onClick={()=>setStep(2)} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.875rem 1.25rem",fontSize:"0.875rem",cursor:"pointer",fontFamily:"var(--font-body)"}}> Back</button>
                 <button type="submit" disabled={loading} style={{flex:1,background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.875rem",fontFamily:"var(--font-display)",fontSize:"0.95rem",letterSpacing:"0.08em",cursor:"pointer",opacity:loading?0.6:1}}>
-                  {loading?"Adding car...":"ADD CAR & CONTINUE →"}
+                  {loading?"Adding car...":"ADD CAR & CONTINUE "}
                 </button>
                 <button type="button" onClick={()=>setStep(4)} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#737373",borderRadius:"8px",padding:"0.875rem 1rem",fontSize:"0.8rem",cursor:"pointer",fontFamily:"var(--font-body)",whiteSpace:"nowrap"}}>Skip</button>
               </div>
@@ -406,7 +406,7 @@ export default function DealerSetupPage() {
           </div>
         )}
 
-        {/* ─── STEP 4 ─── */}
+        {/*  STEP 4  */}
         {step===4&&(
           <div style={{background:"#fff",borderRadius:"16px",padding:"2rem",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
             <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.4rem",letterSpacing:"0.04em",color:"#1A1A1A",marginBottom:"0.25rem"}}>Create First Staff Account</h2>
@@ -436,9 +436,9 @@ export default function DealerSetupPage() {
                 </div>
               </div>
               <div style={{display:"flex",gap:"0.75rem"}}>
-                <button type="button" onClick={()=>setStep(3)} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.875rem 1.25rem",fontSize:"0.875rem",cursor:"pointer",fontFamily:"var(--font-body)"}}>← Back</button>
+                <button type="button" onClick={()=>setStep(3)} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.875rem 1.25rem",fontSize:"0.875rem",cursor:"pointer",fontFamily:"var(--font-body)"}}> Back</button>
                 <button type="submit" disabled={loading} style={{flex:1,background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.875rem",fontFamily:"var(--font-display)",fontSize:"0.95rem",letterSpacing:"0.08em",cursor:"pointer",opacity:loading?0.6:1}}>
-                  {loading?"Creating...":"CREATE STAFF & CONTINUE →"}
+                  {loading?"Creating...":"CREATE STAFF & CONTINUE "}
                 </button>
                 <button type="button" onClick={()=>setStep(5)} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#737373",borderRadius:"8px",padding:"0.875rem 1rem",fontSize:"0.8rem",cursor:"pointer",fontFamily:"var(--font-body)",whiteSpace:"nowrap"}}>Skip</button>
               </div>
@@ -446,7 +446,7 @@ export default function DealerSetupPage() {
           </div>
         )}
 
-        {/* ─── STEP 5 ─── */}
+        {/*  STEP 5  */}
         {step===5&&(
           <div style={{background:"#fff",borderRadius:"16px",padding:"2rem",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
             <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.4rem",letterSpacing:"0.04em",color:"#1A1A1A",marginBottom:"0.25rem"}}>CCTV Setup <span style={{fontSize:"0.85rem",color:"#A3A3A3",fontWeight:400}}>(Optional)</span></h2>
@@ -463,7 +463,7 @@ export default function DealerSetupPage() {
                 </select>
               </div>
               <div style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"10px",padding:"1.25rem"}}>
-                <div style={{fontFamily:"var(--font-display)",fontSize:"0.75rem",letterSpacing:"0.1em",color:"#15803D",marginBottom:"0.75rem"}}>SETUP COMPLETE — SUMMARY</div>
+                <div style={{fontFamily:"var(--font-display)",fontSize:"0.75rem",letterSpacing:"0.1em",color:"#15803D",marginBottom:"0.75rem"}}>SETUP COMPLETE  SUMMARY</div>
                 {[
                   {label:"Company profile saved",done:true},
                   {label:"Business logo uploaded",done:!!logoUrl},
@@ -472,7 +472,7 @@ export default function DealerSetupPage() {
                   {label:"First staff created",done:!!staff.email},
                 ].map(item=>(
                   <div key={item.label} style={{display:"flex",alignItems:"center",gap:"0.5rem",marginBottom:"0.4rem",fontSize:"0.825rem",color:item.done?"#15803D":"#A3A3A3"}}>
-                    <span>{item.done?"✅":"⬜"}</span><span>{item.label}</span>
+                    <span>{item.done?"":""}</span><span>{item.label}</span>
                   </div>
                 ))}
                 <div style={{marginTop:"0.75rem",paddingTop:"0.75rem",borderTop:"1px solid rgba(22,163,74,0.2)",fontSize:"0.78rem",color:"#15803D",lineHeight:1.6}}>
@@ -480,10 +480,10 @@ export default function DealerSetupPage() {
                 </div>
               </div>
               <div style={{display:"flex",gap:"0.75rem"}}>
-                <button onClick={()=>setStep(4)} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.875rem 1.25rem",fontSize:"0.875rem",cursor:"pointer",fontFamily:"var(--font-body)"}}>← Back</button>
+                <button onClick={()=>setStep(4)} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.875rem 1.25rem",fontSize:"0.875rem",cursor:"pointer",fontFamily:"var(--font-body)"}}> Back</button>
                 <button onClick={()=>handleStep5()} disabled={loading}
                   style={{flex:1,background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.875rem",fontFamily:"var(--font-display)",fontSize:"0.95rem",letterSpacing:"0.08em",cursor:"pointer",opacity:loading?0.6:1}}>
-                  {loading?"Saving...":"SAVE & GO TO DASHBOARD →"}
+                  {loading?"Saving...":"SAVE & GO TO DASHBOARD "}
                 </button>
                 <button onClick={()=>handleStep5(true)} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#737373",borderRadius:"8px",padding:"0.875rem 1rem",fontSize:"0.8rem",cursor:"pointer",fontFamily:"var(--font-body)",whiteSpace:"nowrap"}}>Skip CCTV</button>
               </div>

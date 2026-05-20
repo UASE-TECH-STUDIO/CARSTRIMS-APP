@@ -1,11 +1,11 @@
-"use client";
+use client";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { useMessagesStore } from "@/store/messagesStore";
 
 /**
- * useMessageDealer — opens a conversation with any user directly in the MessagesWidget.
+ * useMessageDealer  opens a conversation with any user directly in the MessagesWidget.
  * No page navigation. The widget pops open with the right conversation active.
  * 
  * Usage:
@@ -29,7 +29,7 @@ export function useMessageDealer() {
     } | null
   ) => {
     if (!isAuthenticated) { router.push("/login"); return; }
-    if (!receiverId) { alert("Cannot open chat — dealer contact not found."); return; }
+    if (!receiverId) { alert("Cannot open chat  dealer contact not found."); return; }
 
     try {
       const payload: any = { receiverId };
@@ -45,7 +45,7 @@ export function useMessageDealer() {
       const res = await api.post("/api/v1/messages/start", payload);
       const convId = res.data?.conversationId;
       if (convId) {
-        // Open the widget directly — no navigation
+        // Open the widget directly  no navigation
         openConversation(convId, carContext ? {
           carId:    carContext.carId || "",
           carBrand: carContext.carBrand,

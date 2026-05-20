@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useState, useRef } from "react";
 import api from "@/lib/api";
 
@@ -20,7 +20,7 @@ export default function ReceiptGenerator({ transactionId, onClose }: Props) {
       .finally(() => setLoading(false));
   });
 
-  const fmt = (n: number) => `₦${(n || 0).toLocaleString()}`;
+  const fmt = (n: number) => `${(n || 0).toLocaleString()}`;
   const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("en-NG", { day: "numeric", month: "long", year: "numeric" });
 
   const printOrDownload = () => {
@@ -74,9 +74,9 @@ export default function ReceiptGenerator({ transactionId, onClose }: Props) {
             </button>
           ))}
           <div style={{flex:1}}/>
-          <button onClick={printOrDownload} style={{background:"#1A1A1A",color:"#fff",border:"none",borderRadius:"8px",padding:"0.5rem 1rem",fontSize:"0.8rem",cursor:"pointer",fontWeight:600}}>🖨 Print / Download PDF</button>
-          <button onClick={shareReceipt} style={{background:"#F0FDF4",color:"#16A34A",border:"1.5px solid #86EFAC",borderRadius:"8px",padding:"0.5rem 1rem",fontSize:"0.8rem",cursor:"pointer",fontWeight:600}}>↗ Share</button>
-          <button onClick={onClose} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",cursor:"pointer"}}>✕ Close</button>
+          <button onClick={printOrDownload} style={{background:"#1A1A1A",color:"#fff",border:"none",borderRadius:"8px",padding:"0.5rem 1rem",fontSize:"0.8rem",cursor:"pointer",fontWeight:600}}> Print / Download PDF</button>
+          <button onClick={shareReceipt} style={{background:"#F0FDF4",color:"#16A34A",border:"1.5px solid #86EFAC",borderRadius:"8px",padding:"0.5rem 1rem",fontSize:"0.8rem",cursor:"pointer",fontWeight:600}}> Share</button>
+          <button onClick={onClose} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",cursor:"pointer"}}> Close</button>
         </div>
 
         {/* Document */}
@@ -87,9 +87,9 @@ export default function ReceiptGenerator({ transactionId, onClose }: Props) {
               {data.dealer?.logo && <img src={data.dealer.logo} alt="" style={{width:"60px",height:"60px",objectFit:"cover",borderRadius:"8px"}}/>}
               <div>
                 <div style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",fontWeight:700,color:"#1A1A1A"}}>{data.dealer?.name}</div>
-                {data.dealer?.phone && <div style={{fontSize:"0.8rem",color:"#737373"}}>📞 {data.dealer.phone}</div>}
-                {data.dealer?.email && <div style={{fontSize:"0.8rem",color:"#737373"}}>✉ {data.dealer.email}</div>}
-                {(data.dealer?.city||data.dealer?.state) && <div style={{fontSize:"0.8rem",color:"#737373"}}>📍 {[data.dealer.city,data.dealer.state].filter(Boolean).join(", ")}</div>}
+                {data.dealer?.phone && <div style={{fontSize:"0.8rem",color:"#737373"}}> {data.dealer.phone}</div>}
+                {data.dealer?.email && <div style={{fontSize:"0.8rem",color:"#737373"}}> {data.dealer.email}</div>}
+                {(data.dealer?.city||data.dealer?.state) && <div style={{fontSize:"0.8rem",color:"#737373"}}> {[data.dealer.city,data.dealer.state].filter(Boolean).join(", ")}</div>}
               </div>
             </div>
             <div style={{textAlign:"right"}}>
@@ -122,13 +122,13 @@ export default function ReceiptGenerator({ transactionId, onClose }: Props) {
                 ["Make / Brand", data.car?.brand],
                 ["Model", data.car?.model],
                 ["Year", data.car?.year],
-                ["Color", data.car?.color || "—"],
-                ["VIN", data.car?.vin || "—"],
-                ["Car ID", data.car?.carId || "—"],
+                ["Color", data.car?.color || ""],
+                ["VIN", data.car?.vin || ""],
+                ["Car ID", data.car?.carId || ""],
               ].map(([l,v])=>(
                 <div key={l}>
                   <div style={{fontSize:"0.62rem",color:"#A3A3A3",fontWeight:600,textTransform:"uppercase" as const,letterSpacing:"0.06em"}}>{l}</div>
-                  <div style={{fontSize:"0.875rem",fontWeight:600,color:"#1A1A1A"}}>{v||"—"}</div>
+                  <div style={{fontSize:"0.875rem",fontWeight:600,color:"#1A1A1A"}}>{v||""}</div>
                 </div>
               ))}
             </div>

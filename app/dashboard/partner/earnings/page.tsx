@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
@@ -13,8 +13,8 @@ export default function PartnerEarningsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const fmt = (n: number) => `₦${(n || 0).toLocaleString()}`;
-  const fmtDate = (iso: string) => iso ? new Date(iso).toLocaleDateString("en-NG") : "—";
+  const fmt = (n: number) => `${(n || 0).toLocaleString()}`;
+  const fmtDate = (iso: string) => iso ? new Date(iso).toLocaleDateString("en-NG") : "";
 
   if (loading) return <div className="loading"><div className="spinner" /><style>{`.loading{display:flex;align-items:center;justify-content:center;min-height:50vh}.spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:#3B8BD4;border-radius:50%;animation:spin 0.8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}`}</style></div>;
 
@@ -73,7 +73,7 @@ export default function PartnerEarningsPage() {
       )}
 
       {(!data?.recentSales?.length) && (
-        <div className="empty"><div className="empty-icon">💰</div><h3>No sales yet</h3><p>Revenue from your cars will appear here when sold</p></div>
+        <div className="empty"><div className="empty-icon"></div><h3>No sales yet</h3><p>Revenue from your cars will appear here when sold</p></div>
       )}
 
       <style>{`

@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
 import InvoiceGenerator from "@/components/dealer/InvoiceGenerator";
@@ -82,7 +82,7 @@ export default function SalesPage() {
     catch(err:any){alert(err.response?.data?.detail||"Failed");}
   };
 
-  /* ── Exports ── */
+  /*  Exports  */
   const exportCSV=()=>{
     const rows=[
       ["TXN ID","Car","Brand","Model","Selling Price","Purchase Price","Profit","Buyer","Buyer Phone","Payment","Date","Edited","Manual"],
@@ -96,8 +96,8 @@ export default function SalesPage() {
 
   const exportPDF=()=>{
     if(!summary)return;
-    const fmt=(n:number)=>`₦${(n||0).toLocaleString()}`;
-    const fmtD=(iso:string)=>iso?new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}):"—";
+    const fmt=(n:number)=>`${(n||0).toLocaleString()}`;
+    const fmtD=(iso:string)=>iso?new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}):"";
     const html=`<!DOCTYPE html><html><head><title>Sales Report</title><style>
       *{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;padding:24px;color:#1A1A1A;max-width:960px;margin:0 auto}
       h1{font-size:1.5rem;color:#F47B20;margin:0 0 4px}
@@ -114,7 +114,7 @@ export default function SalesPage() {
       @media print{body{padding:12px}}
     </style></head><body>
       <h1>Sales Log Report</h1>
-      <div class="meta">Generated ${new Date().toLocaleString("en-NG")} · CARSTRIMS by UASE TECH STUDIO</div>
+      <div class="meta">Generated ${new Date().toLocaleString("en-NG")}  CARSTRIMS by UASE TECH STUDIO</div>
       <div class="grid">
         <div class="card"><div class="cv">${summary.totalSales||0}</div><div class="cl">Total Sales</div></div>
         <div class="card"><div class="cv">${fmt(summary.totalRevenue||0)}</div><div class="cl">Revenue</div></div>
@@ -123,17 +123,17 @@ export default function SalesPage() {
       </div>
       <h2>All Transactions (${total})</h2>
       <table><thead><tr><th>TXN ID</th><th>Car</th><th>Buyer</th><th>Price</th><th>Profit</th><th>Payment</th><th>Date</th></tr></thead>
-      <tbody>${sales.map(s=>`<tr><td style="font-family:monospace;font-size:0.7rem">${s.transactionId}</td><td>${s.carBrand||""} ${s.carModel||""}<br><span style="font-size:0.68rem;color:#AAA">${s.carId}</span></td><td>${s.buyerName||"—"}</td><td style="font-weight:600">${fmt(s.sellingPrice)}</td><td style="color:#16A34A;font-weight:600">+${fmt(s.profit)}</td><td style="text-transform:capitalize">${s.paymentMethod?.replace(/_/g," ")}</td><td style="color:#888">${fmtD(s.soldAt)}</td></tr>`).join("")}</tbody>
+      <tbody>${sales.map(s=>`<tr><td style="font-family:monospace;font-size:0.7rem">${s.transactionId}</td><td>${s.carBrand||""} ${s.carModel||""}<br><span style="font-size:0.68rem;color:#AAA">${s.carId}</span></td><td>${s.buyerName||""}</td><td style="font-weight:600">${fmt(s.sellingPrice)}</td><td style="color:#16A34A;font-weight:600">+${fmt(s.profit)}</td><td style="text-transform:capitalize">${s.paymentMethod?.replace(/_/g," ")}</td><td style="color:#888">${fmtD(s.soldAt)}</td></tr>`).join("")}</tbody>
       </table>
-      <div class="footer">CARSTRIMS Sales Report · Powered by UASE TECH STUDIO</div>
+      <div class="footer">CARSTRIMS Sales Report  Powered by UASE TECH STUDIO</div>
       <script>window.onload=()=>window.print()<\/script>
     </body></html>`;
     const win=window.open("","_blank");
     if(win){win.document.write(html);win.document.close();}
   };
 
-  const fmt=(n:number)=>`₦${(n||0).toLocaleString()}`;
-  const fmtDate=(iso:string)=>iso?new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}):"—";
+  const fmt=(n:number)=>`${(n||0).toLocaleString()}`;
+  const fmtDate=(iso:string)=>iso?new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}):"";
 
   return (
     <>
@@ -147,8 +147,8 @@ export default function SalesPage() {
           <p className="page-sub">{total} transaction{total!==1?"s":""}</p>
         </div>
         <div className="header-btns">
-          <button className="btn-outline" onClick={exportCSV}>⬇ CSV / Excel</button>
-          <button className="btn-outline" onClick={exportPDF} style={{borderColor:"#F47B20",color:"#F47B20"}}>⬇ PDF</button>
+          <button className="btn-outline" onClick={exportCSV}> CSV / Excel</button>
+          <button className="btn-outline" onClick={exportPDF} style={{borderColor:"#F47B20",color:"#F47B20"}}> PDF</button>
           <button className="btn-primary" onClick={()=>{setShowManual(true);setError("");}}>+ Add Sale</button>
         </div>
       </div>
@@ -165,12 +165,12 @@ export default function SalesPage() {
       )}
 
       <div className="filters">
-        <input className="search-input" placeholder="Search TXN ID, car, buyer…" value={search} onChange={e=>{setSearch(e.target.value);setSkip(0);}}/>
+        <input className="search-input" placeholder="Search TXN ID, car, buyer" value={search} onChange={e=>{setSearch(e.target.value);setSkip(0);}}/>
       </div>
 
       {loading?<div className="loading"><div className="spinner"/></div>
       :sales.length===0?(
-        <div className="empty"><div className="ei">💰</div><h3>No sales yet</h3><p>Sales recorded when cars are marked as sold or manually added here</p></div>
+        <div className="empty"><div className="ei"></div><h3>No sales yet</h3><p>Sales recorded when cars are marked as sold or manually added here</p></div>
       ):(
         <>
           <div className="table-wrap">
@@ -185,15 +185,15 @@ export default function SalesPage() {
                       {s.isManual&&<div className="manual-badge">manual</div>}
                     </td>
                     <td><div className="car-cell">{s.carBrand||""} {s.carModel||""}</div><div className="car-id-cell">{s.carId}</div></td>
-                    <td><div className="buyer-name">{s.buyerName||"—"}</div>{s.buyerPhone&&<div className="buyer-phone">{s.buyerPhone}</div>}</td>
+                    <td><div className="buyer-name">{s.buyerName||""}</div>{s.buyerPhone&&<div className="buyer-phone">{s.buyerPhone}</div>}</td>
                     <td className="price-cell">{fmt(s.sellingPrice)}</td>
                     <td className="profit-cell">+{fmt(s.profit)}</td>
                     <td><span className="pay-badge" style={{background:(PAYMENT_COLORS[s.paymentMethod]||"#888")+"18",color:PAYMENT_COLORS[s.paymentMethod]||"#888",border:`1px solid ${(PAYMENT_COLORS[s.paymentMethod]||"#888")}44`}}>{s.paymentMethod?.replace(/_/g," ")}</span></td>
                     <td className="date-cell">{fmtDate(s.soldAt)}</td>
                     <td>
                       <div className="row-actions">
-                        <button className="act-btn receipt-btn" onClick={()=>setInvoiceTxn(s.transactionId)} title="Receipt / Invoice / Proforma">📄 Receipt</button>
-                        {s.carId&&<button className="act-btn report-btn" onClick={()=>setReportCarId(s.carId)} title="Car Financial Report">📊 Report</button>}
+                        <button className="act-btn receipt-btn" onClick={()=>setInvoiceTxn(s.transactionId)} title="Receipt / Invoice / Proforma"> Receipt</button>
+                        {s.carId&&<button className="act-btn report-btn" onClick={()=>setReportCarId(s.carId)} title="Car Financial Report"> Report</button>}
                         <button className="act-btn" onClick={()=>{setShowEdit(s);setEditForm({sellingPrice:String(s.sellingPrice),buyerName:s.buyerName||"",buyerPhone:s.buyerPhone||"",paymentMethod:s.paymentMethod||"cash",notes:s.notes||"",editReason:""});setError("");}}>Edit</button>
                         {s.isEdited&&<button className="act-btn revert" onClick={()=>handleRevert(s.transactionId)}>Revert</button>}
                         {s.editHistory&&s.editHistory.length>0&&<button className="act-btn history" onClick={()=>setShowHistory(s)}>History</button>}
@@ -205,9 +205,9 @@ export default function SalesPage() {
             </table>
           </div>
           <div className="pagination">
-            <button className="pg-btn" onClick={()=>setSkip(Math.max(0,skip-LIMIT))} disabled={skip===0}>← Prev</button>
+            <button className="pg-btn" onClick={()=>setSkip(Math.max(0,skip-LIMIT))} disabled={skip===0}> Prev</button>
             <span className="pg-info">{Math.floor(skip/LIMIT)+1} / {Math.max(1,Math.ceil(total/LIMIT))}</span>
-            <button className="pg-btn" onClick={()=>setSkip(skip+LIMIT)} disabled={skip+LIMIT>=total}>Next →</button>
+            <button className="pg-btn" onClick={()=>setSkip(skip+LIMIT)} disabled={skip+LIMIT>=total}>Next </button>
           </div>
         </>
       )}
@@ -216,18 +216,18 @@ export default function SalesPage() {
       {showManual&&(
         <div className="modal-overlay" onClick={()=>setShowManual(false)}>
           <div className="modal" onClick={e=>e.stopPropagation()}>
-            <div className="modal-header"><h3 className="modal-title">ADD MANUAL SALE</h3><button className="modal-close" onClick={()=>setShowManual(false)}>✕</button></div>
+            <div className="modal-header"><h3 className="modal-title">ADD MANUAL SALE</h3><button className="modal-close" onClick={()=>setShowManual(false)}></button></div>
             {error&&<div className="form-error">{error}</div>}
             <form onSubmit={handleManualSale} className="modal-form">
-              {/* Car ID search — auto-fills details */}
+              {/* Car ID search  auto-fills details */}
               <div className="field" style={{gridColumn:"1/-1"}}>
                 <label className="fl">Search Car from Inventory (auto-fills details)</label>
                 <CarIdSearch
-                  value={manualForm.carId?`${manualForm.carBrand} ${manualForm.carModel} — ${manualForm.carId}`:""}
-                  placeholder="Type Car ID, brand or model to pick from listed cars…"
+                  value={manualForm.carId?`${manualForm.carBrand} ${manualForm.carModel}  ${manualForm.carId}`:""}
+                  placeholder="Type Car ID, brand or model to pick from listed cars"
                   onSelect={(car:any)=>setManualForm(f=>({...f,carId:car.carId,carBrand:car.brand||f.carBrand,carModel:car.model||f.carModel,carYear:car.year||f.carYear,sellingPrice:car.sellingPrice?.toString()||f.sellingPrice,purchasePrice:car.purchasePrice?.toString()||f.purchasePrice}))}
                 />
-                {manualForm.carId&&<div style={{fontSize:"0.72rem",color:"#16A34A",marginTop:"0.3rem",fontWeight:600}}>✓ Car ID: {manualForm.carId}</div>}
+                {manualForm.carId&&<div style={{fontSize:"0.72rem",color:"#16A34A",marginTop:"0.3rem",fontWeight:600}}> Car ID: {manualForm.carId}</div>}
               </div>
               <div className="form-row">
                 <div className="field"><label className="fl">Brand *</label><input className="fi" placeholder="Toyota" value={manualForm.carBrand} onChange={e=>setManualForm({...manualForm,carBrand:e.target.value})} required/></div>
@@ -237,8 +237,8 @@ export default function SalesPage() {
                 <div className="field"><label className="fl">Year</label><input type="number" className="fi" value={manualForm.carYear} onChange={e=>setManualForm({...manualForm,carYear:e.target.value as any})}/></div>
               </div>
               <div className="form-row">
-                <div className="field"><label className="fl">Selling Price (₦) *</label><input type="number" className="fi" value={manualForm.sellingPrice} onChange={e=>setManualForm({...manualForm,sellingPrice:e.target.value})} required/></div>
-                <div className="field"><label className="fl">Purchase / Cost Price (₦)</label><input type="number" className="fi" value={manualForm.purchasePrice} onChange={e=>setManualForm({...manualForm,purchasePrice:e.target.value})} placeholder="For profit calculation"/></div>
+                <div className="field"><label className="fl">Selling Price () *</label><input type="number" className="fi" value={manualForm.sellingPrice} onChange={e=>setManualForm({...manualForm,sellingPrice:e.target.value})} required/></div>
+                <div className="field"><label className="fl">Purchase / Cost Price ()</label><input type="number" className="fi" value={manualForm.purchasePrice} onChange={e=>setManualForm({...manualForm,purchasePrice:e.target.value})} placeholder="For profit calculation"/></div>
               </div>
               <div className="form-row">
                 <div className="field"><label className="fl">Buyer Name</label><input className="fi" value={manualForm.buyerName} onChange={e=>setManualForm({...manualForm,buyerName:e.target.value})}/></div>
@@ -254,13 +254,13 @@ export default function SalesPage() {
               <div className="field"><label className="fl">Notes / Remarks</label><textarea className="fi fi-ta" rows={2} value={manualForm.notes} onChange={e=>setManualForm({...manualForm,notes:e.target.value})}/></div>
               {manualForm.sellingPrice&&manualForm.purchasePrice&&(
                 <div className="profit-preview">
-                  Gross Profit: <strong>₦{(Number(manualForm.sellingPrice)-Number(manualForm.purchasePrice)).toLocaleString()}</strong>
+                  Gross Profit: <strong>{(Number(manualForm.sellingPrice)-Number(manualForm.purchasePrice)).toLocaleString()}</strong>
                   &nbsp;|&nbsp; Margin: <strong>{manualForm.sellingPrice?Math.round(((Number(manualForm.sellingPrice)-Number(manualForm.purchasePrice))/Number(manualForm.sellingPrice))*100):0}%</strong>
                 </div>
               )}
               <div className="modal-footer">
                 <button type="button" className="btn-outline" onClick={()=>setShowManual(false)}>Cancel</button>
-                <button type="submit" className="btn-primary" disabled={submitting}>{submitting?"Adding…":"Add Sale"}</button>
+                <button type="submit" className="btn-primary" disabled={submitting}>{submitting?"Adding":"Add Sale"}</button>
               </div>
             </form>
           </div>
@@ -271,11 +271,11 @@ export default function SalesPage() {
       {showEdit&&(
         <div className="modal-overlay" onClick={()=>setShowEdit(null)}>
           <div className="modal modal-sm" onClick={e=>e.stopPropagation()}>
-            <div className="modal-header"><h3 className="modal-title">EDIT SALE</h3><button className="modal-close" onClick={()=>setShowEdit(null)}>✕</button></div>
-            <div className="edit-info">{showEdit.transactionId}{showEdit.isEdited?" · edited":""}</div>
+            <div className="modal-header"><h3 className="modal-title">EDIT SALE</h3><button className="modal-close" onClick={()=>setShowEdit(null)}></button></div>
+            <div className="edit-info">{showEdit.transactionId}{showEdit.isEdited?"  edited":""}</div>
             {error&&<div className="form-error">{error}</div>}
             <form onSubmit={handleEditSale} className="modal-form">
-              <div className="field"><label className="fl">Selling Price (₦)</label><input type="number" className="fi" value={editForm.sellingPrice} onChange={e=>setEditForm({...editForm,sellingPrice:e.target.value})}/></div>
+              <div className="field"><label className="fl">Selling Price ()</label><input type="number" className="fi" value={editForm.sellingPrice} onChange={e=>setEditForm({...editForm,sellingPrice:e.target.value})}/></div>
               <div className="form-row">
                 <div className="field"><label className="fl">Buyer Name</label><input className="fi" value={editForm.buyerName} onChange={e=>setEditForm({...editForm,buyerName:e.target.value})}/></div>
                 <div className="field"><label className="fl">Buyer Phone</label><input className="fi" value={editForm.buyerPhone} onChange={e=>setEditForm({...editForm,buyerPhone:e.target.value})}/></div>
@@ -289,7 +289,7 @@ export default function SalesPage() {
               <div className="field"><label className="fl">Reason for Edit *</label><input className="fi" placeholder="Why are you editing this sale?" value={editForm.editReason} onChange={e=>setEditForm({...editForm,editReason:e.target.value})} required/></div>
               <div className="modal-footer">
                 <button type="button" className="btn-outline" onClick={()=>setShowEdit(null)}>Cancel</button>
-                <button type="submit" className="btn-primary" disabled={submitting}>{submitting?"Saving…":"Save Edit"}</button>
+                <button type="submit" className="btn-primary" disabled={submitting}>{submitting?"Saving":"Save Edit"}</button>
               </div>
             </form>
           </div>
@@ -300,14 +300,14 @@ export default function SalesPage() {
       {showHistory&&(
         <div className="modal-overlay" onClick={()=>setShowHistory(null)}>
           <div className="modal modal-sm" onClick={e=>e.stopPropagation()}>
-            <div className="modal-header"><h3 className="modal-title">EDIT HISTORY — {showHistory.transactionId}</h3><button className="modal-close" onClick={()=>setShowHistory(null)}>✕</button></div>
+            <div className="modal-header"><h3 className="modal-title">EDIT HISTORY  {showHistory.transactionId}</h3><button className="modal-close" onClick={()=>setShowHistory(null)}></button></div>
             <div className="history-list">
               {!showHistory.editHistory?.length?<div className="no-history">No edit history</div>
               :showHistory.editHistory?.map((h:any,i:number)=>(
                 <div key={i} className="history-item">
                   <div className="hi-time">{new Date(h.editedAt).toLocaleString("en-NG")}</div>
                   <div className="hi-reason">Reason: {h.reason}</div>
-                  <div className="hi-prev">Previous: ₦{(h.previous?.sellingPrice||0).toLocaleString()}{h.previous?.buyerName?` · ${h.previous.buyerName}`:""}</div>
+                  <div className="hi-prev">Previous: {(h.previous?.sellingPrice||0).toLocaleString()}{h.previous?.buyerName?`  ${h.previous.buyerName}`:""}</div>
                 </div>
               ))}
             </div>

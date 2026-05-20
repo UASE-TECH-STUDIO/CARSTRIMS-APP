@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -32,7 +32,7 @@ interface CarCardProps {
 }
 
 export default function CarCard({ car, onLike, onSave, liked, saved, compact }: CarCardProps) {
-  const fmt = (n: number) => `₦${(n || 0).toLocaleString()}`;
+  const fmt = (n: number) => `${(n || 0).toLocaleString()}`;
 
   const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
     available: { bg: "rgba(22,163,74,0.15)", color: "#16A34A" },
@@ -50,7 +50,7 @@ export default function CarCard({ car, onLike, onSave, liked, saved, compact }: 
           {car.images?.[0] ? (
             <img src={car.images[0]} alt={`${car.brand} ${car.model}`} className="cc-img" loading="lazy" />
           ) : (
-            <div className="cc-no-img">🚗</div>
+            <div className="cc-no-img"></div>
           )}
           {/* Status badge */}
           {car.status && car.status !== "available" && (
@@ -69,11 +69,11 @@ export default function CarCard({ car, onLike, onSave, liked, saved, compact }: 
           <div className="cc-title">{car.brand} {car.model}</div>
           <div className="cc-meta">
             {car.year}
-            {car.color && ` · ${car.color}`}
-            {car.condition && ` · ${car.condition}`}
+            {car.color && `  ${car.color}`}
+            {car.condition && `  ${car.condition}`}
           </div>
           {(car.city || car.state) && (
-            <div className="cc-loc">📍 {[car.city, car.state].filter(Boolean).join(", ")}</div>
+            <div className="cc-loc"> {[car.city, car.state].filter(Boolean).join(", ")}</div>
           )}
           <div className="cc-price-row">
             <div className="cc-price">{fmt(car.sellingPrice)}</div>
@@ -95,12 +95,12 @@ export default function CarCard({ car, onLike, onSave, liked, saved, compact }: 
         <div className="cc-actions">
           {onLike && (
             <button className={`cc-act-btn ${liked ? "liked" : ""}`} onClick={e => { e.preventDefault(); onLike(car.carId); }}>
-              {liked ? "♥" : "♡"} {car.likeCount || ""}
+              {liked ? "" : ""} {car.likeCount || ""}
             </button>
           )}
           {onSave && (
             <button className={`cc-act-btn ${saved ? "saved" : ""}`} onClick={e => { e.preventDefault(); onSave(car.carId); }}>
-              {saved ? "★" : "☆"}
+              {saved ? "" : ""}
             </button>
           )}
         </div>

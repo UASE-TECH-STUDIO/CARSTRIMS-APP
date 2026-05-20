@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import CarFinancialReport from "@/components/dealer/CarFinancialReport";
@@ -19,10 +19,10 @@ export default function ReportsPage() {
     }).catch(()=>{}).finally(()=>setLoading(false));
   }, []);
 
-  const fmt = (n:number) => `₦${(n||0).toLocaleString()}`;
+  const fmt = (n:number) => `${(n||0).toLocaleString()}`;
   const now  = new Date().toLocaleString("en-NG");
 
-  /* ── Shared HTML header for exports ── */
+  /*  Shared HTML header for exports  */
   const dealerHeader = (dealer:any) => `
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;padding-bottom:16px;border-bottom:3px solid #F47B20">
       ${dealer?.logo?`<img src="${dealer.logo}" style="width:64px;height:64px;object-fit:cover;border-radius:10px;border:2px solid #E5E5E5" alt="Logo"/>`:""}
@@ -35,11 +35,11 @@ export default function ReportsPage() {
       </div>
     </div>`;
 
-  /* ── PDF export ── */
+  /*  PDF export  */
   const exportPDF = () => {
     if (!data) return;
     const s = data.summary;
-    const html = `<!DOCTYPE html><html><head><title>Financial Report — ${dealer?.companyName||"Dealer"}</title><style>
+    const html = `<!DOCTYPE html><html><head><title>Financial Report  ${dealer?.companyName||"Dealer"}</title><style>
       *{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;padding:24px;color:#1A1A1A;max-width:960px;margin:0 auto}
       .title{font-size:1.25rem;color:#F47B20;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:4px}
       .meta{color:#888;font-size:0.78rem;margin-bottom:20px}
@@ -66,7 +66,7 @@ export default function ReportsPage() {
       <div class="grid">
         <div class="card orange"><div class="cv">${fmt(s?.totalRevenue||0)}</div><div class="cl">Total Revenue</div></div>
         <div class="card red"><div class="cv">${fmt(s?.totalExpenses||0)}</div><div class="cl">Total Expenses</div></div>
-        <div class="card ${((s?.totalRevenue||0)-(s?.totalExpenses||0))>=0?"green":"red"}"><div class="cv">${fmt((s?.totalRevenue||0)-(s?.totalExpenses||0))}</div><div class="cl">Net Income (Rev − Exp)</div></div>
+        <div class="card ${((s?.totalRevenue||0)-(s?.totalExpenses||0))>=0?"green":"red"}"><div class="cv">${fmt((s?.totalRevenue||0)-(s?.totalExpenses||0))}</div><div class="cl">Net Income (Rev  Exp)</div></div>
         <div class="card orange"><div class="cv">${fmt(s?.totalProfit||0)}</div><div class="cl">Gross Profit (from sales)</div></div>
         <div class="card blue"><div class="cv">${s?.totalSales||0}</div><div class="cl">Transactions</div></div>
         <div class="card blue"><div class="cv">${s?.soldCars||0} / ${s?.totalCars||0}</div><div class="cl">Cars Sold / Listed</div></div>
@@ -79,7 +79,7 @@ export default function ReportsPage() {
         const cogs=m.revenue-m.profit;
         return `<tr><td>${m.month}</td><td style="color:#F47B20;font-weight:600">${fmt(m.revenue)}</td><td style="color:#DC2626">${fmt(cogs)}</td><td style="color:#16A34A;font-weight:600">${fmt(m.profit)}</td><td>${margin}%</td><td>${m.count}</td></tr>`;
       }).join("")}
-      <tr class="total-row"><td>TOTAL</td><td>${fmt((data.monthlySales||[]).reduce((a:number,m:any)=>a+m.revenue,0))}</td><td>${fmt((data.monthlySales||[]).reduce((a:number,m:any)=>a+(m.revenue-m.profit),0))}</td><td>${fmt((data.monthlySales||[]).reduce((a:number,m:any)=>a+m.profit,0))}</td><td>—</td><td>${(data.monthlySales||[]).reduce((a:number,m:any)=>a+m.count,0)}</td></tr>
+      <tr class="total-row"><td>TOTAL</td><td>${fmt((data.monthlySales||[]).reduce((a:number,m:any)=>a+m.revenue,0))}</td><td>${fmt((data.monthlySales||[]).reduce((a:number,m:any)=>a+(m.revenue-m.profit),0))}</td><td>${fmt((data.monthlySales||[]).reduce((a:number,m:any)=>a+m.profit,0))}</td><td></td><td>${(data.monthlySales||[]).reduce((a:number,m:any)=>a+m.count,0)}</td></tr>
       </tbody></table>
 
       <div class="section">TOP BRANDS SOLD</div>
@@ -99,21 +99,21 @@ export default function ReportsPage() {
       <table><thead><tr><th>Method</th><th>Transactions</th><th>Total</th></tr></thead>
       <tbody>${(data.paymentBreakdown||[]).map((p:any)=>`<tr><td style="text-transform:capitalize">${p.method?.replace(/_/g," ")}</td><td>${p.count}</td><td style="font-weight:600">${fmt(p.total)}</td></tr>`).join("")}</tbody></table>
 
-      ${dealer?.signature?`<div class="sig"><div><img src="${dealer.signature}" style="height:50px;object-fit:contain;display:block;margin-bottom:6px"/><div class="sig-line">${dealer?.companyName||""} · Authorised Signatory</div></div><div><div class="sig-line" style="margin-top:40px">Date & Stamp</div></div></div>`:""}
+      ${dealer?.signature?`<div class="sig"><div><img src="${dealer.signature}" style="height:50px;object-fit:contain;display:block;margin-bottom:6px"/><div class="sig-line">${dealer?.companyName||""}  Authorised Signatory</div></div><div><div class="sig-line" style="margin-top:40px">Date & Stamp</div></div></div>`:""}
 
-      <div class="footer">${dealer?.companyName||"CARSTRIMS"} · Dealer ID: ${dealer?.dealerId||""} · Report generated ${now} · Powered by UASE TECH STUDIO</div>
+      <div class="footer">${dealer?.companyName||"CARSTRIMS"}  Dealer ID: ${dealer?.dealerId||""}  Report generated ${now}  Powered by UASE TECH STUDIO</div>
       <script>window.onload=()=>window.print()<\/script>
     </body></html>`;
     const win=window.open("","_blank");
     if(win){win.document.write(html);win.document.close();}
   };
 
-  /* ── CSV/Excel export ── */
+  /*  CSV/Excel export  */
   const exportCSV = () => {
     if (!data) return;
     const s = data.summary;
     const rows: any[][] = [
-      [`Financial Report — ${dealer?.companyName||"Dealer"}`],
+      [`Financial Report  ${dealer?.companyName||"Dealer"}`],
       [`Generated: ${now}`],
       [`Dealer ID: ${dealer?.dealerId||""}`],
       [],
@@ -180,12 +180,12 @@ export default function ReportsPage() {
           )}
           <div>
             <h2 className="page-heading">{dealer?.companyName||"Reports & Analytics"}</h2>
-            <p className="page-sub">Financial Statement · {[dealer?.city,dealer?.state].filter(Boolean).join(", ")||"Complete overview"}</p>
+            <p className="page-sub">Financial Statement  {[dealer?.city,dealer?.state].filter(Boolean).join(", ")||"Complete overview"}</p>
           </div>
         </div>
         <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap"}}>
-          <button className="btn-export" onClick={exportCSV} style={{background:"#F0FDF4",color:"#16A34A",border:"1.5px solid #86EFAC"}}>⬇ CSV / Excel</button>
-          <button className="btn-export" onClick={exportPDF}>⬇ PDF Report</button>
+          <button className="btn-export" onClick={exportCSV} style={{background:"#F0FDF4",color:"#16A34A",border:"1.5px solid #86EFAC"}}> CSV / Excel</button>
+          <button className="btn-export" onClick={exportPDF}> PDF Report</button>
         </div>
       </div>
 

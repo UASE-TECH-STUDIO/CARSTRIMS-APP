@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useAuthStore } from "@/store/authStore";
 import { usePathname, useRouter } from "next/navigation";
 import NotificationBell from "@/components/ui/NotificationBell";

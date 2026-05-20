@@ -1,19 +1,19 @@
-"use client";
+use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { useSidebar } from "@/hooks/useSidebar";
 
 const NAV = [
-  { href:"/dashboard/super-admin", label:"Overview", icon:"▦", exact:true },
-  { href:"/dashboard/super-admin/dealers", label:"Dealers", icon:"▣" },
-  { href:"/dashboard/super-admin/users", label:"Users", icon:"◉" },
-  { href:"/dashboard/super-admin/approvals", label:"Approvals", icon:"◎" },
-  { href:"/dashboard/super-admin/analytics", label:"Analytics", icon:"▨" },
-  { href:"/dashboard/super-admin/activity", label:"Activity Log", icon:"▤" },
-  { href:"/dashboard/super-admin/broadcast", label:"Broadcast", icon:"◔" },
-  { href:"/dashboard/super-admin/create-dealer", label:"Create Dealer", icon:"▥" },
-  { href:"/dashboard/super-admin/settings", label:"Settings", icon:"⚙" },
+  { href:"/dashboard/super-admin", label:"Overview", icon:"", exact:true },
+  { href:"/dashboard/super-admin/dealers", label:"Dealers", icon:"" },
+  { href:"/dashboard/super-admin/users", label:"Users", icon:"" },
+  { href:"/dashboard/super-admin/approvals", label:"Approvals", icon:"" },
+  { href:"/dashboard/super-admin/analytics", label:"Analytics", icon:"" },
+  { href:"/dashboard/super-admin/activity", label:"Activity Log", icon:"" },
+  { href:"/dashboard/super-admin/broadcast", label:"Broadcast", icon:"" },
+  { href:"/dashboard/super-admin/create-dealer", label:"Create Dealer", icon:"" },
+  { href:"/dashboard/super-admin/settings", label:"Settings", icon:"" },
 ];
 
 export default function AdminSidebar() {
@@ -29,9 +29,9 @@ export default function AdminSidebar() {
   return (
     <aside className="admin-sidebar">
       <div className="sb-brand">
-        <span className="sb-bi">◈</span>
+        <span className="sb-bi"></span>
         <span className="sb-bn">CARSTRIMS</span>
-        <button className="sb-x" onClick={close}>✕</button>
+        <button className="sb-x" onClick={close}></button>
       </div>
 
       <div className="sb-profile">
@@ -53,13 +53,13 @@ export default function AdminSidebar() {
         ))}
         <div className="sb-div" />
         <Link href="/feed" className="sb-item feed" onClick={handleNav}>
-          <span className="sb-icon">⌂</span><span>View Feed</span>
+          <span className="sb-icon"></span><span>View Feed</span>
         </Link>
       </nav>
 
       <div className="sb-bot">
-        <div className="sb-dev">UASE TECH STUDIO · CARSTRIMS 2026</div>
-        <button className="sb-out" onClick={() => { logout(); router.push("/login"); }}>↩ Sign Out</button>
+        <div className="sb-dev">UASE TECH STUDIO  CARSTRIMS 2026</div>
+        <button className="sb-out" onClick={() => { logout(); router.push("/login"); }}> Sign Out</button>
       </div>
 
       <style>{`

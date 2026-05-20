@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState, useRef } from "react";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
@@ -66,7 +66,7 @@ export default function SettingsPage() {
     setTimeout(() => { setSuccess(""); setError(""); }, 6000);
   };
 
-  /* ── Logo ── */
+  /*  Logo  */
   const handleLogoUpload = async (file: File) => {
     setLogoUploading(true);
     const fd = new FormData(); fd.append("file", file);
@@ -78,7 +78,7 @@ export default function SettingsPage() {
     finally { setLogoUploading(false); }
   };
 
-  /* ── Profile picture ── */
+  /*  Profile picture  */
   const handlePicUpload = async (file: File) => {
     setPicUploading(true);
     const fd = new FormData(); fd.append("file", file);
@@ -90,20 +90,20 @@ export default function SettingsPage() {
     finally { setPicUploading(false); }
   };
 
-  /* ── Signature ── */
+  /*  Signature  */
   const handleSigUpload = async (file: File) => {
     setSigUploading(true);
     const fd = new FormData(); fd.append("file", file);
     try {
       const r = await api.post("/api/v1/upload/dealer/signature", fd, { headers:{"Content-Type":"multipart/form-data"} });
       await api.patch("/api/v1/dealers/me", { signature: r.data.signature || r.data.url });
-      flash("Signature saved — it will appear on all your documents automatically!");
+      flash("Signature saved  it will appear on all your documents automatically!");
       loadDealer();
     } catch (e:any) { flash(e.response?.data?.detail || "Signature upload failed", "err"); }
     finally { setSigUploading(false); }
   };
 
-  /* ── GPS location ── */
+  /*  GPS location  */
   const handleGPS = () => {
     if (!navigator.geolocation) { flash("Geolocation not supported by your browser", "err"); return; }
     setLocLoading(true);
@@ -119,13 +119,13 @@ export default function SettingsPage() {
         } catch {}
         setDealerForm(f => ({ ...f, locationLat: String(lat), locationLng: String(lng), locationLabel: label, locationSource:"gps" }));
         setLocLoading(false);
-        flash("Location captured — save changes to publish it");
+        flash("Location captured  save changes to publish it");
       },
       () => { flash("Could not get location. Please allow location access.", "err"); setLocLoading(false); }
     );
   };
 
-  /* ── Save dealer info ── */
+  /*  Save dealer info  */
   const handleSaveDealer = async (e: React.FormEvent) => {
     e.preventDefault(); setSaving(true); setError(""); setSuccess("");
     try {
@@ -140,7 +140,7 @@ export default function SettingsPage() {
     finally { setSaving(false); }
   };
 
-  /* ── Change password ── */
+  /*  Change password  */
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (pwForm.newPassword !== pwForm.confirmPassword) { flash("Passwords don't match", "err"); return; }
@@ -163,11 +163,11 @@ export default function SettingsPage() {
     </div>
   );
 
-  /* ─────────────── helpers ─────────────── */
+  /*  helpers  */
   const fi: React.CSSProperties = { background:"#F5F5F5", border:"1.5px solid #DDD", borderRadius:"6px", padding:"0.7rem", color:"#1A1A1A", fontSize:"0.875rem", fontFamily:"var(--font-body)", outline:"none", transition:"border-color 0.2s", width:"100%", boxSizing:"border-box" as const };
   const fl = { fontSize:"0.68rem", fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase" as const, color:"#888", display:"block", marginBottom:"0.4rem" };
 
-  /* ─────────────── Upload slot component ─────────────── */
+  /*  Upload slot component  */
   // type: "logo" | "profile" | "signature"
   const UploadSlot = ({ label, sub, url, isRound, uploading: upl, onClick, onRemove, preview }: {
     label:string; sub:string; url?:string|null; isRound?:boolean; uploading:boolean;
@@ -209,20 +209,20 @@ export default function SettingsPage() {
                 )}
                 <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.5)",color:"#fff",fontSize:"0.65rem",fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",opacity:0,transition:"opacity 0.2s",gap:"0.25rem"}}
                   onMouseOver={e=>e.currentTarget.style.opacity="1"} onMouseOut={e=>e.currentTarget.style.opacity="0"}>
-                  <span style={{fontSize:"1.1rem"}}>✏</span>
+                  <span style={{fontSize:"1.1rem"}}></span>
                   <span>Click to replace</span>
                 </div>
               </>
             ) : (
               <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.4rem",color:"#A3A3A3",padding:"0.5rem"}}>
-                <span style={{fontSize:"1.75rem"}}>{isSig?"✍":isRound?"👤":"🖼"}</span>
+                <span style={{fontSize:"1.75rem"}}>{isSig?"":isRound?"":""}</span>
                 <span style={{fontSize:"0.65rem",fontWeight:600,textAlign:"center",color:"#A3A3A3",lineHeight:1.3}}>Click to upload</span>
               </div>
             )}
           </div>
           {/* Appears-in badge */}
           {url && (
-            <div style={{position:"absolute",top:"-8px",right:"-8px",background:"#16A34A",color:"#fff",borderRadius:"50%",width:"20px",height:"20px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.6rem",fontWeight:700,border:"2px solid #fff",boxShadow:"0 2px 6px rgba(0,0,0,0.15)"}}>✓</div>
+            <div style={{position:"absolute",top:"-8px",right:"-8px",background:"#16A34A",color:"#fff",borderRadius:"50%",width:"20px",height:"20px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.6rem",fontWeight:700,border:"2px solid #fff",boxShadow:"0 2px 6px rgba(0,0,0,0.15)"}}></div>
           )}
         </div>
 
@@ -235,7 +235,7 @@ export default function SettingsPage() {
         {/* Where it appears */}
         {url && (
           <div style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"6px",padding:"0.4rem 0.625rem",fontSize:"0.62rem",color:"#15803D",fontWeight:600,textAlign:"center",width:"100%"}}>
-            {isSig?"Appears on all documents":"Active — click to replace"}
+            {isSig?"Appears on all documents":"Active  click to replace"}
           </div>
         )}
 
@@ -254,8 +254,8 @@ export default function SettingsPage() {
     <div className="sp">
       <h2 className="sh">Settings</h2>
 
-      {success && <div className="sb ok">✅ {success}<button onClick={()=>setSuccess("")} className="dm">✕</button></div>}
-      {error   && <div className="sb er">❌ {error  }<button onClick={()=>setError("")}   className="dm">✕</button></div>}
+      {success && <div className="sb ok"> {success}<button onClick={()=>setSuccess("")} className="dm"></button></div>}
+      {error   && <div className="sb er"> {error  }<button onClick={()=>setError("")}   className="dm"></button></div>}
 
       {/* hidden file inputs */}
       <input ref={logoRef} type="file" accept="image/jpeg,image/png,image/webp" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)handleLogoUpload(f);e.target.value="";}}/>
@@ -264,7 +264,7 @@ export default function SettingsPage() {
 
       <div className="sg">
 
-        {/* ── Branding card ── */}
+        {/*  Branding card  */}
         <div className="sc wide">
           <h3 className="ct">BRANDING & IDENTITY</h3>
           <div style={{display:"flex",gap:"2rem",flexWrap:"wrap",alignItems:"flex-start",justifyContent:"center"}}>
@@ -274,19 +274,19 @@ export default function SettingsPage() {
           </div>
           <div style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"8px",padding:"0.75rem 1rem",fontSize:"0.78rem",color:"#15803D",lineHeight:1.6}}>
             <strong>Logo</strong> = used on official documents (invoices, receipts, reports). &nbsp;
-            <strong>Profile Picture</strong> = shown next to your name in messages, comments and search results — think of it like a personal/dealer face photo. &nbsp;
+            <strong>Profile Picture</strong> = shown next to your name in messages, comments and search results  think of it like a personal/dealer face photo. &nbsp;
             <strong>Signature</strong> = automatically placed at the bottom of every receipt, invoice and proforma invoice you generate.
           </div>
         </div>
 
-        {/* ── QR Code ── */}
+        {/*  QR Code  */}
         <div className="sc"><DealerQRCode /></div>
 
-        {/* ── Dealership info ── */}
+        {/*  Dealership info  */}
         <div className="sc wide">
           <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"1rem",flexWrap:"wrap"}}>
             <h3 className="ct">DEALERSHIP INFORMATION</h3>
-            {isApproved && <div className="ln">🔒 Company name locked after approval</div>}
+            {isApproved && <div className="ln"> Company name locked after approval</div>}
           </div>
 
           {/* Locked fields */}
@@ -315,24 +315,24 @@ export default function SettingsPage() {
             <div style={{background:"#F0F9FF",border:"1.5px solid #BAE6FD",borderRadius:"10px",padding:"1.25rem",display:"flex",flexDirection:"column",gap:"0.875rem"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"1rem",flexWrap:"wrap"}}>
                 <div>
-                  <div style={{fontSize:"0.72rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#0369A1"}}>📍 Dealership Location</div>
+                  <div style={{fontSize:"0.72rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#0369A1"}}> Dealership Location</div>
                   <div style={{fontSize:"0.7rem",color:"#64748B",marginTop:"0.2rem"}}>Pin your exact location so customers can find you on the map. Shown on your public profile.</div>
                 </div>
                 <button type="button" onClick={handleGPS} disabled={locLoading}
                   style={{background:locLoading?"#E2E8F0":"#0EA5E9",color:locLoading?"#94A3B8":"#fff",border:"none",borderRadius:"8px",padding:"0.625rem 1.1rem",fontSize:"0.82rem",cursor:locLoading?"not-allowed":"pointer",fontFamily:"var(--font-display)",letterSpacing:"0.06em",whiteSpace:"nowrap",transition:"background 0.2s"}}>
-                  {locLoading ? "Getting location…" : "📍 Use My GPS Location"}
+                  {locLoading ? "Getting location" : " Use My GPS Location"}
                 </button>
               </div>
               {dealerForm.locationLat && dealerForm.locationLng && (
                 <div style={{background:"#fff",border:"1px solid #BAE6FD",borderRadius:"8px",padding:"0.75rem 1rem",display:"flex",alignItems:"flex-start",gap:"0.625rem"}}>
-                  <span style={{fontSize:"1rem",flexShrink:0}}>{dealerForm.locationSource==="gps"?"🛰":"✏️"}</span>
+                  <span style={{fontSize:"1rem",flexShrink:0}}>{dealerForm.locationSource==="gps"?"":""}</span>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:"0.72rem",fontWeight:600,color:"#0369A1",textTransform:"uppercase" as const,letterSpacing:"0.06em"}}>{dealerForm.locationSource==="gps"?"GPS Pinned Location":"Manual Coordinates"}</div>
                     <div style={{fontSize:"0.78rem",color:"#1A1A1A",marginTop:"0.2rem",wordBreak:"break-all" as const}}>{dealerForm.locationLabel || `${dealerForm.locationLat}, ${dealerForm.locationLng}`}</div>
-                    <div style={{fontSize:"0.68rem",color:"#64748B",fontFamily:"monospace",marginTop:"0.1rem"}}>Lat: {parseFloat(dealerForm.locationLat).toFixed(5)} · Lng: {parseFloat(dealerForm.locationLng).toFixed(5)}</div>
+                    <div style={{fontSize:"0.68rem",color:"#64748B",fontFamily:"monospace",marginTop:"0.1rem"}}>Lat: {parseFloat(dealerForm.locationLat).toFixed(5)}  Lng: {parseFloat(dealerForm.locationLng).toFixed(5)}</div>
                   </div>
                   <button type="button" onClick={()=>setDealerForm(f=>({...f,locationLat:"",locationLng:"",locationLabel:"",locationSource:"manual"}))}
-                    style={{background:"none",border:"none",color:"#DC2626",cursor:"pointer",fontSize:"0.8rem",flexShrink:0}}>✕ Clear</button>
+                    style={{background:"none",border:"none",color:"#DC2626",cursor:"pointer",fontSize:"0.8rem",flexShrink:0}}> Clear</button>
                 </div>
               )}
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0.75rem"}}>
@@ -343,7 +343,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Socials */}
-            <div style={{fontSize:"0.68rem",fontWeight:600,letterSpacing:"0.15em",textTransform:"uppercase" as const,color:"#AAA",padding:"0.5rem 0",borderTop:"1px solid #E5E5E5",borderBottom:"1px solid #E5E5E5",textAlign:"center" as const,margin:"0.25rem 0"}}>SOCIAL MEDIA & LINKS — shown on your public profile</div>
+            <div style={{fontSize:"0.68rem",fontWeight:600,letterSpacing:"0.15em",textTransform:"uppercase" as const,color:"#AAA",padding:"0.5rem 0",borderTop:"1px solid #E5E5E5",borderBottom:"1px solid #E5E5E5",textAlign:"center" as const,margin:"0.25rem 0"}}>SOCIAL MEDIA & LINKS  shown on your public profile</div>
             <div className="fr">
               <div className="fd"><label style={fl}>Instagram</label><input style={fi} placeholder="https://instagram.com/yourpage" value={dealerForm.instagram} onChange={e=>setDealerForm({...dealerForm,instagram:e.target.value})} onFocus={e=>e.target.style.borderColor="#F47B20"} onBlur={e=>e.target.style.borderColor="#DDD"}/></div>
               <div className="fd"><label style={fl}>Twitter / X</label><input style={fi} placeholder="https://twitter.com/yourpage" value={dealerForm.twitter} onChange={e=>setDealerForm({...dealerForm,twitter:e.target.value})} onFocus={e=>e.target.style.borderColor="#F47B20"} onBlur={e=>e.target.style.borderColor="#DDD"}/></div>
@@ -357,22 +357,22 @@ export default function SettingsPage() {
               <div className="fd"><label style={fl}>Website</label><input style={fi} placeholder="https://yourwebsite.com" value={dealerForm.website} onChange={e=>setDealerForm({...dealerForm,website:e.target.value})} onFocus={e=>e.target.style.borderColor="#F47B20"} onBlur={e=>e.target.style.borderColor="#DDD"}/></div>
             </div>
 
-            <button type="submit" className="save-btn" disabled={saving}>{saving?"Saving…":"Save All Changes"}</button>
+            <button type="submit" className="save-btn" disabled={saving}>{saving?"Saving":"Save All Changes"}</button>
           </form>
         </div>
 
-        {/* ── Password ── */}
+        {/*  Password  */}
         <div className="sc">
           <h3 className="ct">CHANGE PASSWORD</h3>
           <form onSubmit={handleChangePassword} style={{display:"flex",flexDirection:"column",gap:"0.875rem"}}>
             <div className="fd"><label style={fl}>Current Password</label><input type="password" style={fi} value={pwForm.currentPassword} onChange={e=>setPwForm({...pwForm,currentPassword:e.target.value})} required onFocus={e=>e.target.style.borderColor="#F47B20"} onBlur={e=>e.target.style.borderColor="#DDD"}/></div>
             <div className="fd"><label style={fl}>New Password</label><input type="password" style={fi} value={pwForm.newPassword} onChange={e=>setPwForm({...pwForm,newPassword:e.target.value})} required onFocus={e=>e.target.style.borderColor="#F47B20"} onBlur={e=>e.target.style.borderColor="#DDD"}/></div>
             <div className="fd"><label style={fl}>Confirm New Password</label><input type="password" style={fi} value={pwForm.confirmPassword} onChange={e=>setPwForm({...pwForm,confirmPassword:e.target.value})} required onFocus={e=>e.target.style.borderColor="#F47B20"} onBlur={e=>e.target.style.borderColor="#DDD"}/></div>
-            <button type="submit" className="save-btn" disabled={pwSaving}>{pwSaving?"Changing…":"Change Password"}</button>
+            <button type="submit" className="save-btn" disabled={pwSaving}>{pwSaving?"Changing":"Change Password"}</button>
           </form>
         </div>
 
-        {/* ── Account info ── */}
+        {/*  Account info  */}
         <div className="sc">
           <h3 className="ct">ACCOUNT INFORMATION</h3>
           <div style={{display:"flex",flexDirection:"column",gap:"0.5rem"}}>

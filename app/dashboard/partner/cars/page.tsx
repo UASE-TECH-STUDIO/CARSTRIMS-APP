@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
@@ -22,7 +22,7 @@ export default function PartnerCarsPage() {
   }, []);
 
   const filtered = filter === "all" ? cars : cars.filter((c) => c.status === filter);
-  const fmt = (n: number) => `₦${(n||0).toLocaleString()}`;
+  const fmt = (n: number) => `${(n||0).toLocaleString()}`;
 
   return (
     <div className="cars-page">
@@ -43,7 +43,7 @@ export default function PartnerCarsPage() {
 
       {loading ? <div className="loading"><div className="spinner" /></div>
       : filtered.length === 0 ? (
-        <div className="empty"><div className="ei">🚗</div><h3>No cars found</h3><p>Cars assigned by dealers will appear here</p></div>
+        <div className="empty"><div className="ei"></div><h3>No cars found</h3><p>Cars assigned by dealers will appear here</p></div>
       ) : (
         <div className="cars-grid">
           {filtered.map((c) => (
@@ -51,10 +51,10 @@ export default function PartnerCarsPage() {
               <div className="car-img-wrap">
                 {c.images?.[0]
                   ? <img src={c.images[0]} alt="" />
-                  : <div className="car-ph">🚗</div>
+                  : <div className="car-ph"></div>
                 }
                 <div className="car-badge" style={{background:STATUS_COLORS[c.status]||"#888"}}>{c.status.replace(/_/g," ")}</div>
-                <div className="view-overlay">View Details →</div>
+                <div className="view-overlay">View Details </div>
               </div>
               <div className="car-dealer-strip">
                 <div className="dl-logo">{c.dealerLogo?<img src={c.dealerLogo} alt=""/>:c.dealerName?.charAt(0)||"D"}</div>
@@ -63,7 +63,7 @@ export default function PartnerCarsPage() {
               <div className="car-body">
                 <div className="car-id">{c.carId}</div>
                 <div className="car-title">{c.brand} {c.model} {c.year}</div>
-                <div className="car-meta">{c.color} · {c.transmission}</div>
+                <div className="car-meta">{c.color}  {c.transmission}</div>
                 <div className="car-price">{fmt(c.sellingPrice)}</div>
                 {c.status === "sold" && (
                   <div className="profit-row">

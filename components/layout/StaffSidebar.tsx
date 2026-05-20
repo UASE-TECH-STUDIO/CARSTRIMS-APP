@@ -1,4 +1,4 @@
-"use client";
+use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
@@ -7,16 +7,16 @@ import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
 const ALL_NAV = [
-  { href:"/dashboard/staff", label:"Overview", icon:"▦", exact:true, perm:null },
-  { href:"/dashboard/staff/inventory", label:"Cars & Inventory", icon:"▣", perm:"view_inventory" },
-  { href:"/dashboard/staff/sales", label:"Sales", icon:"◈", perm:"view_sales" },
-  { href:"/dashboard/staff/staff", label:"Staff", icon:"◉", perm:"view_staff" },
-  { href:"/dashboard/staff/partners", label:"Partners", icon:"◎", perm:"view_partners" },
-  { href:"/dashboard/staff/movements", label:"Movements", icon:"↺", perm:"view_movements" },
-  { href:"/dashboard/staff/cctv", label:"CCTV", icon:"◫", perm:"view_cctv" },
-  { href:"/dashboard/staff/reports", label:"Reports", icon:"▨", perm:"view_reports" },
-  { href:"/dashboard/staff/notifications", label:"Notifications", icon:"◔", perm:null },
-  { href:"/dashboard/staff/settings", label:"Settings", icon:"⚙", perm:null },
+  { href:"/dashboard/staff", label:"Overview", icon:"", exact:true, perm:null },
+  { href:"/dashboard/staff/inventory", label:"Cars & Inventory", icon:"", perm:"view_inventory" },
+  { href:"/dashboard/staff/sales", label:"Sales", icon:"", perm:"view_sales" },
+  { href:"/dashboard/staff/staff", label:"Staff", icon:"", perm:"view_staff" },
+  { href:"/dashboard/staff/partners", label:"Partners", icon:"", perm:"view_partners" },
+  { href:"/dashboard/staff/movements", label:"Movements", icon:"", perm:"view_movements" },
+  { href:"/dashboard/staff/cctv", label:"CCTV", icon:"", perm:"view_cctv" },
+  { href:"/dashboard/staff/reports", label:"Reports", icon:"", perm:"view_reports" },
+  { href:"/dashboard/staff/notifications", label:"Notifications", icon:"", perm:null },
+  { href:"/dashboard/staff/settings", label:"Settings", icon:"", perm:null },
 ];
 
 export default function StaffSidebar() {
@@ -39,9 +39,9 @@ export default function StaffSidebar() {
   return (
     <aside className="staff-sidebar">
       <div className="sb-brand">
-        <span className="sb-bi">◈</span>
+        <span className="sb-bi"></span>
         <span className="sb-bn">CARSTRIMS</span>
-        <button className="sb-x" onClick={close}>✕</button>
+        <button className="sb-x" onClick={close}></button>
       </div>
 
       <div className="sb-profile">
@@ -72,13 +72,13 @@ export default function StaffSidebar() {
         ))}
         <div className="sb-div" />
         <Link href="/feed" className="sb-item feed" onClick={handleNav}>
-          <span className="sb-icon">⌂</span><span>View Feed</span>
+          <span className="sb-icon"></span><span>View Feed</span>
         </Link>
       </nav>
 
       <div className="sb-bot">
         <div className="sb-dev">Powered by <strong>UASE TECH STUDIO</strong></div>
-        <button className="sb-out" onClick={() => { logout(); router.push("/login"); }}>↩ Sign Out</button>
+        <button className="sb-out" onClick={() => { logout(); router.push("/login"); }}> Sign Out</button>
       </div>
 
       <style>{`

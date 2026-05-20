@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -11,15 +11,15 @@ export default function UserBottomNav() {
     <>
       <nav className="bottom-nav">
         <Link href="/" className={`bn-item ${pathname === "/" ? "active" : ""}`}>
-          <span className="bn-icon">🏠</span>
+          <span className="bn-icon"></span>
           <span className="bn-label">Feed</span>
         </Link>
         <button className="bn-item qr-btn" onClick={() => setShowQR(true)}>
-          <span className="bn-icon">📷</span>
+          <span className="bn-icon"></span>
           <span className="bn-label">Scan QR</span>
         </button>
         <Link href="/dashboard/user" className={`bn-item ${pathname.startsWith("/dashboard/user") ? "active" : ""}`}>
-          <span className="bn-icon">👤</span>
+          <span className="bn-icon"></span>
           <span className="bn-label">My Account</span>
         </Link>
       </nav>
@@ -29,14 +29,14 @@ export default function UserBottomNav() {
           <div className="qr-modal" onClick={(e) => e.stopPropagation()}>
             <div className="qr-header">
               <h3>Scan Dealer QR Code</h3>
-              <button onClick={() => setShowQR(false)} className="qr-close">✕</button>
+              <button onClick={() => setShowQR(false)} className="qr-close"></button>
             </div>
             <div className="qr-body">
               <div className="qr-viewfinder">
                 <div className="qr-corner tl" /><div className="qr-corner tr" />
                 <div className="qr-corner bl" /><div className="qr-corner br" />
                 <div className="qr-scan-line" />
-                <div className="qr-placeholder">📷</div>
+                <div className="qr-placeholder"></div>
               </div>
               <p className="qr-hint">Point camera at dealer QR code to open their listing</p>
               <div className="qr-manual">

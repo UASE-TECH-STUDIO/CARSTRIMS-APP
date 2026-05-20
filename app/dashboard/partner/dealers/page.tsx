@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import Link from "next/link";
@@ -36,7 +36,7 @@ export default function PartnerDealersPage() {
       {loading ? <div className="loading"><div className="spinner" /></div>
       : links.length === 0 ? (
         <div className="empty">
-          <div className="ei">🏢</div>
+          <div className="ei"></div>
           <h3>No dealer connections yet</h3>
           <p>Search for dealers and send a partnership request to get started</p>
           <Link href="/dashboard/partner/find-dealer" className="btn-blue">Find a Dealer</Link>
@@ -57,20 +57,20 @@ export default function PartnerDealersPage() {
                   <div className="dealer-name">{link.dealerName || "Dealer"}</div>
                   <div className="dealer-id">{link.dealerDealerId}</div>
                   <div className="dealer-meta">
-                    {link.dealerCity && <span>📍 {link.dealerCity}, {link.dealerState}</span>}
-                    <span>🚗 {link.carsAssigned || 0} cars assigned</span>
+                    {link.dealerCity && <span> {link.dealerCity}, {link.dealerState}</span>}
+                    <span> {link.carsAssigned || 0} cars assigned</span>
                   </div>
                   <div className="dealer-contacts">
-                    {link.dealerPhone && <a href={`tel:${link.dealerPhone}`} className="cta-pill">📞 Call</a>}
-                    {link.dealerWhatsapp && <a href={`https://wa.me/${link.dealerWhatsapp}`} target="_blank" rel="noreferrer" className="cta-pill">💬 WhatsApp</a>}
-                    {link.dealerEmail && <a href={`mailto:${link.dealerEmail}`} className="cta-pill">✉️ Email</a>}
+                    {link.dealerPhone && <a href={`tel:${link.dealerPhone}`} className="cta-pill"> Call</a>}
+                    {link.dealerWhatsapp && <a href={`https://wa.me/${link.dealerWhatsapp}`} target="_blank" rel="noreferrer" className="cta-pill"> WhatsApp</a>}
+                    {link.dealerEmail && <a href={`mailto:${link.dealerEmail}`} className="cta-pill"> Email</a>}
                   </div>
                 </div>
                 <div className="dealer-right">
                   <div className="status-pill" style={{color:st.color,background:st.bg,border:`1px solid ${st.border}`}}>
-                    {link.status === "approved" ? "✅ Active Partner"
-                      : link.status === "pending" ? "⏳ Pending Approval"
-                      : "✕ Declined"}
+                    {link.status === "approved" ? " Active Partner"
+                      : link.status === "pending" ? " Pending Approval"
+                      : " Declined"}
                   </div>
                   {link.requestedAt && (
                     <div className="req-date">

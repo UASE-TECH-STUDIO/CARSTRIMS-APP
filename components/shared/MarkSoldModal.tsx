@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useState, useEffect } from "react";
 import api from "@/lib/api";
 
@@ -23,7 +23,7 @@ interface Props {
 
 export default function MarkSoldModal({ car: initialCar, onClose, onSold }: Props) {
   const [car, setCar]           = useState<Car | null>(initialCar || null);
-  const [carSearch, setCarSearch] = useState(initialCar ? `${initialCar.brand} ${initialCar.model} ${initialCar.year} — ${initialCar.carId}` : "");
+  const [carSearch, setCarSearch] = useState(initialCar ? `${initialCar.brand} ${initialCar.model} ${initialCar.year}  ${initialCar.carId}` : "");
   const [carResults, setCarResults] = useState<Car[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loadingCars, setLoadingCars] = useState(false);
@@ -55,7 +55,7 @@ export default function MarkSoldModal({ car: initialCar, onClose, onSold }: Prop
 
   const selectCar = (c: Car) => {
     setCar(c);
-    setCarSearch(`${c.brand} ${c.model} ${c.year} — ${c.carId}`);
+    setCarSearch(`${c.brand} ${c.model} ${c.year}  ${c.carId}`);
     setCarResults([]);
     setShowDropdown(false);
     setForm(f => ({
@@ -99,9 +99,9 @@ export default function MarkSoldModal({ car: initialCar, onClose, onSold }: Prop
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"1.25rem 1.5rem",background:"#1A1A1A",borderRadius:"16px 16px 0 0"}}>
           <div>
             <div style={{fontFamily:"var(--font-display)",fontSize:"1rem",letterSpacing:"0.1em",color:"#F47B20"}}>RECORD SALE / MARK SOLD</div>
-            <div style={{fontSize:"0.75rem",color:"#A3A3A3",marginTop:"0.2rem"}}>{car ? `${car.brand} ${car.model} ${car.year} · ${car.carId}` : "Search and select a car below"}</div>
+            <div style={{fontSize:"0.75rem",color:"#A3A3A3",marginTop:"0.2rem"}}>{car ? `${car.brand} ${car.model} ${car.year}  ${car.carId}` : "Search and select a car below"}</div>
           </div>
-          <button onClick={onClose} style={{background:"rgba(255,255,255,0.12)",border:"none",color:"#fff",width:"32px",height:"32px",borderRadius:"50%",cursor:"pointer",fontSize:"1rem"}}>✕</button>
+          <button onClick={onClose} style={{background:"rgba(255,255,255,0.12)",border:"none",color:"#fff",width:"32px",height:"32px",borderRadius:"50%",cursor:"pointer",fontSize:"1rem"}}></button>
         </div>
 
         {/* Car context (if pre-filled from inventory) */}
@@ -110,7 +110,7 @@ export default function MarkSoldModal({ car: initialCar, onClose, onSold }: Prop
             <img src={car.images[0]} alt="" style={{width:"60px",height:"46px",objectFit:"cover",borderRadius:"6px",flexShrink:0}}/>
             <div>
               <div style={{fontWeight:700,fontSize:"0.95rem",color:"#1A1A1A"}}>{car.brand} {car.model} {car.year}</div>
-              <div style={{fontSize:"0.75rem",color:"#737373"}}>{[car.color, car.vin && `VIN: ${car.vin}`].filter(Boolean).join(" · ")}</div>
+              <div style={{fontSize:"0.75rem",color:"#737373"}}>{[car.color, car.vin && `VIN: ${car.vin}`].filter(Boolean).join("  ")}</div>
             </div>
           </div>
         )}
@@ -147,10 +147,10 @@ export default function MarkSoldModal({ car: initialCar, onClose, onSold }: Prop
                         <div style={{display:"flex",gap:"0.5rem",alignItems:"center",marginTop:"0.1rem",flexWrap:"wrap"}}>
                           <span style={{fontSize:"0.68rem",fontFamily:"monospace",background:"#F5F5F5",padding:"0.1rem 0.35rem",borderRadius:"3px",color:"#525252"}}>{c.carId}</span>
                           {c.color && <span style={{fontSize:"0.68rem",color:"#A3A3A3"}}>{c.color}</span>}
-                          {c.sellingPrice && <span style={{fontSize:"0.75rem",color:"#F47B20",fontFamily:"var(--font-display)",fontWeight:700}}>₦{c.sellingPrice.toLocaleString()}</span>}
+                          {c.sellingPrice && <span style={{fontSize:"0.75rem",color:"#F47B20",fontFamily:"var(--font-display)",fontWeight:700}}>{c.sellingPrice.toLocaleString()}</span>}
                         </div>
                       </div>
-                      <span style={{fontSize:"0.7rem",color:"#F47B20",flexShrink:0}}>Select →</span>
+                      <span style={{fontSize:"0.7rem",color:"#F47B20",flexShrink:0}}>Select </span>
                     </div>
                   ))}
                 </div>
@@ -160,8 +160,8 @@ export default function MarkSoldModal({ car: initialCar, onClose, onSold }: Prop
               )}
               {car && (
                 <div style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.78rem",color:"#15803D",fontWeight:600,display:"flex",alignItems:"center",gap:"0.4rem"}}>
-                  ✓ Selected: {car.brand} {car.model} {car.year} ({car.carId})
-                  <button type="button" onClick={()=>{setCar(null);setCarSearch("");}} style={{background:"none",border:"none",color:"#DC2626",cursor:"pointer",marginLeft:"auto",fontSize:"0.8rem"}}>✕ Change</button>
+                   Selected: {car.brand} {car.model} {car.year} ({car.carId})
+                  <button type="button" onClick={()=>{setCar(null);setCarSearch("");}} style={{background:"none",border:"none",color:"#DC2626",cursor:"pointer",marginLeft:"auto",fontSize:"0.8rem"}}> Change</button>
                 </div>
               )}
             </div>
@@ -170,13 +170,13 @@ export default function MarkSoldModal({ car: initialCar, onClose, onSold }: Prop
           {/* Prices */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem"}}>
             <div style={{display:"flex",flexDirection:"column",gap:"0.4rem"}}>
-              <label style={lbl}>Selling Price (₦) *</label>
+              <label style={lbl}>Selling Price () *</label>
               <input style={inp} type="number" min="0" step="1000" placeholder="e.g. 5000000"
                 value={form.sellingPrice} onChange={e=>setForm({...form,sellingPrice:e.target.value})} required
                 onFocus={ev=>ev.target.style.borderColor="#F47B20"} onBlur={ev=>ev.target.style.borderColor="#E5E5E5"}/>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:"0.4rem"}}>
-              <label style={lbl}>Cost / Purchase Price (₦)</label>
+              <label style={lbl}>Cost / Purchase Price ()</label>
               <input style={inp} type="number" min="0" step="1000" placeholder="Auto-filled if set"
                 value={form.purchasePrice} onChange={e=>setForm({...form,purchasePrice:e.target.value})}
                 onFocus={ev=>ev.target.style.borderColor="#F47B20"} onBlur={ev=>ev.target.style.borderColor="#E5E5E5"}/>
@@ -220,9 +220,9 @@ export default function MarkSoldModal({ car: initialCar, onClose, onSold }: Prop
           {profit !== null && (
             <div style={{background:profit >= 0 ? "#F0FDF4" : "#FEF2F2",border:`1px solid ${profit >= 0 ? "#86EFAC" : "#FCA5A5"}`,borderRadius:"8px",padding:"0.875rem",display:"flex",gap:"1.25rem",flexWrap:"wrap"}}>
               {[
-                ["Selling Price", `₦${parseFloat(form.sellingPrice||"0").toLocaleString()}`, "#F47B20"],
-                ["Cost Price",    `₦${parseFloat(form.purchasePrice||"0").toLocaleString()}`, "#737373"],
-                ["Gross Profit",  `₦${profit.toLocaleString()}`, profit >= 0 ? "#16A34A" : "#DC2626"],
+                ["Selling Price", `${parseFloat(form.sellingPrice||"0").toLocaleString()}`, "#F47B20"],
+                ["Cost Price",    `${parseFloat(form.purchasePrice||"0").toLocaleString()}`, "#737373"],
+                ["Gross Profit",  `${profit.toLocaleString()}`, profit >= 0 ? "#16A34A" : "#DC2626"],
               ].map(([l,v,c]) => (
                 <div key={l} style={{flex:1,minWidth:"100px"}}>
                   <div style={{fontSize:"0.65rem",color:"#737373",fontWeight:600,textTransform:"uppercase" as const,letterSpacing:"0.06em"}}>{l}</div>
@@ -239,7 +239,7 @@ export default function MarkSoldModal({ car: initialCar, onClose, onSold }: Prop
             </button>
             <button type="submit" disabled={loading || !form.sellingPrice || !car}
               style={{flex:2,background:loading||!form.sellingPrice||!car?"#D4D4D4":"#F47B20",color:"#fff",border:"none",borderRadius:"10px",padding:"0.875rem",fontFamily:"var(--font-display)",fontSize:"0.95rem",letterSpacing:"0.1em",cursor:loading||!form.sellingPrice||!car?"not-allowed":"pointer",transition:"background 0.2s",fontWeight:700}}>
-              {loading ? "Recording sale..." : "CONFIRM SALE ✓"}
+              {loading ? "Recording sale..." : "CONFIRM SALE "}
             </button>
           </div>
         </form>

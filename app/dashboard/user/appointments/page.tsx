@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
@@ -64,7 +64,7 @@ export default function UserAppointmentsPage() {
 
   const fmt = (iso: string) => iso ? new Date(iso).toLocaleString("en-NG", {
     weekday:"short", year:"numeric", month:"short", day:"numeric", hour:"2-digit", minute:"2-digit"
-  }) : "—";
+  }) : "";
 
   return (
     <div className="apts-page">
@@ -79,7 +79,7 @@ export default function UserAppointmentsPage() {
       {loading ? <div className="loading"><div className="spinner" /></div>
       : appointments.length === 0 ? (
         <div className="empty">
-          <div className="ei">📅</div>
+          <div className="ei"></div>
           <h3>No appointments yet</h3>
           <p>Schedule a showroom visit, test drive, or meeting with a dealer</p>
           <button className="btn-primary" onClick={() => setShowForm(true)}>Schedule Now</button>
@@ -88,15 +88,15 @@ export default function UserAppointmentsPage() {
         <div className="apt-list">
           {appointments.map((a) => (
             <div key={a._id} className="apt-card" onClick={() => setShowDetail(a)}>
-              <div className="apt-icon">{a.type==="test_drive"?"🚗":a.type==="payment_meeting"?"💳":a.type==="inspection"?"🔍":"🏢"}</div>
+              <div className="apt-icon">{a.type==="test_drive"?"":a.type==="payment_meeting"?"":a.type==="inspection"?"":""}</div>
               <div className="apt-info">
                 <div className="apt-type">{a.type?.replace(/_/g," ")}</div>
-                <div className="apt-dealer">🏢 {a.dealerName||"—"}</div>
-                <div className="apt-time">📅 {fmt(a.scheduledAt)}</div>
+                <div className="apt-dealer"> {a.dealerName||""}</div>
+                <div className="apt-time"> {fmt(a.scheduledAt)}</div>
                 {a.notes && <div className="apt-notes">{a.notes}</div>}
                 <div className="apt-contacts">
-                  {a.dealerPhone && <a href={`tel:${a.dealerPhone}`} className="cta" onClick={(e)=>e.stopPropagation()}>📞 Call</a>}
-                  {a.dealerWhatsapp && <a href={`https://wa.me/${a.dealerWhatsapp}`} target="_blank" rel="noreferrer" className="cta" onClick={(e)=>e.stopPropagation()}>💬 WhatsApp</a>}
+                  {a.dealerPhone && <a href={`tel:${a.dealerPhone}`} className="cta" onClick={(e)=>e.stopPropagation()}> Call</a>}
+                  {a.dealerWhatsapp && <a href={`https://wa.me/${a.dealerWhatsapp}`} target="_blank" rel="noreferrer" className="cta" onClick={(e)=>e.stopPropagation()}> WhatsApp</a>}
                 </div>
               </div>
               <div className="apt-status" style={{color:STATUS_COLORS[a.status]||"#888",borderColor:(STATUS_COLORS[a.status]||"#888")+"44",background:(STATUS_COLORS[a.status]||"#888")+"11"}}>
@@ -112,7 +112,7 @@ export default function UserAppointmentsPage() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">SCHEDULE APPOINTMENT</h3>
-              <button className="modal-close" onClick={() => setShowForm(false)}>✕</button>
+              <button className="modal-close" onClick={() => setShowForm(false)}></button>
             </div>
             {error && <div className="form-error">{error}</div>}
             <form onSubmit={submit} className="modal-form">
@@ -128,15 +128,15 @@ export default function UserAppointmentsPage() {
                       {dealerResults.map((d) => (
                         <div key={d._id} className="dealer-option" onClick={() => selectDealer(d)}>
                           <div className="do-logo">{d.logo?<img src={d.logo} alt=""/>:d.companyName?.charAt(0)}</div>
-                          <div><div className="do-name">{d.companyName}</div><div className="do-loc">{d.city||"—"}, {d.state||"—"}</div></div>
+                          <div><div className="do-name">{d.companyName}</div><div className="do-loc">{d.city||""}, {d.state||""}</div></div>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
                 {selectedDealer && (
-                  <div className="selected-dealer">✅ {selectedDealer.companyName}
-                    <button type="button" onClick={() => { setSelectedDealer(null); setDealerSearch(""); setForm({...form,dealerId:""}); }} style={{background:"none",border:"none",cursor:"pointer",color:"#DC2626",marginLeft:"0.5rem"}}>✕</button>
+                  <div className="selected-dealer"> {selectedDealer.companyName}
+                    <button type="button" onClick={() => { setSelectedDealer(null); setDealerSearch(""); setForm({...form,dealerId:""}); }} style={{background:"none",border:"none",cursor:"pointer",color:"#DC2626",marginLeft:"0.5rem"}}></button>
                   </div>
                 )}
               </div>
@@ -162,13 +162,13 @@ export default function UserAppointmentsPage() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">APPOINTMENT DETAILS</h3>
-              <button className="modal-close" onClick={() => setShowDetail(null)}>✕</button>
+              <button className="modal-close" onClick={() => setShowDetail(null)}></button>
             </div>
             <div className="modal-form">
               <div className="detail-grid">
                 {[
                   ["Type", showDetail.type?.replace(/_/g," ")], ["Status", showDetail.status],
-                  ["Dealer", showDetail.dealerName||"—"], ["Date", fmt(showDetail.scheduledAt)],
+                  ["Dealer", showDetail.dealerName||""], ["Date", fmt(showDetail.scheduledAt)],
                 ].map(([k,v]) => (
                   <div key={k as string} className="dg-item">
                     <div className="dg-label">{k}</div>
@@ -178,8 +178,8 @@ export default function UserAppointmentsPage() {
               </div>
               {showDetail.notes && <div className="detail-desc"><div className="dd-label">Notes</div><p className="dd-text">{showDetail.notes}</p></div>}
               <div className="dealer-contacts">
-                {showDetail.dealerPhone && <a href={`tel:${showDetail.dealerPhone}`} className="contact-btn">📞 {showDetail.dealerPhone}</a>}
-                {showDetail.dealerWhatsapp && <a href={`https://wa.me/${showDetail.dealerWhatsapp}`} target="_blank" rel="noreferrer" className="contact-btn">💬 WhatsApp</a>}
+                {showDetail.dealerPhone && <a href={`tel:${showDetail.dealerPhone}`} className="contact-btn"> {showDetail.dealerPhone}</a>}
+                {showDetail.dealerWhatsapp && <a href={`https://wa.me/${showDetail.dealerWhatsapp}`} target="_blank" rel="noreferrer" className="contact-btn"> WhatsApp</a>}
               </div>
               <div className="modal-footer">
                 <button className="btn-outline" onClick={() => setShowDetail(null)}>Close</button>

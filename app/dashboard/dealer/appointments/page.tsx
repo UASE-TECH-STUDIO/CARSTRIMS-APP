@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
@@ -30,7 +30,7 @@ export default function DealerAppointmentsPage() {
 
   const fmt = (iso: string) => iso ? new Date(iso).toLocaleString("en-NG", {
     weekday:"short", year:"numeric", month:"short", day:"numeric", hour:"2-digit", minute:"2-digit"
-  }) : "—";
+  }) : "";
 
   return (
     <div className="apts-page">
@@ -39,13 +39,13 @@ export default function DealerAppointmentsPage() {
           <h2 className="page-heading">Appointments</h2>
           <p className="page-sub">{appointments.length} scheduled</p>
         </div>
-        <button className="refresh-btn" onClick={load}>↻ Refresh</button>
+        <button className="refresh-btn" onClick={load}> Refresh</button>
       </div>
 
       {loading ? <div className="loading"><div className="spinner" /></div>
       : appointments.length === 0 ? (
         <div className="empty">
-          <div className="empty-icon">📅</div>
+          <div className="empty-icon"></div>
           <h3>No appointments yet</h3>
           <p>Customers can schedule showroom visits, test drives, and meetings through the app</p>
         </div>
@@ -54,13 +54,13 @@ export default function DealerAppointmentsPage() {
           {appointments.map((a) => (
             <div key={a._id} className="apt-card">
               <div className="apt-left">
-                <div className="apt-type-icon">{a.type==="test_drive"?"🚗":a.type==="payment_meeting"?"💳":a.type==="inspection"?"🔍":"🏢"}</div>
+                <div className="apt-type-icon">{a.type==="test_drive"?"":a.type==="payment_meeting"?"":a.type==="inspection"?"":""}</div>
                 <div className="apt-info">
                   <div className="apt-type">{a.type?.replace(/_/g," ")}</div>
                   <div className="apt-customer">
-                    {a.userName || "Customer"}{a.userPhone ? ` · ${a.userPhone}` : ""}
+                    {a.userName || "Customer"}{a.userPhone ? `  ${a.userPhone}` : ""}
                   </div>
-                  <div className="apt-time">📅 {fmt(a.scheduledAt)}</div>
+                  <div className="apt-time"> {fmt(a.scheduledAt)}</div>
                   {a.notes && <div className="apt-notes">{a.notes}</div>}
                 </div>
               </div>
@@ -71,16 +71,16 @@ export default function DealerAppointmentsPage() {
                 {a.status === "pending" && (
                   <div className="apt-actions">
                     <button className="act-btn confirm" onClick={() => updateStatus(a.appointmentId || a._id, "confirmed")}>
-                      ✅ Confirm
+                       Confirm
                     </button>
                     <button className="act-btn cancel" onClick={() => updateStatus(a.appointmentId || a._id, "cancelled")}>
-                      ✕ Decline
+                       Decline
                     </button>
                   </div>
                 )}
                 {a.status === "confirmed" && (
                   <button className="act-btn complete" onClick={() => updateStatus(a.appointmentId || a._id, "completed")}>
-                    ✓ Mark Done
+                     Mark Done
                   </button>
                 )}
               </div>

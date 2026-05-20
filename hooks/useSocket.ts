@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "@/store/authStore";
@@ -27,15 +27,15 @@ export const useSocket = () => {
     socketRef.current = socketInstance;
 
     socketInstance.on("connect", () => {
-      console.log("✅ Socket connected:", socketInstance?.id);
+      console.log(" Socket connected:", socketInstance?.id);
     });
 
     socketInstance.on("disconnect", (reason) => {
-      console.warn("⚠️ Socket disconnected:", reason);
+      console.warn(" Socket disconnected:", reason);
     });
 
     return () => {
-      // Don't disconnect on unmount — keep alive across pages
+      // Don't disconnect on unmount  keep alive across pages
     };
   }, [user]);
 

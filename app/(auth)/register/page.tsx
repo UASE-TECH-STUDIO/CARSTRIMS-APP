@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -6,12 +6,12 @@ import api from "@/lib/api";
 import { useAuthStore, getRoleRedirect } from "@/store/authStore";
 
 const ROLES = [
-  { value:"DEALER_ADMIN", label:"Dealership", icon:"🏪", desc:"Manage inventory, staff and sales from your own dealership" },
-  { value:"PARTNER_USER", label:"Partner / Consignor", icon:"🤝", desc:"Monitor your vehicles assigned across multiple dealers" },
-  { value:"PUBLIC_USER", label:"Buyer", icon:"🚗", desc:"Browse, save and request vehicles from verified dealers" },
+  { value:"DEALER_ADMIN", label:"Dealership", icon:"", desc:"Manage inventory, staff and sales from your own dealership" },
+  { value:"PARTNER_USER", label:"Partner / Consignor", icon:"", desc:"Monitor your vehicles assigned across multiple dealers" },
+  { value:"PUBLIC_USER", label:"Buyer", icon:"", desc:"Browse, save and request vehicles from verified dealers" },
 ];
 
-// Twilio WhatsApp Sandbox number — update this to your actual Twilio number
+// Twilio WhatsApp Sandbox number  update this to your actual Twilio number
 const TWILIO_WHATSAPP_NUMBER = "+14155238886";
 const TWILIO_SANDBOX_KEYWORD = "join ants-whistle";
 
@@ -49,14 +49,14 @@ export default function RegisterPage() {
         <div className="rg-brand">CARSTRIMS</div>
         <div className="rg-mid">
           <h1 className="rg-title">JOIN THE PLATFORM TODAY</h1>
-          <p className="rg-sub">Whether you are a dealership, partner or buyer — CARSTRIMS gives you the tools to succeed in the Nigerian automotive market.</p>
+          <p className="rg-sub">Whether you are a dealership, partner or buyer  CARSTRIMS gives you the tools to succeed in the Nigerian automotive market.</p>
           <div className="rg-feats">
             {["Free to join","Verified dealerships only","Real-time inventory","Secure messaging"].map(f=>(
               <div key={f} className="rg-feat"><span className="rg-dot"/>{f}</div>
             ))}
           </div>
         </div>
-        <div className="rg-foot">Built by <strong>UASE TECH STUDIO</strong> · CARSTRIMS 2026</div>
+        <div className="rg-foot">Built by <strong>UASE TECH STUDIO</strong>  CARSTRIMS 2026</div>
       </div>
 
       <div className="rg-right">
@@ -74,7 +74,7 @@ export default function RegisterPage() {
             <h2 className="rg-card-title">{step===1?"Choose Account Type":"Create Your Account"}</h2>
             <p className="rg-card-sub">{step===1?"Select how you will use CARSTRIMS":"Fill in your details below"}</p>
           </div>
-          {error && <div className="rg-err"><span>{error}</span><button onClick={()=>setError("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}>✕</button></div>}
+          {error && <div className="rg-err"><span>{error}</span><button onClick={()=>setError("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}></button></div>}
 
           {step===1 ? (
             <div className="rg-roles">
@@ -85,10 +85,10 @@ export default function RegisterPage() {
                     <div className="rg-role-label">{r.label}</div>
                     <div className="rg-role-desc">{r.desc}</div>
                   </div>
-                  {role===r.value && <span className="rg-check">✓</span>}
+                  {role===r.value && <span className="rg-check"></span>}
                 </button>
               ))}
-              <button className="rg-btn" onClick={()=>setStep(2)} disabled={!role}>CONTINUE →</button>
+              <button className="rg-btn" onClick={()=>setStep(2)} disabled={!role}>CONTINUE </button>
             </div>
           ) : (
             <form onSubmit={submit} className="rg-form">
@@ -125,7 +125,7 @@ export default function RegisterPage() {
               {/* WhatsApp Sandbox Onboarding */}
               {showWaSandbox && form.whatsapp && (
                 <div className="rg-wa-box">
-                  <div className="rg-wa-title">📱 Receive Admin Messages on WhatsApp?</div>
+                  <div className="rg-wa-title"> Receive Admin Messages on WhatsApp?</div>
                   <p className="rg-wa-desc">
                     To receive notifications and messages from CARSTRIMS admins on WhatsApp, send this exact phrase from your WhatsApp number to our platform number:
                   </p>
@@ -151,7 +151,7 @@ export default function RegisterPage() {
                 <div className="rg-notice"><strong>Dealership Account:</strong> After registering you will complete your dealership setup. Listings are hidden until a CARSTRIMS admin approves your account.</div>
               )}
               <div className="rg-actions">
-                <button type="button" className="rg-back" onClick={()=>setStep(1)}>← Back</button>
+                <button type="button" className="rg-back" onClick={()=>setStep(1)}> Back</button>
                 <button type="submit" className="rg-btn rg-flex1" disabled={loading}>{loading?"Creating account...":"CREATE ACCOUNT"}</button>
               </div>
             </form>

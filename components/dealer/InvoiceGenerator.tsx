@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import DocumentViewer from "@/components/shared/DocumentViewer";
@@ -33,7 +33,7 @@ export default function InvoiceGenerator({ transactionId, onClose }: Props) {
   if (error || !doc) return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9100,padding:"1rem"}}>
       <div style={{background:"#fff",borderRadius:"12px",padding:"2rem",maxWidth:"400px",width:"100%",textAlign:"center",display:"flex",flexDirection:"column",gap:"1rem"}}>
-        <div style={{fontSize:"2rem"}}>⚠</div>
+        <div style={{fontSize:"2rem"}}></div>
         <div style={{fontFamily:"var(--font-display)",fontSize:"0.95rem",color:"#1A1A1A"}}>Receipt Not Available</div>
         <div style={{fontSize:"0.875rem",color:"#737373",lineHeight:1.6}}>{error||"No receipt data found for this transaction."}</div>
         <button onClick={onClose} style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.75rem 1.5rem",fontFamily:"var(--font-display)",fontSize:"0.875rem",cursor:"pointer"}}>Close</button>

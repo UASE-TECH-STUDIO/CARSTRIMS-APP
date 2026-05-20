@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import Link from "next/link";
 
 interface Props {
@@ -18,7 +18,7 @@ interface Props {
 }
 
 export default function CarContextCard({ car, onClose, compact }: Props) {
-  const fmt = (n?: number) => n ? `₦${n.toLocaleString()}` : "";
+  const fmt = (n?: number) => n ? `${n.toLocaleString()}` : "";
 
   if (compact) return (
     <Link href={`/cars/${car.carId}`}
@@ -32,7 +32,7 @@ export default function CarContextCard({ car, onClose, compact }: Props) {
         <div style={{fontSize:"0.78rem",fontWeight:700,color:"#C4621A",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{car.brand} {car.model} {car.year}</div>
         {car.sellingPrice && <div style={{fontSize:"0.7rem",color:"#F47B20",fontWeight:600,fontFamily:"var(--font-display)"}}>{fmt(car.sellingPrice)}</div>}
       </div>
-      <span style={{fontSize:"0.65rem",color:"#F47B20",flexShrink:0}}>View →</span>
+      <span style={{fontSize:"0.65rem",color:"#F47B20",flexShrink:0}}>View </span>
     </Link>
   );
 
@@ -49,13 +49,13 @@ export default function CarContextCard({ car, onClose, compact }: Props) {
           <Link href={`/cars/${car.carId}`} style={{textDecoration:"none"}}>
             <div style={{fontSize:"0.95rem",fontWeight:700,color:"#1A1A1A",lineHeight:1.2}}>{car.brand} {car.model} {car.year}</div>
           </Link>
-          <div style={{fontSize:"0.75rem",color:"#737373",textTransform:"capitalize"}}>{[car.color,car.condition].filter(Boolean).join(" · ")}</div>
+          <div style={{fontSize:"0.75rem",color:"#737373",textTransform:"capitalize"}}>{[car.color,car.condition].filter(Boolean).join("  ")}</div>
           {car.sellingPrice && <div style={{fontFamily:"var(--font-display)",fontSize:"1rem",color:"#F47B20",marginTop:"0.1rem"}}>{fmt(car.sellingPrice)}</div>}
         </div>
         <div style={{display:"flex",flexDirection:"column",justifyContent:"space-between",padding:"0.5rem",flexShrink:0,alignItems:"flex-end"}}>
-          {onClose && <button onClick={onClose} style={{background:"none",border:"none",color:"#A3A3A3",cursor:"pointer",fontSize:"0.9rem",lineHeight:1}}>✕</button>}
+          {onClose && <button onClick={onClose} style={{background:"none",border:"none",color:"#A3A3A3",cursor:"pointer",fontSize:"0.9rem",lineHeight:1}}></button>}
           <Link href={`/cars/${car.carId}`} style={{fontSize:"0.7rem",color:"#F47B20",textDecoration:"none",fontWeight:700,display:"flex",alignItems:"center",gap:"0.2rem",marginTop:"auto"}}>
-            View car →
+            View car 
           </Link>
         </div>
       </div>

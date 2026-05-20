@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
@@ -28,7 +28,7 @@ export default function CreateDealerPage() {
     return (
       <div className="create-page">
         <div className="success-card">
-          <div className="success-icon">✅</div>
+          <div className="success-icon"></div>
           <h2 className="success-title">DEALER CREATED SUCCESSFULLY</h2>
           <div className="credentials">
             <div className="cred-row"><span className="cred-label">Company</span><span className="cred-val">{form.companyName}</span></div>
@@ -56,7 +56,7 @@ export default function CreateDealerPage() {
     <div className="create-page">
       <div className="page-header">
         <h2 className="page-heading">Create Dealer Account</h2>
-        <p className="page-sub">Create a dealer account directly — they receive full approved access immediately</p>
+        <p className="page-sub">Create a dealer account directly  they receive full approved access immediately</p>
       </div>
 
       {error && <div className="error-banner">{error}</div>}
@@ -118,7 +118,7 @@ export default function CreateDealerPage() {
           </div>
 
           <div className="admin-note">
-            ℹ️ A temporary password will be auto-generated. The dealer account will be pre-approved and ready to use immediately.
+             A temporary password will be auto-generated. The dealer account will be pre-approved and ready to use immediately.
           </div>
 
           <div className="form-footer">

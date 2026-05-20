@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
@@ -69,11 +69,11 @@ export default function FindDealerPage() {
     finally { setLoadingProfile(false); }
   };
 
-  const fmt = (n: number) => `₦${(n || 0).toLocaleString()}`;
+  const fmt = (n: number) => `${(n || 0).toLocaleString()}`;
   const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-    approved: { label: "✅ Linked Partner", color: "#16A34A" },
-    pending: { label: "⏳ Request Pending", color: "#D97706" },
-    rejected: { label: "✕ Request Declined", color: "#DC2626" },
+    approved: { label: " Linked Partner", color: "#16A34A" },
+    pending: { label: " Request Pending", color: "#D97706" },
+    rejected: { label: " Request Declined", color: "#DC2626" },
   };
 
   return (
@@ -91,10 +91,10 @@ export default function FindDealerPage() {
         </button>
       </form>
 
-      {error && <div className="error-msg">❌ {error}<button onClick={() => setError("")} style={{background:"none",border:"none",cursor:"pointer",marginLeft:"0.5rem"}}>✕</button></div>}
+      {error && <div className="error-msg"> {error}<button onClick={() => setError("")} style={{background:"none",border:"none",cursor:"pointer",marginLeft:"0.5rem"}}></button></div>}
 
       {results.length === 0 && !loading ? (
-        <div className="empty"><div className="ei">🔍</div><h3>No dealers found</h3><p>Try a different search term</p></div>
+        <div className="empty"><div className="ei"></div><h3>No dealers found</h3><p>Try a different search term</p></div>
       ) : (
         <div className="results-list">
           {results.map((d) => {
@@ -111,9 +111,9 @@ export default function FindDealerPage() {
                     <div className="dealer-name">{d.companyName}</div>
                     <div className="dealer-owner">{d.ownerName}</div>
                     <div className="dealer-meta">
-                      {d.city && <span>📍 {d.city}, {d.state}</span>}
-                      <span>🚗 {d.totalCarsListed || 0} listed</span>
-                      <span>✅ {d.totalCarsSold || 0} sold</span>
+                      {d.city && <span> {d.city}, {d.state}</span>}
+                      <span> {d.totalCarsListed || 0} listed</span>
+                      <span> {d.totalCarsSold || 0} sold</span>
                     </div>
                     {d.description && <div className="dealer-desc">{d.description}</div>}
                   </div>
@@ -122,15 +122,15 @@ export default function FindDealerPage() {
                 <div className="dealer-right">
                   <div className="dealer-id">{d.dealerId}</div>
                   <div className="dealer-contacts">
-                    {d.phone && <a href={`tel:${d.phone}`} className="cpi" onClick={(e) => e.stopPropagation()}>📞</a>}
-                    {d.whatsapp && <a href={`https://wa.me/${d.whatsapp}`} target="_blank" rel="noreferrer" className="cpi" onClick={(e) => e.stopPropagation()}>💬</a>}
-                    {d.email && <a href={`mailto:${d.email}`} className="cpi" onClick={(e) => e.stopPropagation()}>✉️</a>}
+                    {d.phone && <a href={`tel:${d.phone}`} className="cpi" onClick={(e) => e.stopPropagation()}></a>}
+                    {d.whatsapp && <a href={`https://wa.me/${d.whatsapp}`} target="_blank" rel="noreferrer" className="cpi" onClick={(e) => e.stopPropagation()}></a>}
+                    {d.email && <a href={`mailto:${d.email}`} className="cpi" onClick={(e) => e.stopPropagation()}></a>}
                   </div>
                   <button className="profile-btn" onClick={() => openDealerProfile(d)}>View Profile</button>
                   {statusInfo ? (
                     <div className="link-status" style={{color:statusInfo.color}}>{statusInfo.label}</div>
                   ) : success[d._id] ? (
-                    <div className="link-status" style={{color:"#D97706"}}>⏳ Request Sent!</div>
+                    <div className="link-status" style={{color:"#D97706"}}> Request Sent!</div>
                   ) : (
                     <button className="request-btn" onClick={() => handleRequest(d)} disabled={requesting === d._id}>
                       {requesting === d._id ? "Sending..." : "Send Partnership Request"}
@@ -160,7 +160,7 @@ export default function FindDealerPage() {
                   <div className="modal-id">{selectedDealer.dealerId}</div>
                 </div>
               </div>
-              <button className="modal-close" onClick={() => setSelectedDealer(null)}>✕</button>
+              <button className="modal-close" onClick={() => setSelectedDealer(null)}></button>
             </div>
 
             <div className="modal-body">
@@ -175,10 +175,10 @@ export default function FindDealerPage() {
               )}
 
               <div className="profile-contacts">
-                {selectedDealer.phone && <a href={`tel:${selectedDealer.phone}`} className="contact-btn">📞 {selectedDealer.phone}</a>}
-                {selectedDealer.whatsapp && <a href={`https://wa.me/${selectedDealer.whatsapp}`} target="_blank" rel="noreferrer" className="contact-btn">💬 WhatsApp</a>}
-                {selectedDealer.email && <a href={`mailto:${selectedDealer.email}`} className="contact-btn">✉️ {selectedDealer.email}</a>}
-                {selectedDealer.city && <div className="contact-btn">📍 {selectedDealer.city}, {selectedDealer.state}</div>}
+                {selectedDealer.phone && <a href={`tel:${selectedDealer.phone}`} className="contact-btn"> {selectedDealer.phone}</a>}
+                {selectedDealer.whatsapp && <a href={`https://wa.me/${selectedDealer.whatsapp}`} target="_blank" rel="noreferrer" className="contact-btn"> WhatsApp</a>}
+                {selectedDealer.email && <a href={`mailto:${selectedDealer.email}`} className="contact-btn"> {selectedDealer.email}</a>}
+                {selectedDealer.city && <div className="contact-btn"> {selectedDealer.city}, {selectedDealer.state}</div>}
               </div>
 
               {/* Available Cars */}
@@ -191,7 +191,7 @@ export default function FindDealerPage() {
                     {dealerCars.slice(0, 6).map((c: any) => (
                       <a key={c._id} href={`/cars/${c.carId}`} target="_blank" rel="noreferrer" className="car-mini-card">
                         <div className="cm-img">
-                          {c.images?.[0] ? <img src={c.images[0]} alt="" /> : "🚗"}
+                          {c.images?.[0] ? <img src={c.images[0]} alt="" /> : ""}
                         </div>
                         <div className="cm-info">
                           <div className="cm-name">{c.brand} {c.model}</div>
@@ -217,7 +217,7 @@ export default function FindDealerPage() {
                 const linkStatus = getLinkStatus(selectedDealer._id);
                 const statusInfo = linkStatus ? STATUS_LABELS[linkStatus] : null;
                 if (statusInfo) return <div className="link-status-large" style={{color:statusInfo.color}}>{statusInfo.label}</div>;
-                if (success[selectedDealer._id]) return <div className="link-status-large" style={{color:"#D97706"}}>⏳ Partnership request sent</div>;
+                if (success[selectedDealer._id]) return <div className="link-status-large" style={{color:"#D97706"}}> Partnership request sent</div>;
                 return (
                   <button className="request-btn-lg" onClick={() => handleRequest(selectedDealer)} disabled={requesting === selectedDealer._id}>
                     {requesting === selectedDealer._id ? "Sending..." : "Send Partnership Request"}

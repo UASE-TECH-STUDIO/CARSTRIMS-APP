@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
@@ -54,14 +54,14 @@ export default function AdminSettingsPage() {
 
       {msg && (
         <div className="success-banner">
-          ✅ {msg}
-          <button onClick={() => setMsg("")} className="dismiss">✕</button>
+           {msg}
+          <button onClick={() => setMsg("")} className="dismiss"></button>
         </div>
       )}
       {err && (
         <div className="error-banner">
-          ❌ {err}
-          <button onClick={() => setErr("")} className="dismiss">✕</button>
+           {err}
+          <button onClick={() => setErr("")} className="dismiss"></button>
         </div>
       )}
 
@@ -174,7 +174,7 @@ export default function AdminSettingsPage() {
             <div className="info-row"><span className="info-label">Version</span><span className="info-val mono">1.0.0</span></div>
             <div className="info-row"><span className="info-label">Developer</span><span className="info-val">UASE TECH STUDIO</span></div>
             <div className="info-row"><span className="info-label">Year</span><span className="info-val">2026</span></div>
-            <div className="info-row"><span className="info-label">Stack</span><span className="info-val mono">Next.js · FastAPI · MongoDB</span></div>
+            <div className="info-row"><span className="info-label">Stack</span><span className="info-val mono">Next.js  FastAPI  MongoDB</span></div>
           </div>
         </div>
       </div>

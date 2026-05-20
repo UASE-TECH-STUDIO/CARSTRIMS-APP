@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
@@ -40,7 +40,7 @@ export default function DealerRequestsPage() {
   };
 
   const fmt  = (n:number)=>`NGN ${(n||0).toLocaleString()}`;
-  const fmtDate = (iso:string)=>iso?new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}):"—";
+  const fmtDate = (iso:string)=>iso?new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}):"";
 
   return (
     <div className="req-page">
@@ -55,7 +55,7 @@ export default function DealerRequestsPage() {
       {loading?<div className="loading"><div className="spinner"/></div>
       :requests.length===0?(
         <div className="empty">
-          <div className="empty-icon">📩</div>
+          <div className="empty-icon"></div>
           <h3>No requests yet</h3>
           <p>Customer car requests will appear here when buyers submit them</p>
         </div>
@@ -69,7 +69,7 @@ export default function DealerRequestsPage() {
                 <div className="req-header">
                   <div>
                     <div className="req-id">{r.requestId}</div>
-                    <div className="req-car">{r.carBrand} {r.carModel} {r.carYear||""}{r.carColor?` · ${r.carColor}`:""}</div>
+                    <div className="req-car">{r.carBrand} {r.carModel} {r.carYear||""}{r.carColor?`  ${r.carColor}`:""}</div>
                   </div>
                   <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:"0.35rem"}}>
                     <span className="req-status" style={{background:sc.bg,color:sc.color,border:`1px solid ${sc.color}44`}}>{r.status}</span>
@@ -153,7 +153,7 @@ export default function DealerRequestsPage() {
             <div className="modal-body">
               <div className="req-info">
                 <strong>{responding.carBrand} {responding.carModel} {responding.carYear||""}</strong>
-                <span style={{color:"#737373"}}> — from {responding.userName}</span>
+                <span style={{color:"#737373"}}>  from {responding.userName}</span>
               </div>
               {responding.budget&&<div style={{fontSize:"0.825rem",color:"#F47B20",fontWeight:600,margin:"0.5rem 0"}}>Budget: NGN {Number(responding.budget).toLocaleString()}</div>}
               {responding.description&&<div style={{background:"#F5F5F5",borderRadius:"6px",padding:"0.75rem",fontSize:"0.825rem",color:"#525252",marginBottom:"0.75rem",lineHeight:1.55}}>{responding.description}</div>}
@@ -161,7 +161,7 @@ export default function DealerRequestsPage() {
                 <div className="field">
                   <label className="fl">Your Response *</label>
                   <textarea className="fi fi-ta" rows={5}
-                    placeholder="Tell the customer what you can offer — pricing, availability, condition, delivery time..."
+                    placeholder="Tell the customer what you can offer  pricing, availability, condition, delivery time..."
                     value={responseText} onChange={e=>setResponseText(e.target.value)} required/>
                 </div>
                 <div className="modal-footer">

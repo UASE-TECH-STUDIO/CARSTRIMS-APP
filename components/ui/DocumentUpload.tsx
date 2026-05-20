@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useState, useRef } from "react";
 import api from "@/lib/api";
 
@@ -46,7 +46,7 @@ export default function DocumentUpload({
         <div className="doc-preview">
           {currentUrl.endsWith(".pdf") ? (
             <a href={currentUrl} target="_blank" rel="noreferrer" className="doc-link">
-              📄 View uploaded document
+               View uploaded document
             </a>
           ) : (
             <img src={currentUrl} alt="Uploaded ID" className="doc-img" />
@@ -62,9 +62,9 @@ export default function DocumentUpload({
           <div className="doc-spinner" />
         ) : (
           <>
-            <span className="doc-icon">📎</span>
+            <span className="doc-icon"></span>
             <span className="doc-label">{currentUrl ? "Replace document" : label}</span>
-            <span className="doc-hint">JPG, PNG, or PDF · Max 10MB</span>
+            <span className="doc-hint">JPG, PNG, or PDF  Max 10MB</span>
           </>
         )}
       </div>

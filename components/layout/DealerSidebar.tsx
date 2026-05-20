@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
@@ -6,19 +6,19 @@ import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
 const NAV_ITEMS = [
-  { href:"/dashboard/dealer", label:"Overview", icon:"▦", exact:true },
-  { href:"/dashboard/dealer/cars", label:"Cars & Inventory", icon:"▣" },
-  { href:"/dashboard/dealer/sales", label:"Sales", icon:"◈" },
-  { href:"/dashboard/dealer/expenses", label:"Expenses", icon:"◉" },
-  { href:"/dashboard/dealer/staff", label:"Staff", icon:"◎" },
-  { href:"/dashboard/dealer/partners", label:"Partners", icon:"⊕" },
-  { href:"/dashboard/dealer/requests", label:"Requests", icon:"◔" },
-  { href:"/dashboard/dealer/appointments", label:"Appointments", icon:"◷" },
-  { href:"/dashboard/dealer/movements", label:"Movements", icon:"↺" },
-  { href:"/dashboard/dealer/cctv", label:"CCTV", icon:"◑" },
-  { href:"/dashboard/dealer/reports", label:"Reports", icon:"▤" },
-  { href:"/dashboard/dealer/notifications", label:"Notifications", icon:"◓" },
-  { href:"/dashboard/dealer/settings", label:"Settings", icon:"⚙" },
+  { href:"/dashboard/dealer", label:"Overview", icon:"", exact:true },
+  { href:"/dashboard/dealer/cars", label:"Cars & Inventory", icon:"" },
+  { href:"/dashboard/dealer/sales", label:"Sales", icon:"" },
+  { href:"/dashboard/dealer/expenses", label:"Expenses", icon:"" },
+  { href:"/dashboard/dealer/staff", label:"Staff", icon:"" },
+  { href:"/dashboard/dealer/partners", label:"Partners", icon:"" },
+  { href:"/dashboard/dealer/requests", label:"Requests", icon:"" },
+  { href:"/dashboard/dealer/appointments", label:"Appointments", icon:"" },
+  { href:"/dashboard/dealer/movements", label:"Movements", icon:"" },
+  { href:"/dashboard/dealer/cctv", label:"CCTV", icon:"" },
+  { href:"/dashboard/dealer/reports", label:"Reports", icon:"" },
+  { href:"/dashboard/dealer/notifications", label:"Notifications", icon:"" },
+  { href:"/dashboard/dealer/settings", label:"Settings", icon:"" },
 ];
 
 interface Props { isOpen?: boolean; onClose?: () => void; }
@@ -44,9 +44,9 @@ export default function DealerSidebar({ isOpen, onClose }: Props) {
     <>
       <aside className={`dealer-sidebar${isOpen ? " mobile-open" : ""}`}>
         <div className="sb-brand">
-          <span className="sb-bi">◈</span>
+          <span className="sb-bi"></span>
           <span className="sb-bn">CARSTRIMS</span>
-          <button className="sb-x" onClick={onClose} aria-label="Close menu">✕</button>
+          <button className="sb-x" onClick={onClose} aria-label="Close menu"></button>
         </div>
 
         <Link href="/dashboard/dealer/settings" className="sb-profile" onClick={handleNav}>
@@ -60,7 +60,7 @@ export default function DealerSidebar({ isOpen, onClose }: Props) {
             <div className="sb-name">{dealer?.companyName||user?.fullName||"Dealer"}</div>
             {dealer?.dealerId && <div className="sb-id">{dealer.dealerId}</div>}
           </div>
-          <span className="sb-edit">✏</span>
+          <span className="sb-edit"></span>
         </Link>
 
         <nav className="sb-nav">
@@ -77,7 +77,7 @@ export default function DealerSidebar({ isOpen, onClose }: Props) {
           ))}
           <div className="sb-div"/>
           <Link href="/feed" className="sb-item feed" onClick={handleNav}>
-            <span className="sb-icon">⌂</span>
+            <span className="sb-icon"></span>
             <span>View Feed</span>
           </Link>
         </nav>
@@ -85,7 +85,7 @@ export default function DealerSidebar({ isOpen, onClose }: Props) {
         <div className="sb-bot">
           <div className="sb-dev">Powered by <strong>UASE TECH STUDIO</strong></div>
           <button className="sb-out" onClick={() => { logout(); router.push("/login"); }}>
-            ↩ Sign Out
+             Sign Out
           </button>
         </div>
       </aside>

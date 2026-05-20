@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
@@ -32,7 +32,7 @@ export default function DealerQRCode() {
       const qrUrl: string = qrData.qrCode;
 
       if (qrUrl.startsWith("data:")) {
-        // base64 — direct download
+        // base64  direct download
         const link = document.createElement("a");
         link.href = qrUrl;
         link.download = `carstrims-qr-${qrData.dealerId || "dealer"}.png`;
@@ -40,7 +40,7 @@ export default function DealerQRCode() {
         link.click();
         document.body.removeChild(link);
       } else {
-        // Cloudinary URL — fetch as blob then download
+        // Cloudinary URL  fetch as blob then download
         const response = await fetch(qrUrl);
         const blob = await response.blob();
         const blobUrl = URL.createObjectURL(blob);
@@ -78,24 +78,24 @@ export default function DealerQRCode() {
           </div>
           <div className="qr-actions">
             <button className="qr-download-btn" onClick={handleDownload} disabled={downloading}>
-              {downloading ? "Downloading..." : "⬇ Download PNG"}
+              {downloading ? "Downloading..." : " Download PNG"}
             </button>
             <button className="qr-regen-btn" onClick={handleGenerate} disabled={generating}>
-              {generating ? "..." : "↻ Regenerate"}
+              {generating ? "..." : " Regenerate"}
             </button>
           </div>
           <div className="qr-uses">
             <div className="qu-title">USE FOR</div>
             <div className="qu-grid">
               {["Showroom displays","Business cards","Print banners","Social media","Windshield tags","WhatsApp status"].map((u) => (
-                <div key={u} className="qu-item">✓ {u}</div>
+                <div key={u} className="qu-item"> {u}</div>
               ))}
             </div>
           </div>
         </div>
       ) : (
         <div className="qr-empty">
-          <div className="qe-icon">📷</div>
+          <div className="qe-icon"></div>
           <p>No QR code yet</p>
           <button className="qr-download-btn" onClick={handleGenerate} disabled={generating}>
             {generating ? "Generating..." : "Generate QR Code"}

@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState, useRef } from "react";
 import api from "@/lib/api";
 
@@ -55,7 +55,7 @@ export default function MovementsPage() {
 
   const selectMovCar = (car: any) => {
     setForm((f: any) => ({ ...f, carId: car.carId, carBrand: car.brand, carModel: car.model, carYear: car.year }));
-    setMovCarSearch(`${car.brand} ${car.model} ${car.year} — ${car.carId}`);
+    setMovCarSearch(`${car.brand} ${car.model} ${car.year}  ${car.carId}`);
     setMovCarResults([]); 
     setMovCarDrop(false);
   };
@@ -132,7 +132,7 @@ export default function MovementsPage() {
 
   const fmt = (iso: string) => iso ? new Date(iso).toLocaleString("en-NG", {
     day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"
-  }) : "—";
+  }) : "";
 
   const STATUS_COLORS: Record<string,string> = { out:"#D97706", returned:"#16A34A", overdue:"#DC2626" };
 
@@ -144,7 +144,7 @@ export default function MovementsPage() {
           <p className="page-sub">{total} log{total!==1?"s":""}</p>
         </div>
         <div className="hbtns">
-          <button className="btn-outline" onClick={exportCSV}>⬇ Export</button>
+          <button className="btn-outline" onClick={exportCSV}> Export</button>
           <button className="btn-primary" onClick={() => { setShowLog(true); setForm(emptyForm); setMovCarSearch(""); setError(""); }}>+ Log Movement</button>
         </div>
       </div>
@@ -159,21 +159,21 @@ export default function MovementsPage() {
 
       {loading ? <div className="loading"><div className="spinner" /></div>
       : movements.length === 0 ? (
-        <div className="empty"><div className="ei">🔄</div><h3>No movements logged</h3><p>Log when a vehicle leaves your premises</p></div>
+        <div className="empty"><div className="ei"></div><h3>No movements logged</h3><p>Log when a vehicle leaves your premises</p></div>
       ) : (
         <div className="mov-list">
           {movements.map((m) => (
             <div key={m._id} className="mov-card">
               <div className="mov-left">
                 <div className="mov-id">{m.movementId}</div>
-                <div className="mov-car">{m.carBrand} {m.carModel} {m.carYear} · {m.carId}</div>
+                <div className="mov-car">{m.carBrand} {m.carModel} {m.carYear}  {m.carId}</div>
                 <div className="mov-purpose">{m.purpose?.replace(/_/g," ")}</div>
               </div>
               <div className="mov-center">
                 <div className="mov-person">{m.takenByName}</div>
                 <div className="mov-phone">{m.takenByPhone}</div>
                 {m.takenByIdType && <div className="mov-id-type">{m.takenByIdType}{m.takenByIdNumber ? `: ${m.takenByIdNumber}` : ""}</div>}
-                {m.takenByIdImageUrl && <a href={m.takenByIdImageUrl} target="_blank" rel="noreferrer" className="id-img-link">📎 View ID</a>}
+                {m.takenByIdImageUrl && <a href={m.takenByIdImageUrl} target="_blank" rel="noreferrer" className="id-img-link"> View ID</a>}
               </div>
               <div className="mov-times">
                 <div className="time-row"><span className="tl">Out</span><span className="tv">{fmt(m.timeOut)}</span></div>
@@ -188,7 +188,7 @@ export default function MovementsPage() {
                   )}
                   <button className="act-sm" onClick={() => { setShowEdit(m); setEditForm({...m,editReason:""}); }}>Edit</button>
                 </div>
-                {m.editHistory?.length > 0 && <div className="edited-note">edited {m.editHistory.length}×</div>}
+                {m.editHistory?.length > 0 && <div className="edited-note">edited {m.editHistory.length}</div>}
               </div>
             </div>
           ))}
@@ -201,13 +201,13 @@ export default function MovementsPage() {
           <div className="modal modal-xl" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">LOG VEHICLE MOVEMENT</h3>
-              <button className="modal-close" onClick={() => setShowLog(false)}>✕</button>
+              <button className="modal-close" onClick={() => setShowLog(false)}></button>
             </div>
             {error && <div className="form-error">{error}</div>}
             <form onSubmit={handleLog} className="modal-form">
               <div className="form-section">VEHICLE</div>
               <div className="field" style={{position:"relative"}}>
-                <label className="fl">Car ID — search to pick a car *</label>
+                <label className="fl">Car ID  search to pick a car *</label>
                 <input className="fi" placeholder="Search by brand, model or Car ID..." value={movCarSearch} onChange={e=>{setMovCarSearch(e.target.value);if(!e.target.value)setForm((f:any)=>({...f,carId:""}));}} required={!form.carId}/>
                 {form.carId&&<div style={{fontSize:"0.7rem",color:"#16A34A",marginTop:"0.2rem",fontWeight:600}}>Selected: {form.carId}</div>}
                 {movCarDrop&&movCarResults.length>0&&(<div style={{position:"absolute",top:"calc(100%+2px)",left:0,right:0,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"8px",zIndex:50,maxHeight:"160px",overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,0.1)"}}>{movCarResults.map((c:any)=>(<button type="button" key={c.carId} onClick={()=>selectMovCar(c)} style={{display:"flex",alignItems:"center",gap:"0.625rem",padding:"0.55rem 0.875rem",background:"none",border:"none",borderBottom:"1px solid #F5F5F5",cursor:"pointer",width:"100%",textAlign:"left"}} onMouseOver={e=>(e.currentTarget as HTMLElement).style.background="#FFF7ED"} onMouseOut={e=>(e.currentTarget as HTMLElement).style.background=""}>{c.images?.[0]&&<img src={c.images[0]} alt="" style={{width:"36px",height:"28px",objectFit:"cover",borderRadius:"4px",flexShrink:0}}/>}<div><div style={{fontSize:"0.825rem",fontWeight:600,color:"#1A1A1A"}}>{c.brand} {c.model} {c.year}</div><div style={{fontSize:"0.68rem",color:"#A3A3A3",fontFamily:"monospace"}}>{c.carId}</div></div></button>))}</div>)}
@@ -239,11 +239,11 @@ export default function MovementsPage() {
                 <label className="fl">ID Card Photo / Scan</label>
                 <div className="id-upload">
                   <button type="button" className="upload-id-btn" onClick={() => idImgRef.current?.click()}>
-                    {uploading ? "Uploading..." : form.takenByIdImageUrl ? "✅ ID Uploaded — Change" : "📷 Upload / Snap ID Card"}
+                    {uploading ? "Uploading..." : form.takenByIdImageUrl ? " ID Uploaded  Change" : " Upload / Snap ID Card"}
                   </button>
                   <input ref={idImgRef} type="file" accept="image/*" style={{display:"none"}}
                     onChange={async (e) => { const f=e.target.files?.[0]; if(f){ const url=await uploadIdCard(f); setForm(prev=>({...prev,takenByIdImageUrl:url})); }}} />
-                  {form.takenByIdImageUrl && <a href={form.takenByIdImageUrl} target="_blank" rel="noreferrer" className="id-preview-link">Preview ID ↗</a>}
+                  {form.takenByIdImageUrl && <a href={form.takenByIdImageUrl} target="_blank" rel="noreferrer" className="id-preview-link">Preview ID </a>}
                 </div>
               </div>
               <div className="form-section">DETAILS</div>
@@ -266,8 +266,8 @@ export default function MovementsPage() {
         <div className="modal-overlay" onClick={() => setShowReturn(null)}>
           <div className="modal modal-sm" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title">RETURN VEHICLE — {showReturn.carId}</h3>
-              <button className="modal-close" onClick={() => setShowReturn(null)}>✕</button>
+              <h3 className="modal-title">RETURN VEHICLE  {showReturn.carId}</h3>
+              <button className="modal-close" onClick={() => setShowReturn(null)}></button>
             </div>
             <form onSubmit={handleReturn} className="modal-form">
               <div className="field"><label className="fl">Received By</label><input className="fi" placeholder="Who received the car?" value={returnForm.returnedToName} onChange={(e) => setReturnForm({...returnForm,returnedToName:e.target.value})} /></div>
@@ -291,12 +291,12 @@ export default function MovementsPage() {
         <div className="modal-overlay" onClick={() => setShowEdit(null)}>
           <div className="modal modal-sm" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title">EDIT MOVEMENT — {showEdit.movementId}</h3>
-              <button className="modal-close" onClick={() => setShowEdit(null)}>✕</button>
+              <h3 className="modal-title">EDIT MOVEMENT  {showEdit.movementId}</h3>
+              <button className="modal-close" onClick={() => setShowEdit(null)}></button>
             </div>
             {showEdit.editHistory?.length > 0 && (
               <div className="edit-info">
-                Previously edited {showEdit.editHistory.length}× — last: {showEdit.editHistory[showEdit.editHistory.length-1]?.editedAt ? new Date(showEdit.editHistory[showEdit.editHistory.length-1].editedAt).toLocaleString() : "—"}
+                Previously edited {showEdit.editHistory.length}  last: {showEdit.editHistory[showEdit.editHistory.length-1]?.editedAt ? new Date(showEdit.editHistory[showEdit.editHistory.length-1].editedAt).toLocaleString() : ""}
               </div>
             )}
             <form onSubmit={handleEdit} className="modal-form">
@@ -312,11 +312,11 @@ export default function MovementsPage() {
               <div className="field"><label className="fl">Upload New ID Card</label>
                 <div className="id-upload">
                   <button type="button" className="upload-id-btn" onClick={() => editIdImgRef.current?.click()}>
-                    {uploading ? "Uploading..." : editForm.takenByIdImageUrl ? "✅ Change ID Photo" : "📷 Upload ID"}
+                    {uploading ? "Uploading..." : editForm.takenByIdImageUrl ? " Change ID Photo" : " Upload ID"}
                   </button>
                   <input ref={editIdImgRef} type="file" accept="image/*" style={{display:"none"}}
                     onChange={async (e) => { const f=e.target.files?.[0]; if(f){ const url=await uploadIdCard(f); setEditForm((p: any)=>({...p,takenByIdImageUrl:url})); }}} />
-                  {editForm.takenByIdImageUrl && <a href={editForm.takenByIdImageUrl} target="_blank" rel="noreferrer" className="id-preview-link">Preview ↗</a>}
+                  {editForm.takenByIdImageUrl && <a href={editForm.takenByIdImageUrl} target="_blank" rel="noreferrer" className="id-preview-link">Preview </a>}
                 </div>
               </div>
               <div className="field"><label className="fl">Notes</label><textarea className="fi fi-ta" rows={2} value={editForm.notes||""} onChange={(e) => setEditForm({...editForm,notes:e.target.value})} /></div>

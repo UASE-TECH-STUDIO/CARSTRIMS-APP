@@ -1,4 +1,4 @@
-"use client";
+use client";
 import { ReactNode, useEffect, useState } from "react";
 import AuthGuard from "@/components/layout/AuthGuard";
 import Link from "next/link";
@@ -52,7 +52,7 @@ export default function PartnerLayout({ children }: { children: ReactNode }) {
           <aside className="sidebar">
             <div className="sidebar-top">
               <div className="sb-brand">
-                <span style={{color:"#F47B20"}}>◈</span>
+                <span style={{color:"#F47B20"}}></span>
                 <span className="brand-name">CARSTRIMS</span>
               </div>
               <Link href="/dashboard/partner/settings" className="partner-badge">

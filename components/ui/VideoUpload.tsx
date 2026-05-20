@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useState, useRef } from "react";
 import api from "@/lib/api";
 
@@ -64,7 +64,7 @@ export default function VideoUpload({
       {currentVideo && (
         <div className="video-preview">
           <video src={currentVideo} controls className="video-player" />
-          <div className="video-note">Current video · max {maxSeconds}s</div>
+          <div className="video-note">Current video  max {maxSeconds}s</div>
         </div>
       )}
 
@@ -81,11 +81,11 @@ export default function VideoUpload({
           </div>
         ) : (
           <>
-            <div className="drop-icon">🎬</div>
+            <div className="drop-icon"></div>
             <div className="drop-label">
               {currentVideo ? "Replace video" : `Upload video (max ${maxSeconds}s)`}
             </div>
-            <div className="drop-hint">MP4, MOV, WebM · Max 100MB</div>
+            <div className="drop-hint">MP4, MOV, WebM  Max 100MB</div>
           </>
         )}
       </div>

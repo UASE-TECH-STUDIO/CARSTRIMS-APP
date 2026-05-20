@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
@@ -85,8 +85,8 @@ export default function CCTVPage() {
         <div>
           <h2 className="page-heading">CCTV Monitoring</h2>
           <p className="page-sub">
-            {stats.total} camera{stats.total !== 1 ? "s" : ""} ·{" "}
-            <span style={{ color: "var(--success)" }}>{stats.online} online</span> ·{" "}
+            {stats.total} camera{stats.total !== 1 ? "s" : ""} {" "}
+            <span style={{ color: "var(--success)" }}>{stats.online} online</span> {" "}
             <span style={{ color: "var(--text-dim)" }}>{stats.offline} offline</span>
           </p>
         </div>
@@ -99,7 +99,7 @@ export default function CCTVPage() {
         <div className="loading-state"><div className="spinner" /></div>
       ) : cameras.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">📹</div>
+          <div className="empty-icon"></div>
           <h3>No cameras connected</h3>
           <p>Add your first CCTV camera stream</p>
           <button className="btn-gold" onClick={() => setShowAdd(true)}>Add Camera</button>
@@ -113,10 +113,10 @@ export default function CCTVPage() {
                 <div className="stream-header">
                   <div className="stream-info">
                     <span className="stream-name">{activeCamera.cameraName}</span>
-                    <span className="stream-loc">📍 {activeCamera.cameraLocation}</span>
+                    <span className="stream-loc"> {activeCamera.cameraLocation}</span>
                   </div>
                   <div className={`stream-status ${activeCamera.status}`}>
-                    ● {activeCamera.status}
+                     {activeCamera.status}
                   </div>
                 </div>
                 <div className="stream-body">
@@ -129,7 +129,7 @@ export default function CCTVPage() {
                     />
                   ) : (
                     <div className="stream-placeholder">
-                      <div className="stream-placeholder-icon">📹</div>
+                      <div className="stream-placeholder-icon"></div>
                       <div className="stream-placeholder-text">
                         {activeCamera.streamType.toUpperCase()} Stream
                       </div>
@@ -160,7 +160,7 @@ export default function CCTVPage() {
                 className={`camera-item ${activeCamera?.cameraId === cam.cameraId ? "active" : ""}`}
                 onClick={() => setActiveCamera(cam)}
               >
-                <div className="cam-preview">📹</div>
+                <div className="cam-preview"></div>
                 <div className="cam-info">
                   <div className="cam-name">{cam.cameraName}</div>
                   <div className="cam-loc">{cam.cameraLocation}</div>
@@ -180,7 +180,7 @@ export default function CCTVPage() {
                       className="cam-btn danger"
                       onClick={(e) => { e.stopPropagation(); handleDelete(cam.cameraId); }}
                     >
-                      ✕
+                      
                     </button>
                   </div>
                 </div>
@@ -196,7 +196,7 @@ export default function CCTVPage() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">ADD CAMERA</h3>
-              <button className="modal-close" onClick={() => setShowAdd(false)}>✕</button>
+              <button className="modal-close" onClick={() => setShowAdd(false)}></button>
             </div>
             {error && <div className="form-error">{error}</div>}
             <form onSubmit={handleAdd} className="cam-form">

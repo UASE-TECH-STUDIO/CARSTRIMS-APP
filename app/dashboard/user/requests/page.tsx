@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
 
@@ -79,7 +79,7 @@ export default function UserRequestsPage() {
     finally{setSubmitting(false);}
   };
 
-  const fmtDate = (iso:string)=>iso?new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}):"—";
+  const fmtDate = (iso:string)=>iso?new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}):"";
 
   const fi: React.CSSProperties = {background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.75rem 1rem",color:"#1A1A1A",fontSize:"0.9rem",fontFamily:"var(--font-body)",outline:"none",width:"100%",boxSizing:"border-box" as const,transition:"border-color 0.2s"};
   const lbl: React.CSSProperties = {fontSize:"0.7rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#525252",display:"block",marginBottom:"0.35rem"};
@@ -89,7 +89,7 @@ export default function UserRequestsPage() {
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"1rem",flexWrap:"wrap"}}>
         <div>
           <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.5rem",letterSpacing:"0.05em",color:"#1A1A1A",lineHeight:1}}>Vehicle Requests</h2>
-          <p style={{fontSize:"0.8rem",color:"#737373",marginTop:"0.3rem"}}>Request a specific vehicle — dealers will respond with matching options</p>
+          <p style={{fontSize:"0.8rem",color:"#737373",marginTop:"0.3rem"}}>Request a specific vehicle  dealers will respond with matching options</p>
         </div>
         <button onClick={()=>setShowNew(true)} style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.7rem 1.25rem",fontFamily:"var(--font-display)",fontSize:"0.9rem",letterSpacing:"0.08em",cursor:"pointer",whiteSpace:"nowrap"}}>
           + New Request
@@ -103,7 +103,7 @@ export default function UserRequestsPage() {
         </div>
       ):requests.length===0?(
         <div style={{padding:"3rem",textAlign:"center",border:"1.5px dashed #E5E5E5",borderRadius:"12px",background:"#fff",display:"flex",flexDirection:"column",alignItems:"center",gap:"1rem"}}>
-          <div style={{fontSize:"2.5rem"}}>📩</div>
+          <div style={{fontSize:"2.5rem"}}></div>
           <h3 style={{fontFamily:"var(--font-display)",fontSize:"1.1rem",color:"#1A1A1A"}}>No requests yet</h3>
           <p style={{fontSize:"0.875rem",color:"#737373",lineHeight:1.6,maxWidth:"380px"}}>Can not find the car you are looking for? Place a request and dealers will respond with matching vehicles.</p>
           <button onClick={()=>setShowNew(true)} style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.75rem 1.5rem",fontFamily:"var(--font-display)",fontSize:"0.875rem",cursor:"pointer"}}>Place a Request</button>
@@ -218,7 +218,7 @@ export default function UserRequestsPage() {
                         style={{padding:"0.75rem 1rem",cursor:"pointer",borderBottom:"1px solid #F5F5F5",fontSize:"0.875rem",color:"#1A1A1A",fontWeight:500}}
                         onMouseOver={e=>e.currentTarget.style.background="#FFF7ED"}
                         onMouseOut={e=>e.currentTarget.style.background=""}>
-                        {d.companyName} <span style={{color:"#A3A3A3",fontSize:"0.72rem",fontWeight:400}}>· {d.city||""}</span>
+                        {d.companyName} <span style={{color:"#A3A3A3",fontSize:"0.72rem",fontWeight:400}}> {d.city||""}</span>
                       </div>
                     ))}
                   </div>
@@ -233,7 +233,7 @@ export default function UserRequestsPage() {
 
               {/* Reference photo */}
               <div>
-                <label style={lbl}>Reference Photo (optional — attach a picture of the car you want)</label>
+                <label style={lbl}>Reference Photo (optional  attach a picture of the car you want)</label>
                 {form.referencePhoto?(
                   <div style={{display:"flex",alignItems:"center",gap:"0.875rem"}}>
                     <img src={form.referencePhoto} alt="" style={{width:"100px",height:"72px",objectFit:"cover",borderRadius:"6px",border:"1.5px solid #E5E5E5"}}/>

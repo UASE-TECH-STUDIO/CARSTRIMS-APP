@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
@@ -64,7 +64,7 @@ export default function FollowButton({ dealerId, size = "md" }: Props) {
         whiteSpace: "nowrap",
       }}
     >
-      {following ? "✓ Following" : "+ Follow"}
+      {following ? " Following" : "+ Follow"}
       {count > 0 && (
         <span style={{
           background: "rgba(255,255,255,0.25)",

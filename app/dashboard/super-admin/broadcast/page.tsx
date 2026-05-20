@@ -1,14 +1,14 @@
-﻿"use client";
+use client";
 import { useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
 
 const ROLE_OPTIONS = [
-  { value:"all",          label:"All Users",       icon:"👥" },
-  { value:"PUBLIC_USER",  label:"Buyers Only",     icon:"🛒" },
-  { value:"DEALER_ADMIN", label:"Dealers Only",    icon:"🏢" },
-  { value:"DEALER_STAFF", label:"Staff Only",      icon:"👤" },
-  { value:"PARTNER_USER", label:"Partners Only",   icon:"🤝" },
-  { value:"specific",     label:"Specific Users",  icon:"🎯" },
+  { value:"all",          label:"All Users",       icon:"" },
+  { value:"PUBLIC_USER",  label:"Buyers Only",     icon:"" },
+  { value:"DEALER_ADMIN", label:"Dealers Only",    icon:"" },
+  { value:"DEALER_STAFF", label:"Staff Only",      icon:"" },
+  { value:"PARTNER_USER", label:"Partners Only",   icon:"" },
+  { value:"specific",     label:"Specific Users",  icon:"" },
 ];
 
 export default function BroadcastPage() {
@@ -104,18 +104,18 @@ export default function BroadcastPage() {
     <div style={{display:"flex",flexDirection:"column",gap:"1.5rem",fontFamily:"var(--font-body)"}}>
       <div>
         <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.6rem",letterSpacing:"0.05em",color:"#1A1A1A",lineHeight:1}}>Broadcast Messages</h2>
-        <p style={{fontSize:"0.82rem",color:"#737373",marginTop:"0.3rem"}}>Send announcements with attachments — delivered to recipients' inbox as an announcement they can view and reply to.</p>
+        <p style={{fontSize:"0.82rem",color:"#737373",marginTop:"0.3rem"}}>Send announcements with attachments  delivered to recipients' inbox as an announcement they can view and reply to.</p>
       </div>
 
       {result && (
         <div style={{background:"#F0FDF4",border:"1px solid #86EFAC",color:"#15803D",padding:"0.875rem 1.25rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <span>✅ Sent to <strong>{result.sentTo||"all"}</strong> users successfully.</span>
-          <button onClick={()=>setResult(null)} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}>✕</button>
+          <span> Sent to <strong>{result.sentTo||"all"}</strong> users successfully.</span>
+          <button onClick={()=>setResult(null)} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}></button>
         </div>
       )}
       {err && (
         <div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",color:"#DC2626",padding:"0.875rem 1.25rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between"}}>
-          <span>❌ {err}</span><button onClick={()=>setErr("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}>✕</button>
+          <span> {err}</span><button onClick={()=>setErr("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}></button>
         </div>
       )}
 
@@ -134,7 +134,7 @@ export default function BroadcastPage() {
                   <button key={r.value} type="button" onClick={()=>{setForm({...form,targetRole:r.value});setSelectedUsers([]);}}
                     style={{display:"flex",alignItems:"center",gap:"0.75rem",padding:"0.55rem 0.875rem",background:form.targetRole===r.value?"#FFF7ED":"#F5F5F5",border:`1.5px solid ${form.targetRole===r.value?"#F47B20":"#E5E5E5"}`,borderRadius:"8px",cursor:"pointer",fontFamily:"var(--font-body)",fontSize:"0.825rem",color:form.targetRole===r.value?"#C4621A":"#525252",transition:"all 0.2s",textAlign:"left" as const}}>
                     <span>{r.icon}</span><span>{r.label}</span>
-                    {form.targetRole===r.value&&<span style={{marginLeft:"auto",color:"#F47B20",fontWeight:700}}>✓</span>}
+                    {form.targetRole===r.value&&<span style={{marginLeft:"auto",color:"#F47B20",fontWeight:700}}></span>}
                   </button>
                 ))}
               </div>
@@ -147,7 +147,7 @@ export default function BroadcastPage() {
                 <div style={{position:"relative"}}>
                   <input style={{...fi,paddingRight:"2rem"}} placeholder="Search by name, email or username..."
                     value={userSearch} onChange={e=>setUserSearch(e.target.value)} />
-                  {searchLoading && <span style={{position:"absolute",right:"0.75rem",top:"50%",transform:"translateY(-50%)",fontSize:"0.8rem",color:"#A3A3A3"}}>⏳</span>}
+                  {searchLoading && <span style={{position:"absolute",right:"0.75rem",top:"50%",transform:"translateY(-50%)",fontSize:"0.8rem",color:"#A3A3A3"}}></span>}
                   {userResults.length > 0 && (
                     <div style={{position:"absolute",top:"calc(100%+4px)",left:0,right:0,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"8px",zIndex:50,maxHeight:"200px",overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,0.1)"}}>
                       {userResults.map(u => (
@@ -160,7 +160,7 @@ export default function BroadcastPage() {
                           </div>
                           <div>
                             <div style={{fontSize:"0.825rem",fontWeight:500,color:"#1A1A1A"}}>{u.fullName}</div>
-                            <div style={{fontSize:"0.7rem",color:"#A3A3A3"}}>{u.role?.replace(/_/g," ")} · {u.email}</div>
+                            <div style={{fontSize:"0.7rem",color:"#A3A3A3"}}>{u.role?.replace(/_/g," ")}  {u.email}</div>
                           </div>
                         </div>
                       ))}
@@ -172,7 +172,7 @@ export default function BroadcastPage() {
                     {selectedUsers.map(u => (
                       <div key={u._id} style={{background:"#FFF7ED",border:"1px solid rgba(244,123,32,0.3)",borderRadius:"20px",padding:"0.25rem 0.625rem",fontSize:"0.75rem",color:"#C4621A",display:"flex",alignItems:"center",gap:"0.375rem"}}>
                         {u.fullName}
-                        <button type="button" onClick={()=>removeUser(u._id)} style={{background:"none",border:"none",cursor:"pointer",color:"#DC2626",fontSize:"0.8rem",padding:0,lineHeight:1}}>×</button>
+                        <button type="button" onClick={()=>removeUser(u._id)} style={{background:"none",border:"none",cursor:"pointer",color:"#DC2626",fontSize:"0.8rem",padding:0,lineHeight:1}}></button>
                       </div>
                     ))}
                   </div>
@@ -215,20 +215,20 @@ export default function BroadcastPage() {
                 <div style={{display:"flex",alignItems:"center",gap:"0.75rem",background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.75rem"}}>
                   {attachType==="image" && <img src={attachUrl} alt="" style={{width:"56px",height:"44px",objectFit:"cover",borderRadius:"4px"}}/>}
                   {attachType==="video" && <video src={attachUrl} style={{width:"56px",height:"44px",objectFit:"cover",borderRadius:"4px"}}/>}
-                  {attachType==="document" && <span style={{fontSize:"1.5rem"}}>📄</span>}
+                  {attachType==="document" && <span style={{fontSize:"1.5rem"}}></span>}
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:"0.8rem",fontWeight:600,color:"#1A1A1A",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{attachName}</div>
                     <div style={{fontSize:"0.7rem",color:"#A3A3A3",textTransform:"capitalize"}}>{attachType} attachment</div>
                   </div>
                   <button type="button" onClick={()=>{setAttachUrl("");setAttachName("");setAttachType("");}}
                     style={{background:"#FEF2F2",border:"1px solid rgba(220,38,38,0.3)",color:"#DC2626",borderRadius:"6px",padding:"0.3rem 0.6rem",fontSize:"0.75rem",cursor:"pointer"}}>
-                    ✕ Remove
+                     Remove
                   </button>
                 </div>
               ) : (
                 <button type="button" onClick={()=>fileRef.current?.click()} disabled={uploading}
                   style={{background:"#F5F5F5",border:"1.5px dashed #D4D4D4",borderRadius:"8px",padding:"0.875rem 1.25rem",fontSize:"0.825rem",cursor:"pointer",color:"#737373",width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:"0.5rem",opacity:uploading?0.6:1}}>
-                  {uploading?"⏳ Uploading...":"📎 Attach image, video, or document"}
+                  {uploading?" Uploading...":" Attach image, video, or document"}
                 </button>
               )}
               <input ref={fileRef} type="file" accept="image/*,video/*,application/pdf,.doc,.docx"
@@ -242,12 +242,12 @@ export default function BroadcastPage() {
               <div style={{fontSize:"0.8rem",color:"#737373",lineHeight:1.5,whiteSpace:"pre-wrap"}}>{form.message||"Your message body will appear here..."}</div>
               {attachUrl && attachType==="image" && <img src={attachUrl} alt="" style={{maxWidth:"180px",borderRadius:"6px",marginTop:"0.25rem"}}/>}
               {attachUrl && attachType==="video" && <video src={attachUrl} controls style={{maxWidth:"100%",borderRadius:"6px",maxHeight:"120px",marginTop:"0.25rem"}}/>}
-              {attachUrl && attachType==="document" && <div style={{fontSize:"0.78rem",color:"#1D4ED8"}}>📄 {attachName}</div>}
+              {attachUrl && attachType==="document" && <div style={{fontSize:"0.78rem",color:"#1D4ED8"}}> {attachName}</div>}
             </div>
 
             <button type="submit" disabled={sending||uploading}
               style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.875rem",fontFamily:"var(--font-display)",fontSize:"0.9rem",letterSpacing:"0.1em",cursor:"pointer",opacity:sending||uploading?0.6:1,transition:"opacity 0.2s"}}>
-              {sending?"Sending...":`📢 Send Announcement${form.targetRole==="specific"&&selectedUsers.length>0?` to ${selectedUsers.length} user${selectedUsers.length!==1?"s":""}`:""}`}
+              {sending?"Sending...":` Send Announcement${form.targetRole==="specific"&&selectedUsers.length>0?` to ${selectedUsers.length} user${selectedUsers.length!==1?"s":""}`:""}`}
             </button>
           </form>
         </div>
@@ -257,7 +257,7 @@ export default function BroadcastPage() {
           <div style={{fontFamily:"var(--font-display)",fontSize:"0.78rem",letterSpacing:"0.15em",color:"#737373"}}>SENT BROADCASTS</div>
           {history.length===0 ? (
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.5rem",padding:"2rem",textAlign:"center",color:"#737373",fontSize:"0.875rem"}}>
-              <span style={{fontSize:"2rem"}}>📭</span><p>No broadcasts sent yet</p>
+              <span style={{fontSize:"2rem"}}></span><p>No broadcasts sent yet</p>
             </div>
           ) : (
             <div style={{display:"flex",flexDirection:"column",gap:"0.75rem",overflowY:"auto",maxHeight:"640px"}}>
@@ -265,12 +265,12 @@ export default function BroadcastPage() {
                 <div key={i} style={{background:"#F5F5F5",border:"1px solid #E5E5E5",borderRadius:"8px",padding:"0.875rem",display:"flex",flexDirection:"column",gap:"0.3rem"}}>
                   <div style={{display:"flex",alignItems:"center",gap:"0.4rem",flexWrap:"wrap"}}>
                     <span style={{fontSize:"0.68rem",fontWeight:600,textTransform:"capitalize" as const,padding:"0.15rem 0.5rem",borderRadius:"20px",background:"rgba(244,123,32,0.1)",color:"#F47B20",border:"1px solid rgba(244,123,32,0.2)"}}>{h.type||"announcement"}</span>
-                    <span style={{fontSize:"0.68rem",color:"#A3A3A3"}}>→ {h.selectedUsers?.length>0?`${h.selectedUsers.length} users`:ROLE_OPTIONS.find(r=>r.value===h.targetRole)?.label||h.targetRole}</span>
+                    <span style={{fontSize:"0.68rem",color:"#A3A3A3"}}> {h.selectedUsers?.length>0?`${h.selectedUsers.length} users`:ROLE_OPTIONS.find(r=>r.value===h.targetRole)?.label||h.targetRole}</span>
                     {h.sentTo&&<span style={{fontSize:"0.65rem",color:"#A3A3A3",marginLeft:"auto"}}>{h.sentTo} sent</span>}
                   </div>
                   <div style={{fontWeight:600,fontSize:"0.875rem",color:"#1A1A1A"}}>{h.title}</div>
                   <div style={{fontSize:"0.78rem",color:"#737373",lineHeight:1.4}}>{(h.message||"").slice(0,80)}{(h.message||"").length>80?"...":""}</div>
-                  {h.attachType&&<div style={{fontSize:"0.7rem",color:"#737373",textTransform:"capitalize"}}>📎 {h.attachType}: {h.attachName||"attachment"}</div>}
+                  {h.attachType&&<div style={{fontSize:"0.7rem",color:"#737373",textTransform:"capitalize"}}> {h.attachType}: {h.attachName||"attachment"}</div>}
                   <div style={{fontSize:"0.68rem",color:"#A3A3A3",fontFamily:"monospace"}}>{fmtDate(h.sentAt)}</div>
                 </div>
               ))}

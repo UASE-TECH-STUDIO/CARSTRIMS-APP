@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
@@ -24,7 +24,7 @@ export default function PartnerOverviewPage() {
     fetchAll();
   }, []);
 
-  const fmt = (n: number) => `₦${(n || 0).toLocaleString()}`;
+  const fmt = (n: number) => `${(n || 0).toLocaleString()}`;
 
   if (loading) return (
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"50vh"}}>
@@ -41,24 +41,24 @@ export default function PartnerOverviewPage() {
       <div className="overview-header">
         <div>
           <h2 className="company-name">Partner Dashboard</h2>
-          <p className="company-meta">{user?.fullName} · Partner Account</p>
+          <p className="company-meta">{user?.fullName}  Partner Account</p>
         </div>
       </div>
 
       {pendingLinks.length > 0 && (
         <div className="pending-banner">
-          ⏳ You have <strong>{pendingLinks.length}</strong> pending partnership request{pendingLinks.length > 1 ? "s" : ""} awaiting dealer approval.
-          <Link href="/dashboard/partner/dealers" className="banner-link">View status →</Link>
+           You have <strong>{pendingLinks.length}</strong> pending partnership request{pendingLinks.length > 1 ? "s" : ""} awaiting dealer approval.
+          <Link href="/dashboard/partner/dealers" className="banner-link">View status </Link>
         </div>
       )}
 
       <div className="stats-grid">
         {[
-          { label:"Linked Dealers", val:data?.totalLinkedDealers||0, icon:"🏢", href:"/dashboard/partner/dealers", color:"#3B8BD4" },
-          { label:"Cars Assigned", val:data?.totalCarsAssigned||0, icon:"🚗", href:"/dashboard/partner/cars", color:"#F47B20" },
-          { label:"Cars Sold", val:data?.totalCarsSold||0, icon:"🏷️", href:"/dashboard/partner/earnings", color:"#16A34A" },
-          { label:"Available Cars", val:data?.totalCarsAvailable||0, icon:"✅", href:"/dashboard/partner/cars", color:"#1D9E75" },
-          { label:"Total Revenue", val:fmt(data?.totalRevenue||0), icon:"💰", href:"/dashboard/partner/earnings", color:"#3B8BD4", wide:true },
+          { label:"Linked Dealers", val:data?.totalLinkedDealers||0, icon:"", href:"/dashboard/partner/dealers", color:"#3B8BD4" },
+          { label:"Cars Assigned", val:data?.totalCarsAssigned||0, icon:"", href:"/dashboard/partner/cars", color:"#F47B20" },
+          { label:"Cars Sold", val:data?.totalCarsSold||0, icon:"", href:"/dashboard/partner/earnings", color:"#16A34A" },
+          { label:"Available Cars", val:data?.totalCarsAvailable||0, icon:"", href:"/dashboard/partner/cars", color:"#1D9E75" },
+          { label:"Total Revenue", val:fmt(data?.totalRevenue||0), icon:"", href:"/dashboard/partner/earnings", color:"#3B8BD4", wide:true },
         ].map((s) => (
           <Link key={s.label} href={s.href} className={`stat-card ${(s as any).wide?"wide":""}`}>
             <div className="sc-top">
@@ -66,7 +66,7 @@ export default function PartnerOverviewPage() {
               <span className="sc-label">{s.label}</span>
             </div>
             <div className="sc-val" style={{color:s.color}}>{s.val}</div>
-            <div className="sc-arrow">→</div>
+            <div className="sc-arrow"></div>
           </Link>
         ))}
       </div>
@@ -75,12 +75,12 @@ export default function PartnerOverviewPage() {
         <div className="qa-title">QUICK ACCESS</div>
         <div className="qa-grid">
           {[
-            { label:"Find Dealer", icon:"🔍", href:"/dashboard/partner/find-dealer" },
-            { label:"My Cars", icon:"🚗", href:"/dashboard/partner/cars" },
-            { label:"My Dealers", icon:"🏢", href:"/dashboard/partner/dealers" },
-            { label:"Earnings", icon:"💰", href:"/dashboard/partner/earnings" },
-            { label:"Movements", icon:"🔄", href:"/dashboard/partner/movements" },
-            { label:"View Feed", icon:"🏠", href:"/feed" },
+            { label:"Find Dealer", icon:"", href:"/dashboard/partner/find-dealer" },
+            { label:"My Cars", icon:"", href:"/dashboard/partner/cars" },
+            { label:"My Dealers", icon:"", href:"/dashboard/partner/dealers" },
+            { label:"Earnings", icon:"", href:"/dashboard/partner/earnings" },
+            { label:"Movements", icon:"", href:"/dashboard/partner/movements" },
+            { label:"View Feed", icon:"", href:"/feed" },
           ].map((a) => (
             <Link key={a.label} href={a.href} className="qa-card">
               <span className="qa-icon">{a.icon}</span>

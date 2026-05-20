@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
@@ -13,7 +13,7 @@ export default function PartnerMovementsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const fmt = (iso: string) => iso ? new Date(iso).toLocaleString("en-NG") : "—";
+  const fmt = (iso: string) => iso ? new Date(iso).toLocaleString("en-NG") : "";
   const STATUS_COLORS: Record<string,string> = { out:"#C9A84C", returned:"#4CAF82", overdue:"#E05252" };
 
   return (
@@ -25,14 +25,14 @@ export default function PartnerMovementsPage() {
 
       {loading ? <div className="loading"><div className="spinner" /></div>
       : movements.length === 0 ? (
-        <div className="empty"><div className="empty-icon">🔄</div><h3>No movements logged</h3><p>Movement logs for your cars will appear here</p></div>
+        <div className="empty"><div className="empty-icon"></div><h3>No movements logged</h3><p>Movement logs for your cars will appear here</p></div>
       ) : (
         <div className="mov-list">
           {movements.map((m) => (
             <div key={m._id} className="mov-card">
               <div className="mov-left">
                 <div className="mov-car">{m.carBrand} {m.carModel} {m.carYear}</div>
-                <div className="mov-id">{m.movementId} · {m.carId}</div>
+                <div className="mov-id">{m.movementId}  {m.carId}</div>
               </div>
               <div className="mov-center">
                 <div className="mov-person">{m.takenByName}</div>
@@ -44,7 +44,7 @@ export default function PartnerMovementsPage() {
                 {m.expectedReturnTime && <div className="time-row"><span className="tl">Expected</span><span className="tv">{fmt(m.expectedReturnTime)}</span></div>}
                 {m.timeReturned && <div className="time-row"><span className="tl">Returned</span><span className="tv">{fmt(m.timeReturned)}</span></div>}
               </div>
-              <div className="mov-status" style={{color: STATUS_COLORS[m.status] || "#888"}}>● {m.status}</div>
+              <div className="mov-status" style={{color: STATUS_COLORS[m.status] || "#888"}}> {m.status}</div>
             </div>
           ))}
         </div>

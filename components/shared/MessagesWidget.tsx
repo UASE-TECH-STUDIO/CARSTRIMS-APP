@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
@@ -175,7 +175,7 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
     return m<1?"now":m<60?`${m}m`:m<1440?`${Math.floor(m/60)}h`:new Date(iso).toLocaleDateString();
   };
 
-  // Render a message bubble — handles announcement + normal messages
+  // Render a message bubble  handles announcement + normal messages
   const MsgBubble = ({m}:{m:any}) => {
     const isMe = m.senderId===uid;
     const isAnnouncement = m.type==="announcement";
@@ -193,7 +193,7 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
           {/* Announcement header */}
           {isAnnouncement && (
             <div style={{display:"flex",alignItems:"center",gap:"0.4rem",marginBottom:"0.2rem"}}>
-              <span style={{fontSize:"0.9rem"}}>📢</span>
+              <span style={{fontSize:"0.9rem"}}></span>
               <span style={{fontSize:"0.6rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#F47B20"}}>ANNOUNCEMENT</span>
             </div>
           )}
@@ -216,7 +216,7 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
               {(!m.attachmentType||m.attachmentType==="document") && m.attachmentUrl && (
                 <a href={m.attachmentUrl} target="_blank" rel="noreferrer"
                   style={{display:"inline-flex",alignItems:"center",gap:"0.4rem",background:"rgba(29,68,212,0.08)",border:"1px solid #BFDBFE",borderRadius:"6px",padding:"0.4rem 0.75rem",color:"#1D4ED8",fontSize:"0.8rem",textDecoration:"none"}}>
-                  📄 {m.attachmentName||"View Document"}
+                   {m.attachmentName||"View Document"}
                 </a>
               )}
             </div>
@@ -243,7 +243,7 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
           <div className="mp-header">
             <span className="mp-title">Messages</span>
             <button className="mp-new" onClick={()=>setShowNew(true)}>+ New</button>
-            <button className="mp-close" onClick={()=>{setOpen(false);setActiveConv(null);activeRef.current=null;if(pollRef.current)clearInterval(pollRef.current);}}>✕</button>
+            <button className="mp-close" onClick={()=>{setOpen(false);setActiveConv(null);activeRef.current=null;if(pollRef.current)clearInterval(pollRef.current);}}></button>
           </div>
 
           {!activeConv ? (
@@ -256,10 +256,10 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
               ) : conversations.map(conv=>(
                 <div key={conv.conversationId||conv._id} className={`conv-item${activeConv?.conversationId===conv.conversationId?" active":""}`} onClick={()=>openConv(conv)}>
                   <div className="ci-avatar">
-                    {conv.type==="announcement"?"📢":conv.otherUser?.profilePicture?<img src={conv.otherUser.profilePicture} alt=""/>:conv.otherUser?.fullName?.charAt(0)||"?"}
+                    {conv.type==="announcement"?"":conv.otherUser?.profilePicture?<img src={conv.otherUser.profilePicture} alt=""/>:conv.otherUser?.fullName?.charAt(0)||"?"}
                   </div>
                   <div className="ci-info">
-                    <div className="ci-name">{conv.type==="announcement"?"📢 CARSTRIMS":conv.otherUser?.fullName||"User"}</div>
+                    <div className="ci-name">{conv.type==="announcement"?" CARSTRIMS":conv.otherUser?.fullName||"User"}</div>
                     <div className="ci-last">{conv.lastMessage}</div>
                   </div>
                   <div className="ci-meta">
@@ -272,13 +272,13 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
           ) : (
             <div className="chat-view">
               <div className="chat-head">
-                <button className="chat-back" onClick={()=>{setActiveConv(null);activeRef.current=null;if(pollRef.current)clearInterval(pollRef.current);}}>← back</button>
+                <button className="chat-back" onClick={()=>{setActiveConv(null);activeRef.current=null;if(pollRef.current)clearInterval(pollRef.current);}}> back</button>
                 <div className="ch-avatar">
-                  {activeConv.type==="announcement"?"📢":activeConv.otherUser?.profilePicture?<img src={activeConv.otherUser.profilePicture} alt=""/>:activeConv.otherUser?.fullName?.charAt(0)||"?"}
+                  {activeConv.type==="announcement"?"":activeConv.otherUser?.profilePicture?<img src={activeConv.otherUser.profilePicture} alt=""/>:activeConv.otherUser?.fullName?.charAt(0)||"?"}
                 </div>
                 <div className="ch-name">{activeConv.type==="announcement"?"CARSTRIMS Announcements":activeConv.otherUser?.fullName||"User"}</div>
               </div>
-              {/* Car context card — shown when navigated from car listing page */}
+              {/* Car context card  shown when navigated from car listing page */}
               {(activeConv?.carContext||carIdParam)&&(
                 <div style={{margin:"0.75rem",borderRadius:"10px",overflow:"hidden",border:"1.5px solid rgba(244,123,32,0.3)",background:"#FFF7ED",flexShrink:0}}>
                   <Link href={activeConv?.carContext?.carId?`/cars/${activeConv.carContext.carId}`:carIdParam?`/cars/${carIdParam}`:"#"}
@@ -298,7 +298,7 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
                         <div style={{fontSize:"0.72rem",color:"#F47B20",fontFamily:"var(--font-display)",fontWeight:700}}>NGN {Number(activeConv.carContext.carPrice).toLocaleString()}</div>
                       )}
                     </div>
-                    <div style={{fontSize:"0.65rem",color:"#F47B20",fontWeight:600,flexShrink:0}}>View car →</div>
+                    <div style={{fontSize:"0.65rem",color:"#F47B20",fontWeight:600,flexShrink:0}}>View car </div>
                   </Link>
                 </div>
               )}
@@ -317,7 +317,7 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
           {showNew && !activeConv && (
             <div className="new-conv-overlay" onClick={()=>setShowNew(false)}>
               <div className="new-conv" onClick={e=>e.stopPropagation()}>
-                <div className="nc-header"><span>New Conversation</span><button onClick={()=>setShowNew(false)} style={{background:"rgba(255,255,255,0.15)",border:"none",color:"#fff",borderRadius:"50%",width:"24px",height:"24px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.75rem"}}>✕</button></div>
+                <div className="nc-header"><span>New Conversation</span><button onClick={()=>setShowNew(false)} style={{background:"rgba(255,255,255,0.15)",border:"none",color:"#fff",borderRadius:"50%",width:"24px",height:"24px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.75rem"}}></button></div>
                 <div className="nc-body">
                   <div style={{position:"relative"}}>
                     <input className="nc-input" placeholder="Search by name or email..." value={userSearch} onChange={e=>{setUserSearch(e.target.value);setSelUser(null);}} autoFocus/>
@@ -326,13 +326,13 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
                         {userResults.map(u=>(
                           <div key={u.userId} className={`nc-user${selUser?.userId===u.userId?" selected":""}`} onClick={()=>{setSelUser(u);setUserSearch(u.fullName);setUserResults([]);}}>
                             <div className="nu-avatar">{u.profilePicture?<img src={u.profilePicture} alt=""/>:u.fullName?.charAt(0)||"?"}</div>
-                            <div><div className="nu-name">{u.fullName}</div><div className="nu-role">{u.role?.replace(/_/g," ")} · {u.email}</div></div>
+                            <div><div className="nu-name">{u.fullName}</div><div className="nu-role">{u.role?.replace(/_/g," ")}  {u.email}</div></div>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
-                  {selUser&&<div className="nc-selected">To: <strong>{selUser.fullName}</strong><button onClick={()=>{setSelUser(null);setUserSearch("");}} style={{background:"none",border:"none",cursor:"pointer",color:"#DC2626",marginLeft:"0.5rem"}}>×</button></div>}
+                  {selUser&&<div className="nc-selected">To: <strong>{selUser.fullName}</strong><button onClick={()=>{setSelUser(null);setUserSearch("");}} style={{background:"none",border:"none",cursor:"pointer",color:"#DC2626",marginLeft:"0.5rem"}}></button></div>}
                   <textarea className="nc-msg" placeholder="Write your message..." value={startMsg} onChange={e=>setStartMsg(e.target.value)} rows={3}/>
                   <button className="nc-send" onClick={startConversation} disabled={!selUser||!startMsg.trim()}>Start Conversation</button>
                 </div>

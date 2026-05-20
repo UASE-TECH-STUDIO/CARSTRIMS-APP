@@ -1,4 +1,4 @@
-"use client";
+use client";
 import { useState } from "react";
 import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
@@ -55,7 +55,7 @@ export default function FeedFooter({ onScan }: Props) {
               </div>
             </div>
           </div>
-          <div className="fi-copy">Â© 2026 CARSTRIMS Â· Powered by UASE TECH STUDIO</div>
+          <div className="fi-copy"> 2026 CARSTRIMS  Powered by UASE TECH STUDIO</div>
         </div>
       )}
 

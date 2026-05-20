@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -52,7 +52,7 @@ export default function LoginPage() {
             ))}
           </div>
         </div>
-        <div className="lg-foot">Built by <strong>UASE TECH STUDIO</strong> · 2026</div>
+        <div className="lg-foot">Built by <strong>UASE TECH STUDIO</strong>  2026</div>
       </div>
 
       {/* Right panel */}
@@ -70,7 +70,7 @@ export default function LoginPage() {
           {error && (
             <div className="lg-err">
               <span>{error}</span>
-              <button onClick={()=>setError("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer",fontSize:"1rem",lineHeight:1,flexShrink:0}}>✕</button>
+              <button onClick={()=>setError("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer",fontSize:"1rem",lineHeight:1,flexShrink:0}}></button>
             </div>
           )}
 
@@ -102,7 +102,7 @@ export default function LoginPage() {
           <div className="lg-divider"><span>or</span></div>
 
           <Link href="/feed" className="lg-browse-btn">
-            Browse Cars Without Signing In →
+            Browse Cars Without Signing In 
           </Link>
 
        
@@ -112,7 +112,7 @@ export default function LoginPage() {
 
       <style>{`
         .lg-root{display:flex;min-height:100vh;background:#F5F5F5;font-family:var(--font-body)}
-        /* ── Left (grey/dark panel) ── */
+        /*  Left (grey/dark panel)  */
         .lg-left{width:42%;background:linear-gradient(160deg,#1A1A1A 0%,#262626 60%,#333 100%);display:flex;flex-direction:column;justify-content:space-between;padding:2.5rem;flex-shrink:0;position:relative;overflow:hidden}
         .lg-left::after{content:"CARSTRIMS";position:absolute;bottom:-30px;left:-10px;font-family:var(--font-display);font-size:140px;color:rgba(244,123,32,0.04);line-height:1;pointer-events:none;white-space:nowrap}
         .lg-brand{font-family:var(--font-display);font-size:1.4rem;letter-spacing:0.25em;color:#F47B20}
@@ -123,7 +123,7 @@ export default function LoginPage() {
         .lg-feat{display:flex;align-items:center;gap:0.625rem;font-size:0.875rem;color:#D4D4D4;font-weight:500}
         .lg-dot{width:7px;height:7px;border-radius:50%;background:#F47B20;flex-shrink:0;display:block}
         .lg-foot{font-size:0.7rem;color:#404040}.lg-foot strong{color:#F47B20}
-        /* ── Right ── */
+        /*  Right  */
         .lg-right{flex:1;background:#F5F5F5;display:flex;align-items:center;justify-content:center;padding:2rem;overflow-y:auto}
         .lg-card{width:100%;max-width:430px;background:#fff;border-radius:16px;padding:2.25rem;box-shadow:0 4px 32px rgba(0,0,0,0.08);display:flex;flex-direction:column;gap:1.25rem}
         .lg-mobile-top{display:none;flex-direction:column;align-items:center;gap:0.25rem}

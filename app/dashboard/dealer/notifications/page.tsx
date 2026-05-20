@@ -1,12 +1,12 @@
-﻿"use client";
+use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 
 const TYPE_ICON: Record<string,string> = {
-  car_sold:"💰", dealer_approved:"✅", dealer_suspended:"🚫",
-  partner_request:"🤝", general:"🔔", announcement:"📢",
-  warning:"⚠️", car:"🚗",
+  car_sold:"", dealer_approved:"", dealer_suspended:"",
+  partner_request:"", general:"", announcement:"",
+  warning:"", car:"",
 };
 
 // Map notification types/keywords to dashboard pages
@@ -68,7 +68,7 @@ export default function NotificationsPage() {
   };
 
   const fmtTime = (iso: string) => {
-    if (!iso) return "—";
+    if (!iso) return "";
     const diff = Date.now() - new Date(iso).getTime();
     const m = Math.floor(diff / 60000);
     if (m < 1) return "just now";
@@ -87,7 +87,7 @@ export default function NotificationsPage() {
         </div>
         {unread > 0 && (
           <button className="mark-all-btn" onClick={markAllRead}>
-            ✓ Mark all read
+             Mark all read
           </button>
         )}
       </div>
@@ -96,7 +96,7 @@ export default function NotificationsPage() {
         <div className="loading"><div className="spinner" /></div>
       ) : notifications.length === 0 ? (
         <div className="empty">
-          <div className="ei">🔕</div>
+          <div className="ei"></div>
           <h3>No notifications yet</h3>
           <p>Activity from your dealership will appear here</p>
         </div>
@@ -111,14 +111,14 @@ export default function NotificationsPage() {
                 onClick={() => handleClick(n)}
               >
                 <div className="notif-icon-wrap">
-                  <span className="notif-icon">{TYPE_ICON[n.type] || "🔔"}</span>
+                  <span className="notif-icon">{TYPE_ICON[n.type] || ""}</span>
                 </div>
                 <div className="notif-body">
                   <div className="notif-title">{n.title}</div>
                   <div className="notif-message">{n.message}</div>
                   <div className="notif-meta">
                     <span className="notif-time">{fmtTime(n.createdAt)}</span>
-                    {link && <span className="notif-link-hint">Click to view →</span>}
+                    {link && <span className="notif-link-hint">Click to view </span>}
                   </div>
                 </div>
                 {!n.isRead && <div className="unread-dot" />}

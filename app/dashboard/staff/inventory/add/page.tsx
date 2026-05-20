@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
@@ -91,13 +91,13 @@ export default function StaffAddCarPage() {
   return (
     <div style={{display:"flex",flexDirection:"column",gap:"1.5rem",fontFamily:"var(--font-body)"}}>
       <div style={{display:"flex",alignItems:"center",gap:"1rem"}}>
-        <button onClick={()=>router.back()} style={{background:"none",border:"none",color:"#737373",cursor:"pointer",fontSize:"0.875rem",fontFamily:"var(--font-body)"}}>← Back</button>
+        <button onClick={()=>router.back()} style={{background:"none",border:"none",color:"#737373",cursor:"pointer",fontSize:"0.875rem",fontFamily:"var(--font-body)"}}> Back</button>
         <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.5rem",letterSpacing:"0.04em",color:"#1A1A1A",lineHeight:1}}>Add Vehicle</h2>
       </div>
 
       {error && (
         <div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",color:"#DC2626",padding:"0.75rem 1rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          {error}<button onClick={()=>setError("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}>✕</button>
+          {error}<button onClick={()=>setError("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}></button>
         </div>
       )}
 
@@ -111,12 +111,12 @@ export default function StaffAddCarPage() {
               <div key={i} style={{width:"80px",height:"60px",borderRadius:"6px",overflow:"hidden",border:"1.5px solid #E5E5E5",position:"relative"}}>
                 <img src={img} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
                 <button type="button" onClick={()=>setImages(p=>p.filter((_,j)=>j!==i))}
-                  style={{position:"absolute",top:"2px",right:"2px",background:"rgba(220,38,38,0.85)",border:"none",borderRadius:"50%",width:"18px",height:"18px",color:"#fff",fontSize:"0.6rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+                  style={{position:"absolute",top:"2px",right:"2px",background:"rgba(220,38,38,0.85)",border:"none",borderRadius:"50%",width:"18px",height:"18px",color:"#fff",fontSize:"0.6rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}></button>
               </div>
             ))}
             <button type="button" onClick={()=>imgRef.current?.click()} disabled={uploading}
               style={{width:"80px",height:"60px",border:"1.5px dashed #D4D4D4",borderRadius:"6px",background:"#FAFAFA",cursor:"pointer",fontSize:"1.4rem",color:"#A3A3A3",display:"flex",alignItems:"center",justifyContent:"center"}}>
-              {uploading?"⏳":"+"}
+              {uploading?"":"+"}
             </button>
           </div>
           <input ref={imgRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={e=>{if(e.target.files?.length) handleImages(e.target.files);}}/>
@@ -142,8 +142,8 @@ export default function StaffAddCarPage() {
         </div>
 
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem"}}>
-          <div><label style={lbl}>Selling Price (₦) *</label><input type="number" style={fi} value={form.sellingPrice} onChange={e=>setForm({...form,sellingPrice:e.target.value})} required/></div>
-          <div><label style={lbl}>Purchase Price (₦)</label><input type="number" style={fi} value={form.purchasePrice} onChange={e=>setForm({...form,purchasePrice:e.target.value})}/></div>
+          <div><label style={lbl}>Selling Price () *</label><input type="number" style={fi} value={form.sellingPrice} onChange={e=>setForm({...form,sellingPrice:e.target.value})} required/></div>
+          <div><label style={lbl}>Purchase Price ()</label><input type="number" style={fi} value={form.purchasePrice} onChange={e=>setForm({...form,purchasePrice:e.target.value})}/></div>
         </div>
 
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem"}}>

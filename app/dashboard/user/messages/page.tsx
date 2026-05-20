@@ -1,10 +1,10 @@
-﻿"use client";
+use client";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
 
-// Consistent message system — same engine as MessagesWidget used by all other roles
+// Consistent message system  same engine as MessagesWidget used by all other roles
 export default function UserMessagesPage() {
   const { user } = useAuthStore();
   const uid = user?.userId;
@@ -135,14 +135,14 @@ export default function UserMessagesPage() {
     return (
       <div style={{display:"flex",justifyContent:isMe?"flex-end":"flex-start",marginBottom:"0.625rem"}}>
         <div style={{maxWidth:"80%",background:isAnnouncement?"#FFF7ED":isMe?"#F47B20":"#fff",border:isAnnouncement?"1.5px solid rgba(244,123,32,0.3)":isMe?"none":"1.5px solid #E5E5E5",color:isAnnouncement?"#1A1A1A":isMe?"#fff":"#1A1A1A",borderRadius:isAnnouncement?"10px":isMe?"12px 12px 2px 12px":"12px 12px 12px 2px",padding:isAnnouncement?"0.875rem":"0.6rem 0.875rem",display:"flex",flexDirection:"column" as const,gap:"0.3rem",boxShadow:"0 1px 4px rgba(0,0,0,0.06)"}}>
-          {isAnnouncement&&(<div style={{display:"flex",alignItems:"center",gap:"0.4rem",marginBottom:"0.2rem"}}><span>📢</span><span style={{fontSize:"0.62rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#F47B20"}}>ANNOUNCEMENT</span></div>)}
+          {isAnnouncement&&(<div style={{display:"flex",alignItems:"center",gap:"0.4rem",marginBottom:"0.2rem"}}><span></span><span style={{fontSize:"0.62rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#F47B20"}}>ANNOUNCEMENT</span></div>)}
           {isAnnouncement&&m.title&&<div style={{fontWeight:700,fontSize:"0.875rem",color:"#1A1A1A",borderBottom:"1px solid rgba(244,123,32,0.2)",paddingBottom:"0.375rem"}}>{m.title}</div>}
           <div style={{fontSize:"0.875rem",lineHeight:1.55,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>{m.message}</div>
           {m.attachmentUrl&&(
             <div style={{marginTop:"0.375rem"}}>
               {m.attachmentType==="image"&&<img src={m.attachmentUrl} alt="" onClick={()=>window.open(m.attachmentUrl,"_blank")} style={{maxWidth:"100%",maxHeight:"180px",objectFit:"cover",borderRadius:"6px",cursor:"pointer"}}/>}
               {m.attachmentType==="video"&&<video src={m.attachmentUrl} controls style={{maxWidth:"100%",maxHeight:"160px",borderRadius:"6px"}}/>}
-              {(!m.attachmentType||m.attachmentType==="document")&&m.attachmentUrl&&<a href={m.attachmentUrl} target="_blank" rel="noreferrer" style={{display:"inline-flex",alignItems:"center",gap:"0.4rem",background:"rgba(29,68,212,0.08)",border:"1px solid #BFDBFE",borderRadius:"6px",padding:"0.4rem 0.75rem",color:"#1D4ED8",fontSize:"0.8rem",textDecoration:"none"}}>📄 {m.attachmentName||"View Document"}</a>}
+              {(!m.attachmentType||m.attachmentType==="document")&&m.attachmentUrl&&<a href={m.attachmentUrl} target="_blank" rel="noreferrer" style={{display:"inline-flex",alignItems:"center",gap:"0.4rem",background:"rgba(29,68,212,0.08)",border:"1px solid #BFDBFE",borderRadius:"6px",padding:"0.4rem 0.75rem",color:"#1D4ED8",fontSize:"0.8rem",textDecoration:"none"}}> {m.attachmentName||"View Document"}</a>}
             </div>
           )}
           <div style={{fontSize:"0.6rem",opacity:0.55,textAlign:"right"}}>{fmtTime(m.createdAt)}</div>
@@ -172,7 +172,7 @@ export default function UserMessagesPage() {
             </div>
           ) : conversations.length===0 ? (
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"1rem",padding:"3rem",textAlign:"center"}}>
-              <div style={{fontSize:"2.5rem"}}>💬</div>
+              <div style={{fontSize:"2.5rem"}}></div>
               <div style={{fontFamily:"var(--font-display)",fontSize:"1rem",color:"#1A1A1A",letterSpacing:"0.06em"}}>No conversations yet</div>
               <p style={{fontSize:"0.875rem",color:"#737373",lineHeight:1.5}}>Message a dealer from any car listing or start a new conversation</p>
               <button onClick={()=>setShowNew(true)} style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.75rem 1.5rem",fontFamily:"var(--font-display)",fontSize:"0.875rem",cursor:"pointer"}}>Start a Conversation</button>
@@ -180,10 +180,10 @@ export default function UserMessagesPage() {
           ) : conversations.map(conv=>(
             <div key={conv.conversationId} className={`um-conv-item ${activeConv?.conversationId===conv.conversationId?"active":""}`} onClick={()=>openConv(conv)}>
               <div className="um-ci-avatar">
-                {conv.type==="announcement"?"📢":conv.otherUser?.profilePicture?<img src={conv.otherUser.profilePicture} alt=""/>:conv.otherUser?.fullName?.charAt(0)||"?"}
+                {conv.type==="announcement"?"":conv.otherUser?.profilePicture?<img src={conv.otherUser.profilePicture} alt=""/>:conv.otherUser?.fullName?.charAt(0)||"?"}
               </div>
               <div className="um-ci-info">
-                <div className="um-ci-name">{conv.type==="announcement"?"📢 CARSTRIMS":conv.otherUser?.fullName||"User"}</div>
+                <div className="um-ci-name">{conv.type==="announcement"?" CARSTRIMS":conv.otherUser?.fullName||"User"}</div>
                 <div className="um-ci-last">{conv.lastMessage}</div>
               </div>
               <div className="um-ci-meta">
@@ -198,7 +198,7 @@ export default function UserMessagesPage() {
         <div className={`um-chat ${!activeConv?"um-chat-empty":""}`}>
           {!activeConv ? (
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:"1rem",color:"#A3A3A3",textAlign:"center",padding:"2rem"}}>
-              <div style={{fontSize:"3rem",opacity:0.4}}>💬</div>
+              <div style={{fontSize:"3rem",opacity:0.4}}></div>
               <div style={{fontFamily:"var(--font-display)",fontSize:"1rem",letterSpacing:"0.08em"}}>Select a conversation</div>
               <p style={{fontSize:"0.875rem",lineHeight:1.5}}>Choose a conversation from the left or start a new one</p>
             </div>
@@ -206,9 +206,9 @@ export default function UserMessagesPage() {
             <>
               {/* Chat header */}
               <div className="um-chat-head">
-                <button className="um-back-btn" onClick={()=>{setActiveConv(null);activeRef.current=null;if(pollRef.current)clearInterval(pollRef.current);}}>← Back</button>
+                <button className="um-back-btn" onClick={()=>{setActiveConv(null);activeRef.current=null;if(pollRef.current)clearInterval(pollRef.current);}}> Back</button>
                 <div className="um-ch-avatar">
-                  {activeConv.type==="announcement"?"📢":activeConv.otherUser?.profilePicture?<img src={activeConv.otherUser.profilePicture} alt=""/>:activeConv.otherUser?.fullName?.charAt(0)||"?"}
+                  {activeConv.type==="announcement"?"":activeConv.otherUser?.profilePicture?<img src={activeConv.otherUser.profilePicture} alt=""/>:activeConv.otherUser?.fullName?.charAt(0)||"?"}
                 </div>
                 <div className="um-ch-name">{activeConv.type==="announcement"?"CARSTRIMS Announcements":activeConv.otherUser?.fullName||"User"}</div>
               </div>
@@ -221,16 +221,16 @@ export default function UserMessagesPage() {
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontSize:"0.68rem",fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase" as const,color:"#F47B20"}}>Car Enquiry</div>
                       <div style={{fontSize:"0.9rem",fontWeight:700,color:"#1A1A1A",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{carContext.brand} {carContext.model} {carContext.year}</div>
-                      {carContext.sellingPrice&&<div style={{fontFamily:"var(--font-display)",fontSize:"0.875rem",color:"#F47B20"}}>₦{carContext.sellingPrice.toLocaleString()}</div>}
+                      {carContext.sellingPrice&&<div style={{fontFamily:"var(--font-display)",fontSize:"0.875rem",color:"#F47B20"}}>{carContext.sellingPrice.toLocaleString()}</div>}
                     </div>
-                    <span style={{fontSize:"0.72rem",color:"#F47B20",fontWeight:700,flexShrink:0}}>View →</span>
+                    <span style={{fontSize:"0.72rem",color:"#F47B20",fontWeight:700,flexShrink:0}}>View </span>
                   </a>
                 </div>
               )}
 
               {/* Messages */}
               <div className="um-msgs">
-                {messages.length===0?<div style={{textAlign:"center",color:"#A3A3A3",fontSize:"0.875rem",padding:"2rem"}}>No messages yet — say hello!</div>:messages.map(m=><MsgBubble key={m._id||m.messageId} m={m}/>)}
+                {messages.length===0?<div style={{textAlign:"center",color:"#A3A3A3",fontSize:"0.875rem",padding:"2rem"}}>No messages yet  say hello!</div>:messages.map(m=><MsgBubble key={m._id||m.messageId} m={m}/>)}
                 <div ref={msgsEndRef}/>
               </div>
 
@@ -252,7 +252,7 @@ export default function UserMessagesPage() {
           <div style={{background:"#fff",borderRadius:"14px",width:"100%",maxWidth:"440px",overflow:"hidden",boxShadow:"0 16px 48px rgba(0,0,0,0.2)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"1rem 1.25rem",background:"#F47B20",color:"#fff"}}>
               <span style={{fontFamily:"var(--font-display)",fontSize:"0.95rem",letterSpacing:"0.08em"}}>NEW CONVERSATION</span>
-              <button onClick={()=>setShowNew(false)} style={{background:"none",border:"none",color:"#fff",fontSize:"1.1rem",cursor:"pointer",fontWeight:700}}>✕</button>
+              <button onClick={()=>setShowNew(false)} style={{background:"none",border:"none",color:"#fff",fontSize:"1.1rem",cursor:"pointer",fontWeight:700}}></button>
             </div>
             <div style={{padding:"1.25rem",display:"flex",flexDirection:"column",gap:"0.875rem"}}>
               <div style={{position:"relative"}}>
@@ -270,7 +270,7 @@ export default function UserMessagesPage() {
                   </div>
                 )}
               </div>
-              {selUser&&<div style={{background:"#FFF7ED",border:"1px solid rgba(244,123,32,0.3)",color:"#C4621A",padding:"0.5rem 0.875rem",borderRadius:"6px",fontSize:"0.85rem",display:"flex",alignItems:"center",justifyContent:"space-between"}}>To: <strong>{selUser.fullName}</strong><button onClick={()=>{setSelUser(null);setUserSearch("");}} style={{background:"none",border:"none",cursor:"pointer",color:"#DC2626",fontSize:"1rem"}}>×</button></div>}
+              {selUser&&<div style={{background:"#FFF7ED",border:"1px solid rgba(244,123,32,0.3)",color:"#C4621A",padding:"0.5rem 0.875rem",borderRadius:"6px",fontSize:"0.85rem",display:"flex",alignItems:"center",justifyContent:"space-between"}}>To: <strong>{selUser.fullName}</strong><button onClick={()=>{setSelUser(null);setUserSearch("");}} style={{background:"none",border:"none",cursor:"pointer",color:"#DC2626",fontSize:"1rem"}}></button></div>}
               <textarea style={{width:"100%",background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.75rem",color:"#1A1A1A",fontSize:"0.875rem",fontFamily:"var(--font-body)",outline:"none",resize:"vertical" as const,minHeight:"80px",boxSizing:"border-box" as const}} placeholder="Write your message..." value={startMsg} onChange={e=>setStartMsg(e.target.value)}/>
               <button onClick={startConversation} disabled={!selUser||!startMsg.trim()} style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.875rem",fontFamily:"var(--font-display)",fontSize:"0.9rem",letterSpacing:"0.08em",cursor:"pointer",opacity:!selUser||!startMsg.trim()?0.5:1}}>Start Conversation</button>
             </div>

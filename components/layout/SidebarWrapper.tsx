@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { ReactNode, useEffect } from "react";
 import { usePathname } from "next/navigation";
 
@@ -24,7 +24,7 @@ export default function SidebarWrapper({ isOpen, onClose, children, accentColor 
 
   return (
     <>
-      {/* Overlay — mobile only */}
+      {/* Overlay  mobile only */}
       {isOpen && (
         <div
           className="sidebar-overlay"

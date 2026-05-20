@@ -1,9 +1,9 @@
-﻿"use client";
+use client";
 import { useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
 
-const ICONS: Record<string,string> = { sms:"📱 SMS", whatsapp:"💬 WhatsApp", email:"✉️ Email", admin_message:"🛠 Admin Support" };
+const ICONS: Record<string,string> = { sms:" SMS", whatsapp:" WhatsApp", email:" Email", admin_message:" Admin Support" };
 
 export default function ForgotPasswordPage() {
   const [step, setStep]     = useState<"email"|"options"|"sent">("email");
@@ -76,7 +76,7 @@ export default function ForgotPasswordPage() {
       <div style={{width:"100%",maxWidth:"460px",background:"#fff",borderRadius:"16px",padding:"2.25rem",boxShadow:"0 8px 40px rgba(0,0,0,0.1)",display:"flex",flexDirection:"column",gap:"1.25rem"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <div style={{fontFamily:"var(--font-display)",fontSize:"1.2rem",letterSpacing:"0.2em",color:"#F47B20"}}>CARSTRIMS</div>
-          <Link href="/login" style={{fontSize:"0.8rem",color:"#A3A3A3",textDecoration:"none",fontWeight:600}}>← Back to login</Link>
+          <Link href="/login" style={{fontSize:"0.8rem",color:"#A3A3A3",textDecoration:"none",fontWeight:600}}> Back to login</Link>
         </div>
         <div>
           <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.75rem",color:"#1A1A1A",lineHeight:1,marginBottom:"0.4rem"}}>Account Recovery</h2>
@@ -90,7 +90,7 @@ export default function ForgotPasswordPage() {
         {error && (
           <div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",color:"#DC2626",padding:"0.75rem 1rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:"0.5rem",lineHeight:1.5}}>
             <span>{error}</span>
-            <button onClick={()=>setError("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer",flexShrink:0}}>✕</button>
+            <button onClick={()=>setError("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer",flexShrink:0}}></button>
           </div>
         )}
 
@@ -125,7 +125,7 @@ export default function ForgotPasswordPage() {
                     <div style={{fontSize:"0.9rem",fontWeight:700,color:"#1A1A1A"}}>{opt.label}</div>
                     <div style={{fontSize:"0.75rem",color:"#737373",marginTop:"0.2rem",lineHeight:1.45}}>{opt.masked}</div>
                   </div>
-                  {selected?.type===opt.type&&<div style={{color:"#F47B20",fontWeight:"bold",fontSize:"1.1rem",flexShrink:0}}>✓</div>}
+                  {selected?.type===opt.type&&<div style={{color:"#F47B20",fontWeight:"bold",fontSize:"1.1rem",flexShrink:0}}></div>}
                 </button>
               ))}
             </div>
@@ -143,7 +143,7 @@ export default function ForgotPasswordPage() {
         {step==="sent" && (
           <>
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"1rem",padding:"1.5rem",background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"12px",textAlign:"center"}}>
-              <div style={{fontSize:"2.5rem"}}>✅</div>
+              <div style={{fontSize:"2.5rem"}}></div>
               <div style={{fontFamily:"var(--font-display)",fontSize:"1rem",color:"#15803D",letterSpacing:"0.06em"}}>RECOVERY INITIATED</div>
               <div style={{fontSize:"0.9rem",color:"#525252",lineHeight:"1.6"}}>{sentMsg}</div>
             </div>

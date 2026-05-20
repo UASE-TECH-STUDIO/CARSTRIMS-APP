@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
@@ -41,7 +41,7 @@ export default function PartnersPage() {
     } catch (e: any) { alert(e.response?.data?.detail || "Action failed"); }
   };
 
-  const fmt = (n: number) => `₦${(n||0).toLocaleString()}`;
+  const fmt = (n: number) => `${(n||0).toLocaleString()}`;
   const STATUS_COLORS: Record<string,string> = {
     approved:"#16A34A", pending:"#D97706", rejected:"#DC2626", removed:"#888"
   };
@@ -65,7 +65,7 @@ export default function PartnersPage() {
 
       {loading ? <div className="loading"><div className="spinner" /></div>
       : partners.length === 0 ? (
-        <div className="empty"><div className="ei">🤝</div><h3>No partners yet</h3><p>Partners who request to link with your dealership will appear here</p></div>
+        <div className="empty"><div className="ei"></div><h3>No partners yet</h3><p>Partners who request to link with your dealership will appear here</p></div>
       ) : (
         <div className="partner-list">
           {partners.map((p) => (
@@ -74,8 +74,8 @@ export default function PartnersPage() {
                 <div className="partner-avatar">{p.partnerName?.charAt(0) || p.userId?.charAt(0) || "P"}</div>
                 <div className="partner-info">
                   <div className="partner-name">{p.partnerName || p.partnerEmail || "Partner"}</div>
-                  <div className="partner-email">{p.partnerEmail || "—"}</div>
-                  <div className="partner-phone">{p.partnerPhone || "—"}</div>
+                  <div className="partner-email">{p.partnerEmail || ""}</div>
+                  <div className="partner-phone">{p.partnerPhone || ""}</div>
                 </div>
               </div>
               <div className="partner-right">
@@ -83,7 +83,7 @@ export default function PartnersPage() {
                   {p.status}
                 </span>
                 <div className="partner-cars">{p.carIds?.length||0} cars assigned</div>
-                <div className="view-detail-btn">View Details →</div>
+                <div className="view-detail-btn">View Details </div>
               </div>
             </div>
           ))}
@@ -96,7 +96,7 @@ export default function PartnersPage() {
           <div className="modal modal-xl" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">PARTNER DETAILS</h3>
-              <button className="modal-close" onClick={() => { setShowDetail(null); setDetailData(null); }}>✕</button>
+              <button className="modal-close" onClick={() => { setShowDetail(null); setDetailData(null); }}></button>
             </div>
             <div className="modal-form">
               {detailLoading ? (
@@ -107,9 +107,9 @@ export default function PartnersPage() {
                   <div className="detail-section">
                     <div className="ds-title">PARTNER INFORMATION</div>
                     <div className="detail-grid-2">
-                      <div className="dg-item"><div className="dg-label">Name</div><div className="dg-val">{detailData.partner?.fullName||"—"}</div></div>
-                      <div className="dg-item"><div className="dg-label">Email</div><div className="dg-val">{detailData.partner?.email||"—"}</div></div>
-                      <div className="dg-item"><div className="dg-label">Phone</div><div className="dg-val">{detailData.partner?.phone||"—"}</div></div>
+                      <div className="dg-item"><div className="dg-label">Name</div><div className="dg-val">{detailData.partner?.fullName||""}</div></div>
+                      <div className="dg-item"><div className="dg-label">Email</div><div className="dg-val">{detailData.partner?.email||""}</div></div>
+                      <div className="dg-item"><div className="dg-label">Phone</div><div className="dg-val">{detailData.partner?.phone||""}</div></div>
                       <div className="dg-item"><div className="dg-label">Status</div><div className="dg-val" style={{color:STATUS_COLORS[showDetail.status]||"#888"}}>{showDetail.status}</div></div>
                     </div>
                   </div>
@@ -130,7 +130,7 @@ export default function PartnersPage() {
                       <div className="cars-mini-list">
                         {detailData.cars.map((c: any) => (
                           <div key={c._id} className="car-mini">
-                            <div className="cm-img">{c.images?.[0]?<img src={c.images[0]} alt=""/>:"🚗"}</div>
+                            <div className="cm-img">{c.images?.[0]?<img src={c.images[0]} alt=""/>:""}</div>
                             <div className="cm-info">
                               <div className="cm-name">{c.brand} {c.model} {c.year}</div>
                               <div className="cm-id">{c.carId}</div>
@@ -161,8 +161,8 @@ export default function PartnersPage() {
                   <div className="modal-footer">
                     {showDetail.status === "pending" && (
                       <>
-                        <button className="btn-approve" onClick={() => handleAction(showDetail._id||showDetail.linkId,"approve")}>✅ Approve Partner</button>
-                        <button className="btn-reject" onClick={() => handleAction(showDetail._id||showDetail.linkId,"reject",{reason:"Rejected by dealer"})}>✕ Reject</button>
+                        <button className="btn-approve" onClick={() => handleAction(showDetail._id||showDetail.linkId,"approve")}> Approve Partner</button>
+                        <button className="btn-reject" onClick={() => handleAction(showDetail._id||showDetail.linkId,"reject",{reason:"Rejected by dealer"})}> Reject</button>
                       </>
                     )}
                     {showDetail.status === "approved" && (

@@ -1,19 +1,19 @@
-﻿"use client";
+use client";
 
 export default function AppFooter() {
   return (
     <footer className="app-footer">
       <div className="footer-inner">
-        <span className="footer-brand">◈ CARSTRIMS</span>
+        <span className="footer-brand"> CARSTRIMS</span>
         <div className="footer-links">
-          <a href="mailto:support@carstrims.com" className="fl">✉ support@carstrims.com</a>
-          <a href="https://wa.me/2348000000000" target="_blank" rel="noreferrer" className="fl">💬 WhatsApp</a>
-          <a href="tel:+2348000000000" className="fl">📞 +234 800 000 0000</a>
+          <a href="mailto:support@carstrims.com" className="fl"> support@carstrims.com</a>
+          <a href="https://wa.me/2348000000000" target="_blank" rel="noreferrer" className="fl"> WhatsApp</a>
+          <a href="tel:+2348000000000" className="fl"> +234 800 000 0000</a>
           <a href="#" className="fl">Instagram</a>
           <a href="#" className="fl">Twitter</a>
           <a href="#" className="fl">Facebook</a>
         </div>
-        <span className="footer-dev">Built by <strong>UASE TECH STUDIO</strong> · 2026</span>
+        <span className="footer-dev">Built by <strong>UASE TECH STUDIO</strong>  2026</span>
       </div>
       <style>{`
         .app-footer{background:#fff;border-top:1.5px solid #E5E5E5;padding:0.875rem 1.5rem;font-family:var(--font-body)}

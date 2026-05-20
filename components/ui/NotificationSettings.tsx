@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useState, useEffect } from "react";
 import api from "@/lib/api";
 
@@ -54,7 +54,7 @@ export default function NotificationSettings() {
       setPermission(result);
       if (result === "granted") {
         await subscribeToWebPush();
-        setMsg("✅ Notifications enabled!");
+        setMsg(" Notifications enabled!");
       } else if (result === "denied") {
         setMsg("Notifications blocked. Please allow them in your browser settings.");
       }
@@ -73,7 +73,7 @@ export default function NotificationSettings() {
         vapidKey = vRes.data.publicKey || "";
       } catch {}
 
-      if (!vapidKey) { console.log("[Push] No VAPID key configured — skipping subscribe"); return; }
+      if (!vapidKey) { console.log("[Push] No VAPID key configured  skipping subscribe"); return; }
 
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
@@ -103,7 +103,7 @@ export default function NotificationSettings() {
     navigator.geolocation.getCurrentPosition(
       pos => {
         setLocationPerm("granted");
-        setMsg(`✅ Location access granted (${pos.coords.latitude.toFixed(3)}, ${pos.coords.longitude.toFixed(3)})`);
+        setMsg(` Location access granted (${pos.coords.latitude.toFixed(3)}, ${pos.coords.longitude.toFixed(3)})`);
       },
       err => {
         setLocationPerm("denied");
@@ -114,12 +114,12 @@ export default function NotificationSettings() {
 
   const toggleSound = () => {
     const next = !sound; setSound(next); savePrefs({sound:next});
-    setMsg(next ? "🔔 Notification sound enabled" : "🔕 Notification sound muted");
+    setMsg(next ? " Notification sound enabled" : " Notification sound muted");
   };
 
   const toggleDnd = () => {
     const next = !dnd; setDnd(next); savePrefs({dnd:next});
-    setMsg(next ? "🌙 Do Not Disturb: on — notifications will be silent" : "🔔 DND off — notifications restored");
+    setMsg(next ? " Do Not Disturb: on  notifications will be silent" : " DND off  notifications restored");
   };
 
   const S = (on: boolean) => ({
@@ -133,7 +133,7 @@ export default function NotificationSettings() {
     <div style={{display:"flex",flexDirection:"column",gap:"1rem"}}>
       {msg && (
         <div style={{background:"#F5F5F5",border:"1px solid #E5E5E5",borderRadius:"8px",padding:"0.75rem 1rem",fontSize:"0.8rem",color:"#525252",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <span>{msg}</span><button onClick={()=>setMsg("")} style={{background:"none",border:"none",cursor:"pointer",color:"#A3A3A3"}}>✕</button>
+          <span>{msg}</span><button onClick={()=>setMsg("")} style={{background:"none",border:"none",cursor:"pointer",color:"#A3A3A3"}}></button>
         </div>
       )}
 
@@ -149,7 +149,7 @@ export default function NotificationSettings() {
 
         {permission === "denied" && (
           <div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",borderRadius:"6px",padding:"0.75rem",fontSize:"0.8rem",color:"#DC2626",lineHeight:1.5}}>
-            🚫 Notifications are blocked. Go to your browser Settings → Site Settings → Notifications → Allow for this site.
+             Notifications are blocked. Go to your browser Settings  Site Settings  Notifications  Allow for this site.
           </div>
         )}
 
@@ -160,7 +160,7 @@ export default function NotificationSettings() {
             </p>
             <button onClick={requestNotifications} disabled={loading}
               style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.75rem 1.5rem",fontFamily:"var(--font-display)",fontSize:"0.875rem",letterSpacing:"0.08em",cursor:"pointer",opacity:loading?0.6:1}}>
-              {loading?"Requesting...":"🔔 Enable Push Notifications"}
+              {loading?"Requesting...":" Enable Push Notifications"}
             </button>
           </div>
         )}
@@ -168,7 +168,7 @@ export default function NotificationSettings() {
         {permission === "granted" && (
           <div style={{display:"flex",flexDirection:"column",gap:"0.75rem"}}>
             <div style={{display:"flex",alignItems:"center",gap:"0.75rem",padding:"0.75rem",background:"#F0FDF4",borderRadius:"8px",border:"1px solid #86EFAC"}}>
-              <span style={{fontSize:"1.1rem"}}>✅</span>
+              <span style={{fontSize:"1.1rem"}}></span>
               <div style={{flex:1}}>
                 <div style={{fontSize:"0.875rem",fontWeight:600,color:"#15803D"}}>Notifications Enabled</div>
                 <div style={{fontSize:"0.72rem",color:"#737373"}}>{subscribed?"Subscribed to push notifications":"Click below to subscribe"}</div>
@@ -194,7 +194,7 @@ export default function NotificationSettings() {
         <div style={{fontSize:"0.68rem",fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase" as const,color:"#737373"}}>Notification Preferences</div>
         {[
           { key:"sound", label:"Notification Sound", desc:"Play audio when a notification arrives", on:sound, toggle:toggleSound },
-          { key:"dnd", label:"Do Not Disturb (DND)", desc:"Silence all notification sounds — still receive in-app notifications", on:dnd, toggle:toggleDnd },
+          { key:"dnd", label:"Do Not Disturb (DND)", desc:"Silence all notification sounds  still receive in-app notifications", on:dnd, toggle:toggleDnd },
         ].map(item=>(
           <div key={item.key} style={{display:"flex",alignItems:"center",gap:"1rem",justifyContent:"space-between",padding:"0.625rem 0",borderBottom:"1px solid #F5F5F5"}}>
             <div style={{flex:1}}>
@@ -216,18 +216,18 @@ export default function NotificationSettings() {
         </div>
         {locationPerm === "granted" ? (
           <div style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"8px",padding:"0.75rem",fontSize:"0.8rem",color:"#15803D",display:"flex",alignItems:"center",gap:"0.5rem"}}>
-            ✅ Location access granted
+             Location access granted
           </div>
         ) : locationPerm === "denied" ? (
           <div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",borderRadius:"8px",padding:"0.75rem",fontSize:"0.8rem",color:"#DC2626",lineHeight:1.5}}>
-            🚫 Location blocked. Enable it in your browser settings → Site Settings → Location.
+             Location blocked. Enable it in your browser settings  Site Settings  Location.
           </div>
         ) : (
           <button onClick={requestLocation}
             style={{background:"#1A1A1A",color:"#fff",border:"none",borderRadius:"8px",padding:"0.75rem 1.5rem",fontFamily:"var(--font-display)",fontSize:"0.875rem",letterSpacing:"0.08em",cursor:"pointer",alignSelf:"flex-start",transition:"background 0.2s"}}
             onMouseOver={e=>(e.currentTarget.style.background="#F47B20")}
             onMouseOut={e=>(e.currentTarget.style.background="#1A1A1A")}>
-            📍 Allow Location Access
+             Allow Location Access
           </button>
         )}
       </div>

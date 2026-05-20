@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
@@ -30,7 +30,7 @@ export default function CarIdSearch({ value, onSelect, placeholder }: Props) {
     return () => clearTimeout(t);
   }, [q]);
 
-  const sel = (c: any) => { onSelect(c); setQ(`${c.brand} ${c.model} ${c.year} — ${c.carId}`); setResults([]); setOpen(false); };
+  const sel = (c: any) => { onSelect(c); setQ(`${c.brand} ${c.model} ${c.year}  ${c.carId}`); setResults([]); setOpen(false); };
 
   const inp: React.CSSProperties = {background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.75rem 1rem",color:"#1A1A1A",fontSize:"0.9rem",fontFamily:"var(--font-body)",outline:"none",width:"100%",boxSizing:"border-box" as const,transition:"border-color 0.2s",paddingRight:"2rem"};
 
@@ -60,7 +60,7 @@ export default function CarIdSearch({ value, onSelect, placeholder }: Props) {
                   {c.vin && <span style={{fontSize:"0.65rem",color:"#A3A3A3"}}>VIN:{c.vin}</span>}
                 </div>
               </div>
-              <span style={{fontFamily:"var(--font-display)",fontSize:"0.82rem",color:"#F47B20",fontWeight:700,flexShrink:0}}>₦{(c.sellingPrice||0).toLocaleString()}</span>
+              <span style={{fontFamily:"var(--font-display)",fontSize:"0.82rem",color:"#F47B20",fontWeight:700,flexShrink:0}}>{(c.sellingPrice||0).toLocaleString()}</span>
             </div>
           ))}
         </div>

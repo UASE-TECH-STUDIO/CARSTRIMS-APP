@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
@@ -66,10 +66,10 @@ export default function ExpensesPage() {
   const selectCar = (car: any, isEdit = false) => {
     if (isEdit) {
       setEditForm(f => ({ ...f, carId: car.carId }));
-      setEditCarSearch(`${car.brand} ${car.model} ${car.year} — ${car.carId}`);
+      setEditCarSearch(`${car.brand} ${car.model} ${car.year}  ${car.carId}`);
     } else {
       setForm(f => ({ ...f, carId: car.carId }));
-      setCarSearch(`${car.brand} ${car.model} ${car.year} — ${car.carId}`);
+      setCarSearch(`${car.brand} ${car.model} ${car.year}  ${car.carId}`);
     }
     setCarResults([]); setShowCarDrop(false);
   };
@@ -124,7 +124,7 @@ export default function ExpensesPage() {
       <input className="fi" placeholder={placeholder||"Search car by brand, model or ID..."} value={value} onChange={e=>onChange(e.target.value)}/>
       {carResults.length>0&&showCarDrop&&(
         <div style={{position:"absolute",top:"calc(100%+2px)",left:0,right:0,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"8px",zIndex:50,maxHeight:"180px",overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,0.1)"}}>
-          <button style={{display:"block",width:"100%",textAlign:"left",padding:"0.45rem 0.875rem",background:"none",border:"none",borderBottom:"1px solid #F5F5F5",color:"#A3A3A3",fontSize:"0.72rem",cursor:"pointer"}} onClick={()=>{onChange("");setCarResults([]);setShowCarDrop(false);}}>Clear — no car linked</button>
+          <button style={{display:"block",width:"100%",textAlign:"left",padding:"0.45rem 0.875rem",background:"none",border:"none",borderBottom:"1px solid #F5F5F5",color:"#A3A3A3",fontSize:"0.72rem",cursor:"pointer"}} onClick={()=>{onChange("");setCarResults([]);setShowCarDrop(false);}}>Clear  no car linked</button>
           {carResults.map((c:any)=>(
             <button key={c.carId} onClick={()=>onSelect(c)}
               style={{display:"flex",alignItems:"center",gap:"0.625rem",padding:"0.55rem 0.875rem",background:"none",border:"none",borderBottom:"1px solid #F5F5F5",cursor:"pointer",width:"100%",textAlign:"left"}}
@@ -144,7 +144,7 @@ export default function ExpensesPage() {
 
   return (
     <div className="exp-page">
-      {success&&<div className="exp-success" onClick={()=>setSuccess("")}>{success} ✕</div>}
+      {success&&<div className="exp-success" onClick={()=>setSuccess("")}>{success} </div>}
 
       <div className="exp-header">
         <div>
@@ -178,7 +178,7 @@ export default function ExpensesPage() {
       </div>
 
       {loading?<div className="exp-loading"><div className="spinner"/></div>
-      :expenses.length===0?<div className="exp-empty"><div style={{fontSize:"2rem"}}>📋</div><p>No expenses recorded yet</p></div>
+      :expenses.length===0?<div className="exp-empty"><div style={{fontSize:"2rem"}}></div><p>No expenses recorded yet</p></div>
       :(
         <div className="exp-table-wrap">
           <table className="exp-table">
@@ -214,7 +214,7 @@ export default function ExpensesPage() {
             {error&&<div className="modal-err">{error}</div>}
             <form onSubmit={handleAdd} className="modal-form">
               <div className="field">
-                <label className="fl">Link to Car (optional — search by brand, model or ID)</label>
+                <label className="fl">Link to Car (optional  search by brand, model or ID)</label>
                 <CarSearch value={carSearch} onChange={v=>{setCarSearch(v);if(!v)setForm(f=>({...f,carId:""}));}} onSelect={c=>selectCar(c)} />
                 {form.carId&&<div style={{fontSize:"0.7rem",color:"#16A34A",marginTop:"0.2rem",fontWeight:600}}>Linked: {form.carId}</div>}
               </div>

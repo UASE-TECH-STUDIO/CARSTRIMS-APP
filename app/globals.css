@@ -1,14 +1,14 @@
-﻿@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono&display=swap");
+import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono&display=swap");
 
 :root {
-  /* â”€â”€ PRIMARY BRAND â”€â”€ */
+  /*  PRIMARY BRAND  */
   --orange:        #F47B20;
   --orange-light:  #FF9340;
   --orange-dim:    #C4621A;
   --orange-pale:   #FFF7ED;
   --orange-border: rgba(244,123,32,0.25);
 
-  /* â”€â”€ SURFACES (light theme) â”€â”€ */
+  /*  SURFACES (light theme)  */
   --bg:         #F5F5F5;
   --surface:    #FFFFFF;
   --surface-2:  #F5F5F5;
@@ -16,7 +16,7 @@
   --border:     #E5E5E5;
   --border-strong: #D4D4D4;
 
-  /* â”€â”€ GREY SCALE â”€â”€ */
+  /*  GREY SCALE  */
   --grey-50:  #FAFAFA;
   --grey-100: #F5F5F5;
   --grey-200: #E5E5E5;
@@ -28,23 +28,23 @@
   --grey-800: #262626;
   --grey-900: #171717;
 
-  /* â”€â”€ TEXT â”€â”€ */
+  /*  TEXT  */
   --text:       #1A1A1A;
   --text-muted: #737373;
   --text-dim:   #A3A3A3;
 
-  /* â”€â”€ STATUS â”€â”€ */
+  /*  STATUS  */
   --success: #16A34A;
   --error:   #DC2626;
   --warning: #D97706;
   --info:    #2563EB;
 
-  /* â”€â”€ FONTS â”€â”€ */
+  /*  FONTS  */
   --font-display: "Bebas Neue", sans-serif;
   --font-body:    "DM Sans", sans-serif;
   --font-mono:    "DM Mono", monospace;
 
-  /* â”€â”€ LEGACY ALIASES (old pages use these) â”€â”€ */
+  /*  LEGACY ALIASES (old pages use these)  */
   --black:       #F5F5F5;
   --gold:        #F47B20;
   --gold-light:  #FF9340;
@@ -78,7 +78,7 @@ h4 { font-size: 1rem; font-weight: 600; }
 label { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.06em; color: var(--grey-700); }
 small { font-size: 0.8rem; color: var(--grey-500); }
 
-/* ── GLOBAL CARD STYLES ── */
+/*  GLOBAL CARD STYLES  */
 .g-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; }
 .g-section-label { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: var(--grey-400); }
 .g-price { font-family: var(--font-display); font-size: 1.5rem; color: var(--orange); letter-spacing: 0.03em; }

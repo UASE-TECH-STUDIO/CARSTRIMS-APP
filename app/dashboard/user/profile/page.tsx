@@ -1,4 +1,4 @@
-"use client";
+use client";
 
 import NotificationSettings from "@/components/ui/NotificationSettings";
 import { useEffect, useRef, useState } from "react";
@@ -115,10 +115,10 @@ export default function UserProfilePage() {
   const fl: React.CSSProperties = { fontSize:"0.68rem", fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase" as const, color:"#737373", display:"block", marginBottom:"0.35rem" };
 
   const TABS: {key: "personal"|"social"|"security"|"account"; label:string; icon:string}[] = [
-    {key:"personal",  label:"Personal",  icon:"👤"},
-    {key:"social",    label:"Social",    icon:"🔗"},
-    {key:"security",  label:"Security",  icon:"🔒"},
-    {key:"account", label:"Account", icon:"ℹ️"},{key:"notifications" as any, label:"Notifications", icon:"🔔"},
+    {key:"personal",  label:"Personal",  icon:""},
+    {key:"social",    label:"Social",    icon:""},
+    {key:"security",  label:"Security",  icon:""},
+    {key:"account", label:"Account", icon:""},{key:"notifications" as any, label:"Notifications", icon:""},
   ];
 
   return (
@@ -147,19 +147,19 @@ export default function UserProfilePage() {
           <div style={{fontFamily:"var(--font-display)",fontSize:"1.5rem",color:"#1A1A1A",lineHeight:1}}>{profile?.fullName||"Your Name"}</div>
           <div style={{fontSize:"0.8rem",color:"#737373",marginTop:"0.3rem"}}>{user?.email}</div>
           <div style={{display:"flex",gap:"0.5rem",marginTop:"0.625rem",flexWrap:"wrap"}}>
-            <span style={{background:"#DCFCE7",color:"#166534",borderRadius:"20px",padding:"0.2rem 0.75rem",fontSize:"0.72rem",fontWeight:600}}>✓ Verified Buyer</span>
-            {profile?.city&&profile?.state&&<span style={{background:"#F5F5F5",color:"#737373",borderRadius:"20px",padding:"0.2rem 0.75rem",fontSize:"0.72rem"}}>📍 {profile.city}, {profile.state}</span>}
+            <span style={{background:"#DCFCE7",color:"#166534",borderRadius:"20px",padding:"0.2rem 0.75rem",fontSize:"0.72rem",fontWeight:600}}> Verified Buyer</span>
+            {profile?.city&&profile?.state&&<span style={{background:"#F5F5F5",color:"#737373",borderRadius:"20px",padding:"0.2rem 0.75rem",fontSize:"0.72rem"}}> {profile.city}, {profile.state}</span>}
             <span style={{background:"#F5F5F5",color:"#A3A3A3",borderRadius:"20px",padding:"0.2rem 0.75rem",fontSize:"0.65rem",fontFamily:"monospace"}}>{user?.userId?.slice(-10)}</span>
           </div>
         </div>
         <button onClick={()=>fileRef.current?.click()} style={{marginLeft:"auto",background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.55rem 1rem",fontSize:"0.8rem",cursor:"pointer",color:"#525252",fontFamily:"var(--font-body)"}}>
-          📷 Change Photo
+           Change Photo
         </button>
       </div>
 
       {/* Banners */}
-      {success&&<div style={{background:"#F0FDF4",border:"1px solid #86EFAC",color:"#15803D",padding:"0.875rem 1.25rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}>✅ {success}<button onClick={()=>setSuccess("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}>✕</button></div>}
-      {error&&<div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",color:"#DC2626",padding:"0.875rem 1.25rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}>❌ {error}<button onClick={()=>setError("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}>✕</button></div>}
+      {success&&<div style={{background:"#F0FDF4",border:"1px solid #86EFAC",color:"#15803D",padding:"0.875rem 1.25rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}> {success}<button onClick={()=>setSuccess("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}></button></div>}
+      {error&&<div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",color:"#DC2626",padding:"0.875rem 1.25rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}> {error}<button onClick={()=>setError("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}></button></div>}
 
       {/* Tab bar */}
       <div style={{display:"flex",gap:"0.25rem",background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",padding:"0.375rem",flexWrap:"wrap"}}>
@@ -227,7 +227,7 @@ export default function UserProfilePage() {
             <div><label style={fl}>New Password</label><input type="password" style={fi} value={pw.newPassword} onChange={e=>setPw({...pw,newPassword:e.target.value})} required/></div>
             <div><label style={fl}>Confirm New Password</label><input type="password" style={fi} value={pw.confirmPassword} onChange={e=>setPw({...pw,confirmPassword:e.target.value})} required/></div>
             <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:"8px",padding:"0.75rem 1rem",fontSize:"0.8rem",color:"#1D4ED8",lineHeight:1.5}}>
-              🔐 Use at least 8 characters with a mix of letters, numbers and symbols.
+               Use at least 8 characters with a mix of letters, numbers and symbols.
             </div>
             <button type="submit" disabled={pwSaving} style={{background:"#1A1A1A",color:"#fff",border:"none",borderRadius:"8px",padding:"0.875rem 2rem",fontFamily:"var(--font-display)",fontSize:"0.9rem",letterSpacing:"0.08em",cursor:"pointer",alignSelf:"flex-start",opacity:pwSaving?0.6:1}}>
               {pwSaving?"Changing...":"Change Password"}
@@ -239,10 +239,10 @@ export default function UserProfilePage() {
           <div style={{display:"flex",flexDirection:"column",gap:"1rem"}}>
             <div style={{fontSize:"0.68rem",fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase" as const,color:"#A3A3A3",marginBottom:"0.5rem"}}>ACCOUNT INFORMATION</div>
             {[
-              {label:"Email Address",   value:user?.email||profile?.email||"—"},
+              {label:"Email Address",   value:user?.email||profile?.email||""},
               {label:"Account Role",    value:"Buyer / Customer"},
-              {label:"User ID",         value:user?.userId||profile?._id||"—", mono:true},
-              {label:"Member Since",    value:profile?.createdAt?new Date(profile.createdAt).toLocaleDateString("en-NG",{year:"numeric",month:"long",day:"numeric"}):"—"},
+              {label:"User ID",         value:user?.userId||profile?._id||"", mono:true},
+              {label:"Member Since",    value:profile?.createdAt?new Date(profile.createdAt).toLocaleDateString("en-NG",{year:"numeric",month:"long",day:"numeric"}):""},
               {label:"Account Status",  value:profile?.status||"active"},
             ].map(row=>(
               <div key={row.label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"0.75rem 0",borderBottom:"1px solid #F0F0F0"}}>

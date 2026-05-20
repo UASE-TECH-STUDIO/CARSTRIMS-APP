@@ -1,4 +1,4 @@
-"use client";
+use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -58,7 +58,7 @@ export default function AdminDealersPage() {
     } finally { setActionLoading(false); }
   };
 
-  const fmtDate = (iso: string) => iso ? new Date(iso).toLocaleDateString("en-NG") : "—";
+  const fmtDate = (iso: string) => iso ? new Date(iso).toLocaleDateString("en-NG") : "";
 
   return (
     <div className="dealers-page">
@@ -87,7 +87,7 @@ export default function AdminDealersPage() {
         <div className="loading-state"><div className="spinner" /></div>
       ) : dealers.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">🏢</div>
+          <div className="empty-icon"></div>
           <h3>No dealers found</h3>
         </div>
       ) : (
@@ -113,9 +113,9 @@ export default function AdminDealersPage() {
                   </td>
                   <td>
                     <div className="contact-row">
-                      <a href={`tel:${d.phone}`} className="contact-btn" title="Call">📞</a>
-                      <a href={`mailto:${d.email}`} className="contact-btn" title="Email">✉️</a>
-                      {d.whatsapp && <a href={`https://wa.me/${d.whatsapp}`} target="_blank" rel="noreferrer" className="contact-btn" title="WhatsApp">💬</a>}
+                      <a href={`tel:${d.phone}`} className="contact-btn" title="Call"></a>
+                      <a href={`mailto:${d.email}`} className="contact-btn" title="Email"></a>
+                      {d.whatsapp && <a href={`https://wa.me/${d.whatsapp}`} target="_blank" rel="noreferrer" className="contact-btn" title="WhatsApp"></a>}
                     </div>
                   </td>
                   <td className="num-cell">{d.carCount || 0}</td>
@@ -130,20 +130,20 @@ export default function AdminDealersPage() {
                   <td>
                     <div className="action-menu">
                       {d.status === "awaiting_approval" && (
-                        <button className="act-btn approve" onClick={() => setActionModal({ type:"approve", dealer:d })}>✅ Approve</button>
+                        <button className="act-btn approve" onClick={() => setActionModal({ type:"approve", dealer:d })}> Approve</button>
                       )}
                       {d.status === "awaiting_approval" && (
-                        <button className="act-btn reject" onClick={() => { setActionModal({ type:"reject", dealer:d }); setActionNote(""); }}>❌ Reject</button>
+                        <button className="act-btn reject" onClick={() => { setActionModal({ type:"reject", dealer:d }); setActionNote(""); }}> Reject</button>
                       )}
                       {d.status === "approved" && (
-                        <button className="act-btn suspend" onClick={() => { setActionModal({ type:"suspend", dealer:d }); setActionNote(""); }}>⛔ Suspend</button>
+                        <button className="act-btn suspend" onClick={() => { setActionModal({ type:"suspend", dealer:d }); setActionNote(""); }}> Suspend</button>
                       )}
                       {(d.status === "suspended" || d.status === "rejected") && (
-                        <button className="act-btn approve" onClick={() => setActionModal({ type:"approve", dealer:d })}>↩ Reactivate</button>
+                        <button className="act-btn approve" onClick={() => setActionModal({ type:"approve", dealer:d })}> Reactivate</button>
                       )}
-                      <button className="act-btn warn" onClick={() => { setActionModal({ type:"warn", dealer:d }); setActionNote(""); }}>⚠️ Warn</button>
-                      <button className="act-btn reset" onClick={() => setActionModal({ type:"reset", dealer:d })}>🔑 Reset PW</button>
-                      <button className="act-btn delete" onClick={() => setActionModal({ type:"delete", dealer:d })}>🗑 Delete</button>
+                      <button className="act-btn warn" onClick={() => { setActionModal({ type:"warn", dealer:d }); setActionNote(""); }}> Warn</button>
+                      <button className="act-btn reset" onClick={() => setActionModal({ type:"reset", dealer:d })}> Reset PW</button>
+                      <button className="act-btn delete" onClick={() => setActionModal({ type:"delete", dealer:d })}> Delete</button>
                     </div>
                   </td>
                 </tr>
@@ -154,9 +154,9 @@ export default function AdminDealersPage() {
       )}
 
       <div className="pagination">
-        <button className="pg-btn" onClick={() => setSkip(Math.max(0, skip - LIMIT))} disabled={skip === 0}>← Prev</button>
+        <button className="pg-btn" onClick={() => setSkip(Math.max(0, skip - LIMIT))} disabled={skip === 0}> Prev</button>
         <span className="pg-info">{Math.floor(skip / LIMIT) + 1} / {Math.max(1, Math.ceil(total / LIMIT))}</span>
-        <button className="pg-btn" onClick={() => setSkip(skip + LIMIT)} disabled={skip + LIMIT >= total}>Next →</button>
+        <button className="pg-btn" onClick={() => setSkip(skip + LIMIT)} disabled={skip + LIMIT >= total}>Next </button>
       </div>
 
       {/* ACTION MODAL */}
@@ -165,19 +165,19 @@ export default function AdminDealersPage() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">
-                {actionModal.type === "approve" ? "✅ Approve Dealer" :
-                 actionModal.type === "reject" ? "❌ Reject Dealer" :
-                 actionModal.type === "suspend" ? "⛔ Suspend Dealer" :
-                 actionModal.type === "warn" ? "⚠️ Send Warning" :
-                 actionModal.type === "reset" ? "🔑 Reset Password" :
-                 "🗑 Delete Dealer"}
+                {actionModal.type === "approve" ? " Approve Dealer" :
+                 actionModal.type === "reject" ? " Reject Dealer" :
+                 actionModal.type === "suspend" ? " Suspend Dealer" :
+                 actionModal.type === "warn" ? " Send Warning" :
+                 actionModal.type === "reset" ? " Reset Password" :
+                 " Delete Dealer"}
               </h3>
-              <button className="modal-close" onClick={() => setActionModal(null)}>✕</button>
+              <button className="modal-close" onClick={() => setActionModal(null)}></button>
             </div>
             <div className="modal-body">
               <div className="action-dealer-info">
                 <strong>{actionModal.dealer.companyName}</strong>
-                <span>{actionModal.dealer.ownerName} · {actionModal.dealer.email}</span>
+                <span>{actionModal.dealer.ownerName}  {actionModal.dealer.email}</span>
               </div>
 
               {["reject","suspend","warn"].includes(actionModal.type) && (
@@ -193,7 +193,7 @@ export default function AdminDealersPage() {
 
               {actionModal.type === "delete" && (
                 <div className="danger-confirm">
-                  ⚠️ This will permanently mark the account as deleted. This action cannot be undone.
+                   This will permanently mark the account as deleted. This action cannot be undone.
                 </div>
               )}
 

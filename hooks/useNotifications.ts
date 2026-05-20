@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useRef, useCallback } from "react";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
@@ -113,7 +113,7 @@ export function useNotifications() {
       const latest = (res.data?.notifications || [])[0];
 
       if (lastSeenCount === -1) {
-        // First load — just set baseline
+        // First load  just set baseline
         lastSeenCount = unread;
         return;
       }

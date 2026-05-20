@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useAuthStore } from "@/store/authStore";
 import Link from "next/link";
 import NotificationBell from "@/components/ui/NotificationBell";
@@ -7,7 +7,7 @@ export default function UserTopbar() {
   const { user } = useAuthStore();
   return (
     <header className="user-topbar">
-      <Link href="/" className="topbar-brand">◈ CARSTRIMS</Link>
+      <Link href="/" className="topbar-brand"> CARSTRIMS</Link>
       <div className="topbar-right">
         <NotificationBell />
         <Link href="/dashboard/user/profile" className="user-pill">

@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useState, useRef, useCallback } from "react";
 import api from "@/lib/api";
 
@@ -102,12 +102,12 @@ export default function ImageUpload({
               <div className="upload-spinner" />
             ) : (
               <>
-                <div className="drop-icon">📷</div>
+                <div className="drop-icon"></div>
                 <div className="drop-label">{label}</div>
                 <div className="drop-hint">
                   {single
                     ? "Click or drag to upload"
-                    : `Click or drag · ${currentImages.length}/${maxImages} uploaded`}
+                    : `Click or drag  ${currentImages.length}/${maxImages} uploaded`}
                 </div>
               </>
             )}

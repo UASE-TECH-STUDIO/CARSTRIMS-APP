@@ -1,4 +1,4 @@
-"use client";
+use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
@@ -7,14 +7,14 @@ import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
 const NAV = [
-  { href:"/dashboard/partner", label:"Overview", icon:"▦", exact:true },
-  { href:"/dashboard/partner/cars", label:"My Cars", icon:"▣" },
-  { href:"/dashboard/partner/dealers", label:"My Dealers", icon:"◉" },
-  { href:"/dashboard/partner/find-dealer", label:"Find Dealer", icon:"◎" },
-  { href:"/dashboard/partner/movements", label:"Movements", icon:"↺" },
-  { href:"/dashboard/partner/earnings", label:"Earnings", icon:"◈" },
-  { href:"/dashboard/partner/notifications", label:"Notifications", icon:"◔" },
-  { href:"/dashboard/partner/settings", label:"Settings", icon:"⚙" },
+  { href:"/dashboard/partner", label:"Overview", icon:"", exact:true },
+  { href:"/dashboard/partner/cars", label:"My Cars", icon:"" },
+  { href:"/dashboard/partner/dealers", label:"My Dealers", icon:"" },
+  { href:"/dashboard/partner/find-dealer", label:"Find Dealer", icon:"" },
+  { href:"/dashboard/partner/movements", label:"Movements", icon:"" },
+  { href:"/dashboard/partner/earnings", label:"Earnings", icon:"" },
+  { href:"/dashboard/partner/notifications", label:"Notifications", icon:"" },
+  { href:"/dashboard/partner/settings", label:"Settings", icon:"" },
 ];
 
 export default function PartnerSidebar() {
@@ -35,9 +35,9 @@ export default function PartnerSidebar() {
   return (
     <aside className="partner-sidebar">
       <div className="sb-brand">
-        <span className="sb-bi">◈</span>
+        <span className="sb-bi"></span>
         <span className="sb-bn">CARSTRIMS</span>
-        <button className="sb-x" onClick={close}>✕</button>
+        <button className="sb-x" onClick={close}></button>
       </div>
 
       <Link href="/dashboard/partner/settings" className="sb-profile" onClick={handleNav}>
@@ -48,7 +48,7 @@ export default function PartnerSidebar() {
           <div className="sb-name">{me?.fullName || user?.fullName || "Partner"}</div>
           <div className="sb-role">Partner Account</div>
         </div>
-        <span className="sb-edit">✏</span>
+        <span className="sb-edit"></span>
       </Link>
 
       <nav className="sb-nav">
@@ -62,13 +62,13 @@ export default function PartnerSidebar() {
         ))}
         <div className="sb-div" />
         <Link href="/feed" className="sb-item feed" onClick={handleNav}>
-          <span className="sb-icon">⌂</span><span>View Feed</span>
+          <span className="sb-icon"></span><span>View Feed</span>
         </Link>
       </nav>
 
       <div className="sb-bot">
         <div className="sb-dev">Powered by <strong>UASE TECH STUDIO</strong></div>
-        <button className="sb-out" onClick={() => { logout(); router.push("/login"); }}>↩ Sign Out</button>
+        <button className="sb-out" onClick={() => { logout(); router.push("/login"); }}> Sign Out</button>
       </div>
 
       <style>{`

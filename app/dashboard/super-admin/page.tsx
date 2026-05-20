@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import Link from "next/link";
@@ -36,7 +36,7 @@ export default function SuperAdminOverview() {
   const revenueMonth    = safe(stats?.revenue?.thisMonth);
 
   const fmt      = (n: number) => n.toLocaleString();
-  const fmtNaira = (n: number) => `₦${n.toLocaleString()}`;
+  const fmtNaira = (n: number) => `${n.toLocaleString()}`;
   const fmtTime  = (iso: string) => {
     if (!iso) return "";
     const d = Date.now() - new Date(iso).getTime();
@@ -45,7 +45,7 @@ export default function SuperAdminOverview() {
   };
 
   const STAT_CARDS = [
-    { label:"Total Dealers",  value:totalDealers,  sub:`${activeDealers} active · ${pendingDealers} pending`, href:"/dashboard/super-admin/dealers",  color:"#F47B20" },
+    { label:"Total Dealers",  value:totalDealers,  sub:`${activeDealers} active  ${pendingDealers} pending`, href:"/dashboard/super-admin/dealers",  color:"#F47B20" },
     { label:"Total Users",    value:totalUsers,     sub:"All registered accounts",                             href:"/dashboard/super-admin/users",     color:"#3B8BD4" },
     { label:"Buyers",         value:buyersOnly,     sub:"PUBLIC_USER role only",                               href:"/dashboard/super-admin/users?role=PUBLIC_USER",  color:"#F47B20" },
     { label:"Partners",       value:partnersOnly,   sub:"PARTNER_USER role only",                              href:"/dashboard/super-admin/users?role=PARTNER_USER", color:"#7B68EE" },
@@ -55,12 +55,12 @@ export default function SuperAdminOverview() {
   ];
 
   const QUICK_LINKS = [
-    { label:"Pending Approvals", href:"/dashboard/super-admin/approvals",     icon:"⏳", desc:"Review dealer applications" },
-    { label:"Broadcast Message", href:"/dashboard/super-admin/broadcast",     icon:"📢", desc:"Message all users" },
-    { label:"Create Dealer",     href:"/dashboard/super-admin/create-dealer", icon:"➕", desc:"Add new dealer account" },
-    { label:"Analytics",         href:"/dashboard/super-admin/analytics",     icon:"📊", desc:"Platform performance" },
-    { label:"Activity Log",      href:"/dashboard/super-admin/activity",      icon:"📡", desc:"Recent platform events" },
-    { label:"Settings",          href:"/dashboard/super-admin/settings",      icon:"⚙️", desc:"Platform configuration" },
+    { label:"Pending Approvals", href:"/dashboard/super-admin/approvals",     icon:"", desc:"Review dealer applications" },
+    { label:"Broadcast Message", href:"/dashboard/super-admin/broadcast",     icon:"", desc:"Message all users" },
+    { label:"Create Dealer",     href:"/dashboard/super-admin/create-dealer", icon:"", desc:"Add new dealer account" },
+    { label:"Analytics",         href:"/dashboard/super-admin/analytics",     icon:"", desc:"Platform performance" },
+    { label:"Activity Log",      href:"/dashboard/super-admin/activity",      icon:"", desc:"Recent platform events" },
+    { label:"Settings",          href:"/dashboard/super-admin/settings",      icon:"", desc:"Platform configuration" },
   ];
 
   return (
@@ -68,9 +68,9 @@ export default function SuperAdminOverview() {
       <div className="ov-header">
         <div>
           <h1 className="ov-title">PLATFORM OVERVIEW</h1>
-          <p className="ov-sub">CARSTRIMS Super Admin Dashboard · {new Date().toLocaleDateString("en-NG",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</p>
+          <p className="ov-sub">CARSTRIMS Super Admin Dashboard  {new Date().toLocaleDateString("en-NG",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</p>
         </div>
-        <Link href="/feed" className="feed-link">View Public Feed →</Link>
+        <Link href="/feed" className="feed-link">View Public Feed </Link>
       </div>
 
       {loading ? (
@@ -96,7 +96,7 @@ export default function SuperAdminOverview() {
 
       {!loading && pendingDealers > 0 && (
         <Link href="/dashboard/super-admin/approvals" className="pending-alert">
-          <span className="pa-dot"/><span><strong>{pendingDealers} dealer application{pendingDealers>1?"s":""}</strong> waiting for your approval</span><span className="pa-arrow">→</span>
+          <span className="pa-dot"/><span><strong>{pendingDealers} dealer application{pendingDealers>1?"s":""}</strong> waiting for your approval</span><span className="pa-arrow"></span>
         </Link>
       )}
 
@@ -119,13 +119,13 @@ export default function SuperAdminOverview() {
               {topDealers.slice(0,5).map((d:any,i:number)=>(
                 <div key={i} className="dealer-row">
                   <div className="dr-rank">{i+1}</div>
-                  <div className="dr-info"><div className="dr-name">{d.dealerName||d.companyName||"—"}</div><div className="dr-id">{d.dealerId}</div></div>
-                  <div className="dr-stats"><div className="dr-sales">{d.totalSales||0} sales</div><div className="dr-rev">₦{fmt(d.totalRevenue||0)}</div></div>
+                  <div className="dr-info"><div className="dr-name">{d.dealerName||d.companyName||""}</div><div className="dr-id">{d.dealerId}</div></div>
+                  <div className="dr-stats"><div className="dr-sales">{d.totalSales||0} sales</div><div className="dr-rev">{fmt(d.totalRevenue||0)}</div></div>
                 </div>
               ))}
             </div>
           )}
-          <Link href="/dashboard/super-admin/dealers" className="panel-link">View all dealers →</Link>
+          <Link href="/dashboard/super-admin/dealers" className="panel-link">View all dealers </Link>
         </div>
         <div className="panel">
           <div className="panel-title">RECENT ACTIVITY</div>
@@ -133,14 +133,14 @@ export default function SuperAdminOverview() {
             <div className="act-list">
               {recentActivity.slice(0,6).map((a:any,i:number)=>(
                 <div key={i} className="act-row">
-                  <div className="act-icon">{a.type==="dealer_approved"?"✅":a.type==="announcement"?"📢":"🔔"}</div>
+                  <div className="act-icon">{a.type==="dealer_approved"?"":a.type==="announcement"?"":""}</div>
                   <div className="act-body"><div className="act-title">{a.title}</div><div className="act-msg">{a.message?.slice(0,60)}{a.message?.length>60?"...":""}</div></div>
                   <div className="act-time">{fmtTime(a.createdAt)}</div>
                 </div>
               ))}
             </div>
           )}
-          <Link href="/dashboard/super-admin/activity" className="panel-link">View all activity →</Link>
+          <Link href="/dashboard/super-admin/activity" className="panel-link">View all activity </Link>
         </div>
       </div>
 

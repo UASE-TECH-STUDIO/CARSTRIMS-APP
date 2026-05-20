@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { ReactNode, useEffect, useState } from "react";
 import AuthGuard from "@/components/layout/AuthGuard";
 import Link from "next/link";

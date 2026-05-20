@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
@@ -28,7 +28,7 @@ export default function AdminAnalyticsPage() {
     fetchAll();
   },[]);
 
-  const fmt = (n: number) => `₦${(n||0).toLocaleString()}`;
+  const fmt = (n: number) => `${(n||0).toLocaleString()}`;
   const maxRev = Math.max(...growth.map(g=>g.revenue||0),1);
   const maxDealers = Math.max(...growth.map(g=>g.newDealers||0),1);
   const maxUsers = Math.max(...growth.map(g=>g.newUsers||0),1);
@@ -48,14 +48,14 @@ export default function AdminAnalyticsPage() {
   );
 
   const statCards = [
-    {label:"Total Dealers",value:stats?.dealers?.total||0,sub:`${stats?.dealers?.active||0} active`,color:"#F47B20",icon:"🏢"},
-    {label:"Pending Approval",value:stats?.dealers?.pending||0,sub:"Awaiting review",color:"#D97706",icon:"⏳"},
-    {label:"Suspended",value:stats?.dealers?.suspended||0,sub:"Restricted accounts",color:"#DC2626",icon:"⛔"},
-    {label:"Total Users",value:stats?.users?.total||0,sub:`${stats?.users?.staff||0} staff`,color:"#3B8BD4",icon:"👥"},
-    {label:"Total Cars",value:stats?.inventory?.totalCars||0,sub:`${stats?.inventory?.totalSold||0} sold`,color:"#7C3AED",icon:"🚗"},
-    {label:"All-time Revenue",value:fmt(stats?.revenue?.allTime||0),sub:`${stats?.revenue?.totalTransactions||0} transactions`,color:"#16A34A",icon:"💰"},
-    {label:"This Month Revenue",value:fmt(stats?.revenue?.thisMonth||0),sub:`${stats?.revenue?.monthTransactions||0} sales this month`,color:"#F47B20",icon:"📈"},
-    {label:"New Dealers (Month)",value:stats?.dealers?.thisMonth||0,sub:"Registered this month",color:"#1D9E75",icon:"✨"},
+    {label:"Total Dealers",value:stats?.dealers?.total||0,sub:`${stats?.dealers?.active||0} active`,color:"#F47B20",icon:""},
+    {label:"Pending Approval",value:stats?.dealers?.pending||0,sub:"Awaiting review",color:"#D97706",icon:""},
+    {label:"Suspended",value:stats?.dealers?.suspended||0,sub:"Restricted accounts",color:"#DC2626",icon:""},
+    {label:"Total Users",value:stats?.users?.total||0,sub:`${stats?.users?.staff||0} staff`,color:"#3B8BD4",icon:""},
+    {label:"Total Cars",value:stats?.inventory?.totalCars||0,sub:`${stats?.inventory?.totalSold||0} sold`,color:"#7C3AED",icon:""},
+    {label:"All-time Revenue",value:fmt(stats?.revenue?.allTime||0),sub:`${stats?.revenue?.totalTransactions||0} transactions`,color:"#16A34A",icon:""},
+    {label:"This Month Revenue",value:fmt(stats?.revenue?.thisMonth||0),sub:`${stats?.revenue?.monthTransactions||0} sales this month`,color:"#F47B20",icon:""},
+    {label:"New Dealers (Month)",value:stats?.dealers?.thisMonth||0,sub:"Registered this month",color:"#1D9E75",icon:""},
   ];
 
   return (
@@ -90,7 +90,7 @@ export default function AdminAnalyticsPage() {
             <div style={{display:"flex",alignItems:"flex-end",gap:"12px",height:"180px",paddingBottom:"1.5rem",overflowX:"auto"}}>
               {growth.map((g,i)=>(
                 <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"4px",minWidth:"52px",position:"relative",flex:1}}>
-                  <div style={{fontSize:"0.68rem",color:"#1A1A1A",fontWeight:600,position:"absolute",bottom:"calc(100% + 2px)",whiteSpace:"nowrap",fontSize:"0.62rem"}}>{g.revenue>0?`₦${(g.revenue/1000).toFixed(0)}k`:""}</div>
+                  <div style={{fontSize:"0.68rem",color:"#1A1A1A",fontWeight:600,position:"absolute",bottom:"calc(100% + 2px)",whiteSpace:"nowrap",fontSize:"0.62rem"}}>{g.revenue>0?`${(g.revenue/1000).toFixed(0)}k`:""}</div>
                   <div style={{background:"rgba(244,123,32,0.6)",borderRadius:"4px 4px 0 0",width:"100%",minHeight:"4px",transition:"height 0.3s",height:`${Math.max(4,(g.revenue/maxRev)*150)}px`}}/>
                   <div style={{fontSize:"0.7rem",color:"#737373",marginTop:"2px"}}>{g.month}</div>
                   {g.sales>0&&<div style={{fontSize:"0.6rem",color:"#A3A3A3"}}>{g.sales} sales</div>}
@@ -192,7 +192,7 @@ export default function AdminAnalyticsPage() {
                       <div style={{fontWeight:500,fontSize:"0.875rem",color:"#1A1A1A"}}>{d.companyName}</div>
                       <div style={{fontSize:"0.68rem",color:"#A3A3A3",fontFamily:"monospace"}}>{d.dealerId}</div>
                     </td>
-                    <td style={{padding:"0.75rem 0.875rem",fontSize:"0.8rem",color:"#737373"}}>{d.city||"—"}, {d.state||"—"}</td>
+                    <td style={{padding:"0.75rem 0.875rem",fontSize:"0.8rem",color:"#737373"}}>{d.city||""}, {d.state||""}</td>
                     <td style={{padding:"0.75rem 0.875rem",textAlign:"center",fontFamily:"monospace",fontSize:"0.875rem"}}>{d.totalCarsSold||0}</td>
                     <td style={{padding:"0.75rem 0.875rem",color:"#16A34A",fontWeight:500,fontSize:"0.875rem"}}>{fmt(d.totalRevenue||0)}</td>
                     <td style={{padding:"0.75rem 0.875rem"}}>

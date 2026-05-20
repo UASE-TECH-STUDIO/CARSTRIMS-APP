@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState, useRef } from "react";
 import api from "@/lib/api";
 
@@ -6,7 +6,7 @@ function PreviewModal({ src, type, onClose }: { src:string; type:"image"|"pdf"; 
   return (
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
       <div onClick={e=>e.stopPropagation()} style={{position:"relative",maxWidth:"90vw",maxHeight:"92vh"}}>
-        <button onClick={onClose} style={{position:"absolute",top:"-2.5rem",right:0,background:"rgba(255,255,255,0.2)",border:"none",borderRadius:"50%",width:"36px",height:"36px",color:"#fff",fontSize:"1.1rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+        <button onClick={onClose} style={{position:"absolute",top:"-2.5rem",right:0,background:"rgba(255,255,255,0.2)",border:"none",borderRadius:"50%",width:"36px",height:"36px",color:"#fff",fontSize:"1.1rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}></button>
         {type==="image"
           ? <img src={src} alt="" style={{maxWidth:"88vw",maxHeight:"86vh",objectFit:"contain",borderRadius:"8px",display:"block"}}/>
           : <iframe src={src} style={{width:"80vw",height:"86vh",border:"none",borderRadius:"8px"}}/>
@@ -60,7 +60,7 @@ export default function ApprovalsPage() {
     setActionLoading(dealer._id);
     try {
       await api.post(`/api/v1/admin/dealers/${dealer._id}/approve`);
-      showMsg(`${dealer.companyName} approved ✅`);
+      showMsg(`${dealer.companyName} approved `);
       setExpanded(null); load();
     } catch(err:any) { showMsg(`Approval failed: ${err.response?.data?.detail||"Error"}`,"error"); }
     finally { setActionLoading(null); }
@@ -96,7 +96,7 @@ export default function ApprovalsPage() {
       await api.post(`/api/v1/admin/dealers/${dealerId}/upload-doc?doc_type=${docType}`, fd, {
         headers: {"Content-Type":"multipart/form-data"},
       });
-      showMsg(`${docType} uploaded and attached ✅`);
+      showMsg(`${docType} uploaded and attached `);
       load();
     } catch(err:any) { showMsg(`Upload failed: ${err.response?.data?.detail||"Error"}`,"error"); }
     finally { setUploading(null); }
@@ -123,16 +123,16 @@ export default function ApprovalsPage() {
             ) : (
               <div onClick={()=>setPreview({src:url,type:"pdf"})}
                 style={{width:"90px",height:"72px",border:"2px solid #86EFAC",borderRadius:"8px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"zoom-in",background:"#F0FDF4",fontSize:"1.75rem",gap:"0.25rem"}}>
-                📄<span style={{fontSize:"0.6rem",color:"#15803D",fontWeight:600}}>PDF</span>
+                <span style={{fontSize:"0.6rem",color:"#15803D",fontWeight:600}}>PDF</span>
               </div>
             )}
-            <div style={{position:"absolute",top:"-6px",right:"-6px",background:"#16A34A",borderRadius:"50%",width:"18px",height:"18px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.6rem",color:"#fff",fontWeight:700}}>✓</div>
+            <div style={{position:"absolute",top:"-6px",right:"-6px",background:"#16A34A",borderRadius:"50%",width:"18px",height:"18px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.6rem",color:"#fff",fontWeight:700}}></div>
           </div>
         ) : (
           <label style={{width:"90px",height:"72px",border:"2px dashed #E5E5E5",borderRadius:"8px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",background:"#FAFAFA",gap:"0.25rem",transition:"border-color 0.2s"}}
             onMouseOver={e=>(e.currentTarget.style.borderColor="#F47B20")}
             onMouseOut={e=>(e.currentTarget.style.borderColor="#E5E5E5")}>
-            <span style={{fontSize:"1.25rem",opacity:0.3}}>📤</span>
+            <span style={{fontSize:"1.25rem",opacity:0.3}}></span>
             <span style={{fontSize:"0.6rem",color:"#A3A3A3",textAlign:"center",fontWeight:600}}>Upload</span>
             <input type="file" accept="image/jpeg,image/png,application/pdf" style={{display:"none"}}
               onChange={e=>{const f=e.target.files?.[0];if(f)handleDocUpload(dealerId,docType,f);e.target.value="";}}/>
@@ -144,7 +144,7 @@ export default function ApprovalsPage() {
     );
   };
 
-  // Passport — circular
+  // Passport  circular
   const PassportSlot = ({ url, dealerId }: { url?:string; dealerId:string }) => (
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.5rem"}}>
       {url ? (
@@ -156,7 +156,7 @@ export default function ApprovalsPage() {
         <label style={{width:"80px",height:"80px",borderRadius:"50%",border:"2.5px dashed #E5E5E5",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",background:"#FAFAFA",gap:"0.2rem"}}
           onMouseOver={e=>(e.currentTarget.style.borderColor="#F47B20")}
           onMouseOut={e=>(e.currentTarget.style.borderColor="#E5E5E5")}>
-          <span style={{fontSize:"1.5rem",opacity:0.3}}>👤</span>
+          <span style={{fontSize:"1.5rem",opacity:0.3}}></span>
           <span style={{fontSize:"0.55rem",color:"#A3A3A3",textAlign:"center"}}>Upload</span>
           <input type="file" accept="image/jpeg,image/png" style={{display:"none"}}
             onChange={e=>{const f=e.target.files?.[0];if(f)handleDocUpload(dealerId,"passport",f);e.target.value="";}}/>
@@ -175,15 +175,15 @@ export default function ApprovalsPage() {
         <div>
           <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.6rem",letterSpacing:"0.04em",color:"#1A1A1A",lineHeight:1}}>Pending Approvals</h2>
           <p style={{fontSize:"0.8rem",color:"#737373",marginTop:"0.3rem"}}>
-            {loading?"Loading...":`${dealers.length} ready to approve${noProfile.length>0?` · ${noProfile.length} setup pending`:""}`}
+            {loading?"Loading...":`${dealers.length} ready to approve${noProfile.length>0?`  ${noProfile.length} setup pending`:""}`}
           </p>
         </div>
-        <button onClick={load} style={{background:"#fff",border:"1.5px solid #E5E5E5",color:"#737373",borderRadius:"8px",padding:"0.6rem 1.25rem",fontSize:"0.875rem",cursor:"pointer"}}>↻ Refresh</button>
+        <button onClick={load} style={{background:"#fff",border:"1.5px solid #E5E5E5",color:"#737373",borderRadius:"8px",padding:"0.6rem 1.25rem",fontSize:"0.875rem",cursor:"pointer"}}> Refresh</button>
       </div>
 
       {msg&&(
         <div style={{background:msgType==="success"?"#F0FDF4":"#FEF2F2",border:`1px solid ${msgType==="success"?"#86EFAC":"#FCA5A5"}`,color:msgType==="success"?"#15803D":"#DC2626",padding:"0.875rem 1.25rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between",gap:"1rem"}}>
-          <span>{msg}</span><button onClick={()=>setMsg("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}>✕</button>
+          <span>{msg}</span><button onClick={()=>setMsg("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}></button>
         </div>
       )}
 
@@ -196,7 +196,7 @@ export default function ApprovalsPage() {
         <>
           {dealers.length===0&&noProfile.length===0 && (
             <div style={{padding:"3rem",textAlign:"center",background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px",display:"flex",flexDirection:"column",alignItems:"center",gap:"0.875rem"}}>
-              <div style={{fontSize:"2rem"}}>✅</div>
+              <div style={{fontSize:"2rem"}}></div>
               <div style={{fontSize:"0.9rem",fontWeight:600,color:"#1A1A1A"}}>No pending approvals</div>
             </div>
           )}
@@ -222,23 +222,23 @@ export default function ApprovalsPage() {
 
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontWeight:700,fontSize:"0.975rem",color:"#1A1A1A"}}>{d.companyName}</div>
-                      <div style={{fontSize:"0.78rem",color:"#737373",marginTop:"0.2rem"}}>{d.ownerName} · {d.email}</div>
-                      <div style={{fontSize:"0.78rem",color:"#737373"}}>{d.phone}{d.city?` · ${d.city}, ${d.state}`:""}</div>
+                      <div style={{fontSize:"0.78rem",color:"#737373",marginTop:"0.2rem"}}>{d.ownerName}  {d.email}</div>
+                      <div style={{fontSize:"0.78rem",color:"#737373"}}>{d.phone}{d.city?`  ${d.city}, ${d.state}`:""}</div>
                       <div style={{display:"flex",gap:"0.35rem",marginTop:"0.5rem",flexWrap:"wrap"}}>
                         <span style={{fontSize:"0.65rem",background:"#FFF7ED",color:"#C4621A",border:"1px solid rgba(244,123,32,0.3)",borderRadius:"4px",padding:"0.15rem 0.5rem"}}>Applied {fmtDate(d.createdAt)}</span>
                         {d.passportPhoto
-                          ? <span style={{fontSize:"0.65rem",background:"#F0FDF4",color:"#15803D",border:"1px solid #86EFAC",borderRadius:"4px",padding:"0.15rem 0.5rem"}}>✓ Passport</span>
-                          : <span style={{fontSize:"0.65rem",background:"#FEF2F2",color:"#DC2626",border:"1px solid #FCA5A5",borderRadius:"4px",padding:"0.15rem 0.5rem"}}>✗ No Passport</span>
+                          ? <span style={{fontSize:"0.65rem",background:"#F0FDF4",color:"#15803D",border:"1px solid #86EFAC",borderRadius:"4px",padding:"0.15rem 0.5rem"}}> Passport</span>
+                          : <span style={{fontSize:"0.65rem",background:"#FEF2F2",color:"#DC2626",border:"1px solid #FCA5A5",borderRadius:"4px",padding:"0.15rem 0.5rem"}}> No Passport</span>
                         }
                         {d.logo
-                          ? <span style={{fontSize:"0.65rem",background:"#F0FDF4",color:"#15803D",border:"1px solid #86EFAC",borderRadius:"4px",padding:"0.15rem 0.5rem"}}>✓ Logo</span>
+                          ? <span style={{fontSize:"0.65rem",background:"#F0FDF4",color:"#15803D",border:"1px solid #86EFAC",borderRadius:"4px",padding:"0.15rem 0.5rem"}}> Logo</span>
                           : <span style={{fontSize:"0.65rem",background:"#FFF7ED",color:"#C4621A",border:"1px solid rgba(244,123,32,0.3)",borderRadius:"4px",padding:"0.15rem 0.5rem"}}>No Logo</span>
                         }
                         {d.idCardUrl
-                          ? <span style={{fontSize:"0.65rem",background:"#F0FDF4",color:"#15803D",border:"1px solid #86EFAC",borderRadius:"4px",padding:"0.15rem 0.5rem"}}>✓ ID Card</span>
-                          : <span style={{fontSize:"0.65rem",background:"#FEF2F2",color:"#DC2626",border:"1px solid #FCA5A5",borderRadius:"4px",padding:"0.15rem 0.5rem"}}>✗ No ID</span>
+                          ? <span style={{fontSize:"0.65rem",background:"#F0FDF4",color:"#15803D",border:"1px solid #86EFAC",borderRadius:"4px",padding:"0.15rem 0.5rem"}}> ID Card</span>
+                          : <span style={{fontSize:"0.65rem",background:"#FEF2F2",color:"#DC2626",border:"1px solid #FCA5A5",borderRadius:"4px",padding:"0.15rem 0.5rem"}}> No ID</span>
                         }
-                        {d.cacUrl && <span style={{fontSize:"0.65rem",background:"#F0FDF4",color:"#15803D",border:"1px solid #86EFAC",borderRadius:"4px",padding:"0.15rem 0.5rem"}}>✓ CAC</span>}
+                        {d.cacUrl && <span style={{fontSize:"0.65rem",background:"#F0FDF4",color:"#15803D",border:"1px solid #86EFAC",borderRadius:"4px",padding:"0.15rem 0.5rem"}}> CAC</span>}
                         {d.dealerId&&<span style={{fontSize:"0.62rem",background:"#F5F5F5",color:"#737373",border:"1px solid #E5E5E5",borderRadius:"4px",padding:"0.15rem 0.5rem",fontFamily:"monospace"}}>{d.dealerId}</span>}
                       </div>
                     </div>
@@ -246,11 +246,11 @@ export default function ApprovalsPage() {
                     <div style={{display:"flex",flexDirection:"column",gap:"0.4rem",flexShrink:0}} onClick={e=>e.stopPropagation()}>
                       <button onClick={()=>approve(d)} disabled={actionLoading===d._id}
                         style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"6px",padding:"0.5rem 1.25rem",fontFamily:"var(--font-display)",fontSize:"0.8rem",letterSpacing:"0.06em",cursor:"pointer",opacity:actionLoading===d._id?0.6:1,whiteSpace:"nowrap"}}>
-                        {actionLoading===d._id?"Working...":"✓ Approve"}
+                        {actionLoading===d._id?"Working...":" Approve"}
                       </button>
                       <button onClick={()=>{setRejectModal(d);setRejectReason("");}}
                         style={{background:"#FEF2F2",border:"1.5px solid rgba(220,38,38,0.3)",color:"#DC2626",borderRadius:"6px",padding:"0.5rem 1.25rem",fontSize:"0.8rem",cursor:"pointer",fontFamily:"var(--font-body)",whiteSpace:"nowrap"}}>
-                        ✕ Reject
+                         Reject
                       </button>
                     </div>
                   </div>
@@ -259,11 +259,11 @@ export default function ApprovalsPage() {
                   {expanded===d._id&&(
                     <div style={{borderTop:"1px solid #F5F5F5",padding:"1.5rem",background:"#FAFAFA",display:"flex",flexDirection:"column",gap:"1.5rem"}}>
 
-                      {/* Docs section — always visible with upload option for missing */}
+                      {/* Docs section  always visible with upload option for missing */}
                       <div>
                         <div style={{fontSize:"0.7rem",fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase" as const,color:"#737373",marginBottom:"0.75rem"}}>
                           Photos & Documents
-                          <span style={{fontSize:"0.65rem",fontWeight:400,color:"#A3A3A3",marginLeft:"0.5rem",textTransform:"none" as const}}>· click uploaded docs to preview · click empty slots to upload missing ones</span>
+                          <span style={{fontSize:"0.65rem",fontWeight:400,color:"#A3A3A3",marginLeft:"0.5rem",textTransform:"none" as const}}> click uploaded docs to preview  click empty slots to upload missing ones</span>
                         </div>
                         <div style={{display:"flex",gap:"1.5rem",flexWrap:"wrap",alignItems:"flex-start"}}>
                           <PassportSlot url={d.passportPhoto} dealerId={d._id}/>
@@ -273,7 +273,7 @@ export default function ApprovalsPage() {
                         </div>
                         {(!d.passportPhoto || !d.idCardUrl) && (
                           <div style={{background:"#FFF7ED",border:"1px solid rgba(244,123,32,0.3)",borderRadius:"8px",padding:"0.875rem",fontSize:"0.8rem",color:"#C4621A",marginTop:"0.75rem",lineHeight:1.6}}>
-                            ⚠️ Some required documents are missing. You can upload them above before approving, or contact the dealer to send them manually. You can still approve if satisfied.
+                             Some required documents are missing. You can upload them above before approving, or contact the dealer to send them manually. You can still approve if satisfied.
                           </div>
                         )}
                       </div>
@@ -293,9 +293,9 @@ export default function ApprovalsPage() {
 
                       {/* Contact */}
                       <div style={{display:"flex",gap:"0.75rem",flexWrap:"wrap"}}>
-                        {d.phone&&<a href={`tel:${d.phone}`} style={{background:"#F5F5F5",border:"1px solid #E5E5E5",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#1A1A1A",textDecoration:"none"}}>📞 Call</a>}
-                        {(d.whatsapp||d.phone)&&<a href={`https://wa.me/${(d.whatsapp||d.phone).replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer" style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#15803D",textDecoration:"none"}}>💬 WhatsApp</a>}
-                        {d.email&&<a href={`mailto:${d.email}`} style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#1D4ED8",textDecoration:"none"}}>✉ Email</a>}
+                        {d.phone&&<a href={`tel:${d.phone}`} style={{background:"#F5F5F5",border:"1px solid #E5E5E5",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#1A1A1A",textDecoration:"none"}}> Call</a>}
+                        {(d.whatsapp||d.phone)&&<a href={`https://wa.me/${(d.whatsapp||d.phone).replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer" style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#15803D",textDecoration:"none"}}> WhatsApp</a>}
+                        {d.email&&<a href={`mailto:${d.email}`} style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#1D4ED8",textDecoration:"none"}}> Email</a>}
                       </div>
 
                       {/* Approve/Reject */}
@@ -318,7 +318,7 @@ export default function ApprovalsPage() {
 
           {noProfile.length>0&&(
             <div style={{display:"flex",flexDirection:"column",gap:"0.875rem"}}>
-              <div style={{fontSize:"0.72rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#737373"}}>Registered — Setup Not Completed ({noProfile.length})</div>
+              <div style={{fontSize:"0.72rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#737373"}}>Registered  Setup Not Completed ({noProfile.length})</div>
               <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:"10px",padding:"0.875rem 1rem",fontSize:"0.825rem",color:"#1D4ED8",lineHeight:1.6}}>
                 These dealers registered but have not completed their dealership setup. Contact them to sign in and complete it.
               </div>

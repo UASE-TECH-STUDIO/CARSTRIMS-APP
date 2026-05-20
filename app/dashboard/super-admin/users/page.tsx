@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+mport Link from "next/link";
 "use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
@@ -90,7 +90,7 @@ export default function AdminUsersPage() {
 
       {msg&&(
         <div style={{background:"#F0FDF4",border:"1px solid #86EFAC",color:"#15803D",padding:"0.75rem 1rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between"}}>
-          <span>{msg}</span><button onClick={()=>setMsg("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}>✕</button>
+          <span>{msg}</span><button onClick={()=>setMsg("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}></button>
         </div>
       )}
 
@@ -116,13 +116,13 @@ export default function AdminUsersPage() {
           <div style={{background:"#fff",borderRadius:"12px",padding:"1.5rem",maxWidth:"440px",width:"100%",display:"flex",flexDirection:"column",gap:"1.25rem",boxShadow:"0 16px 48px rgba(0,0,0,0.2)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
               <h3 style={{fontFamily:"var(--font-display)",fontSize:"1rem",letterSpacing:"0.08em",color:"#1A1A1A"}}>
-                {actionModal.type==="suspend"?"⛔ SUSPEND USER":actionModal.type==="unsuspend"?"✅ REACTIVATE USER":actionModal.type==="warn"?"⚠️ WARN USER":actionModal.type==="delete"?"🗑 DELETE USER":"🔑 RESET PASSWORD"}
+                {actionModal.type==="suspend"?" SUSPEND USER":actionModal.type==="unsuspend"?" REACTIVATE USER":actionModal.type==="warn"?" WARN USER":actionModal.type==="delete"?" DELETE USER":" RESET PASSWORD"}
               </h3>
-              <button onClick={()=>setActionModal(null)} style={{background:"none",border:"none",cursor:"pointer",fontSize:"1rem",color:"#737373"}}>✕</button>
+              <button onClick={()=>setActionModal(null)} style={{background:"none",border:"none",cursor:"pointer",fontSize:"1rem",color:"#737373"}}></button>
             </div>
             <div style={{background:"#F5F5F5",borderRadius:"6px",padding:"0.75rem",display:"flex",flexDirection:"column",gap:"0.2rem"}}>
               <strong style={{fontSize:"0.875rem",color:"#1A1A1A"}}>{actionModal.user.fullName}</strong>
-              <span style={{fontSize:"0.78rem",color:"#737373"}}>{actionModal.user.email} · {actionModal.user.role?.replace(/_/g," ")}</span>
+              <span style={{fontSize:"0.78rem",color:"#737373"}}>{actionModal.user.email}  {actionModal.user.role?.replace(/_/g," ")}</span>
             </div>
             {["suspend","warn"].includes(actionModal.type)&&(
               <div style={{display:"flex",flexDirection:"column",gap:"0.4rem"}}>
@@ -134,7 +134,7 @@ export default function AdminUsersPage() {
             )}
             {actionModal.type==="delete"&&(
               <div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",borderRadius:"8px",padding:"0.75rem",fontSize:"0.825rem",color:"#DC2626",lineHeight:1.5}}>
-                ⚠️ This will mark the account as deleted. The user will not be able to log in.
+                 This will mark the account as deleted. The user will not be able to log in.
               </div>
             )}
             <div style={{display:"flex",gap:"0.75rem"}}>
@@ -183,7 +183,7 @@ export default function AdminUsersPage() {
               {users.map(u=>(
                 <tr key={u._id} style={{borderBottom:"1px solid #F5F5F5"}}>
                   <td style={{padding:"0.875rem 1rem",verticalAlign:"top"}}>
-                    <div style={{fontWeight:600,fontSize:"0.875rem",color:"#1A1A1A"}}>{u.fullName||"—"}</div>
+                    <div style={{fontWeight:600,fontSize:"0.875rem",color:"#1A1A1A"}}>{u.fullName||""}</div>
                     <div style={{fontSize:"0.72rem",color:"#A3A3A3",fontFamily:"monospace"}}>@{u.username||"-"}</div>
                     <div style={{fontSize:"0.75rem",color:"#737373"}}>{u.email}</div>
                   </td>
@@ -194,9 +194,9 @@ export default function AdminUsersPage() {
                   </td>
                   <td style={{padding:"0.875rem 1rem",verticalAlign:"top"}}>
                     <div style={{display:"flex",gap:"0.3rem",marginBottom:"0.2rem"}}>
-                      {u.phone&&<a href={`tel:${u.phone}`} style={{fontSize:"0.9rem",textDecoration:"none"}}>📞</a>}
-                      {u.email&&<a href={`mailto:${u.email}`} style={{fontSize:"0.9rem",textDecoration:"none"}}>✉️</a>}
-                      {(u.whatsapp||u.phone)&&<a href={`https://wa.me/${(u.whatsapp||u.phone).replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer" style={{fontSize:"0.9rem",textDecoration:"none"}}>💬</a>}
+                      {u.phone&&<a href={`tel:${u.phone}`} style={{fontSize:"0.9rem",textDecoration:"none"}}></a>}
+                      {u.email&&<a href={`mailto:${u.email}`} style={{fontSize:"0.9rem",textDecoration:"none"}}></a>}
+                      {(u.whatsapp||u.phone)&&<a href={`https://wa.me/${(u.whatsapp||u.phone).replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer" style={{fontSize:"0.9rem",textDecoration:"none"}}></a>}
                     </div>
                     <div style={{fontSize:"0.75rem",color:"#737373"}}>{u.phone||"-"}</div>
                   </td>
@@ -211,25 +211,25 @@ export default function AdminUsersPage() {
                       {u.status==="suspended"?(
                         <button onClick={()=>{setActionModal({type:"unsuspend",user:u});setActionNote("");}}
                           style={{background:"transparent",border:"1px solid #E5E5E5",borderRadius:"4px",padding:"0.25rem 0.5rem",fontSize:"0.72rem",cursor:"pointer",color:"#737373",fontFamily:"var(--font-body)",textAlign:"left" as const,transition:"all 0.2s"}}>
-                          ✅ Reactivate
+                           Reactivate
                         </button>
                       ):(
                         <button onClick={()=>{setActionModal({type:"suspend",user:u});setActionNote("");}}
                           style={{background:"transparent",border:"1px solid #E5E5E5",borderRadius:"4px",padding:"0.25rem 0.5rem",fontSize:"0.72rem",cursor:"pointer",color:"#737373",fontFamily:"var(--font-body)",textAlign:"left" as const,transition:"all 0.2s"}}>
-                          ⛔ Suspend
+                           Suspend
                         </button>
                       )}
                       <button onClick={()=>{setActionModal({type:"warn",user:u});setActionNote("");}}
                         style={{background:"transparent",border:"1px solid #E5E5E5",borderRadius:"4px",padding:"0.25rem 0.5rem",fontSize:"0.72rem",cursor:"pointer",color:"#737373",fontFamily:"var(--font-body)",textAlign:"left" as const}}>
-                        ⚠️ Warn
+                         Warn
                       </button>
                       <button onClick={()=>setActionModal({type:"reset",user:u})}
                         style={{background:"transparent",border:"1px solid #E5E5E5",borderRadius:"4px",padding:"0.25rem 0.5rem",fontSize:"0.72rem",cursor:"pointer",color:"#737373",fontFamily:"var(--font-body)",textAlign:"left" as const}}>
-                        🔑 Reset PW
+                         Reset PW
                       </button>
                       <button onClick={()=>setActionModal({type:"delete",user:u})}
                         style={{background:"transparent",border:"1px solid #E5E5E5",borderRadius:"4px",padding:"0.25rem 0.5rem",fontSize:"0.72rem",cursor:"pointer",color:"#DC2626",fontFamily:"var(--font-body)",textAlign:"left" as const}}>
-                        🗑 Delete
+                         Delete
                       </button>
                     </div>
                   </td>
@@ -242,10 +242,10 @@ export default function AdminUsersPage() {
 
       <div style={{display:"flex",alignItems:"center",gap:"1rem",justifyContent:"center"}}>
         <button onClick={()=>setSkip(Math.max(0,skip-LIMIT))} disabled={skip===0}
-          style={{background:"#fff",border:"1.5px solid #E5E5E5",color:"#737373",padding:"0.5rem 1rem",borderRadius:"6px",cursor:"pointer",fontSize:"0.825rem",fontFamily:"var(--font-body)",opacity:skip===0?0.4:1}}>← Prev</button>
+          style={{background:"#fff",border:"1.5px solid #E5E5E5",color:"#737373",padding:"0.5rem 1rem",borderRadius:"6px",cursor:"pointer",fontSize:"0.825rem",fontFamily:"var(--font-body)",opacity:skip===0?0.4:1}}> Prev</button>
         <span style={{fontSize:"0.825rem",color:"#737373",fontFamily:"monospace"}}>{Math.floor(skip/LIMIT)+1} / {Math.max(1,Math.ceil(total/LIMIT))}</span>
         <button onClick={()=>setSkip(skip+LIMIT)} disabled={skip+LIMIT>=total}
-          style={{background:"#fff",border:"1.5px solid #E5E5E5",color:"#737373",padding:"0.5rem 1rem",borderRadius:"6px",cursor:"pointer",fontSize:"0.825rem",fontFamily:"var(--font-body)",opacity:skip+LIMIT>=total?0.4:1}}>Next →</button>
+          style={{background:"#fff",border:"1.5px solid #E5E5E5",color:"#737373",padding:"0.5rem 1rem",borderRadius:"6px",cursor:"pointer",fontSize:"0.825rem",fontFamily:"var(--font-body)",opacity:skip+LIMIT>=total?0.4:1}}>Next </button>
       </div>
     </div>
   );

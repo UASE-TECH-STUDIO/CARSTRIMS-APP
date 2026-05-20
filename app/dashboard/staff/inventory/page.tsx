@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -32,7 +32,7 @@ export default function StaffInventoryPage() {
       );
       if (!canSee) { setLoading(false); return; }
 
-      // GET /api/v1/cars/ — the backend now resolves dealerId from the
+      // GET /api/v1/cars/  the backend now resolves dealerId from the
       // staff JWT automatically (DEALER_STAFF role lookup via staff_accounts)
       const params: any = { skip, limit: LIMIT };
       if (search) params.search = search;
@@ -54,11 +54,11 @@ export default function StaffInventoryPage() {
   const canEdit   = perms.includes("edit_cars");
   const canDelete = perms.includes("delete_cars");
   const canView   = perms.some(p => ["view_inventory","add_cars","edit_cars"].includes(p));
-  const fmt = (n:number) => `₦${(n||0).toLocaleString()}`;
+  const fmt = (n:number) => `${(n||0).toLocaleString()}`;
 
   if (!loading && !canView) return (
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"1rem",padding:"4rem",textAlign:"center"}}>
-      <div style={{fontSize:"2.5rem"}}>🔒</div>
+      <div style={{fontSize:"2.5rem"}}></div>
       <h3 style={{fontFamily:"var(--font-display)",color:"#1A1A1A"}}>Access Restricted</h3>
       <p style={{color:"#737373",fontSize:"0.875rem"}}>You need <strong>view_inventory</strong> permission.</p>
     </div>
@@ -78,7 +78,7 @@ export default function StaffInventoryPage() {
         {canAdd && (
           <Link href="/dashboard/staff/inventory/add"
             style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.7rem 1.25rem",fontFamily:"var(--font-display)",fontSize:"0.875rem",letterSpacing:"0.06em",cursor:"pointer",textDecoration:"none",display:"inline-flex",alignItems:"center",gap:"0.5rem"}}>
-            ➕ Add Vehicle
+             Add Vehicle
           </Link>
         )}
       </div>
@@ -105,7 +105,7 @@ export default function StaffInventoryPage() {
         </div>
       ) : cars.length===0 ? (
         <div style={{padding:"3rem",textAlign:"center",border:"1.5px dashed #E5E5E5",borderRadius:"12px",background:"#fff",display:"flex",flexDirection:"column",alignItems:"center",gap:"1rem"}}>
-          <div style={{fontSize:"2.5rem"}}>🚗</div>
+          <div style={{fontSize:"2.5rem"}}></div>
           <div style={{fontFamily:"var(--font-display)",fontSize:"1rem",color:"#1A1A1A"}}>
             {search||statusFilter?"No vehicles match your filters":"No vehicles in inventory yet"}
           </div>
@@ -128,7 +128,7 @@ export default function StaffInventoryPage() {
                 <div style={{height:"160px",background:"#F5F5F5",position:"relative",overflow:"hidden"}}>
                   {car.images?.[0]
                     ? <img src={car.images[0]} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                    : <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",fontSize:"2rem",opacity:0.3}}>🚗</div>
+                    : <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",fontSize:"2rem",opacity:0.3}}></div>
                   }
                   <div style={{position:"absolute",top:"0.5rem",left:"0.5rem",background:STATUS_COLOR[car.status]||"#888",color:"#fff",padding:"0.18rem 0.6rem",borderRadius:"20px",fontSize:"0.65rem",fontWeight:700,textTransform:"capitalize"}}>
                     {car.status}
@@ -140,7 +140,7 @@ export default function StaffInventoryPage() {
                 <div style={{padding:"0.875rem"}}>
                   <div style={{fontWeight:700,fontSize:"0.9rem",color:"#1A1A1A"}}>{car.brand} {car.model} {car.year}</div>
                   <div style={{fontSize:"0.75rem",color:"#737373",textTransform:"capitalize",marginTop:"0.2rem"}}>
-                    {[car.color,car.transmission,car.condition].filter(Boolean).join(" · ")}
+                    {[car.color,car.transmission,car.condition].filter(Boolean).join("  ")}
                   </div>
                   <div style={{fontFamily:"var(--font-display)",fontSize:"1.1rem",color:"#F47B20",marginTop:"0.5rem"}}>{fmt(car.sellingPrice)}</div>
                   <div style={{display:"flex",gap:"0.5rem",marginTop:"0.75rem"}} onClick={e=>e.stopPropagation()}>
@@ -164,14 +164,14 @@ export default function StaffInventoryPage() {
             <div style={{display:"flex",alignItems:"center",gap:"1rem",justifyContent:"center",paddingTop:"0.5rem"}}>
               <button onClick={()=>setSkip(Math.max(0,skip-LIMIT))} disabled={skip===0}
                 style={{background:"#fff",border:"1.5px solid #E5E5E5",color:"#737373",padding:"0.5rem 1rem",borderRadius:"6px",cursor:"pointer",fontSize:"0.825rem",opacity:skip===0?0.4:1}}>
-                ← Prev
+                 Prev
               </button>
               <span style={{fontSize:"0.825rem",color:"#737373",fontFamily:"monospace"}}>
                 {Math.floor(skip/LIMIT)+1} / {Math.max(1,Math.ceil(total/LIMIT))}
               </span>
               <button onClick={()=>setSkip(skip+LIMIT)} disabled={skip+LIMIT>=total}
                 style={{background:"#fff",border:"1.5px solid #E5E5E5",color:"#737373",padding:"0.5rem 1rem",borderRadius:"6px",cursor:"pointer",fontSize:"0.825rem",opacity:skip+LIMIT>=total?0.4:1}}>
-                Next →
+                Next 
               </button>
             </div>
           )}

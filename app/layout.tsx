@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+mport type { Metadata } from "next";
 import "./globals.css";
 import SWRegistrar from "@/components/shared/SWRegistrar";
 

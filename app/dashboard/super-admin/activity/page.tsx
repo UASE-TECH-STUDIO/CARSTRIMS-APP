@@ -1,11 +1,11 @@
-"use client";
+use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
 const TYPE_ICONS: Record<string, string> = {
-  dealer_approved:"✅", dealer_suspended:"⛔", general:"📢",
-  broadcast:"📣", password_recovery:"🔑", appointment:"📅",
-  car_request:"🚗", partner_request:"🤝",
+  dealer_approved:"", dealer_suspended:"", general:"",
+  broadcast:"", password_recovery:"", appointment:"",
+  car_request:"", partner_request:"",
 };
 
 export default function ActivityPage() {
@@ -31,7 +31,7 @@ export default function ActivityPage() {
   const loadMore = () => { const ns = skip + LIMIT; setSkip(ns); load(ns, true); };
 
   const fmtTime = (iso: string) => {
-    if (!iso) return "—";
+    if (!iso) return "";
     return new Date(iso).toLocaleString("en-NG", { day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" });
   };
 
@@ -48,19 +48,19 @@ export default function ActivityPage() {
           <h2 className="page-title">Activity Log</h2>
           <p className="page-sub">All platform events and notifications in real-time</p>
         </div>
-        <button className="refresh-btn" onClick={() => { setSkip(0); load(0); }}>↺ Refresh</button>
+        <button className="refresh-btn" onClick={() => { setSkip(0); load(0); }}> Refresh</button>
       </div>
 
       {loading && activities.length === 0 ? (
         <div className="loading"><div className="spinner" /></div>
       ) : activities.length === 0 ? (
-        <div className="empty"><span style={{fontSize:"2.5rem"}}>📡</span><p>No activity recorded yet</p></div>
+        <div className="empty"><span style={{fontSize:"2.5rem"}}></span><p>No activity recorded yet</p></div>
       ) : (
         <>
           <div className="act-list">
             {activities.map((a, i) => (
               <div key={a._id || i} className="act-item">
-                <div className="ai-icon">{TYPE_ICONS[a.type] || "🔔"}</div>
+                <div className="ai-icon">{TYPE_ICONS[a.type] || ""}</div>
                 <div className="ai-body">
                   <div className="ai-top">
                     <span className="ai-title">{a.title}</span>
@@ -68,7 +68,7 @@ export default function ActivityPage() {
                   </div>
                   <div className="ai-msg">{a.message}</div>
                   <div className="ai-meta">
-                    {a.receiverId && <span className="ai-receiver">→ {a.receiverId}</span>}
+                    {a.receiverId && <span className="ai-receiver"> {a.receiverId}</span>}
                     <span className="ai-time">{fmtTime(a.createdAt)}</span>
                   </div>
                 </div>

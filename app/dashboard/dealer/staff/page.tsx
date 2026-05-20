@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
@@ -97,7 +97,7 @@ export default function StaffPage() {
       </div>
 
       {successMsg && (
-        <div className="success-banner">{successMsg}<button onClick={() => setSuccessMsg("")} className="dismiss">✕</button></div>
+        <div className="success-banner">{successMsg}<button onClick={() => setSuccessMsg("")} className="dismiss"></button></div>
       )}
 
       <div className="filters">
@@ -107,7 +107,7 @@ export default function StaffPage() {
 
       {loading ? <div className="loading"><div className="spinner" /></div>
       : staff.length === 0 ? (
-        <div className="empty"><div className="ei">👥</div><h3>No staff yet</h3><p>Add your first team member</p></div>
+        <div className="empty"><div className="ei"></div><h3>No staff yet</h3><p>Add your first team member</p></div>
       ) : (
         <div className="staff-table-wrap">
           <table className="staff-table">
@@ -154,7 +154,7 @@ export default function StaffPage() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">ADD STAFF MEMBER</h3>
-              <button className="modal-close" onClick={() => setShowAdd(false)}>✕</button>
+              <button className="modal-close" onClick={() => setShowAdd(false)}></button>
             </div>
             {error && <div className="form-error">{error}</div>}
             <form onSubmit={handleAddStaff} className="modal-form">
@@ -196,8 +196,8 @@ export default function StaffPage() {
         <div className="modal-overlay" onClick={() => setShowEdit(null)}>
           <div className="modal modal-sm" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title">EDIT STAFF — {showEdit.fullName}</h3>
-              <button className="modal-close" onClick={() => setShowEdit(null)}>✕</button>
+              <h3 className="modal-title">EDIT STAFF  {showEdit.fullName}</h3>
+              <button className="modal-close" onClick={() => setShowEdit(null)}></button>
             </div>
             <form onSubmit={handleEditStaff} className="modal-form">
               <div className="form-row">
@@ -223,8 +223,8 @@ export default function StaffPage() {
         <div className="modal-overlay" onClick={() => setShowPerms(null)}>
           <div className="modal modal-sm" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title">PERMISSIONS — {showPerms.fullName}</h3>
-              <button className="modal-close" onClick={() => setShowPerms(null)}>✕</button>
+              <h3 className="modal-title">PERMISSIONS  {showPerms.fullName}</h3>
+              <button className="modal-close" onClick={() => setShowPerms(null)}></button>
             </div>
             <div className="modal-form">
               <div className="perms-grid">
@@ -251,7 +251,7 @@ export default function StaffPage() {
           <div className="modal modal-sm" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">STAFF DETAILS</h3>
-              <button className="modal-close" onClick={() => setShowDetail(null)}>✕</button>
+              <button className="modal-close" onClick={() => setShowDetail(null)}></button>
             </div>
             <div className="modal-form">
               <div className="detail-avatar">{showDetail.fullName?.charAt(0).toUpperCase()}</div>
@@ -260,9 +260,9 @@ export default function StaffPage() {
                 { label:"Staff ID", val:showDetail.staffId },
                 { label:"Position", val:showDetail.position },
                 { label:"Email", val:showDetail.email },
-                { label:"Phone", val:showDetail.phone||"—" },
-                { label:"WhatsApp", val:showDetail.whatsapp||"—" },
-                { label:"Address", val:showDetail.address||"—" },
+                { label:"Phone", val:showDetail.phone||"" },
+                { label:"WhatsApp", val:showDetail.whatsapp||"" },
+                { label:"Address", val:showDetail.address||"" },
                 { label:"Status", val:showDetail.status },
               ].map((row) => (
                 <div key={row.label} className="detail-row">

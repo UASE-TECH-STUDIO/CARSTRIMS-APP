@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
@@ -14,7 +14,7 @@ function getLink(n: any): string | null {
 }
 
 const TYPE_ICONS: Record<string,string> = {
-  message:"💬", general:"🔔", announcement:"📢", warning:"⚠️", car:"🚗",
+  message:"", general:"", announcement:"", warning:"", car:"",
 };
 
 export default function UserNotificationsPage() {
@@ -57,12 +57,12 @@ export default function UserNotificationsPage() {
           <h2 className="heading">Notifications</h2>
           <p className="sub">{unread > 0 ? `${unread} unread` : "All caught up"}</p>
         </div>
-        {unread > 0 && <button className="mark-btn" onClick={markAll}>✓ Mark all read</button>}
+        {unread > 0 && <button className="mark-btn" onClick={markAll}> Mark all read</button>}
       </div>
 
       {loading ? <div className="loading"><div className="spinner" /></div>
       : notifs.length === 0 ? (
-        <div className="empty"><span style={{fontSize:"2.5rem"}}>🔕</span><p>No notifications yet</p></div>
+        <div className="empty"><span style={{fontSize:"2.5rem"}}></span><p>No notifications yet</p></div>
       ) : (
         <div className="notif-list">
           {notifs.map((n) => {
@@ -72,14 +72,14 @@ export default function UserNotificationsPage() {
                 className={`nr ${!n.isRead?"unread":""} ${link?"clickable":""}`}
                 onClick={() => { if(!n.isRead) markRead(n._id); if(link) router.push(link); }}>
                 <div className="ni-wrap">
-                  <span className="ni">{TYPE_ICONS[n.type]||"🔔"}</span>
+                  <span className="ni">{TYPE_ICONS[n.type]||""}</span>
                 </div>
                 <div className="nb">
                   <div className="nt">{n.title}</div>
                   <div className="nm">{n.message}</div>
                   <div className="nm-meta">
                     <span className="ntm">{fmtTime(n.createdAt)}</span>
-                    {link && <span className="nlink">Click to view →</span>}
+                    {link && <span className="nlink">Click to view </span>}
                   </div>
                 </div>
                 {!n.isRead && <div className="ud" />}

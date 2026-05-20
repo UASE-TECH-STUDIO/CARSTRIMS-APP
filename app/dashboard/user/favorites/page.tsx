@@ -1,4 +1,4 @@
-﻿"use client";
+use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
@@ -13,7 +13,7 @@ export default function UserFavoritesPage() {
   const load = async () => {
     setLoading(true);
     try {
-      // GET /api/v1/users/favorites — now reads from unified "favorites" collection
+      // GET /api/v1/users/favorites  now reads from unified "favorites" collection
       const res  = await api.get("/api/v1/users/favorites");
       const data = Array.isArray(res.data) ? res.data : [];
       const normalized = data.map((item:any) => {
@@ -56,7 +56,7 @@ export default function UserFavoritesPage() {
     } catch {} finally { setRemoving(null); }
   };
 
-  const fmt = (n:number) => `₦${(n||0).toLocaleString()}`;
+  const fmt = (n:number) => `${(n||0).toLocaleString()}`;
   const SC: Record<string,string> = { available:"#16A34A", sold:"#888", reserved:"#D97706" };
 
   return (
@@ -66,7 +66,7 @@ export default function UserFavoritesPage() {
           <h2 className="page-heading">Saved Cars</h2>
           <p className="page-sub">{loading?"Loading...": `${favs.length} saved vehicle${favs.length!==1?"s":""}`}</p>
         </div>
-        {!loading && <button className="refresh-btn" onClick={load}>↻ Refresh</button>}
+        {!loading && <button className="refresh-btn" onClick={load}> Refresh</button>}
       </div>
 
       {msg && <div className="msg-banner">{msg}</div>}
@@ -75,17 +75,17 @@ export default function UserFavoritesPage() {
         <div className="loading-wrap"><div className="spinner"/></div>
       ) : favs.length===0 ? (
         <div className="empty-state">
-          <div className="empty-icon">🚗</div>
+          <div className="empty-icon"></div>
           <h3>No saved cars yet</h3>
-          <p>Tap the ☆ Save button on any car in the feed to save it here</p>
-          <button className="browse-btn" onClick={()=>router.push("/feed")}>Browse Cars →</button>
+          <p>Tap the  Save button on any car in the feed to save it here</p>
+          <button className="browse-btn" onClick={()=>router.push("/feed")}>Browse Cars </button>
         </div>
       ) : (
         <div className="favs-grid">
           {favs.map(car=>(
             <div key={car.carId} className="fav-card">
               <div className="fav-img" onClick={()=>router.push(`/cars/${car.carId}`)}>
-                {car.images?.[0]?<img src={car.images[0]} alt="" loading="lazy"/>:<div className="fav-ph">🚗</div>}
+                {car.images?.[0]?<img src={car.images[0]} alt="" loading="lazy"/>:<div className="fav-ph"></div>}
                 <div className="fav-badge" style={{background:SC[car.status]||"#888"}}>{car.status}</div>
               </div>
               {car.dealerName && (
@@ -97,7 +97,7 @@ export default function UserFavoritesPage() {
               )}
               <div className="fav-body" onClick={()=>router.push(`/cars/${car.carId}`)}>
                 <div className="fav-title">{car.brand} {car.model} {car.year}</div>
-                <div className="fav-meta">{[car.color,car.transmission,car.condition].filter(Boolean).join(" · ")}</div>
+                <div className="fav-meta">{[car.color,car.transmission,car.condition].filter(Boolean).join("  ")}</div>
                 <div className="fav-price">{fmt(car.sellingPrice)}</div>
               </div>
               <div className="fav-actions">
