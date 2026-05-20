@@ -75,7 +75,7 @@ export default function DealerProfilePage() {
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"1rem",padding:"5rem 1rem",minHeight:"100vh",background:"#F5F5F5",justifyContent:"center",textAlign:"center"}}>
       <div style={{fontSize:"3rem"}}></div>
       <h2 style={{fontFamily:"var(--font-display)",color:"#1A1A1A"}}>Dealership not found</h2>
-      <Link href="/feed" style={{color:"#F47B20",fontWeight:600}}><- Back to feed</Link>
+      <Link href="/feed" style={{color:"#F47B20",fontWeight:600}}>Back to feed</Link>
     </div>
   );
 
@@ -127,7 +127,7 @@ export default function DealerProfilePage() {
 
       {/* Topbar */}
       <header style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0.875rem 1.5rem",background:"#fff",borderBottom:"1.5px solid #E5E5E5",position:"sticky",top:0,zIndex:40}}>
-        <button onClick={()=>router.back()} style={{background:"none",border:"none",color:"#525252",fontSize:"0.95rem",cursor:"pointer",fontFamily:"var(--font-body)",fontWeight:600}}><- Back</button>
+        <button onClick={()=>router.back()} style={{background:"none",border:"none",color:"#525252",fontSize:"0.95rem",cursor:"pointer",fontFamily:"var(--font-body)",fontWeight:600}}>Back</button>
         <Link href="/feed" style={{fontFamily:"var(--font-display)",fontSize:"1.1rem",letterSpacing:"0.2em",color:"#F47B20",textDecoration:"none"}}>CARSTRIMS</Link>
         <div style={{width:"60px"}}/>
       </header>
