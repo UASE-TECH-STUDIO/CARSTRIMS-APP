@@ -1,341 +1,332 @@
 ﻿"use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
 
-interface DealerStats {
-  totalCars: number; availableCars: number; soldCars: number;
-  totalStaff: number; totalPartners: number; pendingRequests: number;
-  totalRevenue: number; totalProfit: number; followerCount: number;
-}
-
-// Fallback mapping for activity verbs to prevent runtime crashes
-const verbMap: Record<string, string> = {
-  car_liked: "liked your car listing",
-  like: "liked your car listing",
-  car_commented: "commented on your car listing",
-  comment: "commented on your car listing",
-  follow: "started following your dealership",
-  new_follower: "started following your dealership",
-  car_request: "sent a vehicle request",
-  request: "sent a vehicle request",
-  car_sold: "marked a vehicle as sold",
-  new_message: "sent you a message",
-  general: "interacted with your dealership",
+const STATUS_C: Record<string,string> = {
+  available:"#16A34A", sold:"#888", reserved:"#D97706", on_promotion:"#7C3AED"
 };
 
-function groupActivity(items: any[]) {
-  const groups: any[] = [];
-  const seen = new Map<string, number>();
-  for (const item of items) {
-    const key = `${item.type}-${item.targetId}`;
-    if (seen.has(key)) {
-      const idx = seen.get(key)!;
-      groups[idx].count = (groups[idx].count || 1) + 1;
-      groups[idx].actors = groups[idx].actors || [groups[idx].actor];
-      groups[idx].actors.push(item.actor);
-    } else {
-      seen.set(key, groups.length);
-      groups.push({ ...item, count: 1, actors: [item.actor] });
-    }
-  }
-  return groups;
-}
+function FollowBtn({ dealerId, onChange }: { dealerId:string; onChange:(n:number)=>void }) {
+  const { isAuthenticated } = useAuthStore();
+  const [following, setFollowing] = useState(false);
+  const [loading, setLoading]     = useState(false);
+  const [count, setCount]         = useState(0);
 
-function getActivityIcon(type: string) {
-  const m: Record<string, string> = {
-    car_liked: "❤️", like: "❤️", car_commented: "💬", comment: "💬",
-    follow: "👥", new_follower: "👥", car_request: "📩", request: "📩",
-    car_sold: "🏷️", new_message: "✉️", general: "🔔", announcement: "📢", dealer_approved: "✅",
-  };
-  return m[type] || "🔔";
-}
+  useEffect(() => {
+    if (!dealerId) return;
+    api.get(`/api/v1/follows/status/${dealerId}`)
+      .then(r => { setFollowing(r.data.following); setCount(r.data.followerCount||0); })
+      .catch(()=>{});
+  }, [dealerId]);
 
-function getLinkForActivity(n: any): string {
-  const t = n.type || ""; const d = n.data || {};
-  if (t === "car_liked" || t === "car_commented" || t === "like" || t === "comment") return d.carId ? `/cars/${d.carId}` : "/dashboard/dealer/cars";
-  if (t === "follow" || t === "new_follower") return `/dealers/${d.dealerId || ""}`;
-  if (t === "car_request" || t === "request") return "/dashboard/dealer/requests";
-  if (t === "car_sold") return "/dashboard/dealer/sales";
-  if (t === "new_message") return "/dashboard/dealer/messages";
-  return "/dashboard/dealer/notifications";
-}
-
-export default function DealerOverviewPage() {
-  const { user } = useAuthStore();
-  const [stats, setStats] = useState<DealerStats | null>(null);
-  const [dealer, setDealer] = useState<any>(null);
-  const [activity, setActivity] = useState<any[]>([]);
-  const [requests, setRequests] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [lightbox, setLightbox] = useState(false);
-  const [logoUploading, setLogoUploading] = useState(false);
-  const logoRef = useRef<HTMLInputElement>(null);
-
-  const load = async () => {
+  const toggle = async () => {
+    if (!isAuthenticated) { window.location.href="/login"; return; }
+    setLoading(true);
     try {
-      const [dRes, sRes, rRes] = await Promise.all([
-        api.get("/api/v1/dealers/me"),
-        api.get("/api/v1/dealers/me/stats").catch(() => ({ data: {} })),
-        api.get("/api/v1/users/requests/dealer").catch(() => ({ data: [] })),
-      ]);
-      setDealer(dRes.data);
-      setStats(sRes.data);
-      const reqs = Array.isArray(rRes.data) ? rRes.data : [];
-      setRequests(reqs);
-      const nRes = await api.get("/api/v1/dealers/me/notifications", { params: { limit: 30 } }).catch(() => ({ data: { notifications: [] } }));
-      const notifs = nRes.data?.notifications || nRes.data || [];
-      const acts = notifs.map((n: any) => ({
-        id: n._id, type: n.type, title: n.title, message: n.message,
-        actor: (() => { let a = n.actorName || n.senderName || ""; if (!a && n.message) { const m = n.message.match(/^([A-Z][a-zA-Z ]+?)\s+(liked|commented on|started following|sent|requested|posted|submitted|recorded)/); if (m) a = m[1].trim(); } return a || "Someone"; })(),
-        verb: verbMap[n.type || "general"] || "interacted with your dealership",
-        actorId: n.actorId || n.senderId,
-        targetId: n.data?.carId || n.data?.targetId, targetLabel: n.data?.carName || n.data?.label,
-        link: getLinkForActivity(n), createdAt: n.createdAt, isRead: n.isRead,
-      }));
-      setActivity(groupActivity(acts));
-    } catch { } finally { setLoading(false); }
+      if (following) {
+        await api.delete(`/api/v1/follows/${dealerId}`);
+        setFollowing(false); setCount(c=>{ const n=Math.max(0,c-1); onChange(n); return n; });
+      } else {
+        await api.post(`/api/v1/follows/${dealerId}`);
+        setFollowing(true); setCount(c=>{ const n=c+1; onChange(n); return n; });
+      }
+    } catch {} finally { setLoading(false); }
   };
 
-  useEffect(() => { load(); }, []);
+  return (
+    <button onClick={toggle} disabled={loading}
+      style={{background:following?"#F5F5F5":"#F47B20",color:following?"#525252":"#fff",
+        border:following?"1.5px solid #E5E5E5":"none",borderRadius:"8px",
+        padding:"0.625rem 1.25rem",fontFamily:"var(--font-display)",fontSize:"0.82rem",
+        letterSpacing:"0.08em",cursor:"pointer",opacity:loading?0.6:1,
+        transition:"all 0.2s",whiteSpace:"nowrap",fontWeight:600}}>
+      {loading?"...":(following?"✓ Following":"+ Follow")}
+      {count>0&&<span style={{background:"rgba(0,0,0,0.12)",borderRadius:"20px",
+        padding:"0.1rem 0.4rem",fontSize:"0.65rem",marginLeft:"0.375rem"}}>{count}</span>}
+    </button>
+  );
+}
 
-  const handleLogoUpload = async (file: File) => {
-    setLogoUploading(true);
+export default function DealerPublicProfilePage() {
+  const params   = useParams();
+  const router   = useRouter();
+  const dealerId = params?.dealerId as string;
+  const { user, isAuthenticated } = useAuthStore();
+
+  const [dealer, setDealer]       = useState<any>(null);
+  const [loading, setLoading]     = useState(true);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followers, setFollowers] = useState<any[]>([]);
+  const [showFollowers, setShowFollowers] = useState(false);
+  const [lightbox, setLightbox]   = useState<string|null>(null);
+  const [startMsg, setStartMsg]   = useState(false);
+
+  useEffect(() => {
+    if (!dealerId) return;
+    api.get(`/api/v1/public/dealers/${dealerId}`)
+      .then(r => { setDealer(r.data); setFollowerCount(r.data.followerCount||0); })
+      .catch(()=>{})
+      .finally(()=>setLoading(false));
+  }, [dealerId]);
+
+  const loadFollowers = async () => {
     try {
-      const fd = new FormData(); fd.append("file", file);
-      const res = await api.post("/api/v1/upload/dealer/logo", fd, { headers: { "Content-Type": "multipart/form-data" } });
-      setDealer((d: any) => ({ ...d, logo: res.data.logo || res.data.url }));
-    } catch (e: any) { alert(e.response?.data?.detail || "Upload failed"); }
-    finally { setLogoUploading(false); if (logoRef.current) logoRef.current.value = ""; }
+      const r = await api.get(`/api/v1/follows/${dealerId}/followers`);
+      setFollowers(r.data?.followers||r.data||[]);
+    } catch {}
   };
 
-  const fmtTime = (iso: string) => {
-    const d = Date.now() - new Date(iso).getTime(); const m = Math.floor(d / 60000);
-    return m < 1 ? "just now" : m < 60 ? `${m}m ago` : m < 1440 ? `${Math.floor(m/60)}h ago` : new Date(iso).toLocaleDateString("en-NG", { day: "numeric", month: "short" });
+  const toggleFollowers = () => {
+    const next = !showFollowers; setShowFollowers(next);
+    if (next && followers.length===0) loadFollowers();
   };
+
+  // Message dealer — opens chat with car context card, does NOT auto-send
+  const handleMessage = async () => {
+    if (!isAuthenticated) { router.push("/login"); return; }
+    const rid = dealer?.userId||dealer?.ownerUserId;
+    if (!rid) { alert("Cannot contact this dealer directly. Try WhatsApp or Call."); return; }
+    setStartMsg(true);
+    try {
+      // Start conversation WITHOUT sending a message — user drafts their own
+      const r = await api.post("/api/v1/messages/start", { receiverId: rid });
+      const convId = r.data?.conversationId;
+      const paths: Record<string,string> = {
+        DEALER_ADMIN:"/dashboard/dealer/messages",
+        DEALER_STAFF:"/dashboard/staff/messages",
+        PARTNER_USER:"/dashboard/partner/messages",
+        SYSTEM_ADMIN:"/dashboard/super-admin/messages",
+      };
+      const base = paths[user?.role||""]||"/dashboard/user/messages";
+      router.push(convId?`${base}?conv=${convId}`:base);
+    } catch(e:any) { alert(e.response?.data?.detail||"Could not open chat. Try WhatsApp or Call."); }
+    finally { setStartMsg(false); }
+  };
+
+  const isOwn = user?.dealerId===dealerId||user?.dealerId===dealer?._id||user?.dealerId===dealer?.dealerId;
+
+  const socials = dealer ? [
+    dealer.instagram && {label:"Instagram",href:dealer.instagram.startsWith("http")?dealer.instagram:`https://instagram.com/${dealer.instagram.replace("@","")}`,color:"#E1306C"},
+    dealer.twitter   && {label:"Twitter / X",href:dealer.twitter.startsWith("http")?dealer.twitter:`https://twitter.com/${dealer.twitter.replace("@","")}`,color:"#1DA1F2"},
+    dealer.facebook  && {label:"Facebook",href:dealer.facebook.startsWith("http")?dealer.facebook:`https://facebook.com/${dealer.facebook}`,color:"#1877F2"},
+    dealer.tiktok    && {label:"TikTok",href:dealer.tiktok.startsWith("http")?dealer.tiktok:`https://tiktok.com/@${dealer.tiktok.replace("@","")}`,color:"#000"},
+    dealer.youtube   && {label:"YouTube",href:dealer.youtube.startsWith("http")?dealer.youtube:`https://youtube.com/${dealer.youtube}`,color:"#FF0000"},
+    dealer.website   && {label:"Website",href:dealer.website.startsWith("http")?dealer.website:`https://${dealer.website}`,color:"#F47B20"},
+  ].filter(Boolean) as {label:string;href:string;color:string}[] : [];
 
   if (loading) return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh", flexDirection: "column", gap: "1rem" }}>
-      <div style={{ width: "32px", height: "32px", border: "3px solid #E5E5E5", borderTopColor: "#F47B20", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#F5F5F5",flexDirection:"column",gap:"1rem"}}>
+      <div style={{fontFamily:"var(--font-display)",fontSize:"1.2rem",letterSpacing:"0.2em",color:"#F47B20"}}>CARSTRIMS</div>
+      <div style={{width:"28px",height:"28px",border:"2.5px solid #E5E5E5",borderTopColor:"#F47B20",borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 
-  const fmt = (n: number) => (n || 0).toLocaleString();
-  const isPending = dealer?.status === "awaiting_approval" || dealer?.status === "pending" || dealer?.status === "pending_setup";
-  const pendingRequestCount = requests.filter((r: any) => r.status === "pending").length;
-
-  const STATS = [
-    { label: "Total Cars", value: stats?.totalCars ?? 0, icon: "🚗", sub: "All listed vehicles", href: "/dashboard/dealer/cars", color: "#F47B20" },
-    { label: "Available", value: stats?.availableCars ?? 0, icon: "✅", sub: "Ready for sale", href: "/dashboard/dealer/cars?status=available", color: "#16A34A" },
-    { label: "Sold", value: stats?.soldCars ?? 0, icon: "🏷️", sub: "Completed sales", href: "/dashboard/dealer/sales", color: "#3B8BD4" },
-    { label: "Staff", value: stats?.totalStaff ?? 0, icon: "👥", sub: "Team members", href: "/dashboard/dealer/staff", color: "#7B68EE" },
-    { label: "Partners", value: stats?.totalPartners ?? 0, icon: "🤝", sub: "Active partners", href: "/dashboard/dealer/partners", color: "#D97706" },
-    { label: "Requests", value: pendingRequestCount, icon: "📩", sub: "Pending from customers", href: "/dashboard/dealer/requests", color: "#DC2626" },
-  ];
-
-  const ACTIONS = [
-    { label: "Add New Car", icon: "➕", href: "/dashboard/dealer/cars" },
-    { label: "Record Sale", icon: "💳", href: "/dashboard/dealer/sales" },
-    { label: "Log Expense", icon: "📋", href: "/dashboard/dealer/expenses" },
-    { label: "Add Staff", icon: "👤", href: "/dashboard/dealer/staff" },
-    { label: "Log Movement", icon: "🔄", href: "/dashboard/dealer/movements" },
-    { label: "View Reports", icon: "📊", href: "/dashboard/dealer/reports" },
-    { label: "My Profile", icon: "🌐", href: `/dealers/${dealer?.dealerId}` },
-    { label: "View Feed", icon: "🏠", href: "/feed" },
-  ];
+  if (!dealer) return (
+    <div style={{minHeight:"100vh",background:"#F5F5F5",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"1rem",padding:"2rem",textAlign:"center"}}>
+      <div style={{fontSize:"3rem"}}>🏪</div>
+      <h2 style={{fontFamily:"var(--font-display)",color:"#1A1A1A"}}>Dealership not found</h2>
+      <Link href="/feed" style={{color:"#F47B20",fontWeight:600}}>← Back to feed</Link>
+    </div>
+  );
 
   return (
-    <div className="overview">
-      {/* Lightbox for logo */}
-      {lightbox && dealer?.logo && (
-        <div onClick={() => setLightbox(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.9)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-out" }}>
-          <button onClick={() => setLightbox(false)} style={{ position: "absolute", top: "1rem", right: "1rem", background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", fontSize: "1.3rem", width: "40px", height: "40px", borderRadius: "50%", cursor: "pointer" }}>✕</button>
-          <img src={dealer.logo} alt="" onClick={e => e.stopPropagation()} style={{ maxWidth: "88vw", maxHeight: "88vh", objectFit: "contain", borderRadius: "12px" }} />
+    <div style={{minHeight:"100vh",background:"#F5F5F5",fontFamily:"var(--font-body)"}}>
+
+      {/* Lightbox */}
+      {lightbox&&(
+        <div onClick={()=>setLightbox(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.93)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",cursor:"zoom-out"}}>
+          <button onClick={()=>setLightbox(null)} style={{position:"absolute",top:"1rem",right:"1rem",background:"rgba(255,255,255,0.15)",border:"none",color:"#fff",fontSize:"1.3rem",width:"40px",height:"40px",borderRadius:"50%",cursor:"pointer"}}>✕</button>
+          <img src={lightbox} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"90vw",maxHeight:"88vh",objectFit:"contain",borderRadius:"8px"}}/>
         </div>
       )}
 
-      {/* ONE pending banner only */}
-      {isPending && (
-        <div className="pending-banner">
-          <span className="pb-icon">⏳</span>
-          <div className="pb-text">
-            <strong>Account Pending Approval</strong>
-            <span>Your dealership is under review. Listings are hidden from the public feed until a CARSTRIMS admin approves your account. You can still add cars, manage staff, and configure your dashboard.</span>
-          </div>
-        </div>
-      )}
-
-      {/* Dealer header */}
-      <div className="ov-header">
-        <div className="ov-header-left">
-          <div className="ov-logo-wrap">
-            <div className="ov-logo" onClick={() => dealer?.logo && setLightbox(true)} title={dealer?.logo ? "Click to enlarge" : "Upload logo from Settings"}>
-              {logoUploading
-                ? <div style={{ width: "24px", height: "24px", border: "2.5px solid rgba(244,123,32,0.3)", borderTopColor: "#F47B20", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-                : dealer?.logo ? <img src={dealer.logo} alt="" /> : <span>{dealer?.companyName?.charAt(0) || "D"}</span>
+      {/* Followers modal */}
+      {showFollowers&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:"14px",width:"100%",maxWidth:"400px",maxHeight:"80vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 16px 48px rgba(0,0,0,0.2)"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"1rem 1.25rem",background:"#F47B20",color:"#fff"}}>
+              <span style={{fontFamily:"var(--font-display)",fontSize:"0.95rem",letterSpacing:"0.08em"}}>FOLLOWERS ({followerCount})</span>
+              <button onClick={()=>setShowFollowers(false)} style={{background:"none",border:"none",color:"#fff",cursor:"pointer",fontSize:"1.1rem",fontWeight:700}}>✕</button>
+            </div>
+            <div style={{flex:1,overflowY:"auto",padding:"0.75rem"}}>
+              {followers.length===0
+                ? <div style={{textAlign:"center",padding:"2rem",color:"#A3A3A3",fontSize:"0.875rem"}}>No followers yet</div>
+                : followers.map((f:any,i:number)=>(
+                  <Link key={f.userId||i} href={`/users/${f.userId}`}
+                    style={{display:"flex",alignItems:"center",gap:"0.75rem",padding:"0.75rem",borderRadius:"8px",textDecoration:"none"}}
+                    onMouseOver={e=>e.currentTarget.style.background="#FFF7ED"}
+                    onMouseOut={e=>e.currentTarget.style.background=""}>
+                    <div style={{width:"36px",height:"36px",borderRadius:"50%",background:"#F5F5F5",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--font-display)",fontSize:"1rem",color:"#F47B20",flexShrink:0,overflow:"hidden"}}>
+                      {f.avatar?<img src={f.avatar} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:(f.fullName?.charAt(0)||"?")}
+                    </div>
+                    <div>
+                      <div style={{fontWeight:700,fontSize:"0.875rem",color:"#1A1A1A"}}>{f.fullName||f.userName}</div>
+                      <div style={{fontSize:"0.72rem",color:"#A3A3A3",textTransform:"capitalize"}}>{f.role?.replace(/_/g," ")}</div>
+                    </div>
+                  </Link>
+                ))
               }
             </div>
-            <button className="ov-logo-edit" onClick={() => logoRef.current?.click()} title="Change logo">✏️</button>
-            <input ref={logoRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) handleLogoUpload(f); }} />
-          </div>
-          <div>
-            <Link href={`/dealers/${dealer?.dealerId}`} className="ov-company" title="View your public profile">
-              {dealer?.companyName || "Your Dealership"}
-            </Link>
-            <p className="ov-meta">
-              {dealer?.city && dealer?.state ? `${dealer.city}, ${dealer.state}` : "Set location in settings"}
-              {dealer?.dealerId && <span className="ov-id"> · {dealer.dealerId}</span>}
-            </p>
-            <div className="ov-meta-links">
-              <Link href={`/dealers/${dealer?.dealerId}`} className="ov-profile-link">View Public Profile →</Link>
-              {(stats as any)?.followerCount > 0 && <span className="ov-followers">👥 {(stats as any).followerCount} followers</span>}
-            </div>
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap", flexShrink: 0 }}>
-          <Link href="/dashboard/dealer/settings" className="ov-settings-btn">⚙ Settings</Link>
-          <div className={`status-badge ${dealer?.status}`}>
-            {dealer?.status?.replace(/_/g, " ").toUpperCase() || "PENDING"}
+      )}
+
+      {/* Topbar */}
+      <header style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0.875rem 1rem",background:"#fff",borderBottom:"1.5px solid #E5E5E5",position:"sticky",top:0,zIndex:40}}>
+        <button onClick={()=>router.back()} style={{background:"none",border:"none",color:"#525252",fontSize:"0.875rem",cursor:"pointer",fontWeight:600,fontFamily:"var(--font-body)"}}>← Back</button>
+        <Link href="/feed" style={{fontFamily:"var(--font-display)",fontSize:"1rem",letterSpacing:"0.2em",color:"#F47B20",textDecoration:"none"}}>CARSTRIMS</Link>
+        <div style={{width:"50px"}}/>
+      </header>
+
+      {/* Hero — clean, no banner overlap */}
+      <div style={{background:"#fff",borderBottom:"1.5px solid #E5E5E5"}}>
+        <div style={{maxWidth:"1100px",margin:"0 auto",padding:"1.25rem 1rem"}}>
+
+          {/* Logo + name + info */}
+          <div style={{display:"flex",gap:"1rem",flexWrap:"wrap",alignItems:"flex-start"}}>
+            {/* Logo */}
+            <div onClick={()=>dealer.logo&&setLightbox(dealer.logo)}
+              style={{width:"88px",height:"88px",borderRadius:"14px",flexShrink:0,border:"2.5px solid #F47B20",overflow:"hidden",background:"#FFF7ED",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--font-display)",fontSize:"2rem",color:"#F47B20",cursor:dealer.logo?"zoom-in":"default",boxShadow:"0 4px 20px rgba(0,0,0,0.12)",transition:"transform 0.2s"}}
+              onMouseOver={e=>{if(dealer.logo)(e.currentTarget as HTMLElement).style.transform="scale(1.04)";}}
+              onMouseOut={e=>(e.currentTarget as HTMLElement).style.transform=""}>
+              {dealer.logo?<img src={dealer.logo} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>{dealer.companyName?.charAt(0)||"D"}</span>}
+            </div>
+
+            {/* Info */}
+            <div style={{flex:1,minWidth:"200px"}}>
+              <h1 style={{fontFamily:"var(--font-display)",fontSize:"clamp(1.25rem,3vw,1.9rem)",letterSpacing:"0.04em",color:"#1A1A1A",lineHeight:1.05,margin:"0 0 0.3rem"}}>
+                {dealer.companyName}
+              </h1>
+              {(dealer.city||dealer.state)&&(
+                <div style={{fontSize:"0.85rem",color:"#737373",marginBottom:"0.25rem"}}>
+                  📍 {[dealer.city,dealer.state].filter(Boolean).join(", ")}
+                </div>
+              )}
+              {dealer.description&&(
+                <p style={{fontSize:"0.85rem",color:"#525252",lineHeight:1.55,maxWidth:"500px",margin:"0.25rem 0 0.5rem"}}>{dealer.description}</p>
+              )}
+              <button onClick={toggleFollowers}
+                style={{display:"inline-flex",alignItems:"center",gap:"0.35rem",background:"none",border:"none",cursor:"pointer",color:"#525252",fontSize:"0.82rem",fontFamily:"var(--font-body)",fontWeight:600,padding:0}}>
+                👥 <span style={{color:"#F47B20",fontFamily:"var(--font-display)",fontSize:"0.95rem"}}>{followerCount}</span>
+                {" "}follower{followerCount!==1?"s":""}
+                <span style={{fontSize:"0.68rem",color:"#A3A3A3",marginLeft:"0.2rem"}}>{showFollowers?"▲":"▼"}</span>
+              </button>
+            </div>
+
+            {/* Action buttons */}
+            <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap",alignItems:"flex-start",flexShrink:0}}>
+              {!isOwn?(
+                <>
+                  <FollowBtn dealerId={dealerId} onChange={setFollowerCount}/>
+                  {isAuthenticated?(
+                    <button onClick={handleMessage} disabled={startMsg}
+                      style={{background:"#1A1A1A",color:"#fff",border:"none",borderRadius:"8px",padding:"0.625rem 1rem",fontFamily:"var(--font-display)",fontSize:"0.8rem",letterSpacing:"0.06em",cursor:"pointer",opacity:startMsg?0.6:1,transition:"background 0.2s",whiteSpace:"nowrap",fontWeight:600}}
+                      onMouseOver={e=>(e.currentTarget.style.background="#F47B20")}
+                      onMouseOut={e=>(e.currentTarget.style.background="#1A1A1A")}>
+                      {startMsg?"Opening...":"💬 Message"}
+                    </button>
+                  ):(
+                    <Link href="/login" style={{background:"#1A1A1A",color:"#fff",borderRadius:"8px",padding:"0.625rem 1rem",fontFamily:"var(--font-display)",fontSize:"0.8rem",letterSpacing:"0.06em",textDecoration:"none",whiteSpace:"nowrap",fontWeight:600,display:"inline-block"}}>
+                      Sign in to Message
+                    </Link>
+                  )}
+                </>
+              ):(
+                <Link href="/dashboard/dealer/settings" style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.625rem 1rem",textDecoration:"none",fontSize:"0.82rem",fontWeight:600}}>
+                  ✏ Edit Profile
+                </Link>
+              )}
+            </div>
+          </div>
+
+          {/* Contact + Social links */}
+          <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap",marginTop:"1rem",alignItems:"center"}}>
+            {dealer.phone&&(
+              <a href={`tel:${dealer.phone}`} style={{display:"inline-flex",alignItems:"center",gap:"0.3rem",background:"#EFF6FF",border:"1px solid #BFDBFE",color:"#1D4ED8",borderRadius:"8px",padding:"0.45rem 0.875rem",fontSize:"0.8rem",textDecoration:"none",fontWeight:600,whiteSpace:"nowrap",transition:"all 0.15s"}}
+                onMouseOver={e=>{e.currentTarget.style.background="#1D4ED8";e.currentTarget.style.color="#fff";}}
+                onMouseOut={e=>{e.currentTarget.style.background="#EFF6FF";e.currentTarget.style.color="#1D4ED8";}}>
+                📞 Call
+              </a>
+            )}
+            {dealer.whatsapp&&(
+              <a href={`https://wa.me/${dealer.whatsapp.replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer"
+                style={{display:"inline-flex",alignItems:"center",gap:"0.3rem",background:"#F0FDF4",border:"1px solid #86EFAC",color:"#15803D",borderRadius:"8px",padding:"0.45rem 0.875rem",fontSize:"0.8rem",textDecoration:"none",fontWeight:600,whiteSpace:"nowrap",transition:"all 0.15s"}}
+                onMouseOver={e=>{e.currentTarget.style.background="#15803D";e.currentTarget.style.color="#fff";}}
+                onMouseOut={e=>{e.currentTarget.style.background="#F0FDF4";e.currentTarget.style.color="#15803D";}}>
+                💬 WhatsApp
+              </a>
+            )}
+            {dealer.email&&(
+              <a href={`mailto:${dealer.email}`} style={{display:"inline-flex",alignItems:"center",gap:"0.3rem",background:"#FFF7ED",border:"1px solid rgba(244,123,32,0.3)",color:"#C4621A",borderRadius:"8px",padding:"0.45rem 0.875rem",fontSize:"0.8rem",textDecoration:"none",fontWeight:600,whiteSpace:"nowrap"}}>
+                ✉ Email
+              </a>
+            )}
+            {socials.map(s=>(
+              <a key={s.label} href={s.href} target="_blank" rel="noreferrer"
+                style={{display:"inline-flex",alignItems:"center",background:"#F5F5F5",border:"1px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.45rem 0.875rem",fontSize:"0.78rem",textDecoration:"none",fontWeight:500,whiteSpace:"nowrap",transition:"all 0.15s"}}
+                onMouseOver={e=>{e.currentTarget.style.borderColor=s.color;e.currentTarget.style.color=s.color;e.currentTarget.style.background=s.color+"15";}}
+                onMouseOut={e=>{e.currentTarget.style.borderColor="#E5E5E5";e.currentTarget.style.color="#525252";e.currentTarget.style.background="#F5F5F5";}}>
+                {s.label}
+              </a>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Stats */}
-      <div>
-        <p className="section-label">OVERVIEW</p>
-        <div className="stats-grid">
-          {STATS.map(s => (
-            <Link key={s.label} href={s.href} className="stat-card">
-              <div className="stat-top"><span className="stat-icon">{s.icon}</span><span className="stat-label">{s.label}</span></div>
-              <div className="stat-value" style={{ color: s.color }}>{s.value}</div>
-              <div className="stat-sub">{s.sub}</div>
-              <span className="stat-arrow">→</span>
-            </Link>
-          ))}
-        </div>
-        <div className="wide-grid">
-          <Link href="/dashboard/dealer/sales" className="wide-card">
-            <div className="stat-top"><span className="stat-icon">💰</span><span className="stat-label">Revenue</span></div>
-            <div className="stat-value" style={{ color: "#F47B20" }}>₦{fmt(stats?.totalRevenue ?? 0)}</div>
-            <div className="stat-sub">All time sales value</div><span className="stat-arrow">→</span>
-          </Link>
-          <Link href="/dashboard/dealer/reports" className="wide-card">
-            <div className="stat-top"><span className="stat-icon">📈</span><span className="stat-label">Net Profit</span></div>
-            <div className="stat-value" style={{ color: "#16A34A" }}>₦{fmt(stats?.totalProfit ?? 0)}</div>
-            <div className="stat-sub">After all expenses</div><span className="stat-arrow">→</span>
-          </Link>
-        </div>
+      <div style={{maxWidth:"1100px",margin:"1rem auto 0",padding:"0 1rem",display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:"0.75rem"}}>
+        {[
+          {label:"Listed",    value:dealer.totalCarsListed||dealer.availableCars?.length||0},
+          {label:"Sold",      value:dealer.totalCarsSold||0},
+          {label:"Followers", value:followerCount, onClick:toggleFollowers},
+        ].map(s=>(
+          <div key={s.label} onClick={s.onClick}
+            style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",padding:"0.875rem",textAlign:"center",cursor:s.onClick?"pointer":"default",transition:"all 0.15s"}}
+            onMouseOver={e=>{if(s.onClick)(e.currentTarget as HTMLElement).style.borderColor="#F47B20";}}
+            onMouseOut={e=>(e.currentTarget as HTMLElement).style.borderColor="#E5E5E5"}>
+            <div style={{fontFamily:"var(--font-display)",fontSize:"1.75rem",color:"#F47B20"}}>{s.value}</div>
+            <div style={{fontSize:"0.72rem",color:"#737373",textTransform:"uppercase" as const,letterSpacing:"0.06em",marginTop:"0.15rem"}}>{s.label}</div>
+          </div>
+        ))}
       </div>
 
-      {/* Activity log */}
-      <div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "between", marginBottom: "0.875rem" }}>
-          <p className="section-label" style={{ marginBottom: 0 }}>RECENT ACTIVITY</p>
-          <Link href="/dashboard/dealer/notifications" style={{ fontSize: "0.78rem", color: "#F47B20", textDecoration: "none", fontWeight: 600 }}>See all →</Link>
-        </div>
-        <div className="activity-list">
-          {activity.length === 0 ? (
-            <div style={{ background: "#fff", border: "1.5px solid #E5E5E5", borderRadius: "10px", padding: "2rem", textAlign: "center", color: "#A3A3A3", fontSize: "0.875rem" }}>
-              <div style={{ fontSize: "1.75rem", marginBottom: "0.5rem" }}>🔔</div>
-              Activity from likes, comments, follows and requests will appear here
-            </div>
-          ) : activity.slice(0, 8).map((act, i) => (
-            <Link key={act.id || i} href={act.link || "/dashboard/dealer/notifications"} className={`activity-item ${act.isRead ? "" : "unread"}`}>
-              <div className="activity-icon">{getActivityIcon(act.type)}</div>
-              <div className="activity-body">
-                <div className="activity-msg">
-                  {act.count > 1
-                    ? <><strong>{act.actors?.[0] || act.actor || "Someone"}</strong> and <strong>{act.count - 1} other{act.count > 2 ? "s" : ""}</strong> {act.verb || "interacted with your dealership"}</>
-                    : <><strong>{act.actor || "Someone"}</strong> {act.verb || "interacted with your dealership"}</>
+      {/* Available cars */}
+      <div style={{maxWidth:"1100px",margin:"1rem auto",padding:"0 1rem 3rem"}}>
+        <h2 style={{fontFamily:"var(--font-display)",fontSize:"0.82rem",letterSpacing:"0.15em",color:"#737373",marginBottom:"1rem",textTransform:"uppercase" as const}}>
+          Available Vehicles ({dealer.availableCars?.length||0})
+        </h2>
+        {(dealer.availableCars?.length||0)===0?(
+          <div style={{border:"1.5px dashed #E5E5E5",borderRadius:"12px",padding:"3rem",textAlign:"center",background:"#fff",color:"#737373"}}>
+            No available vehicles right now
+          </div>
+        ):(
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(220px,100%),1fr))",gap:"1rem"}}>
+            {dealer.availableCars?.map((c:any)=>(
+              <Link key={c._id||c.carId} href={`/cars/${c.carId}`}
+                style={{textDecoration:"none",background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px",overflow:"hidden",display:"flex",flexDirection:"column",transition:"all 0.2s"}}
+                onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.borderColor="#F47B20";(e.currentTarget as HTMLElement).style.transform="translateY(-2px)";}}
+                onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.borderColor="#E5E5E5";(e.currentTarget as HTMLElement).style.transform="";}}>
+                <div style={{aspectRatio:"4/3",background:"#F5F5F5",position:"relative",overflow:"hidden"}}>
+                  {c.images?.[0]
+                    ?<img src={c.images[0]} alt="" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
+                    :<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",fontSize:"2rem",opacity:0.2}}>🚗</div>
                   }
-                  {act.targetLabel && <span className="activity-target"> · {act.targetLabel}</span>}
+                  <div style={{position:"absolute",top:"0.5rem",left:"0.5rem",background:STATUS_C[c.status]||"#888",color:"#fff",padding:"0.18rem 0.5rem",borderRadius:"20px",fontSize:"0.62rem",fontWeight:700,textTransform:"capitalize" as const}}>{c.status}</div>
                 </div>
-                <div className="activity-time">{fmtTime(act.createdAt)}</div>
-              </div>
-              {!act.isRead && <div className="activity-dot" />}
-            </Link>
-          ))}
-        </div>
+                <div style={{padding:"0.875rem"}}>
+                  <div style={{fontWeight:700,fontSize:"0.9rem",color:"#1A1A1A"}}>{c.brand} {c.model} {c.year}</div>
+                  <div style={{fontSize:"0.72rem",color:"#737373",marginTop:"0.15rem"}}>{[c.color,c.transmission].filter(Boolean).join(" · ")}</div>
+                  <div style={{fontFamily:"var(--font-display)",fontSize:"1.1rem",color:"#F47B20",marginTop:"0.375rem"}}>NGN {(c.sellingPrice||0).toLocaleString()}</div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
-
-      {/* Quick actions */}
-      <div>
-        <p className="section-label">QUICK ACTIONS</p>
-        <div className="actions-grid">
-          {ACTIONS.map(a => (
-            <Link key={a.label} href={a.href} className="action-card">
-              <span className="action-icon">{a.icon}</span>
-              <span className="action-label">{a.label}</span>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      <style>{`
-        .overview{display:flex;flex-direction:column;gap:1.75rem}
-        .pending-banner{display:flex;align-items:flex-start;gap:0.875rem;background:#FFF7ED;border:1.5px solid rgba(244,123,32,0.35);border-left:4px solid #F47B20;padding:1rem 1.25rem;border-radius:10px}
-        .pb-icon{font-size:1.25rem;flex-shrink:0;margin-top:0.1rem}
-        .pb-text{display:flex;flex-direction:column;gap:0.2rem}
-        .pb-text strong{font-size:0.9rem;color:#C4621A;display:block}
-        .pb-text span{color:#92400E;font-size:0.82rem;line-height:1.55}
-        .ov-header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap}
-        .ov-header-left{display:flex;align-items:center;gap:0.875rem;min-width:0}
-        .ov-logo-wrap{position:relative;flex-shrink:0}
-        .ov-logo{width:64px;height:64px;border-radius:12px;overflow:hidden;background:#FFF7ED;border:2px solid rgba(244,123,32,0.3);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.5rem;color:#F47B20;cursor:pointer;transition:transform 0.2s}
-        .ov-logo:hover{transform:scale(1.04)}
-        .ov-logo img{width:100%;height:100%;object-fit:cover}
-        .ov-logo-edit{position:absolute;bottom:-4px;right:-4px;background:#F47B20;border:2px solid #fff;border-radius:50%;width:20px;height:20px;font-size:0.55rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.2s}
-        .ov-logo-edit:hover{background:#FF9340}
-        .ov-company{font-family:var(--font-display);font-size:1.6rem;letter-spacing:0.04em;color:#1A1A1A;line-height:1;text-decoration:none;display:block;transition:color 0.2s}
-        .ov-company:hover{color:#F47B20}
-        .ov-meta{font-size:0.8rem;color:#888;margin-top:0.2rem}
-        .ov-id{font-family:var(--font-mono);font-size:0.72rem;color:#AAA}
-        .ov-meta-links{display:flex;align-items:center;gap:0.75rem;margin-top:0.3rem;flex-wrap:wrap}
-        .ov-profile-link{font-size:0.78rem;color:#F47B20;text-decoration:none;font-weight:600}
-        .ov-profile-link:hover{text-decoration:underline}
-        .ov-followers{font-size:0.78rem;color:#737373;font-weight:500}
-        .ov-settings-btn{background:#F5F5F5;border:1.5px solid #E5E5E5;color:#525252;border-radius:8px;padding:0.5rem 1rem;font-size:0.82rem;text-decoration:none;font-weight:600;transition:all 0.2s}
-        .ov-settings-btn:hover{border-color:#F47B20;color:#F47B20;background:#FFF7ED}
-        .status-badge{padding:0.35rem 0.875rem;border-radius:20px;font-size:0.65rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;border:1.5px solid;white-space:nowrap;flex-shrink:0}
-        .status-badge.active,.status-badge.approved{color:#16A34A;border-color:#16A34A;background:#F0FDF4}
-        .status-badge.awaiting_approval,.status-badge.pending,.status-badge.pending_setup{color:#F47B20;border-color:#F47B20;background:#FFF7ED}
-        .status-badge.suspended{color:#DC2626;border-color:#DC2626;background:#FEF2F2}
-        .section-label{font-family:var(--font-display);font-size:0.72rem;letter-spacing:0.18em;color:#A3A3A3;margin-bottom:0.875rem;text-transform:uppercase}
-        .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
-        .stat-card,.wide-card{background:#fff;border:1.5px solid #E5E5E5;border-radius:12px;padding:1.25rem;display:flex;flex-direction:column;gap:0.35rem;text-decoration:none;transition:all 0.2s;position:relative;overflow:hidden}
-        .stat-card::before,.wide-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:#F47B20;opacity:0;transition:opacity 0.2s}
-        .stat-card:hover,.wide-card:hover{border-color:#F47B20;transform:translateY(-2px);box-shadow:0 6px 20px rgba(244,123,32,0.1)}
-        .stat-card:hover::before,.wide-card:hover::before{opacity:1}
-        .stat-top{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.2rem}
-        .stat-icon{font-size:1.1rem}
-        .stat-label{font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#A3A3A3}
-        .stat-value{font-family:var(--font-display);font-size:2.2rem;letter-spacing:0.02em;line-height:1}
-        .stat-sub{font-size:0.72rem;color:#A3A3A3}
-        .stat-arrow{position:absolute;bottom:0.875rem;right:1rem;font-size:0.8rem;color:#DDD;transition:color 0.2s}
-        .stat-card:hover .stat-arrow,.wide-card:hover .stat-arrow{color:#F47B20}
-        .wide-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem}
-        .activity-list{display:flex;flex-direction:column;gap:0.4rem}
-        .activity-item{display:flex;align-items:flex-start;gap:0.75rem;background:#fff;border:1.5px solid #E5E5E5;border-radius:10px;padding:0.875rem 1rem;text-decoration:none;transition:all 0.15s;position:relative}
-        .activity-item:hover{border-color:#F47B20;background:#FFF7ED}
-        .activity-item.unread{border-left:3px solid #F47B20;background:#FFFBF5}
-        .activity-icon{font-size:1.1rem;flex-shrink:0;margin-top:0.05rem}
-        .activity-body{flex:1;min-width:0}
-        .activity-msg{font-size:0.875rem;color:#404040;line-height:1.5}
-        .activity-msg strong{color:#1A1A1A;font-weight:700}
-        .activity-target{color:#F47B20;font-weight:600;font-size:0.82rem}
-        .activity-time{font-size:0.72rem;color:#A3A3A3;margin-top:0.2rem}
-        .activity-dot{width:8px;height:8px;border-radius:50%;background:#F47B20;flex-shrink:0;margin-top:0.4rem}
-        .actions-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0.875rem}
-        .action-card{background:#fff;border:1.5px solid #E5E5E5;border-radius:10px;padding:1.1rem 0.875rem;display:flex;flex-direction:column;align-items:center;gap:0.5rem;text-decoration:none;transition:all 0.2s}
-        .action-card:hover{border-color:#F47B20;background:#FFF7ED;transform:translateY(-2px);box-shadow:0 4px 12px rgba(244,123,32,0.08)}
-        .action-icon{font-size:1.5rem}
-        .action-label{font-size:0.72rem;font-weight:600;color:#666;text-align:center;line-height:1.3}
-        .action-card:hover .action-label{color:#F47B20}
-        @media(max-width:900px){.stats-grid{grid-template-columns:repeat(2,1fr)}.actions-grid{grid-template-columns:repeat(4,1fr)}}
-        @media(max-width:640px){.stats-grid{grid-template-columns:repeat(2,1fr);gap:0.65rem}.wide-grid{grid-template-columns:1fr}.actions-grid{grid-template-columns:repeat(2,1fr)}.ov-company{font-size:1.2rem}.stat-value{font-size:1.7rem}.ov-logo{width:52px;height:52px;font-size:1.2rem}}
-      `}</style>
     </div>
   );
 }

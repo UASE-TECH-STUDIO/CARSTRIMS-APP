@@ -243,6 +243,30 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
                 </div>
                 <div className="ch-name">{activeConv.type==="announcement"?"CARSTRIMS Announcements":activeConv.otherUser?.fullName||"User"}</div>
               </div>
+              {/* Car context card — shown when navigated from car listing page */}
+              {(activeConv?.carContext||carIdParam)&&(
+                <div style={{margin:"0.75rem",borderRadius:"10px",overflow:"hidden",border:"1.5px solid rgba(244,123,32,0.3)",background:"#FFF7ED",flexShrink:0}}>
+                  <Link href={activeConv?.carContext?.carId?`/cars/${activeConv.carContext.carId}`:carIdParam?`/cars/${carIdParam}`:"#"}
+                    style={{display:"flex",alignItems:"center",gap:"0.75rem",padding:"0.625rem 0.875rem",textDecoration:"none",cursor:"pointer"}}
+                    onMouseOver={e=>e.currentTarget.style.background="rgba(244,123,32,0.06)"}
+                    onMouseOut={e=>e.currentTarget.style.background=""}>
+                    {(activeConv?.carContext?.carImage||carImgParam)&&(
+                      <img src={activeConv?.carContext?.carImage||decodeURIComponent(carImgParam||"")} alt=""
+                        style={{width:"52px",height:"40px",objectFit:"cover",borderRadius:"6px",flexShrink:0,border:"1px solid rgba(244,123,32,0.2)"}}/>
+                    )}
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:"0.6rem",color:"#F47B20",fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase" as const,marginBottom:"0.15rem"}}>Enquiring about</div>
+                      <div style={{fontWeight:700,fontSize:"0.8rem",color:"#1A1A1A",whiteSpace:"nowrap" as const,overflow:"hidden",textOverflow:"ellipsis"}}>
+                        {activeConv?.carContext?.carBrand||""} {activeConv?.carContext?.carModel||""} {activeConv?.carContext?.carYear||""}
+                      </div>
+                      {(activeConv?.carContext?.carPrice)&&(
+                        <div style={{fontSize:"0.72rem",color:"#F47B20",fontFamily:"var(--font-display)",fontWeight:700}}>NGN {Number(activeConv.carContext.carPrice).toLocaleString()}</div>
+                      )}
+                    </div>
+                    <div style={{fontSize:"0.65rem",color:"#F47B20",fontWeight:600,flexShrink:0}}>View car →</div>
+                  </Link>
+                </div>
+              )}
               <div className="chat-msgs">
                 {messages.length===0?<div className="chat-start">No messages yet</div>:messages.map(m=><MsgBubble key={m._id||m.messageId} m={m}/>)}
                 <div ref={msgsEndRef}/>
@@ -345,6 +369,7 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
     </>
   );
 }
+
 
 
 
