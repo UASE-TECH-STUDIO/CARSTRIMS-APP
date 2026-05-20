@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
+import { useMessagesStore } from "@/store/messagesStore";
 import Link from "next/link";
 
 export default function CarDetailPage() {
@@ -69,6 +70,8 @@ export default function CarDetailPage() {
 
   // Message dealer  opens conversation with car context card shown
   // Does NOT auto-send  user drafts their own message (like WhatsApp status reply)
+  const { openConversation } = useMessagesStore();
+
   const handleMessageDealer = async () => {
     if (!isAuthenticated) { router.push("/login"); return; }
     if (!car?.dealer) { alert("Dealer contact not available."); return; }
@@ -83,7 +86,6 @@ export default function CarDetailPage() {
       }
       if (!dealerUserId) { alert("Could not find dealer. Try WhatsApp or Call instead."); return; }
 
-      // Start conversation with clean payload context card attributes
       const r = await api.post("/api/v1/messages/start", {
         receiverId: dealerUserId,
         carId: car.carId,
@@ -93,20 +95,20 @@ export default function CarDetailPage() {
         carImage: car.images?.[0] || null,
         carPrice: car.sellingPrice,
       });
-
       const convId = r.data?.conversationId;
-      const msgPaths: Record<string,string> = {
-        DEALER_ADMIN: "/dashboard/dealer/messages",
-        DEALER_STAFF: "/dashboard/staff/messages",
-        PARTNER_USER: "/dashboard/partner/messages",
-        SYSTEM_ADMIN: "/dashboard/super-admin/messages",
-      };
-      const path = msgPaths[user?.role||""] || "/dashboard/user/messages";
-      
-      // Pass safe context variables dynamically down to targeted path
-      router.push(convId ? `${path}?conv=${convId}&carId=${car.carId}&carImg=${encodeURIComponent(car.images?.[0]||"")}` : path);
+      if (convId) {
+        // Opens MessagesWidget floating panel directly - no navigation at all
+        openConversation(convId, {
+          carId: car.carId || "",
+          carBrand: car.brand,
+          carModel: car.model,
+          carYear: car.year,
+          carImage: car.images?.[0] || undefined,
+          carPrice: car.sellingPrice,
+        });
+      }
     } catch (e: any) {
-      alert(e.response?.data?.detail || "Could not start chat. Please use WhatsApp or Call.");
+      alert(e.response?.data?.detail || "Could not open chat. Please use WhatsApp or Call.");
     } finally { setStartingMsg(false); }
   };
 

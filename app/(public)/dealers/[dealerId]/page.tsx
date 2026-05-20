@@ -1,9 +1,10 @@
-"use client";
+﻿"use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
+import { useMessagesStore } from "@/store/messagesStore";
 import FollowButton from "@/components/ui/FollowButton";
 
 const STATUS_COLORS: Record<string,string> = {
@@ -47,17 +48,21 @@ export default function DealerProfilePage() {
 
   const toggleFollowers = () => { if (!showFollowers) loadFollowers(); setShowFollowers(!showFollowers); };
 
+  const { openConversation } = useMessagesStore();
+
   const handleMessage = async () => {
     if (!isAuthenticated) { router.push("/login"); return; }
-    if (!dealer?.userId&&!dealer?.ownerUserId) { alert("Cannot start chat."); return; }
+    if (!dealer?.userId && !dealer?.ownerUserId) { alert("Cannot start chat. Try WhatsApp or Call."); return; }
     setStartingMsg(true);
     try {
-      const receiverId = dealer.userId||dealer.ownerUserId;
-      const r = await api.post("/api/v1/messages/start", {receiverId, message:`Hi, I'd like to know more about ${dealer.companyName}.`});
+      const receiverId = dealer.userId || dealer.ownerUserId;
+      const r = await api.post("/api/v1/messages/start", { receiverId });
       const convId = r.data?.conversationId;
-      const paths: Record<string,string> = {DEALER_ADMIN:"/dashboard/dealer/messages",DEALER_STAFF:"/dashboard/staff/messages",PARTNER_USER:"/dashboard/partner/messages",SYSTEM_ADMIN:"/dashboard/super-admin/messages"};
-      router.push(convId?`${paths[user?.role||""]||"/dashboard/user/messages"}?conv=${convId}`:paths[user?.role||""]||"/dashboard/user/messages");
-    } catch(e:any){ alert(e.response?.data?.detail||"Could not start chat"); }
+      if (convId) {
+        // Opens MessagesWidget floating panel directly - no navigation
+        openConversation(convId);
+      }
+    } catch(e:any) { alert(e.response?.data?.detail || "Could not start chat. Try WhatsApp or Call."); }
     finally { setStartingMsg(false); }
   };
 
