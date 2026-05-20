@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAuthStore } from "@/store/authStore";
+import { useMessagesStore } from "@/store/messagesStore";
+import Link from "next/link";
 import api from "@/lib/api";
 
 interface Props { accentColor?: string; }
