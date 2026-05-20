@@ -1,4 +1,4 @@
-use client";
+"use client";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";

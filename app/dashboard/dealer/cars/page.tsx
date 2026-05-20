@@ -1,4 +1,4 @@
-use client";
+"use client";
 import { useEffect, useRef, useState, useCallback } from "react";
 import api from "@/lib/api";
 import MarkSoldModal from "@/components/shared/MarkSoldModal";

@@ -1,4 +1,4 @@
-use client";
+"use client";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import NotificationBell from "@/components/ui/NotificationBell";

@@ -1,4 +1,4 @@
-use client";
+"use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import CarFinancialReport from "@/components/dealer/CarFinancialReport";

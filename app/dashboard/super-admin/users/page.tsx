@@ -1,4 +1,4 @@
-mport Link from "next/link";
+import Link from "next/link";
 "use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";

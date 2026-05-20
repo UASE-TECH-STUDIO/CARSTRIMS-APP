@@ -1,4 +1,4 @@
-use client";
+"use client";
 
 import NotificationSettings from "@/components/ui/NotificationSettings";
 import { useEffect, useRef, useState } from "react";

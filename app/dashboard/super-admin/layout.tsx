@@ -1,4 +1,4 @@
-use client";
+"use client";
 import { ReactNode } from "react";
 import AuthGuard from "@/components/layout/AuthGuard";
 import AdminSidebar from "@/components/layout/AdminSidebar";

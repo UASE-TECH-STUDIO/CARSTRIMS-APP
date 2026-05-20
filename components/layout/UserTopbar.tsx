@@ -1,4 +1,4 @@
-use client";
+"use client";
 import { useAuthStore } from "@/store/authStore";
 import Link from "next/link";
 import NotificationBell from "@/components/ui/NotificationBell";
