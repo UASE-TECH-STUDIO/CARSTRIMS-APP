@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
@@ -67,6 +67,8 @@ export default function CarDetailPage() {
     } catch {}
   };
 
+  // Message dealer — opens conversation with car context card shown
+  // Does NOT auto-send — user drafts their own message (like WhatsApp status reply)
   const handleMessageDealer = async () => {
     if (!isAuthenticated) { router.push("/login"); return; }
     if (!car?.dealer) { alert("Dealer contact not available."); return; }
@@ -81,8 +83,17 @@ export default function CarDetailPage() {
       }
       if (!dealerUserId) { alert("Could not find dealer. Try WhatsApp or Call instead."); return; }
 
-      const draft = `Hi, I am interested in your ${car.brand} ${car.model} ${car.year}.\nIs this still available? I'd like to know more details.\n\nRef: ${car.carId}`;
-      const r = await api.post("/api/v1/messages/start", { receiverId: dealerUserId, message: draft });
+      // Start conversation with clean payload context card attributes
+      const r = await api.post("/api/v1/messages/start", {
+        receiverId: dealerUserId,
+        carId: car.carId,
+        carBrand: car.brand,
+        carModel: car.model,
+        carYear: car.year,
+        carImage: car.images?.[0] || null,
+        carPrice: car.sellingPrice,
+      });
+
       const convId = r.data?.conversationId;
       const msgPaths: Record<string,string> = {
         DEALER_ADMIN: "/dashboard/dealer/messages",
@@ -91,7 +102,9 @@ export default function CarDetailPage() {
         SYSTEM_ADMIN: "/dashboard/super-admin/messages",
       };
       const path = msgPaths[user?.role||""] || "/dashboard/user/messages";
-      router.push(convId ? `${path}?conv=${convId}&carId=${car.carId}` : path);
+      
+      // Pass safe context variables dynamically down to targeted path
+      router.push(convId ? `${path}?conv=${convId}&carId=${car.carId}&carImg=${encodeURIComponent(car.images?.[0]||"")}` : path);
     } catch (e: any) {
       alert(e.response?.data?.detail || "Could not start chat. Please use WhatsApp or Call.");
     } finally { setStartingMsg(false); }
