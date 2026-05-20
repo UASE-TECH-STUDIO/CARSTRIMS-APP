@@ -22,6 +22,16 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
   const [startMsg, setStartMsg]       = useState("");
   const [selUser, setSelUser]         = useState<any>(null);
   const [unread, setUnread]           = useState(0);
+  const [carIdParam, setCarIdParam]   = useState<string|null>(null);
+  const [carImgParam, setCarImgParam] = useState<string|null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    setCarIdParam(sp.get("carId"));
+    setCarImgParam(sp.get("carImg"));
+  }, []);
+
   const msgsEndRef   = useRef<HTMLDivElement>(null);
   const pollRef      = useRef<ReturnType<typeof setInterval>|null>(null);
   const activeRef    = useRef<any>(null);
@@ -369,6 +379,7 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
     </>
   );
 }
+
 
 
 
