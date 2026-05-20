@@ -67,7 +67,6 @@ export default function CarDetailPage() {
     } catch {}
   };
 
-  // Message dealer — works for ALL authenticated users
   const handleMessageDealer = async () => {
     if (!isAuthenticated) { router.push("/login"); return; }
     if (!car?.dealer) { alert("Dealer contact not available."); return; }
@@ -82,11 +81,9 @@ export default function CarDetailPage() {
       }
       if (!dealerUserId) { alert("Could not find dealer. Try WhatsApp or Call instead."); return; }
 
-      // Draft message with car context — user can edit it
       const draft = `Hi, I am interested in your ${car.brand} ${car.model} ${car.year}.\nIs this still available? I'd like to know more details.\n\nRef: ${car.carId}`;
       const r = await api.post("/api/v1/messages/start", { receiverId: dealerUserId, message: draft });
       const convId = r.data?.conversationId;
-      // Redirect to correct messages page based on role
       const msgPaths: Record<string,string> = {
         DEALER_ADMIN: "/dashboard/dealer/messages",
         DEALER_STAFF: "/dashboard/staff/messages",
@@ -265,7 +262,6 @@ export default function CarDetailPage() {
 
               {car.status === "available" && (
                 <div className="cd-contact-wrap">
-                  {/* Message Dealer — ALL authenticated users can message, even dealers */}
                   {isAuthenticated ? (
                     <button className="cd-msg-btn" onClick={handleMessageDealer} disabled={startingMsg}>
                       {startingMsg ? "Opening chat..." : "💬 Message Dealer"}
@@ -358,7 +354,7 @@ export default function CarDetailPage() {
       </div>
 
       <style>{`
-        .cd-page{min-height:100vh;background:#F5F5F5;color:#1A1A1A;font-family:var(--font-body)}
+        .cd-page{min-height:100vh;background:#F5F5F5;color:#1A1A1A;font-family:var(--font-body);overflow-x:hidden;max-width:100vw}
         .cd-topbar{display:flex;align-items:center;justify-content:space-between;padding:0.875rem 1.25rem;background:#fff;border-bottom:1.5px solid #E5E5E5;position:sticky;top:0;z-index:40;gap:0.5rem}
         .cd-back{background:none;border:none;color:#525252;font-size:0.95rem;cursor:pointer;font-family:var(--font-body);font-weight:600;padding:0.25rem 0}
         .cd-back:hover{color:#F47B20}
@@ -368,15 +364,15 @@ export default function CarDetailPage() {
         .cd-action.liked{color:#DC2626;border-color:rgba(220,38,38,0.4);background:rgba(220,38,38,0.06);font-weight:700}
         .cd-action.faved{color:#F47B20;border-color:rgba(244,123,32,0.4);background:#FFF7ED;font-weight:700}
         .cd-del{color:#DC2626!important;border-color:rgba(220,38,38,0.3)!important}
-        .cd-body{display:grid;grid-template-columns:1fr 380px;gap:1.5rem;padding:1.5rem;max-width:1280px;margin:0 auto;align-items:start}
-        .cd-gallery{display:flex;flex-direction:column;gap:0.75rem}
-        .cd-main-img{aspect-ratio:16/10;border-radius:14px;overflow:hidden;position:relative;background:#E5E5E5;display:flex;align-items:center;justify-content:center;cursor:zoom-in}
+        .cd-body{display:grid;grid-template-columns:1fr 380px;gap:1.5rem;padding:1.5rem;max-width:1280px;margin:0 auto;align-items:start;box-sizing:border-box;width:100%}
+        .cd-gallery{display:flex;flex-direction:column;gap:0.75rem;min-width:0;overflow:hidden}
+        .cd-main-img{aspect-ratio:16/10;border-radius:14px;overflow:hidden;position:relative;background:#E5E5E5;display:flex;align-items:center;justify-content:center;cursor:zoom-in;width:100%;max-width:100%;box-sizing:border-box}
         .cd-main-img img{width:100%;height:100%;object-fit:cover;transition:transform 0.3s}
         .cd-main-img:hover img{transform:scale(1.02)}
         .cd-no-img{font-size:3rem;opacity:0.2}
         .cd-status-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.75rem;letter-spacing:0.2em;background:rgba(0,0,0,0.45);color:#fff}
         .cd-img-count{position:absolute;bottom:0.625rem;right:0.75rem;background:rgba(0,0,0,0.6);color:#fff;font-size:0.7rem;padding:0.2rem 0.5rem;border-radius:4px}
-        .cd-thumbs{display:flex;gap:0.5rem;overflow-x:auto;padding-bottom:2px}
+        .cd-thumbs{display:flex;gap:0.5rem;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;-webkit-overflow-scrolling:touch;max-width:100%;}
         .cd-thumb{width:76px;height:58px;border-radius:8px;overflow:hidden;cursor:pointer;border:2.5px solid transparent;flex-shrink:0;transition:border-color 0.2s}
         .cd-thumb.active{border-color:#F47B20}
         .cd-thumb img{width:100%;height:100%;object-fit:cover;display:block}
@@ -462,8 +458,9 @@ export default function CarDetailPage() {
         .cd-reply-send{background:#F47B20;color:#fff;border:none;border-radius:6px;padding:0.45rem 0.875rem;font-size:0.8rem;cursor:pointer;font-family:var(--font-display)}
         .cd-reply-send:disabled{opacity:0.5;cursor:not-allowed}
         .cd-reply-cancel{background:transparent;border:1.5px solid #E5E5E5;color:#737373;border-radius:6px;padding:0.45rem 0.75rem;font-size:0.8rem;cursor:pointer}
-        @media(max-width:960px){.cd-body{grid-template-columns:1fr}.cd-right{position:static}.cd-contact-btns{grid-template-columns:1fr 1fr}}
-        @media(max-width:640px){.cd-topbar{padding:0.75rem 1rem}.cd-body{padding:0.875rem}.cd-comments{padding:0 0.875rem 3rem}.cd-specs{grid-template-columns:1fr}}
+        @media(max-width:960px){.cd-body{grid-template-columns:1fr}.cd-right{position:static;min-width:0}.cd-contact-btns{grid-template-columns:1fr 1fr}.cd-gallery{max-width:100%;overflow:hidden}}
+        @media(max-width:640px){.cd-topbar{padding:0.75rem 1rem}.cd-body{padding:0.75rem;gap:1rem}.cd-comments{padding:0 0.75rem 3rem}.cd-specs{grid-template-columns:1fr}.cd-main-img{aspect-ratio:4/3}.cd-right{min-width:0}.cd-info-card{padding:1rem}.cd-car-title{font-size:1.4rem}}
+        @media(max-width:480px){.cd-body{padding:0.5rem}.cd-topbar-right{gap:0.25rem}.cd-action{padding:0.35rem 0.6rem;font-size:0.75rem}}
       `}</style>
     </div>
   );

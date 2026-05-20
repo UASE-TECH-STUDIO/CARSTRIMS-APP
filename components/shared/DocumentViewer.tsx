@@ -23,7 +23,8 @@ th{background:#1A1A1A;color:#fff;padding:0.625rem 0.875rem;text-align:left;font-
 td{padding:0.625rem 0.875rem;border-bottom:1px solid #E5E5E5;font-size:0.875rem}
 .badge{display:inline-block;padding:0.2rem 0.75rem;border-radius:20px;font-size:0.7rem;font-weight:700;letter-spacing:0.08em}
 .orange{color:#F47B20}.green{color:#16A34A}.red{color:#DC2626}
-img{max-height:70px;object-fit:contain}
+.dealer-logo{max-height:80px;max-width:200px;object-fit:contain;display:block;margin-bottom:6px}
+.sig-img{max-height:60px;max-width:180px;object-fit:contain;display:block;background:#fff;padding:4px;border-radius:4px;mix-blend-mode:multiply}
 hr{border:none;border-top:1px solid #E5E5E5;margin:1.25rem 0}
 .sig-box{height:50px;border-bottom:1px solid #1A1A1A;margin-bottom:6px}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:1.5rem}
@@ -111,7 +112,7 @@ hr{border:none;border-top:1px solid #E5E5E5;margin:1.25rem 0}
           {/* Header row */}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",borderBottom:"3px solid #F47B20",paddingBottom:"1.25rem",marginBottom:"1.5rem",flexWrap:"wrap",gap:"1rem"}}>
             <div>
-              {d.dealer?.logo&&<img src={d.dealer.logo} alt="" style={{height:"60px",objectFit:"contain",display:"block",marginBottom:"0.5rem"}}/>}
+              {d.dealer?.logo&&<img src={d.dealer.logo} alt="" className="dealer-logo" style={{height:"70px",maxWidth:"200px",objectFit:"contain",display:"block",marginBottom:"0.5rem"}}/>}
               <div style={{fontFamily:"Georgia,serif",fontSize:"1.4rem",fontWeight:700,letterSpacing:"0.08em",color:"#1A1A1A"}}>{d.dealer?.companyName||"CARSTRIMS DEALER"}</div>
               {d.dealer?.address&&<div style={{fontSize:"0.78rem",color:"#737373",marginTop:"0.2rem"}}>{[d.dealer.address,d.dealer.city,d.dealer.state].filter(Boolean).join(", ")}</div>}
               {d.dealer?.phone&&<div style={{fontSize:"0.78rem",color:"#737373"}}>Tel: {d.dealer.phone}</div>}
@@ -216,7 +217,7 @@ hr{border:none;border-top:1px solid #E5E5E5;margin:1.25rem 0}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"2rem",marginTop:"2rem",paddingTop:"1.25rem",borderTop:"1px solid #E5E5E5"}}>
             <div>
               <div style={{fontSize:"0.65rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#A3A3A3",marginBottom:"0.5rem"}}>Issued By</div>
-              {d.dealer?.signature?<img src={d.dealer.signature} alt="Signature" style={{height:"50px",objectFit:"contain",display:"block",marginBottom:"4px"}}/>:<div style={{height:"40px",borderBottom:"1px solid #1A1A1A",marginBottom:"4px"}}/>}
+              {d.dealer?.signature?<img src={d.dealer.signature} alt="Signature" className="sig-img" style={{height:"56px",maxWidth:"180px",objectFit:"contain",display:"block",marginBottom:"6px",background:"#fff",padding:"4px",borderRadius:"4px",mixBlendMode:"multiply"}}/>:<div style={{height:"40px",borderBottom:"1px solid #1A1A1A",marginBottom:"4px"}}/>}
               <div style={{fontSize:"0.78rem",color:"#1A1A1A",fontWeight:600}}>{d.dealer?.companyName}</div>
               <div style={{fontSize:"0.7rem",color:"#737373"}}>Authorised Signatory</div>
             </div>
@@ -235,3 +236,4 @@ hr{border:none;border-top:1px solid #E5E5E5;margin:1.25rem 0}
     </div>
   );
 }
+

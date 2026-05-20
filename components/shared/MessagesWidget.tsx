@@ -195,7 +195,7 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
   return (
     <>
       <button className="msg-fab" onClick={()=>setOpen(!open)} style={{"--accent":accentColor} as any}>
-        {open?"✕":"MSG"}
+        MSG
         {unread>0&&!open&&<span className="fab-badge">{unread}</span>}
       </button>
 
@@ -284,10 +284,10 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
       )}
 
       <style>{`
-        .msg-fab{position:fixed;bottom:80px;right:1.25rem;z-index:9999;background:var(--accent,#F47B20);color:#fff;border:none;border-radius:50%;width:48px;height:48px;font-family:var(--font-display);font-size:0.65rem;font-weight:700;letter-spacing:0.06em;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.2);display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+        .msg-fab{position:fixed;bottom:1.25rem;right:1.25rem;z-index:9999;background:var(--accent,#F47B20);color:#fff;border:none;border-radius:50%;width:48px;height:48px;font-family:var(--font-display);font-size:0.65rem;font-weight:700;letter-spacing:0.06em;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.2);display:flex;align-items:center;justify-content:center;transition:all 0.2s}
         .msg-fab:hover{transform:scale(1.08)}
         .fab-badge{position:absolute;top:-4px;right:-4px;background:#DC2626;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;border:2px solid #fff}
-        .msg-panel{position:fixed;bottom:140px;right:1.25rem;z-index:9998;background:#fff;border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,0.18);border:1.5px solid #E5E5E5;display:flex;flex-direction:column;overflow:hidden;min-width:280px;min-height:340px}
+        .msg-panel{position:fixed;bottom:80px;right:1.25rem;z-index:9998;background:#fff;border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,0.18);border:1.5px solid #E5E5E5;display:flex;flex-direction:column;overflow:hidden;min-width:280px;min-height:340px}
         .resize-handle{position:absolute;top:0;left:0;width:24px;height:24px;cursor:nw-resize;display:flex;align-items:center;justify-content:center;z-index:10;border-radius:0 0 8px 0;background:rgba(0,0,0,0.04);transition:background 0.2s}
         .resize-handle:hover{background:rgba(0,0,0,0.1)}
         .mp-header{display:flex;align-items:center;gap:0.5rem;padding:0.875rem 1rem 0.875rem 1.5rem;border-bottom:1px solid #E5E5E5;background:var(--accent,#F47B20);color:#fff;flex-shrink:0}
@@ -321,7 +321,7 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
         .chat-input button:disabled{opacity:0.5;cursor:not-allowed}
         .pw-tip{padding:0.3rem 0.75rem 0.5rem;font-size:0.63rem;color:#A3A3A3;border-top:1px solid #F5F5F5;flex-shrink:0}
         .pw-tip code{background:#F5F5F5;padding:0 0.3rem;border-radius:3px;font-size:0.7rem;color:#555}
-        .new-conv-overlay{position:absolute;top:0;left:0;right:0;bottom:60px;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:15;border-radius:16px 16px 0 0}
+        .new-conv-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.45);display:flex;align-items:flex-start;justify-content:center;padding-top:3rem;z-index:25;border-radius:16px}
         .new-conv{background:#fff;border-radius:12px;width:92%;overflow:hidden;max-height:90%}
         .nc-header{display:flex;align-items:center;justify-content:space-between;padding:0.875rem 1rem;background:var(--accent,#F47B20);color:#fff}
         .nc-header span{font-family:var(--font-display);font-size:0.875rem}
@@ -340,11 +340,12 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
         .nc-msg:focus{border-color:var(--accent,#F47B20);background:#fff}
         .nc-send{width:100%;background:var(--accent,#F47B20);color:#fff;border:none;border-radius:6px;padding:0.75rem;font-family:var(--font-display);font-size:0.85rem;letter-spacing:0.06em;cursor:pointer}
         .nc-send:disabled{opacity:0.5;cursor:not-allowed}
-        @media(max-width:640px){.msg-panel{width:calc(100vw - 1.5rem)!important;right:0.75rem;bottom:80px}}
+        @media(max-width:640px){.msg-panel{width:calc(100vw - 1.5rem)!important;right:0.75rem;bottom:80px;max-height:70vh}}
       `}</style>
     </>
   );
 }
+
 
 
 
