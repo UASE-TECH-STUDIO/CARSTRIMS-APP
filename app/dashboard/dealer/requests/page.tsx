@@ -1,141 +1,206 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import api from "@/lib/api";
 
-const STATUS_C: Record<string,{bg:string;color:string}> = {
-  pending:   {bg:"#FFF7ED",color:"#D97706"},
-  responded: {bg:"#F0FDF4",color:"#16A34A"},
-  closed:    {bg:"#F5F5F5",color:"#737373"},
-  rejected:  {bg:"#FEF2F2",color:"#DC2626"},
+const STATUS_C: Record<string,string> = {
+  pending:"#D97706", accepted_by_dealer:"#16A34A", countered:"#7B68EE",
+  accepted:"#16A34A", declined:"#DC2626", cancelled:"#888",
+  completed:"#3B8BD4", cancelled_by_buyer:"#888",
 };
+const STATUS_L: Record<string,string> = {
+  pending:"Pending", accepted_by_dealer:"You Accepted", countered:"Counter Sent",
+  accepted:"Buyer Accepted", declined:"Buyer Declined", cancelled:"Cancelled",
+  completed:"Completed", cancelled_by_buyer:"Buyer Cancelled",
+};
+const STAGES = [
+  {id:"payment_received",    label:"Payment Received"},
+  {id:"car_purchased",       label:"Vehicle Purchased"},
+  {id:"shipped",             label:"Shipped"},
+  {id:"arrived_country",     label:"Arrived in Country"},
+  {id:"in_transit",          label:"In Transit to Buyer"},
+  {id:"delivered",           label:"Delivered to Buyer"},
+  {id:"update",              label:"General Update"},
+];
 
 export default function DealerRequestsPage() {
-  const [requests,setRequests]   = useState<any[]>([]);
-  const [loading,setLoading]     = useState(true);
-  const [responding,setResponding] = useState<any>(null);
-  const [responseText,setResponseText] = useState("");
-  const [submitting,setSubmitting] = useState(false);
+  const [requests,  setRequests]  = useState<any[]>([]);
+  const [loading,   setLoading]   = useState(true);
+  const [selected,  setSelected]  = useState<any>(null);
+  const [filter,    setFilter]    = useState("all");
+  const [saving,    setSaving]    = useState(false);
+  const [msg,       setMsg]       = useState("");
+  const [tab,       setTab]       = useState<"details"|"journey"|"payment">("details");
+
+  // Respond form
+  const [responseType, setResponseType] = useState<"accept"|"counter">("accept");
+  const [responseMsg,  setResponseMsg]  = useState("");
+  const [altForm, setAltForm] = useState({
+    altBrand:"", altModel:"", altYear:"", altColor:"", altCondition:"foreign used",
+    altPrice:"", altCurrency:"NGN", altDescription:"", estimatedDelivery:"",
+  });
+
+  // Milestone form
+  const [milestoneStage,       setMilestoneStage] = useState("update");
+  const [milestoneTitle,       setMilestoneTitle] = useState("");
+  const [milestoneDesc,        setMilestoneDesc]  = useState("");
+  const [milestoneEvidence,    setMilestoneEvidence] = useState<string[]>([]);
+  const [uploadingEvidence,    setUploadingEvidence] = useState(false);
+  const evidenceRef = useRef<HTMLInputElement>(null);
+
+  // Payment plan form
+  const [planType,    setPlanType]    = useState<"full"|"installmental">("full");
+  const [planTotal,   setPlanTotal]   = useState("");
+  const [installments,setInstallments]= useState([{label:"Initial deposit",amount:"",dueDate:"",paid:false}]);
 
   const load = async () => {
     setLoading(true);
     try {
       const res = await api.get("/api/v1/users/requests/dealer");
-      setRequests(Array.isArray(res.data)?res.data:[]);
+      setRequests(Array.isArray(res.data) ? res.data : []);
     } catch {} finally { setLoading(false); }
   };
 
-  useEffect(()=>{load();},[]);
+  useEffect(() => { load(); }, []);
 
-  const handleRespond = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!responding||!responseText.trim()) return;
-    setSubmitting(true);
-    try {
-      await api.post(`/api/v1/users/requests/${responding.requestId}/respond`,{
-        response: responseText, progressNote: responseText,
-      });
-      setResponding(null); setResponseText(""); load();
-    } catch (e:any) { alert(e.response?.data?.detail||"Failed"); }
-    finally { setSubmitting(false); }
+  const open = (r:any) => { setSelected(r); setMsg(""); setTab("details"); setResponseType("accept"); setResponseMsg(""); };
+  const close = () => { setSelected(null); setMsg(""); };
+  const refresh = async () => {
+    await load();
+    if (selected) {
+      const fresh = await api.get(`/api/v1/users/requests/${selected.requestId||selected._id}`).catch(()=>null);
+      if (fresh) setSelected(fresh.data);
+    }
   };
 
-  const fmt  = (n:number)=>`NGN ${(n||0).toLocaleString()}`;
-  const fmtDate = (iso:string)=>iso?new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}):"";
+  // Respond to request
+  const submitResponse = async () => {
+    if (!selected) return;
+    setSaving(true); setMsg("");
+    try {
+      const payload: any = { type: responseType, message: responseMsg };
+      if (responseType === "counter") Object.assign(payload, altForm);
+      await api.post(`/api/v1/users/requests/${selected.requestId||selected._id}/respond`, payload);
+      setMsg(responseType==="accept" ? "Accepted! Journey has started. Set up payment plan next." : "Counter-offer sent to buyer!");
+      await refresh();
+    } catch(e:any) { setMsg("Error: "+(e.response?.data?.detail||"Failed")); }
+    finally { setSaving(false); }
+  };
+
+  // Upload evidence image
+  const uploadEvidence = async (file: File) => {
+    setUploadingEvidence(true);
+    try {
+      const fd = new FormData(); fd.append("file", file);
+      const r = await api.post("/api/v1/cars/upload-image", fd, { headers:{"Content-Type":"multipart/form-data"} });
+      const url = r.data?.url || r.data?.secure_url;
+      if (url) setMilestoneEvidence(prev=>[...prev, url]);
+    } catch(e:any) { setMsg("Upload failed: "+(e.response?.data?.detail||"")); }
+    finally { setUploadingEvidence(false); }
+  };
+
+  // Add milestone
+  const submitMilestone = async () => {
+    if (!selected||!milestoneTitle) return;
+    setSaving(true); setMsg("");
+    try {
+      await api.post(`/api/v1/users/requests/${selected.requestId||selected._id}/milestone`, {
+        stage: milestoneStage, title: milestoneTitle, description: milestoneDesc, evidence: milestoneEvidence,
+      });
+      setMsg("Update added! Buyer has been notified.");
+      setMilestoneTitle(""); setMilestoneDesc(""); setMilestoneEvidence([]);
+      await refresh();
+    } catch(e:any) { setMsg("Error: "+(e.response?.data?.detail||"Failed")); }
+    finally { setSaving(false); }
+  };
+
+  // Set payment plan
+  const submitPlan = async () => {
+    if (!selected||!planTotal) return;
+    setSaving(true); setMsg("");
+    try {
+      await api.post(`/api/v1/users/requests/${selected.requestId||selected._id}/payment-plan`, {
+        type: planType, totalAmount: parseFloat(planTotal), currency: "NGN",
+        installments: planType==="installmental" ? installments.map(i=>({...i,amount:parseFloat(i.amount)||0})) : [],
+      });
+      setMsg("Payment plan sent to buyer!");
+      await refresh();
+    } catch(e:any) { setMsg("Error: "+(e.response?.data?.detail||"Failed")); }
+    finally { setSaving(false); }
+  };
+
+  const fmt = (n:number)=>`NGN ${(n||0).toLocaleString()}`;
+  const fmtDate = (iso:any)=>!iso?"":new Date(iso).toLocaleString("en-NG",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
+
+  const filtered = filter==="all" ? requests : requests.filter(r=>r.status===filter);
+  const pending = requests.filter(r=>r.status==="pending").length;
+  const actionNeeded = requests.filter(r=>["pending","accepted"].includes(r.status)).length;
+
+  const canRespond = selected && ["pending"].includes(selected.status);
+  const journeyActive = selected && ["accepted_by_dealer","accepted","completed"].includes(selected.status);
+  const paymentActive = selected && ["accepted_by_dealer","accepted"].includes(selected.status);
 
   return (
-    <div className="req-page">
-      <div className="page-header">
+    <div style={{display:"flex",flexDirection:"column",gap:"1.25rem",paddingBottom:"2rem"}}>
+
+      {/* Header */}
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:"0.75rem"}}>
         <div>
-          <h2 className="page-heading">Customer Requests</h2>
-          <p className="page-sub">{requests.length} request{requests.length!==1?"s":""} received</p>
+          <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.5rem",letterSpacing:"0.05em",color:"#1A1A1A",lineHeight:1}}>Customer Requests</h2>
+          <p style={{fontSize:"0.8rem",color:"#888",marginTop:"0.3rem"}}>
+            {requests.length} total
+            {pending>0&&<span style={{color:"#D97706",fontWeight:700}}> &bull; {pending} need response</span>}
+          </p>
         </div>
-        <button className="refresh-btn" onClick={load}>Refresh</button>
+        <button onClick={load} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"7px",padding:"0.4rem 0.875rem",fontSize:"0.75rem",cursor:"pointer",fontWeight:600}}>Refresh</button>
       </div>
 
-      {loading?<div className="loading"><div className="spinner"/></div>
-      :requests.length===0?(
-        <div className="empty">
-          <div className="empty-icon"></div>
-          <h3>No requests yet</h3>
-          <p>Customer car requests will appear here when buyers submit them</p>
+      {/* Filter tabs */}
+      <div style={{display:"flex",gap:"0.375rem",flexWrap:"wrap"}}>
+        {[["all","All"],["pending","Pending"],["accepted_by_dealer","Accepted"],["countered","Counter Sent"],["accepted","Buyer Accepted"],["completed","Completed"]].map(([v,l])=>(
+          <button key={v} onClick={()=>setFilter(v)}
+            style={{background:filter===v?"#F47B20":"transparent",color:filter===v?"#fff":"#888",border:`1.5px solid ${filter===v?"#F47B20":"#DDD"}`,borderRadius:"20px",padding:"0.3rem 0.875rem",fontSize:"0.72rem",cursor:"pointer",transition:"all 0.2s",whiteSpace:"nowrap"}}>
+            {l}
+            {v==="pending"&&pending>0&&<span style={{background:"rgba(255,255,255,0.3)",borderRadius:"20px",padding:"0 0.35rem",marginLeft:"0.3rem",fontSize:"0.65rem",fontWeight:700}}>{pending}</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* List */}
+      {loading ? (
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"200px"}}>
+          <div style={{width:"28px",height:"28px",border:"2.5px solid #E5E5E5",borderTopColor:"#F47B20",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
         </div>
-      ):(
-        <div className="req-list">
-          {requests.map(r=>{
-            const sc = STATUS_C[r.status]||STATUS_C.pending;
+      ) : filtered.length===0 ? (
+        <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.875rem",padding:"3rem",textAlign:"center",border:"1.5px dashed #E5E5E5",borderRadius:"12px",background:"#fff"}}>
+          <div style={{fontSize:"3rem"}}>&#x1F697;</div>
+          <h3 style={{fontFamily:"var(--font-display)",fontSize:"1.1rem",color:"#1A1A1A"}}>No requests</h3>
+          <p style={{color:"#888",fontSize:"0.875rem"}}>Customer vehicle requests appear here when buyers submit them</p>
+        </div>
+      ) : (
+        <div style={{display:"flex",flexDirection:"column",gap:"0.75rem"}}>
+          {filtered.map(r=>{
+            const sc = STATUS_C[r.status]||"#888";
+            const isPending = r.status==="pending";
             return (
-              <div key={r._id||r.requestId} className="req-card">
-                {/* Header */}
-                <div className="req-header">
-                  <div>
-                    <div className="req-id">{r.requestId}</div>
-                    <div className="req-car">{r.carBrand} {r.carModel} {r.carYear||""}{r.carColor?`  ${r.carColor}`:""}</div>
+              <div key={r._id} onClick={()=>open(r)}
+                style={{background:"#fff",border:`1.5px solid ${isPending?"#F47B20":"#E5E5E5"}`,borderRadius:"12px",padding:"1rem 1.25rem",cursor:"pointer",transition:"all 0.2s",boxShadow:isPending?"0 2px 12px rgba(244,123,32,0.1)":"none"}}
+                onMouseOver={e=>(e.currentTarget as HTMLElement).style.borderColor="#F47B20"}
+                onMouseOut={e=>(e.currentTarget as HTMLElement).style.borderColor=isPending?"#F47B20":"#E5E5E5"}>
+                <div style={{display:"flex",alignItems:"flex-start",gap:"0.875rem",flexWrap:"wrap"}}>
+                  <div style={{flex:1,minWidth:"160px"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:"0.5rem",flexWrap:"wrap",marginBottom:"0.25rem"}}>
+                      <span style={{fontWeight:700,fontSize:"0.875rem",color:"#1A1A1A"}}>{r.carBrand} {r.carModel} {r.carYear||""}</span>
+                      {isPending&&<span style={{fontSize:"0.67rem",background:"#FFF7ED",color:"#C4621A",border:"1px solid rgba(244,123,32,0.4)",borderRadius:"20px",padding:"0.1rem 0.45rem",fontWeight:700}}>Action needed</span>}
+                    </div>
+                    <div style={{fontSize:"0.78rem",color:"#737373"}}>{r.userName||"Buyer"} &bull; {r.paymentType}</div>
+                    {r.budget&&<div style={{fontSize:"0.78rem",color:"#F47B20",fontWeight:600}}>Budget: {fmt(r.budget)}</div>}
+                    {r.description&&<div style={{fontSize:"0.72rem",color:"#A3A3A3",marginTop:"0.15rem",fontStyle:"italic"}}>{r.description.slice(0,80)}{r.description.length>80?"...":""}</div>}
+                    <div style={{fontSize:"0.68rem",color:"#AAA",marginTop:"0.2rem"}}>{fmtDate(r.createdAt)}</div>
                   </div>
-                  <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:"0.35rem"}}>
-                    <span className="req-status" style={{background:sc.bg,color:sc.color,border:`1px solid ${sc.color}44`}}>{r.status}</span>
-                    <span style={{fontSize:"0.68rem",color:"#AAA"}}>{fmtDate(r.createdAt)}</span>
-                  </div>
-                </div>
-
-                {/* Customer info */}
-                <div className="req-section-label">Customer</div>
-                <div className="req-details">
-                  <div className="req-row"><span className="req-label">Name</span><span className="req-val req-strong">{r.userName||"Unknown"}</span></div>
-                  {r.userPhone&&<div className="req-row"><span className="req-label">Phone</span><a href={`tel:${r.userPhone}`} className="req-link">{r.userPhone}</a></div>}
-                </div>
-
-                {/* Vehicle request details */}
-                <div className="req-section-label">Requested Vehicle</div>
-                <div className="req-details">
-                  {r.carBrand&&<div className="req-row"><span className="req-label">Brand</span><span className="req-val">{r.carBrand}</span></div>}
-                  {r.carModel&&<div className="req-row"><span className="req-label">Model</span><span className="req-val">{r.carModel}</span></div>}
-                  {r.carYear&&<div className="req-row"><span className="req-label">Year</span><span className="req-val">{r.carYear}</span></div>}
-                  {r.carColor&&<div className="req-row"><span className="req-label">Color</span><span className="req-val">{r.carColor}</span></div>}
-                  {r.condition&&<div className="req-row"><span className="req-label">Condition</span><span className="req-val" style={{textTransform:"capitalize"}}>{r.condition}</span></div>}
-                  {r.transmission&&<div className="req-row"><span className="req-label">Gearbox</span><span className="req-val" style={{textTransform:"capitalize"}}>{r.transmission}</span></div>}
-                  {r.fuelType&&<div className="req-row"><span className="req-label">Fuel</span><span className="req-val" style={{textTransform:"capitalize"}}>{r.fuelType}</span></div>}
-                  {r.budget&&<div className="req-row"><span className="req-label">Budget</span><span className="req-val req-budget">{fmt(r.budget)}</span></div>}
-                  {r.paymentType&&<div className="req-row"><span className="req-label">Payment</span><span className="req-val" style={{textTransform:"capitalize"}}>{r.paymentType}</span></div>}
-                </div>
-
-                {r.description&&(
-                  <div className="req-note">
-                    <div style={{fontSize:"0.65rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#A3A3A3",marginBottom:"0.35rem"}}>Customer Note</div>
-                    <div style={{fontSize:"0.875rem",color:"#404040",lineHeight:1.6}}>{r.description}</div>
-                  </div>
-                )}
-
-                {/* Reference photo */}
-                {r.referencePhoto&&(
-                  <div>
-                    <div style={{fontSize:"0.65rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#A3A3A3",marginBottom:"0.5rem"}}>Reference Photo</div>
-                    <img src={r.referencePhoto} alt="Reference" style={{width:"100%",maxWidth:"300px",borderRadius:"8px",border:"1.5px solid #E5E5E5",display:"block"}}/>
-                  </div>
-                )}
-
-                {/* Dealer response if exists */}
-                {r.dealerResponse&&(
-                  <div className="my-response">
-                    <div className="mr-label">Your Response:</div>
-                    <div className="mr-text">{r.dealerResponse}</div>
-                    {r.dealerResponseAt&&<div style={{fontSize:"0.68rem",color:"#A3A3A3",marginTop:"0.35rem"}}>Sent {fmtDate(r.dealerResponseAt)}</div>}
-                  </div>
-                )}
-
-                {/* Action buttons */}
-                <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap"}}>
-                  {r.status==="pending"&&(
-                    <button className="respond-btn" onClick={()=>{setResponding(r);setResponseText("");}}>
-                      Reply to Customer
-                    </button>
-                  )}
-                  {r.status==="responded"&&(
-                    <button className="respond-btn" style={{background:"#F5F5F5",color:"#525252",border:"1.5px solid #E5E5E5"}} onClick={()=>{setResponding(r);setResponseText(r.dealerResponse||"");}}>
-                      Update Response
-                    </button>
-                  )}
-                  {r.userPhone&&<a href={`https://wa.me/${r.userPhone.replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer" className="wa-btn">WhatsApp</a>}
-                  {r.userPhone&&<a href={`tel:${r.userPhone}`} className="call-btn">Call</a>}
+                  <span style={{padding:"0.2rem 0.625rem",borderRadius:"20px",fontSize:"0.7rem",fontWeight:700,color:sc,border:`1px solid ${sc}44`,background:`${sc}11`,flexShrink:0}}>
+                    {STATUS_L[r.status]||r.status}
+                  </span>
                 </div>
               </div>
             );
@@ -143,93 +208,336 @@ export default function DealerRequestsPage() {
         </div>
       )}
 
-      {responding&&(
-        <div className="modal-overlay" onClick={()=>setResponding(null)}>
-          <div className="modal" onClick={e=>e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="modal-title">RESPOND TO REQUEST</h3>
-              <button className="modal-close" onClick={()=>setResponding(null)}>X</button>
-            </div>
-            <div className="modal-body">
-              <div className="req-info">
-                <strong>{responding.carBrand} {responding.carModel} {responding.carYear||""}</strong>
-                <span style={{color:"#737373"}}>  from {responding.userName}</span>
+      {/* DETAIL MODAL */}
+      {selected && (
+        <div onClick={close} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"14px",width:"100%",maxWidth:"620px",maxHeight:"94vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(0,0,0,0.18)"}}>
+
+            {/* Modal header */}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"1rem 1.25rem",borderBottom:"1px solid #E5E5E5",position:"sticky",top:0,background:"#fff",zIndex:10}}>
+              <div style={{fontFamily:"var(--font-display)",fontSize:"0.88rem",letterSpacing:"0.08em",color:"#1A1A1A"}}>
+                {selected.carBrand} {selected.carModel} {selected.carYear} &mdash; {STATUS_L[selected.status]||selected.status}
               </div>
-              {responding.budget&&<div style={{fontSize:"0.825rem",color:"#F47B20",fontWeight:600,margin:"0.5rem 0"}}>Budget: NGN {Number(responding.budget).toLocaleString()}</div>}
-              {responding.description&&<div style={{background:"#F5F5F5",borderRadius:"6px",padding:"0.75rem",fontSize:"0.825rem",color:"#525252",marginBottom:"0.75rem",lineHeight:1.55}}>{responding.description}</div>}
-              <form onSubmit={handleRespond}>
-                <div className="field">
-                  <label className="fl">Your Response *</label>
-                  <textarea className="fi fi-ta" rows={5}
-                    placeholder="Tell the customer what you can offer  pricing, availability, condition, delivery time..."
-                    value={responseText} onChange={e=>setResponseText(e.target.value)} required/>
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn-cancel" onClick={()=>setResponding(null)}>Cancel</button>
-                  <button type="submit" className="btn-primary" disabled={submitting}>{submitting?"Sending...":"Send Response"}</button>
-                </div>
-              </form>
+              <button onClick={close} style={{background:"none",border:"none",color:"#AAA",fontSize:"1.1rem",cursor:"pointer",width:"30px",height:"30px",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center"}}
+                onMouseOver={e=>(e.currentTarget.style.background="#F5F5F5")}
+                onMouseOut={e=>(e.currentTarget.style.background="none")}>X</button>
+            </div>
+
+            {/* Tabs */}
+            <div style={{display:"flex",borderBottom:"1px solid #E5E5E5",background:"#FAFAFA"}}>
+              {[["details","Details"],["journey","Journey & Updates"],["payment","Payment"]].map(([t,l])=>(
+                <button key={t} onClick={()=>setTab(t as any)}
+                  style={{flex:1,padding:"0.75rem 0.5rem",border:"none",background:"none",borderBottom:tab===t?"2px solid #F47B20":"2px solid transparent",color:tab===t?"#F47B20":"#888",fontFamily:"var(--font-display)",fontSize:"0.7rem",letterSpacing:"0.07em",cursor:"pointer",textTransform:"uppercase" as const,fontWeight:tab===t?700:400}}>
+                  {l}
+                </button>
+              ))}
+            </div>
+
+            {/* Modal body */}
+            <div style={{overflowY:"auto",flex:1,padding:"1.25rem",display:"flex",flexDirection:"column",gap:"1rem"}}>
+
+              {msg&&<div style={{background:msg.startsWith("Error")?"#FEF2F2":"#F0FDF4",border:"1px solid",borderColor:msg.startsWith("Error")?"#FECACA":"#86EFAC",borderRadius:"8px",padding:"0.75rem 1rem",fontSize:"0.82rem",color:msg.startsWith("Error")?"#DC2626":"#15803D",fontWeight:600}}>{msg}</div>}
+
+              {/* DETAILS TAB */}
+              {tab==="details"&&(
+                <>
+                  {/* Buyer card */}
+                  <div style={{background:"#FFF7ED",border:"1.5px solid rgba(244,123,32,0.2)",borderRadius:"10px",padding:"0.875rem",display:"flex",gap:"0.75rem",alignItems:"center"}}>
+                    <div style={{width:"44px",height:"44px",borderRadius:"50%",background:"#F47B20",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.1rem",fontFamily:"var(--font-display)",flexShrink:0}}>
+                      {(selected.userName||"B").charAt(0).toUpperCase()}
+                    </div>
+                    <div style={{flex:1}}>
+                      <div style={{fontWeight:700,fontSize:"0.9rem",color:"#1A1A1A"}}>{selected.userName||"Buyer"}</div>
+                      <div style={{display:"flex",gap:"0.375rem",marginTop:"0.35rem",flexWrap:"wrap"}}>
+                        {selected.userPhone&&<a href={`tel:${selected.userPhone}`} style={{background:"#EFF6FF",border:"1px solid #BFDBFE",color:"#1D4ED8",borderRadius:"5px",padding:"0.2rem 0.5rem",fontSize:"0.7rem",textDecoration:"none",fontWeight:600}}>Call</a>}
+                        {selected.buyerWhatsapp&&<a href={`https://wa.me/${selected.buyerWhatsapp}`} target="_blank" rel="noreferrer" style={{background:"#F0FDF4",border:"1px solid #86EFAC",color:"#15803D",borderRadius:"5px",padding:"0.2rem 0.5rem",fontSize:"0.7rem",textDecoration:"none",fontWeight:600}}>WhatsApp</a>}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Request info */}
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0.5rem"}}>
+                    {[
+                      ["Vehicle",`${selected.carBrand} ${selected.carModel} ${selected.carYear||""}`],
+                      ["Color", selected.carColor||"Any"],
+                      ["Budget", selected.budget?`NGN ${selected.budget?.toLocaleString()}`:"Not specified"],
+                      ["Payment", selected.paymentType],
+                      ["Condition", selected.condition||"Any"],
+                      ["Transmission", selected.transmission||"Any"],
+                      ["Requested", fmtDate(selected.createdAt)],
+                      ["Status", STATUS_L[selected.status]||selected.status],
+                    ].map(([l,v])=>(
+                      <div key={l} style={{background:"#FAFAFA",border:"1px solid #F0F0F0",borderRadius:"7px",padding:"0.6rem"}}>
+                        <div style={{fontSize:"0.6rem",textTransform:"uppercase" as const,letterSpacing:"0.06em",color:"#AAA",marginBottom:"0.2rem",fontWeight:600}}>{l}</div>
+                        <div style={{fontSize:"0.82rem",color:"#1A1A1A",fontWeight:600,textTransform:"capitalize" as const}}>{v||""}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {selected.description&&(
+                    <div style={{background:"#FAFAFA",border:"1px solid #F0F0F0",borderRadius:"8px",padding:"0.875rem"}}>
+                      <div style={{fontSize:"0.62rem",textTransform:"uppercase" as const,letterSpacing:"0.07em",color:"#AAA",marginBottom:"0.3rem",fontWeight:700}}>Buyer Notes</div>
+                      <p style={{fontSize:"0.875rem",color:"#525252",lineHeight:1.6,margin:0}}>{selected.description}</p>
+                    </div>
+                  )}
+
+                  {selected.referencePhoto&&(
+                    <div style={{background:"#FAFAFA",border:"1px solid #F0F0F0",borderRadius:"8px",padding:"0.875rem"}}>
+                      <div style={{fontSize:"0.62rem",textTransform:"uppercase" as const,letterSpacing:"0.07em",color:"#AAA",marginBottom:"0.5rem",fontWeight:700}}>Reference Photo</div>
+                      <img src={selected.referencePhoto} alt="" style={{width:"100%",maxHeight:"200px",objectFit:"cover",borderRadius:"6px"}}/>
+                    </div>
+                  )}
+
+                  {/* Counter offer sent */}
+                  {selected.counterOffer&&(
+                    <div style={{background:"#F5F3FF",border:"1.5px solid rgba(123,104,238,0.3)",borderRadius:"10px",padding:"0.875rem"}}>
+                      <div style={{fontSize:"0.68rem",textTransform:"uppercase" as const,letterSpacing:"0.08em",color:"#7B68EE",fontWeight:700,marginBottom:"0.5rem"}}>Your Counter-Offer</div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0.375rem"}}>
+                        {[
+                          ["Vehicle",`${selected.counterOffer.carBrand} ${selected.counterOffer.carModel} ${selected.counterOffer.carYear||""}`],
+                          ["Price",`${selected.counterOffer.currency||"NGN"} ${(selected.counterOffer.price||0).toLocaleString()}`],
+                          ["Condition",selected.counterOffer.condition||""],
+                          ["Est. Delivery",selected.counterOffer.estimatedDelivery||"TBD"],
+                        ].map(([l,v])=>(
+                          <div key={l} style={{background:"#fff",borderRadius:"5px",padding:"0.4rem 0.5rem",fontSize:"0.75rem"}}>
+                            <div style={{color:"#A3A3A3",fontSize:"0.58rem",marginBottom:"0.1rem"}}>{l}</div>
+                            <div style={{fontWeight:600,color:"#1A1A1A"}}>{v}</div>
+                          </div>
+                        ))}
+                      </div>
+                      {selected.counterOffer.description&&<p style={{fontSize:"0.78rem",color:"#525252",marginTop:"0.5rem",lineHeight:1.5}}>{selected.counterOffer.description}</p>}
+                    </div>
+                  )}
+
+                  {/* RESPOND FORM */}
+                  {canRespond&&(
+                    <div style={{border:"1.5px solid #E5E5E5",borderRadius:"12px",overflow:"hidden"}}>
+                      <div style={{padding:"0.75rem 1rem",background:"#F5F5F5",borderBottom:"1px solid #E5E5E5",fontFamily:"var(--font-display)",fontSize:"0.72rem",letterSpacing:"0.1em",color:"#525252"}}>RESPOND TO REQUEST</div>
+                      <div style={{padding:"1rem",display:"flex",flexDirection:"column",gap:"0.875rem"}}>
+                        {/* Response type */}
+                        <div style={{display:"flex",gap:"0.5rem"}}>
+                          {[["accept","I Can Fulfil This"],["counter","Suggest Alternative"]].map(([v,l])=>(
+                            <button key={v} onClick={()=>setResponseType(v as any)}
+                              style={{flex:1,padding:"0.625rem",borderRadius:"8px",border:`1.5px solid ${responseType===v?"#F47B20":"#E5E5E5"}`,background:responseType===v?"#FFF7ED":"#fff",color:responseType===v?"#C4621A":"#737373",fontSize:"0.78rem",cursor:"pointer",fontWeight:responseType===v?700:400,transition:"all 0.2s"}}>
+                              {l}
+                            </button>
+                          ))}
+                        </div>
+
+                        {responseType==="counter"&&(
+                          <div style={{display:"flex",flexDirection:"column",gap:"0.625rem",background:"#FAFAFA",borderRadius:"8px",padding:"0.875rem"}}>
+                            <div style={{fontSize:"0.68rem",fontWeight:700,color:"#7B68EE",textTransform:"uppercase" as const,letterSpacing:"0.08em"}}>Alternative Vehicle Details</div>
+                            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0.5rem"}}>
+                              {[["altBrand","Brand"],["altModel","Model"],["altYear","Year"],["altColor","Color"]].map(([k,l])=>(
+                                <div key={k}>
+                                  <div style={{fontSize:"0.62rem",color:"#888",fontWeight:600,marginBottom:"0.2rem",textTransform:"uppercase" as const,letterSpacing:"0.05em"}}>{l}</div>
+                                  <input value={(altForm as any)[k]} onChange={e=>setAltForm(f=>({...f,[k]:e.target.value}))}
+                                    style={{width:"100%",background:"#fff",border:"1px solid #E5E5E5",borderRadius:"5px",padding:"0.4rem 0.5rem",fontSize:"0.8rem",fontFamily:"var(--font-body)",outline:"none",boxSizing:"border-box" as const}}/>
+                                </div>
+                              ))}
+                              <div>
+                                <div style={{fontSize:"0.62rem",color:"#888",fontWeight:600,marginBottom:"0.2rem",textTransform:"uppercase" as const,letterSpacing:"0.05em"}}>Price (NGN)</div>
+                                <input type="number" value={altForm.altPrice} onChange={e=>setAltForm(f=>({...f,altPrice:e.target.value}))}
+                                  style={{width:"100%",background:"#fff",border:"1px solid #E5E5E5",borderRadius:"5px",padding:"0.4rem 0.5rem",fontSize:"0.8rem",fontFamily:"var(--font-body)",outline:"none",boxSizing:"border-box" as const}}/>
+                              </div>
+                              <div>
+                                <div style={{fontSize:"0.62rem",color:"#888",fontWeight:600,marginBottom:"0.2rem",textTransform:"uppercase" as const,letterSpacing:"0.05em"}}>Est. Delivery</div>
+                                <input value={altForm.estimatedDelivery} onChange={e=>setAltForm(f=>({...f,estimatedDelivery:e.target.value}))} placeholder="e.g. 4-6 weeks"
+                                  style={{width:"100%",background:"#fff",border:"1px solid #E5E5E5",borderRadius:"5px",padding:"0.4rem 0.5rem",fontSize:"0.8rem",fontFamily:"var(--font-body)",outline:"none",boxSizing:"border-box" as const}}/>
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{fontSize:"0.62rem",color:"#888",fontWeight:600,marginBottom:"0.2rem",textTransform:"uppercase" as const,letterSpacing:"0.05em"}}>Description of Alternative</div>
+                              <textarea rows={2} value={altForm.altDescription} onChange={e=>setAltForm(f=>({...f,altDescription:e.target.value}))}
+                                style={{width:"100%",background:"#fff",border:"1px solid #E5E5E5",borderRadius:"5px",padding:"0.4rem 0.5rem",fontSize:"0.8rem",fontFamily:"var(--font-body)",outline:"none",resize:"vertical" as const,boxSizing:"border-box" as const}}/>
+                            </div>
+                          </div>
+                        )}
+
+                        <div>
+                          <div style={{fontSize:"0.68rem",color:"#888",fontWeight:600,marginBottom:"0.3rem",textTransform:"uppercase" as const,letterSpacing:"0.05em"}}>Message to Buyer</div>
+                          <textarea rows={2} value={responseMsg} onChange={e=>setResponseMsg(e.target.value)}
+                            placeholder={responseType==="accept"?"e.g. We can source this vehicle for you...":"e.g. We cannot get your exact request but we have a great alternative..."}
+                            style={{width:"100%",background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"7px",padding:"0.6rem 0.75rem",fontSize:"0.875rem",fontFamily:"var(--font-body)",outline:"none",resize:"vertical" as const,boxSizing:"border-box" as const}}/>
+                        </div>
+
+                        <div style={{display:"flex",gap:"0.5rem"}}>
+                          <button onClick={submitResponse} disabled={saving}
+                            style={{flex:1,background:responseType==="accept"?"#16A34A":"#7B68EE",color:"#fff",border:"none",borderRadius:"8px",padding:"0.75rem",fontFamily:"var(--font-display)",fontSize:"0.82rem",cursor:"pointer",letterSpacing:"0.06em",fontWeight:700,opacity:saving?0.6:1}}>
+                            {saving?"Sending...":(responseType==="accept"?"Accept & Start Journey":"Send Counter-Offer")}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* JOURNEY TAB */}
+              {tab==="journey"&&(
+                <>
+                  {/* Existing milestones */}
+                  {selected.journey?.milestones?.length>0?(
+                    <div style={{display:"flex",flexDirection:"column",gap:0}}>
+                      {[...selected.journey.milestones].reverse().map((m:any,i:number)=>(
+                        <div key={m.id||i} style={{display:"flex",gap:"0.875rem",paddingBottom:"1rem"}}>
+                          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:0}}>
+                            <div style={{width:"32px",height:"32px",borderRadius:"50%",background:"#F47B20",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.75rem",fontWeight:700,flexShrink:0}}>
+                              {i===0?"NOW":(i+1)}
+                            </div>
+                            <div style={{width:"2px",flex:1,background:"#E5E5E5",marginTop:"4px"}}/>
+                          </div>
+                          <div style={{flex:1,paddingBottom:"0.5rem"}}>
+                            <div style={{fontWeight:700,fontSize:"0.875rem",color:"#1A1A1A"}}>{m.title}</div>
+                            <div style={{fontSize:"0.72rem",color:"#A3A3A3",marginBottom:"0.35rem"}}>{fmtDate(m.addedAt)}</div>
+                            {m.description&&<p style={{fontSize:"0.82rem",color:"#525252",margin:"0 0 0.5rem",lineHeight:1.55}}>{m.description}</p>}
+                            {m.evidence?.length>0&&(
+                              <div style={{display:"flex",gap:"0.375rem",flexWrap:"wrap"}}>
+                                {m.evidence.map((url:string,ei:number)=>(
+                                  <a key={ei} href={url} target="_blank" rel="noreferrer">
+                                    <img src={url} alt="" style={{width:"64px",height:"48px",objectFit:"cover",borderRadius:"5px",border:"1px solid #E5E5E5"}}/>
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ):(
+                    <div style={{textAlign:"center",padding:"1.5rem",color:"#A3A3A3",fontSize:"0.85rem",background:"#FAFAFA",borderRadius:"8px"}}>No updates yet</div>
+                  )}
+
+                  {/* Add milestone form - only if journey active */}
+                  {journeyActive&&(
+                    <div style={{border:"1.5px solid #E5E5E5",borderRadius:"10px",overflow:"hidden"}}>
+                      <div style={{padding:"0.75rem 1rem",background:"#F5F5F5",borderBottom:"1px solid #E5E5E5",fontFamily:"var(--font-display)",fontSize:"0.7rem",letterSpacing:"0.1em",color:"#525252"}}>ADD UPDATE / EVIDENCE</div>
+                      <div style={{padding:"1rem",display:"flex",flexDirection:"column",gap:"0.75rem"}}>
+                        <div>
+                          <div style={{fontSize:"0.62rem",color:"#888",fontWeight:700,marginBottom:"0.3rem",textTransform:"uppercase" as const,letterSpacing:"0.05em"}}>Stage</div>
+                          <select value={milestoneStage} onChange={e=>setMilestoneStage(e.target.value)}
+                            style={{width:"100%",background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"7px",padding:"0.5rem 0.75rem",fontSize:"0.875rem",fontFamily:"var(--font-body)",outline:"none",boxSizing:"border-box" as const}}>
+                            {STAGES.map(s=><option key={s.id} value={s.id}>{s.label}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <div style={{fontSize:"0.62rem",color:"#888",fontWeight:700,marginBottom:"0.3rem",textTransform:"uppercase" as const,letterSpacing:"0.05em"}}>Title *</div>
+                          <input value={milestoneTitle} onChange={e=>setMilestoneTitle(e.target.value)} placeholder="e.g. Payment received, Vehicle shipped..."
+                            style={{width:"100%",background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"7px",padding:"0.5rem 0.75rem",fontSize:"0.875rem",fontFamily:"var(--font-body)",outline:"none",boxSizing:"border-box" as const}}/>
+                        </div>
+                        <div>
+                          <div style={{fontSize:"0.62rem",color:"#888",fontWeight:700,marginBottom:"0.3rem",textTransform:"uppercase" as const,letterSpacing:"0.05em"}}>Details</div>
+                          <textarea rows={2} value={milestoneDesc} onChange={e=>setMilestoneDesc(e.target.value)} placeholder="Describe what happened..."
+                            style={{width:"100%",background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"7px",padding:"0.5rem 0.75rem",fontSize:"0.875rem",fontFamily:"var(--font-body)",outline:"none",resize:"vertical" as const,boxSizing:"border-box" as const}}/>
+                        </div>
+
+                        {/* Evidence upload */}
+                        <div>
+                          <div style={{fontSize:"0.62rem",color:"#888",fontWeight:700,marginBottom:"0.3rem",textTransform:"uppercase" as const,letterSpacing:"0.05em"}}>Evidence (photos/docs)</div>
+                          <div style={{display:"flex",gap:"0.375rem",flexWrap:"wrap",marginBottom:"0.375rem"}}>
+                            {milestoneEvidence.map((url,i)=>(
+                              <div key={i} style={{position:"relative"}}>
+                                <img src={url} alt="" style={{width:"56px",height:"44px",objectFit:"cover",borderRadius:"5px",border:"1px solid #E5E5E5"}}/>
+                                <button onClick={()=>setMilestoneEvidence(prev=>prev.filter((_,j)=>j!==i))}
+                                  style={{position:"absolute",top:"-4px",right:"-4px",background:"#DC2626",color:"#fff",border:"none",borderRadius:"50%",width:"16px",height:"16px",cursor:"pointer",fontSize:"0.55rem",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>x</button>
+                              </div>
+                            ))}
+                            <button onClick={()=>evidenceRef.current?.click()} disabled={uploadingEvidence}
+                              style={{width:"56px",height:"44px",background:"#F5F5F5",border:"1.5px dashed #E5E5E5",borderRadius:"5px",cursor:"pointer",fontSize:"1.2rem",color:"#AAA",display:"flex",alignItems:"center",justifyContent:"center",opacity:uploadingEvidence?0.6:1}}>
+                              {uploadingEvidence?"...":"+"}
+                            </button>
+                            <input ref={evidenceRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files?.[0])uploadEvidence(e.target.files[0]);e.target.value="";}}/>
+                          </div>
+                        </div>
+
+                        <button onClick={submitMilestone} disabled={saving||!milestoneTitle}
+                          style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.75rem",fontFamily:"var(--font-display)",fontSize:"0.82rem",cursor:"pointer",letterSpacing:"0.06em",fontWeight:700,opacity:saving||!milestoneTitle?0.6:1}}>
+                          {saving?"Posting...":"Post Update to Buyer"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* PAYMENT TAB */}
+              {tab==="payment"&&(
+                <>
+                  {selected.journey?.paymentPlan ? (
+                    <div style={{display:"flex",flexDirection:"column",gap:"0.75rem"}}>
+                      <div style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"9px",padding:"0.875rem"}}>
+                        <div style={{fontWeight:700,fontSize:"0.875rem",color:"#15803D"}}>
+                          {selected.journey.paymentPlan.type==="full"?"Full Payment":"Installment Plan"} &mdash; NGN {(selected.journey.paymentPlan.totalAmount||0).toLocaleString()}
+                        </div>
+                      </div>
+                      {selected.journey.paymentPlan.installments?.map((inst:any,i:number)=>(
+                        <div key={i} style={{background:"#FAFAFA",border:"1px solid #E5E5E5",borderRadius:"8px",padding:"0.875rem",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"0.5rem"}}>
+                          <div>
+                            <div style={{fontWeight:700,fontSize:"0.875rem",color:"#1A1A1A"}}>{inst.label||`Installment ${i+1}`}</div>
+                            <div style={{fontSize:"0.78rem",color:"#888"}}>NGN {(inst.amount||0).toLocaleString()} &bull; Due: {inst.dueDate||"TBD"}</div>
+                            {inst.evidence&&<a href={inst.evidence} target="_blank" rel="noreferrer" style={{fontSize:"0.7rem",color:"#F47B20",textDecoration:"none",fontWeight:600}}>View Receipt</a>}
+                          </div>
+                          {inst.paid
+                            ? <span style={{background:"#F0FDF4",color:"#15803D",border:"1px solid #86EFAC",borderRadius:"20px",padding:"0.2rem 0.625rem",fontSize:"0.7rem",fontWeight:700}}>Paid</span>
+                            : <span style={{background:"#FFF7ED",color:"#D97706",border:"1px solid #FDE68A",borderRadius:"20px",padding:"0.2rem 0.625rem",fontSize:"0.7rem",fontWeight:700}}>Pending</span>
+                          }
+                        </div>
+                      ))}
+                    </div>
+                  ) : paymentActive ? (
+                    <div style={{border:"1.5px solid #E5E5E5",borderRadius:"10px",overflow:"hidden"}}>
+                      <div style={{padding:"0.75rem 1rem",background:"#F5F5F5",borderBottom:"1px solid #E5E5E5",fontFamily:"var(--font-display)",fontSize:"0.7rem",letterSpacing:"0.1em",color:"#525252"}}>SET PAYMENT PLAN</div>
+                      <div style={{padding:"1rem",display:"flex",flexDirection:"column",gap:"0.875rem"}}>
+                        <div style={{display:"flex",gap:"0.5rem"}}>
+                          {[["full","Full Payment"],["installmental","Installments"]].map(([v,l])=>(
+                            <button key={v} onClick={()=>setPlanType(v as any)}
+                              style={{flex:1,padding:"0.5rem",borderRadius:"7px",border:`1.5px solid ${planType===v?"#F47B20":"#E5E5E5"}`,background:planType===v?"#FFF7ED":"#fff",color:planType===v?"#C4621A":"#737373",fontSize:"0.78rem",cursor:"pointer",fontWeight:planType===v?700:400}}>
+                              {l}
+                            </button>
+                          ))}
+                        </div>
+                        <div>
+                          <div style={{fontSize:"0.62rem",color:"#888",fontWeight:700,marginBottom:"0.3rem",textTransform:"uppercase" as const,letterSpacing:"0.05em"}}>Total Amount (NGN) *</div>
+                          <input type="number" value={planTotal} onChange={e=>setPlanTotal(e.target.value)} placeholder="0"
+                            style={{width:"100%",background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"7px",padding:"0.5rem 0.75rem",fontSize:"0.875rem",fontFamily:"var(--font-body)",outline:"none",boxSizing:"border-box" as const}}/>
+                        </div>
+                        {planType==="installmental"&&(
+                          <div style={{display:"flex",flexDirection:"column",gap:"0.5rem"}}>
+                            <div style={{fontSize:"0.62rem",color:"#888",fontWeight:700,textTransform:"uppercase" as const,letterSpacing:"0.05em"}}>Installments</div>
+                            {installments.map((inst,i)=>(
+                              <div key={i} style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr auto",gap:"0.375rem",alignItems:"center"}}>
+                                <input placeholder="Label" value={inst.label} onChange={e=>setInstallments(prev=>prev.map((x,j)=>j===i?{...x,label:e.target.value}:x))}
+                                  style={{background:"#F5F5F5",border:"1px solid #E5E5E5",borderRadius:"5px",padding:"0.35rem 0.5rem",fontSize:"0.78rem",fontFamily:"var(--font-body)",outline:"none"}}/>
+                                <input type="number" placeholder="Amount" value={inst.amount} onChange={e=>setInstallments(prev=>prev.map((x,j)=>j===i?{...x,amount:e.target.value}:x))}
+                                  style={{background:"#F5F5F5",border:"1px solid #E5E5E5",borderRadius:"5px",padding:"0.35rem 0.5rem",fontSize:"0.78rem",fontFamily:"var(--font-body)",outline:"none"}}/>
+                                <input type="date" value={inst.dueDate} onChange={e=>setInstallments(prev=>prev.map((x,j)=>j===i?{...x,dueDate:e.target.value}:x))}
+                                  style={{background:"#F5F5F5",border:"1px solid #E5E5E5",borderRadius:"5px",padding:"0.35rem 0.5rem",fontSize:"0.72rem",fontFamily:"var(--font-body)",outline:"none"}}/>
+                                {i>0&&<button onClick={()=>setInstallments(prev=>prev.filter((_,j)=>j!==i))} style={{background:"#FEF2F2",color:"#DC2626",border:"none",borderRadius:"4px",cursor:"pointer",padding:"0.2rem 0.4rem",fontSize:"0.7rem",fontWeight:700}}>x</button>}
+                              </div>
+                            ))}
+                            <button onClick={()=>setInstallments(prev=>[...prev,{label:`Installment ${prev.length+1}`,amount:"",dueDate:"",paid:false}])}
+                              style={{background:"#F5F5F5",border:"1.5px dashed #E5E5E5",color:"#888",borderRadius:"7px",padding:"0.4rem",fontSize:"0.75rem",cursor:"pointer",fontWeight:600}}>
+                              + Add Installment
+                            </button>
+                          </div>
+                        )}
+                        <button onClick={submitPlan} disabled={saving||!planTotal}
+                          style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.75rem",fontFamily:"var(--font-display)",fontSize:"0.82rem",cursor:"pointer",letterSpacing:"0.06em",fontWeight:700,opacity:saving||!planTotal?0.6:1}}>
+                          {saving?"Saving...":"Send Payment Plan to Buyer"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{textAlign:"center",padding:"2rem",color:"#A3A3A3",fontSize:"0.85rem",background:"#FAFAFA",borderRadius:"8px"}}>
+                      Payment plan available after accepting the request
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
       )}
-
-      <style>{`
-        .req-page{display:flex;flex-direction:column;gap:1.5rem}
-        .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap}
-        .page-heading{font-family:var(--font-display);font-size:1.6rem;letter-spacing:0.05em;color:#1A1A1A;line-height:1}
-        .page-sub{font-size:0.8rem;color:#888;margin-top:0.3rem}
-        .refresh-btn{background:#fff;border:1.5px solid #E5E5E5;color:#666;border-radius:6px;padding:0.6rem 1rem;font-size:0.825rem;cursor:pointer;transition:all 0.2s;font-family:var(--font-body)}
-        .refresh-btn:hover{border-color:#F47B20;color:#F47B20}
-        .loading{display:flex;align-items:center;justify-content:center;min-height:200px}
-        .spinner{width:28px;height:28px;border:2.5px solid #E5E5E5;border-top-color:#F47B20;border-radius:50%;animation:spin 0.8s linear infinite}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        .empty{display:flex;flex-direction:column;align-items:center;gap:0.875rem;padding:3rem;text-align:center;border:1.5px dashed #E5E5E5;border-radius:12px;background:#FAFAFA}
-        .empty-icon{font-size:3rem}
-        .empty h3{font-family:var(--font-display);font-size:1.2rem;color:#1A1A1A}
-        .empty p{color:#888;font-size:0.875rem;max-width:320px}
-        .req-list{display:flex;flex-direction:column;gap:1rem}
-        .req-card{background:#fff;border:1.5px solid #E5E5E5;border-radius:12px;padding:1.25rem;display:flex;flex-direction:column;gap:0.875rem;transition:border-color 0.2s}
-        .req-card:hover{border-color:#F47B20}
-        .req-header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}
-        .req-id{font-family:var(--font-mono);font-size:0.7rem;color:#AAA;margin-bottom:0.25rem}
-        .req-car{font-weight:700;font-size:1rem;color:#1A1A1A}
-        .req-status{padding:0.25rem 0.75rem;border-radius:20px;font-size:0.7rem;font-weight:600;text-transform:capitalize;border:1px solid}
-        .req-section-label{font-size:0.65rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#A3A3A3;padding-bottom:0.25rem;border-bottom:1px solid #F0F0F0}
-        .req-details{display:flex;flex-direction:column;gap:0.3rem}
-        .req-row{display:flex;gap:0.75rem;align-items:baseline}
-        .req-label{font-size:0.7rem;color:#AAA;text-transform:uppercase;letter-spacing:0.06em;min-width:70px;flex-shrink:0}
-        .req-val{font-size:0.875rem;color:#404040}
-        .req-strong{font-weight:700;color:#1A1A1A;font-size:0.95rem}
-        .req-budget{font-family:var(--font-display);font-size:1rem;color:#F47B20;font-weight:700}
-        .req-link{font-size:0.875rem;color:#3B8BD4;text-decoration:none;font-weight:600}
-        .req-link:hover{text-decoration:underline}
-        .req-note{background:#F5F5F5;borderRadius:8px;padding:0.875rem;border-left:3px solid #F47B20}
-        .my-response{background:#FFF7ED;border:1.5px solid rgba(244,123,32,0.3);border-radius:8px;padding:0.875rem}
-        .mr-label{font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;color:#F47B20;margin-bottom:0.35rem;font-weight:700}
-        .mr-text{font-size:0.875rem;color:#555;line-height:1.6}
-        .respond-btn{background:#F47B20;color:#fff;border:none;border-radius:6px;padding:0.65rem 1.25rem;font-family:var(--font-display);font-size:0.875rem;letter-spacing:0.06em;cursor:pointer;transition:background 0.2s;white-space:nowrap}
-        .respond-btn:hover{background:#FF9340}
-        .wa-btn{background:#F0FDF4;color:#15803D;border:1.5px solid #86EFAC;border-radius:6px;padding:0.55rem 0.875rem;font-size:0.8rem;font-weight:600;text-decoration:none;white-space:nowrap;transition:all 0.2s}
-        .wa-btn:hover{background:#15803D;color:#fff}
-        .call-btn{background:#EFF6FF;color:#1D4ED8;border:1.5px solid #BFDBFE;border-radius:6px;padding:0.55rem 0.875rem;font-size:0.8rem;font-weight:600;text-decoration:none;white-space:nowrap}
-        .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:1000;padding:1rem}
-        .modal{background:#fff;border-radius:14px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.18)}
-        .modal-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid #E5E5E5;position:sticky;top:0;background:#fff;z-index:1}
-        .modal-title{font-family:var(--font-display);font-size:1rem;letter-spacing:0.1em;color:#1A1A1A}
-        .modal-close{background:none;border:none;color:#AAA;font-size:1rem;cursor:pointer;font-weight:700}
-        .modal-body{padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:0.875rem}
-        .req-info{background:#F5F5F5;border-radius:6px;padding:0.75rem;font-size:0.9rem}
-        .field{display:flex;flex-direction:column;gap:0.4rem}
-        .fl{font-size:0.7rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#737373}
-        .fi{background:#F5F5F5;border:1.5px solid #DDD;border-radius:6px;padding:0.7rem;color:#1A1A1A;font-size:0.875rem;font-family:var(--font-body);outline:none;transition:border-color 0.2s;width:100%;box-sizing:border-box}
-        .fi:focus{border-color:#F47B20;background:#fff}
-        .fi-ta{resize:vertical;min-height:100px}
-        .modal-footer{display:flex;gap:0.75rem;justify-content:flex-end;padding-top:0.75rem;border-top:1px solid #E5E5E5;margin-top:0.5rem}
-        .btn-primary{background:#F47B20;color:#fff;border:none;border-radius:6px;padding:0.65rem 1.25rem;font-family:var(--font-display);font-size:0.875rem;cursor:pointer;transition:background 0.2s}
-        .btn-primary:hover{background:#FF9340}.btn-primary:disabled{opacity:0.6;cursor:not-allowed}
-        .btn-cancel{background:#F5F5F5;border:1.5px solid #E5E5E5;color:#525252;border-radius:6px;padding:0.65rem 1.25rem;font-size:0.875rem;cursor:pointer}
-      `}</style>
     </div>
   );
 }

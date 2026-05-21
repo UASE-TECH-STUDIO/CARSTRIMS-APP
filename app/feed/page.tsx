@@ -73,7 +73,7 @@ export default function FeedPage() {
   ].filter(Boolean);
 
   const buildParams = useCallback((skip = 0) => {
-    const p: any = { skip, limit: LIMIT };
+    const p: any = { skip, limit: LIMIT, sort: "score" };
     if (search) p.search = search;
     if (selectedBrand) p.brand = selectedBrand;
     if (fState) p.city = fState;
@@ -839,7 +839,3 @@ export default function FeedPage() {
     </div>
   );
 }
-
-
-
-

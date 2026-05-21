@@ -149,6 +149,112 @@ export default function UserRequestsPage() {
                     {r.dealerResponseAt&&<div style={{fontSize:"0.68rem",color:"#A3A3A3"}}>Responded {fmtDate(r.dealerResponseAt)}</div>}
                   </div>
                 )}
+
+                {/* Counter-offer from dealer */}
+                {r.counterOffer&&r.status==="countered"&&(
+                  <div style={{background:"#F5F3FF",border:"1.5px solid rgba(123,104,238,0.35)",borderRadius:"10px",padding:"1rem",display:"flex",flexDirection:"column",gap:"0.625rem"}}>
+                    <div style={{fontSize:"0.68rem",fontWeight:800,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#7B68EE"}}>
+                      {r.dealerName} Has an Alternative for You
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0.375rem"}}>
+                      {[
+                        ["Vehicle",`${r.counterOffer.carBrand||""} ${r.counterOffer.carModel||""} ${r.counterOffer.carYear||""}`],
+                        ["Price",`${r.counterOffer.currency||"NGN"} ${(r.counterOffer.price||0).toLocaleString()}`],
+                        ["Condition",r.counterOffer.condition||""],
+                        ["Delivery",r.counterOffer.estimatedDelivery||"TBD"],
+                      ].map(([l,v])=>(
+                        <div key={l as string} style={{background:"#fff",borderRadius:"5px",padding:"0.4rem 0.5rem"}}>
+                          <div style={{fontSize:"0.58rem",color:"#AAA",marginBottom:"0.1rem"}}>{l}</div>
+                          <div style={{fontWeight:600,fontSize:"0.78rem",color:"#1A1A1A"}}>{v||""}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {r.counterOffer.description&&<p style={{fontSize:"0.8rem",color:"#525252",margin:0,lineHeight:1.5}}>{r.counterOffer.description}</p>}
+                    <div style={{display:"flex",gap:"0.5rem",marginTop:"0.25rem"}}>
+                      <button
+                        onClick={async()=>{
+                          try{await api.post(`/api/v1/users/requests/${r.requestId||r._id}/accept`);load();}
+                          catch(e:any){alert(e.response?.data?.detail||"Failed");}
+                        }}
+                        style={{flex:1,background:"#16A34A",color:"#fff",border:"none",borderRadius:"7px",padding:"0.6rem",fontFamily:"var(--font-display)",fontSize:"0.78rem",cursor:"pointer",letterSpacing:"0.06em",fontWeight:700}}>
+                        Accept Offer
+                      </button>
+                      <button
+                        onClick={async()=>{
+                          if(!confirm("Decline this offer?"))return;
+                          try{await api.post(`/api/v1/users/requests/${r.requestId||r._id}/decline`,{reason:"Declined by buyer"});load();}
+                          catch(e:any){alert(e.response?.data?.detail||"Failed");}
+                        }}
+                        style={{flex:1,background:"#FEF2F2",color:"#DC2626",border:"1.5px solid #FECACA",borderRadius:"7px",padding:"0.6rem",fontSize:"0.78rem",cursor:"pointer",fontWeight:600}}>
+                        Decline
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Journey milestones */}
+                {r.journey?.milestones?.length>0&&(
+                  <div style={{display:"flex",flexDirection:"column",gap:"0.5rem"}}>
+                    <div style={{fontSize:"0.68rem",fontWeight:800,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#737373"}}>Order Journey</div>
+                    {[...r.journey.milestones].reverse().map((m:any,i:number)=>(
+                      <div key={i} style={{background:"#FAFAFA",border:"1px solid #F0F0F0",borderRadius:"8px",padding:"0.75rem",display:"flex",gap:"0.75rem",alignItems:"flex-start"}}>
+                        <div style={{width:"28px",height:"28px",borderRadius:"50%",background:"#F47B20",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.65rem",fontWeight:700,flexShrink:0}}>
+                          {i===0?"NEW":(i+1)}
+                        </div>
+                        <div style={{flex:1}}>
+                          <div style={{fontWeight:700,fontSize:"0.83rem",color:"#1A1A1A"}}>{m.title}</div>
+                          <div style={{fontSize:"0.7rem",color:"#A3A3A3",marginBottom:"0.25rem"}}>{m.addedAt?new Date(m.addedAt).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}):""}</div>
+                          {m.description&&<p style={{fontSize:"0.78rem",color:"#525252",margin:"0 0 0.35rem",lineHeight:1.5}}>{m.description}</p>}
+                          {m.evidence?.length>0&&(
+                            <div style={{display:"flex",gap:"0.3rem",flexWrap:"wrap"}}>
+                              {m.evidence.map((url:string,ei:number)=>(
+                                <a key={ei} href={url} target="_blank" rel="noreferrer">
+                                  <img src={url} alt="" style={{width:"52px",height:"40px",objectFit:"cover",borderRadius:"4px",border:"1px solid #E5E5E5"}}/>
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Payment plan */}
+                {r.journey?.paymentPlan&&(
+                  <div style={{border:"1.5px solid #E5E5E5",borderRadius:"10px",overflow:"hidden"}}>
+                    <div style={{padding:"0.625rem 0.875rem",background:"#F5F5F5",borderBottom:"1px solid #E5E5E5",fontFamily:"var(--font-display)",fontSize:"0.68rem",letterSpacing:"0.1em",color:"#525252"}}>PAYMENT PLAN</div>
+                    <div style={{padding:"0.875rem",display:"flex",flexDirection:"column",gap:"0.5rem"}}>
+                      <div style={{fontWeight:700,fontSize:"0.875rem",color:"#1A1A1A"}}>
+                        {r.journey.paymentPlan.type==="full"?"Full Payment":"Installments"} &mdash; NGN {(r.journey.paymentPlan.totalAmount||0).toLocaleString()}
+                      </div>
+                      {r.journey.paymentPlan.installments?.map((inst:any,i:number)=>(
+                        <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"0.5rem 0",borderBottom:"1px solid #F5F5F5",flexWrap:"wrap",gap:"0.5rem"}}>
+                          <div>
+                            <div style={{fontWeight:600,fontSize:"0.82rem"}}>{inst.label||`Installment ${i+1}`}</div>
+                            <div style={{fontSize:"0.72rem",color:"#888"}}>NGN {(inst.amount||0).toLocaleString()} &bull; {inst.dueDate||"TBD"}</div>
+                          </div>
+                          <span style={{fontSize:"0.7rem",fontWeight:700,padding:"0.18rem 0.5rem",borderRadius:"20px",background:inst.paid?"#F0FDF4":"#FFF7ED",color:inst.paid?"#15803D":"#D97706"}}>
+                            {inst.paid?"Paid":"Pending"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Cancel pending request */}
+                {r.status==="pending"&&(
+                  <button
+                    onClick={async()=>{
+                      if(!confirm("Cancel this request?"))return;
+                      try{await api.post(`/api/v1/users/requests/${r.requestId||r._id}/cancel`);load();}
+                      catch(e:any){alert(e.response?.data?.detail||"Failed");}
+                    }}
+                    style={{background:"#FEF2F2",color:"#DC2626",border:"1.5px solid #FECACA",borderRadius:"7px",padding:"0.5rem 0.875rem",fontSize:"0.75rem",cursor:"pointer",fontWeight:600,alignSelf:"flex-start"}}>
+                    Cancel Request
+                  </button>
+                )}
               </div>
             );
           })}
