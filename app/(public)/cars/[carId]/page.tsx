@@ -184,8 +184,12 @@ export default function CarDetailPage() {
       <header className="cd-topbar">
         <button className="cd-back" onClick={()=>router.back()}>Back</button>
         <div className="cd-topbar-right">
-          <button className={`cd-action ${liked?"liked":""}`} onClick={handleLike}>{liked?"[heart]":"[o]"} {likeCount}</button>
-          <button className={`cd-action ${favorited?"faved":""}`} onClick={handleFavorite}>{favorited?" Saved":" Save"}</button>
+          <button className={`cd-action ${liked?"liked":""}`} onClick={handleLike} title={liked?"Unlike":"Like"}>
+            {liked ? "Liked" : "Like"} {likeCount > 0 ? `(${likeCount})` : ""}
+          </button>
+          <button className={`cd-action ${favorited?"faved":""}`} onClick={handleFavorite} title={favorited?"Remove from saved":"Save vehicle"}>
+            {favorited ? "Saved" : "Save"}
+          </button>
           <button className="cd-action" onClick={handleShare}>Share</button>
           {isAdmin && <button className="cd-action cd-del" onClick={handleAdminDeleteCar}>Del</button>}
         </div>

@@ -194,6 +194,25 @@ export default function SuperAdminUserDetail() {
   );
 
   // Document card with upload/remove
+  // Force download even for cross-origin Cloudinary URLs
+  const downloadFile = async (url: string, label: string) => {
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const ext = url.split("?")[0].split(".").pop() || "jpg";
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${profile?.fullName?.replace(/\s+/g,"_")||"document"}_${label.replace(/\s+/g,"_")}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+    } catch {
+      // Fallback: open in new tab
+      window.open(url, "_blank");
+    }
+  };
+
   const DocCard = ({url,label,field,isPdf}:{url?:string|null,label:string,field:string,isPdf?:boolean}) => (
     <div style={{border:"1.5px solid #E5E5E5",borderRadius:"10px",overflow:"hidden",background:"#fff"}}>
       <div style={{padding:"0.5rem 0.75rem",background:"#F5F5F5",borderBottom:"1px solid #E5E5E5",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
@@ -203,8 +222,8 @@ export default function SuperAdminUserDetail() {
             <>
               <button onClick={()=>setPreview({src:url,isPdf:isPdf||false})}
                 style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"4px",padding:"0.18rem 0.5rem",fontSize:"0.62rem",cursor:"pointer",fontWeight:700}}>View</button>
-              <a href={url} download target="_blank" rel="noreferrer"
-                style={{background:"#1A1A1A",color:"#fff",borderRadius:"4px",padding:"0.18rem 0.5rem",fontSize:"0.62rem",textDecoration:"none",fontWeight:700}}>DL</a>
+              <button onClick={()=>downloadFile(url, label)}
+                style={{background:"#1A1A1A",color:"#fff",border:"none",borderRadius:"4px",padding:"0.18rem 0.5rem",fontSize:"0.62rem",cursor:"pointer",fontWeight:700}}>Download</button>
               <button onClick={()=>removeDoc(field)}
                 style={{background:"#FEF2F2",color:"#DC2626",border:"1px solid #FECACA",borderRadius:"4px",padding:"0.18rem 0.5rem",fontSize:"0.62rem",cursor:"pointer",fontWeight:700}}>Remove</button>
             </>
