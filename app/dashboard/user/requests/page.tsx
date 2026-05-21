@@ -2,190 +2,234 @@
 import { useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
 
-const STATUS_C: Record<string,{bg:string;color:string}> = {
-  pending:   {bg:"#FFF7ED",color:"#D97706"},
-  responded: {bg:"#F0FDF4",color:"#16A34A"},
-  rejected:  {bg:"#FEF2F2",color:"#DC2626"},
-  completed: {bg:"#EFF6FF",color:"#3B8BD4"},
+const STATUS_C: Record<string,{bg:string;color:string;label:string}> = {
+  pending:          {bg:"#FFF7ED",  color:"#D97706", label:"Pending"},
+  countered:        {bg:"#F5F3FF",  color:"#7B68EE", label:"Counter Offer"},
+  accepted_by_dealer:{bg:"#F0FDF4", color:"#16A34A", label:"Dealer Accepted"},
+  accepted:         {bg:"#F0FDF4",  color:"#16A34A", label:"In Progress"},
+  declined:         {bg:"#FEF2F2",  color:"#DC2626", label:"Declined"},
+  cancelled:        {bg:"#F5F5F5",  color:"#888",    label:"Cancelled"},
+  completed:        {bg:"#EFF6FF",  color:"#3B8BD4", label:"Completed"},
+  responded:        {bg:"#F0FDF4",  color:"#16A34A", label:"Responded"},
+  rejected:         {bg:"#FEF2F2",  color:"#DC2626", label:"Rejected"},
 };
 
 const BRANDS = ["Toyota","Honda","Mercedes","BMW","Lexus","Ford","Hyundai","Kia","Nissan","Audi","Land Rover","Jeep","Peugeot","Mitsubishi","Subaru","Volkswagen","Other"];
 const TRANS  = ["automatic","manual","semi-automatic","cvt","any"];
 const FUELS  = ["petrol","diesel","electric","hybrid","any"];
 const CONDS  = ["brand new","foreign used","locally used","any"];
+const MAX_PHOTOS = 3;
 
 const emptyForm = {
   carBrand:"Toyota", carModel:"", carYear:new Date().getFullYear(), carColor:"",
   condition:"any", transmission:"any", fuelType:"any",
-  budget:"", paymentType:"full", description:"", dealerId:"", referencePhoto:"",
+  budget:"", paymentType:"full", description:"", dealerId:"",
+  referencePhotos:[] as string[],
 };
 
 export default function UserRequestsPage() {
-  const [requests,setRequests]   = useState<any[]>([]);
-  const [loading,setLoading]     = useState(true);
-  const [showNew,setShowNew]     = useState(false);
-  const [dealers,setDealers]     = useState<any[]>([]);
+  const [requests,   setRequests]   = useState<any[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [showNew,    setShowNew]    = useState(false);
+  const [dealers,    setDealers]    = useState<any[]>([]);
   const [dealerSearch,setDealerSearch] = useState("");
-  const [form,setForm]           = useState(emptyForm);
-  const [submitting,setSubmitting] = useState(false);
-  const [error,setError]         = useState("");
-  const [photoUploading,setPhotoUploading] = useState(false);
+  const [form,       setForm]       = useState(emptyForm);
+  const [submitting, setSubmitting] = useState(false);
+  const [error,      setError]      = useState("");
+  const [uploading,  setUploading]  = useState(false);
+  const [lightbox,   setLightbox]   = useState<string|null>(null);
   const photoRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
     try {
       const r = await api.get("/api/v1/users/requests");
-      setRequests(Array.isArray(r.data)?r.data:[]);
+      setRequests(Array.isArray(r.data) ? r.data : []);
     } catch {} finally { setLoading(false); }
   };
 
-  useEffect(()=>{load();},[]);
+  useEffect(() => { load(); }, []);
 
-  useEffect(()=>{
-    if (dealerSearch.length<2){setDealers([]);return;}
-    const t = setTimeout(async()=>{
+  useEffect(() => {
+    if (dealerSearch.length < 2) { setDealers([]); return; }
+    const t = setTimeout(async () => {
       try {
-        const r = await api.get("/api/v1/public/dealers",{params:{search:dealerSearch,limit:10}});
-        setDealers(r.data.dealers||[]);
+        const r = await api.get("/api/v1/public/dealers", { params: { search: dealerSearch, limit: 10 } });
+        setDealers(r.data.dealers || []);
       } catch {}
-    },300);
-    return ()=>clearTimeout(t);
-  },[dealerSearch]);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [dealerSearch]);
 
-  const handlePhotoUpload = async (file: File) => {
-    setPhotoUploading(true);
+  const uploadPhoto = async (file: File) => {
+    if (form.referencePhotos.length >= MAX_PHOTOS) {
+      setError(`Maximum ${MAX_PHOTOS} photos allowed`); return;
+    }
+    setUploading(true);
     try {
-      const fd = new FormData(); fd.append("file",file);
-      const res = await api.post("/api/v1/upload/temp/image", fd, {headers:{"Content-Type":"multipart/form-data"}});
-      const url = res.data.url||res.data.secure_url||"";
-      setForm(f=>({...f,referencePhoto:url}));
-    } catch { setError("Photo upload failed"); }
-    finally { setPhotoUploading(false); }
+      const fd = new FormData(); fd.append("file", file);
+      const res = await api.post("/api/v1/upload/temp/image", fd, { headers: { "Content-Type": "multipart/form-data" } });
+      const url = res.data.url || res.data.secure_url || "";
+      if (url) setForm(f => ({ ...f, referencePhotos: [...f.referencePhotos, url] }));
+    } catch { setError("Photo upload failed. Please try again."); }
+    finally { setUploading(false); }
+  };
+
+  const removePhoto = (idx: number) => {
+    setForm(f => ({ ...f, referencePhotos: f.referencePhotos.filter((_,i) => i !== idx) }));
   };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault(); setError(""); setSubmitting(true);
     try {
-      await api.post("/api/v1/users/requests",{
+      await api.post("/api/v1/users/requests", {
         ...form,
-        budget: form.budget?Number(form.budget):undefined,
+        budget: form.budget ? Number(form.budget) : undefined,
         carYear: Number(form.carYear),
-        condition: form.condition==="any"?undefined:form.condition,
-        transmission: form.transmission==="any"?undefined:form.transmission,
-        fuelType: form.fuelType==="any"?undefined:form.fuelType,
+        condition: form.condition === "any" ? undefined : form.condition,
+        transmission: form.transmission === "any" ? undefined : form.transmission,
+        fuelType: form.fuelType === "any" ? undefined : form.fuelType,
+        referencePhoto: form.referencePhotos[0] || undefined,
+        referencePhotos: form.referencePhotos,
       });
       setShowNew(false); setForm(emptyForm); setDealerSearch(""); load();
-    } catch (err:any){setError(err.response?.data?.detail||"Failed. Please try again.");}
-    finally{setSubmitting(false);}
+    } catch (err:any) { setError(err.response?.data?.detail || "Failed. Please try again."); }
+    finally { setSubmitting(false); }
   };
 
-  const fmtDate = (iso:string)=>iso?new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}):"";
+  const doAction = async (id: string, endpoint: string, body?: any) => {
+    try { await api.post(`/api/v1/users/requests/${id}/${endpoint}`, body || {}); load(); }
+    catch (e:any) { alert(e.response?.data?.detail || "Action failed"); }
+  };
 
-  const fi: React.CSSProperties = {background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.75rem 1rem",color:"#1A1A1A",fontSize:"0.9rem",fontFamily:"var(--font-body)",outline:"none",width:"100%",boxSizing:"border-box" as const,transition:"border-color 0.2s"};
-  const lbl: React.CSSProperties = {fontSize:"0.7rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#525252",display:"block",marginBottom:"0.35rem"};
+  const fmtDate = (iso: any) => iso ? new Date(iso).toLocaleDateString("en-NG", { day:"numeric", month:"short", year:"numeric" }) : "";
+
+  const fi: React.CSSProperties = { background:"#F5F5F5", border:"1.5px solid #E5E5E5", borderRadius:"8px", padding:"0.75rem 1rem", color:"#1A1A1A", fontSize:"0.9rem", fontFamily:"var(--font-body)", outline:"none", width:"100%", boxSizing:"border-box" as const, transition:"border-color 0.2s" };
+  const lbl: React.CSSProperties = { fontSize:"0.7rem", fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase" as const, color:"#525252", display:"block", marginBottom:"0.35rem" };
 
   return (
-    <div style={{display:"flex",flexDirection:"column",gap:"1.5rem",fontFamily:"var(--font-body)"}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"1rem",flexWrap:"wrap"}}>
-        <div>
-          <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.5rem",letterSpacing:"0.05em",color:"#1A1A1A",lineHeight:1}}>Vehicle Requests</h2>
-          <p style={{fontSize:"0.8rem",color:"#737373",marginTop:"0.3rem"}}>Request a specific vehicle  dealers will respond with matching options</p>
+    <div style={{ display:"flex", flexDirection:"column", gap:"1.5rem", fontFamily:"var(--font-body)" }}>
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div onClick={() => setLightbox(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.93)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <button onClick={() => setLightbox(null)} style={{ position:"absolute", top:"1rem", right:"1rem", background:"rgba(255,255,255,0.15)", border:"none", color:"#fff", fontSize:"1.3rem", width:"40px", height:"40px", borderRadius:"50%", cursor:"pointer" }}>X</button>
+          <img src={lightbox} alt="" onClick={e => e.stopPropagation()} style={{ maxWidth:"90vw", maxHeight:"88vh", objectFit:"contain", borderRadius:"8px" }} />
         </div>
-        <button onClick={()=>setShowNew(true)} style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.7rem 1.25rem",fontFamily:"var(--font-display)",fontSize:"0.9rem",letterSpacing:"0.08em",cursor:"pointer",whiteSpace:"nowrap"}}>
+      )}
+
+      {/* Header */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"1rem", flexWrap:"wrap" }}>
+        <div>
+          <h2 style={{ fontFamily:"var(--font-display)", fontSize:"1.5rem", letterSpacing:"0.05em", color:"#1A1A1A", lineHeight:1 }}>Vehicle Requests</h2>
+          <p style={{ fontSize:"0.8rem", color:"#737373", marginTop:"0.3rem" }}>Request a specific vehicle - dealers will respond</p>
+        </div>
+        <button onClick={() => setShowNew(true)} style={{ background:"#F47B20", color:"#fff", border:"none", borderRadius:"8px", padding:"0.7rem 1.25rem", fontFamily:"var(--font-display)", fontSize:"0.9rem", letterSpacing:"0.08em", cursor:"pointer", whiteSpace:"nowrap" }}>
           + New Request
         </button>
       </div>
 
-      {loading?(
-        <div style={{display:"flex",justifyContent:"center",padding:"3rem"}}>
-          <div style={{width:"28px",height:"28px",border:"2.5px solid #E5E5E5",borderTopColor:"#F47B20",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
+      {/* Requests list */}
+      {loading ? (
+        <div style={{ display:"flex", justifyContent:"center", padding:"3rem" }}>
+          <div style={{ width:"28px", height:"28px", border:"2.5px solid #E5E5E5", borderTopColor:"#F47B20", borderRadius:"50%", animation:"spin 0.8s linear infinite" }} />
           <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
         </div>
-      ):requests.length===0?(
-        <div style={{padding:"3rem",textAlign:"center",border:"1.5px dashed #E5E5E5",borderRadius:"12px",background:"#fff",display:"flex",flexDirection:"column",alignItems:"center",gap:"1rem"}}>
-          <div style={{fontSize:"2.5rem"}}></div>
-          <h3 style={{fontFamily:"var(--font-display)",fontSize:"1.1rem",color:"#1A1A1A"}}>No requests yet</h3>
-          <p style={{fontSize:"0.875rem",color:"#737373",lineHeight:1.6,maxWidth:"380px"}}>Can not find the car you are looking for? Place a request and dealers will respond with matching vehicles.</p>
-          <button onClick={()=>setShowNew(true)} style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.75rem 1.5rem",fontFamily:"var(--font-display)",fontSize:"0.875rem",cursor:"pointer"}}>Place a Request</button>
+      ) : requests.length === 0 ? (
+        <div style={{ padding:"3rem", textAlign:"center", border:"1.5px dashed #E5E5E5", borderRadius:"12px", background:"#fff", display:"flex", flexDirection:"column", alignItems:"center", gap:"1rem" }}>
+          <div style={{ fontSize:"2.5rem" }}>&#x1F697;</div>
+          <h3 style={{ fontFamily:"var(--font-display)", fontSize:"1.1rem", color:"#1A1A1A" }}>No requests yet</h3>
+          <p style={{ fontSize:"0.875rem", color:"#737373", lineHeight:1.6, maxWidth:"380px" }}>Cannot find the vehicle you want? Place a request and dealers will respond.</p>
+          <button onClick={() => setShowNew(true)} style={{ background:"#F47B20", color:"#fff", border:"none", borderRadius:"8px", padding:"0.75rem 1.5rem", fontFamily:"var(--font-display)", fontSize:"0.875rem", cursor:"pointer" }}>Place a Request</button>
         </div>
-      ):(
-        <div style={{display:"flex",flexDirection:"column",gap:"1rem"}}>
-          {requests.map(r=>{
-            const sc = STATUS_C[r.status]||STATUS_C.pending;
+      ) : (
+        <div style={{ display:"flex", flexDirection:"column", gap:"1rem" }}>
+          {requests.map(r => {
+            const sc = STATUS_C[r.status] || STATUS_C.pending;
+            const photos = r.referencePhotos?.length ? r.referencePhotos : (r.referencePhoto ? [r.referencePhoto] : []);
             return (
-              <div key={r._id||r.requestId} style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px",padding:"1.25rem",display:"flex",flexDirection:"column",gap:"0.875rem"}}>
+              <div key={r._id || r.requestId} style={{ background:"#fff", border:"1.5px solid #E5E5E5", borderRadius:"12px", padding:"1.25rem", display:"flex", flexDirection:"column", gap:"0.875rem" }}>
+
                 {/* Header */}
-                <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"1rem",flexWrap:"wrap"}}>
+                <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:"1rem", flexWrap:"wrap" }}>
                   <div>
-                    <div style={{fontFamily:"monospace",fontSize:"0.68rem",color:"#AAA",marginBottom:"0.2rem"}}>{r.requestId}</div>
-                    <div style={{fontWeight:700,fontSize:"1rem",color:"#1A1A1A"}}>{r.carBrand} {r.carModel} {r.carYear||""}</div>
-                    {r.carColor&&<div style={{fontSize:"0.78rem",color:"#737373",marginTop:"0.1rem"}}>Color: {r.carColor}</div>}
+                    <div style={{ fontFamily:"monospace", fontSize:"0.68rem", color:"#AAA", marginBottom:"0.2rem" }}>{r.requestId}</div>
+                    <div style={{ fontWeight:700, fontSize:"1rem", color:"#1A1A1A" }}>{r.carBrand} {r.carModel} {r.carYear || ""}</div>
+                    <div style={{ fontSize:"0.78rem", color:"#737373", marginTop:"0.2rem", display:"flex", gap:"0.75rem", flexWrap:"wrap" }}>
+                      {r.carColor && <span>Color: {r.carColor}</span>}
+                      {r.condition && r.condition !== "any" && <span>Condition: {r.condition}</span>}
+                      {r.transmission && r.transmission !== "any" && <span>Gearbox: {r.transmission}</span>}
+                      {r.fuelType && r.fuelType !== "any" && <span>Fuel: {r.fuelType}</span>}
+                    </div>
                   </div>
-                  <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:"0.4rem",flexShrink:0}}>
-                    <span style={{background:sc.bg,color:sc.color,padding:"0.25rem 0.75rem",borderRadius:"20px",fontSize:"0.7rem",fontWeight:700,textTransform:"capitalize" as const,border:`1px solid ${sc.color}44`}}>{r.status}</span>
-                    <span style={{fontSize:"0.68rem",color:"#A3A3A3"}}>{fmtDate(r.createdAt)}</span>
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:"0.4rem", flexShrink:0 }}>
+                    <span style={{ background:sc.bg, color:sc.color, padding:"0.25rem 0.75rem", borderRadius:"20px", fontSize:"0.7rem", fontWeight:700, textTransform:"capitalize" as const, border:`1px solid ${sc.color}44` }}>
+                      {sc.label}
+                    </span>
+                    <span style={{ fontSize:"0.68rem", color:"#A3A3A3" }}>{fmtDate(r.createdAt)}</span>
                   </div>
                 </div>
 
                 {/* Details */}
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0.4rem 1.5rem"}}>
-                  {r.budget&&<div style={{display:"flex",gap:"0.5rem"}}><span style={{fontSize:"0.7rem",color:"#AAA",minWidth:"80px"}}>Budget</span><span style={{fontFamily:"var(--font-display)",fontSize:"0.95rem",color:"#F47B20",fontWeight:700}}>NGN {Number(r.budget).toLocaleString()}</span></div>}
-                  {r.paymentType&&<div style={{display:"flex",gap:"0.5rem"}}><span style={{fontSize:"0.7rem",color:"#AAA",minWidth:"80px"}}>Payment</span><span style={{fontSize:"0.875rem",color:"#404040",textTransform:"capitalize" as const}}>{r.paymentType}</span></div>}
-                  {r.condition&&r.condition!=="any"&&<div style={{display:"flex",gap:"0.5rem"}}><span style={{fontSize:"0.7rem",color:"#AAA",minWidth:"80px"}}>Condition</span><span style={{fontSize:"0.875rem",color:"#404040",textTransform:"capitalize" as const}}>{r.condition}</span></div>}
-                  {r.transmission&&r.transmission!=="any"&&<div style={{display:"flex",gap:"0.5rem"}}><span style={{fontSize:"0.7rem",color:"#AAA",minWidth:"80px"}}>Gearbox</span><span style={{fontSize:"0.875rem",color:"#404040",textTransform:"capitalize" as const}}>{r.transmission}</span></div>}
-                  {r.dealerName&&<div style={{display:"flex",gap:"0.5rem",gridColumn:"1/-1"}}><span style={{fontSize:"0.7rem",color:"#AAA",minWidth:"80px"}}>Dealer</span><span style={{fontSize:"0.875rem",color:"#404040"}}>{r.dealerName}</span></div>}
-                  {!r.dealerId&&<div style={{display:"flex",gap:"0.5rem",gridColumn:"1/-1"}}><span style={{fontSize:"0.7rem",color:"#AAA",minWidth:"80px"}}>Sent to</span><span style={{fontSize:"0.875rem",color:"#404040"}}>All dealers</span></div>}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0.4rem 1.5rem" }}>
+                  {r.budget && <div style={{ display:"flex", gap:"0.5rem" }}><span style={{ fontSize:"0.7rem", color:"#AAA", minWidth:"80px" }}>Budget</span><span style={{ fontFamily:"var(--font-display)", fontSize:"0.95rem", color:"#F47B20", fontWeight:700 }}>NGN {Number(r.budget).toLocaleString()}</span></div>}
+                  {r.paymentType && <div style={{ display:"flex", gap:"0.5rem" }}><span style={{ fontSize:"0.7rem", color:"#AAA", minWidth:"80px" }}>Payment</span><span style={{ fontSize:"0.875rem", color:"#404040", textTransform:"capitalize" as const }}>{r.paymentType}</span></div>}
+                  {r.dealerName && <div style={{ display:"flex", gap:"0.5rem", gridColumn:"1/-1" }}><span style={{ fontSize:"0.7rem", color:"#AAA", minWidth:"80px" }}>Sent to</span><span style={{ fontSize:"0.875rem", color:"#F47B20", fontWeight:600 }}>{r.dealerName}</span></div>}
+                  {!r.dealerId && <div style={{ display:"flex", gap:"0.5rem", gridColumn:"1/-1" }}><span style={{ fontSize:"0.7rem", color:"#AAA", minWidth:"80px" }}>Sent to</span><span style={{ fontSize:"0.875rem", color:"#404040" }}>All dealers</span></div>}
                 </div>
 
-                {r.description&&<div style={{fontSize:"0.875rem",color:"#525252",lineHeight:1.55,background:"#F5F5F5",borderRadius:"6px",padding:"0.75rem"}}>{r.description}</div>}
-                {r.referencePhoto&&<img src={r.referencePhoto} alt="Reference" style={{width:"100%",maxWidth:"280px",borderRadius:"8px",border:"1.5px solid #E5E5E5"}}/>}
+                {r.description && <div style={{ fontSize:"0.875rem", color:"#525252", lineHeight:1.55, background:"#F5F5F5", borderRadius:"6px", padding:"0.75rem" }}>{r.description}</div>}
 
-                {/* Dealer response */}
-                {r.dealerResponse&&(
-                  <div style={{background:"#F0FDF4",border:"1.5px solid #86EFAC",borderRadius:"8px",padding:"1rem",display:"flex",flexDirection:"column",gap:"0.35rem"}}>
-                    <div style={{fontSize:"0.68rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#16A34A"}}>Dealer Response</div>
-                    {r.dealerName&&<div style={{fontSize:"0.72rem",color:"#737373"}}>From: {r.dealerName}</div>}
-                    <div style={{fontSize:"0.9rem",color:"#1A1A1A",lineHeight:1.6,fontWeight:500}}>{r.dealerResponse}</div>
-                    {r.dealerResponseAt&&<div style={{fontSize:"0.68rem",color:"#A3A3A3"}}>Responded {fmtDate(r.dealerResponseAt)}</div>}
+                {/* Reference photos */}
+                {photos.length > 0 && (
+                  <div>
+                    <div style={{ fontSize:"0.68rem", color:"#AAA", fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.08em", marginBottom:"0.4rem" }}>Reference Photos</div>
+                    <div style={{ display:"flex", gap:"0.5rem", flexWrap:"wrap" }}>
+                      {photos.map((url: string, i: number) => (
+                        <img key={i} src={url} alt={`ref ${i+1}`} onClick={() => setLightbox(url)}
+                          style={{ width:"100px", height:"75px", objectFit:"cover", borderRadius:"7px", border:"1.5px solid #E5E5E5", cursor:"zoom-in" }} />
+                      ))}
+                    </div>
                   </div>
                 )}
 
-                {/* Counter-offer from dealer */}
-                {r.counterOffer&&r.status==="countered"&&(
-                  <div style={{background:"#F5F3FF",border:"1.5px solid rgba(123,104,238,0.35)",borderRadius:"10px",padding:"1rem",display:"flex",flexDirection:"column",gap:"0.625rem"}}>
-                    <div style={{fontSize:"0.68rem",fontWeight:800,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#7B68EE"}}>
+                {/* Dealer response */}
+                {r.dealerResponse && (
+                  <div style={{ background:"#F0FDF4", border:"1.5px solid #86EFAC", borderRadius:"8px", padding:"1rem", display:"flex", flexDirection:"column", gap:"0.35rem" }}>
+                    <div style={{ fontSize:"0.68rem", fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase" as const, color:"#16A34A" }}>Dealer Response</div>
+                    {r.dealerName && <div style={{ fontSize:"0.72rem", color:"#737373" }}>From: {r.dealerName}</div>}
+                    <div style={{ fontSize:"0.9rem", color:"#1A1A1A", lineHeight:1.6, fontWeight:500 }}>{r.dealerResponse}</div>
+                    {r.dealerResponseAt && <div style={{ fontSize:"0.68rem", color:"#A3A3A3" }}>Responded {fmtDate(r.dealerResponseAt)}</div>}
+                  </div>
+                )}
+
+                {/* Counter-offer */}
+                {r.counterOffer && r.status === "countered" && (
+                  <div style={{ background:"#F5F3FF", border:"1.5px solid rgba(123,104,238,0.35)", borderRadius:"10px", padding:"1rem", display:"flex", flexDirection:"column", gap:"0.75rem" }}>
+                    <div style={{ fontSize:"0.68rem", fontWeight:800, letterSpacing:"0.1em", textTransform:"uppercase" as const, color:"#7B68EE" }}>
                       {r.dealerName} Has an Alternative for You
                     </div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0.375rem"}}>
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0.5rem" }}>
                       {[
-                        ["Vehicle",`${r.counterOffer.carBrand||""} ${r.counterOffer.carModel||""} ${r.counterOffer.carYear||""}`],
-                        ["Price",`${r.counterOffer.currency||"NGN"} ${(r.counterOffer.price||0).toLocaleString()}`],
-                        ["Condition",r.counterOffer.condition||""],
-                        ["Delivery",r.counterOffer.estimatedDelivery||"TBD"],
-                      ].map(([l,v])=>(
-                        <div key={l as string} style={{background:"#fff",borderRadius:"5px",padding:"0.4rem 0.5rem"}}>
-                          <div style={{fontSize:"0.58rem",color:"#AAA",marginBottom:"0.1rem"}}>{l}</div>
-                          <div style={{fontWeight:600,fontSize:"0.78rem",color:"#1A1A1A"}}>{v||""}</div>
+                        ["Vehicle", `${r.counterOffer.carBrand||""} ${r.counterOffer.carModel||""} ${r.counterOffer.carYear||""}`],
+                        ["Price", `${r.counterOffer.currency||"NGN"} ${(r.counterOffer.price||0).toLocaleString()}`],
+                        ["Condition", r.counterOffer.condition||""],
+                        ["Color", r.counterOffer.carColor||""],
+                        ["Est. Delivery", r.counterOffer.estimatedDelivery||"TBD"],
+                      ].filter(([,v]) => v).map(([l,v]) => (
+                        <div key={String(l)} style={{ background:"#fff", borderRadius:"6px", padding:"0.5rem 0.625rem" }}>
+                          <div style={{ fontSize:"0.6rem", color:"#AAA", marginBottom:"0.15rem", textTransform:"uppercase" as const, letterSpacing:"0.05em" }}>{l}</div>
+                          <div style={{ fontWeight:600, fontSize:"0.82rem", color:"#1A1A1A" }}>{v||""}</div>
                         </div>
                       ))}
                     </div>
-                    {r.counterOffer.description&&<p style={{fontSize:"0.8rem",color:"#525252",margin:0,lineHeight:1.5}}>{r.counterOffer.description}</p>}
-                    <div style={{display:"flex",gap:"0.5rem",marginTop:"0.25rem"}}>
-                      <button
-                        onClick={async()=>{
-                          try{await api.post(`/api/v1/users/requests/${r.requestId||r._id}/accept`);load();}
-                          catch(e:any){alert(e.response?.data?.detail||"Failed");}
-                        }}
-                        style={{flex:1,background:"#16A34A",color:"#fff",border:"none",borderRadius:"7px",padding:"0.6rem",fontFamily:"var(--font-display)",fontSize:"0.78rem",cursor:"pointer",letterSpacing:"0.06em",fontWeight:700}}>
+                    {r.counterOffer.description && <p style={{ fontSize:"0.82rem", color:"#525252", margin:0, lineHeight:1.55 }}>{r.counterOffer.description}</p>}
+                    <div style={{ display:"flex", gap:"0.5rem" }}>
+                      <button onClick={() => doAction(r.requestId||r._id, "accept")}
+                        style={{ flex:1, background:"#16A34A", color:"#fff", border:"none", borderRadius:"8px", padding:"0.7rem", fontFamily:"var(--font-display)", fontSize:"0.8rem", cursor:"pointer", letterSpacing:"0.06em", fontWeight:700 }}>
                         Accept Offer
                       </button>
-                      <button
-                        onClick={async()=>{
-                          if(!confirm("Decline this offer?"))return;
-                          try{await api.post(`/api/v1/users/requests/${r.requestId||r._id}/decline`,{reason:"Declined by buyer"});load();}
-                          catch(e:any){alert(e.response?.data?.detail||"Failed");}
-                        }}
-                        style={{flex:1,background:"#FEF2F2",color:"#DC2626",border:"1.5px solid #FECACA",borderRadius:"7px",padding:"0.6rem",fontSize:"0.78rem",cursor:"pointer",fontWeight:600}}>
+                      <button onClick={() => { if(!confirm("Decline this offer?")) return; doAction(r.requestId||r._id, "decline", { reason:"Declined by buyer" }); }}
+                        style={{ flex:1, background:"#FEF2F2", color:"#DC2626", border:"1.5px solid #FECACA", borderRadius:"8px", padding:"0.7rem", fontSize:"0.8rem", cursor:"pointer", fontWeight:600 }}>
                         Decline
                       </button>
                     </div>
@@ -193,24 +237,23 @@ export default function UserRequestsPage() {
                 )}
 
                 {/* Journey milestones */}
-                {r.journey?.milestones?.length>0&&(
-                  <div style={{display:"flex",flexDirection:"column",gap:"0.5rem"}}>
-                    <div style={{fontSize:"0.68rem",fontWeight:800,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#737373"}}>Order Journey</div>
-                    {[...r.journey.milestones].reverse().map((m:any,i:number)=>(
-                      <div key={i} style={{background:"#FAFAFA",border:"1px solid #F0F0F0",borderRadius:"8px",padding:"0.75rem",display:"flex",gap:"0.75rem",alignItems:"flex-start"}}>
-                        <div style={{width:"28px",height:"28px",borderRadius:"50%",background:"#F47B20",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.65rem",fontWeight:700,flexShrink:0}}>
-                          {i===0?"NEW":(i+1)}
+                {r.journey?.milestones?.length > 0 && (
+                  <div style={{ display:"flex", flexDirection:"column", gap:"0.625rem" }}>
+                    <div style={{ fontSize:"0.68rem", fontWeight:800, letterSpacing:"0.1em", textTransform:"uppercase" as const, color:"#737373" }}>Order Journey</div>
+                    {[...r.journey.milestones].reverse().map((m: any, i: number) => (
+                      <div key={i} style={{ display:"flex", gap:"0.75rem", alignItems:"flex-start", background:"#FAFAFA", border:"1px solid #F0F0F0", borderRadius:"8px", padding:"0.75rem" }}>
+                        <div style={{ width:"28px", height:"28px", borderRadius:"50%", background:"#F47B20", color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"0.62rem", fontWeight:700, flexShrink:0 }}>
+                          {i === 0 ? "NEW" : i+1}
                         </div>
-                        <div style={{flex:1}}>
-                          <div style={{fontWeight:700,fontSize:"0.83rem",color:"#1A1A1A"}}>{m.title}</div>
-                          <div style={{fontSize:"0.7rem",color:"#A3A3A3",marginBottom:"0.25rem"}}>{m.addedAt?new Date(m.addedAt).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}):""}</div>
-                          {m.description&&<p style={{fontSize:"0.78rem",color:"#525252",margin:"0 0 0.35rem",lineHeight:1.5}}>{m.description}</p>}
-                          {m.evidence?.length>0&&(
-                            <div style={{display:"flex",gap:"0.3rem",flexWrap:"wrap"}}>
-                              {m.evidence.map((url:string,ei:number)=>(
-                                <a key={ei} href={url} target="_blank" rel="noreferrer">
-                                  <img src={url} alt="" style={{width:"52px",height:"40px",objectFit:"cover",borderRadius:"4px",border:"1px solid #E5E5E5"}}/>
-                                </a>
+                        <div style={{ flex:1 }}>
+                          <div style={{ fontWeight:700, fontSize:"0.85rem", color:"#1A1A1A" }}>{m.title}</div>
+                          <div style={{ fontSize:"0.7rem", color:"#A3A3A3", marginBottom:"0.3rem" }}>{m.addedAt ? new Date(m.addedAt).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}) : ""}</div>
+                          {m.description && <p style={{ fontSize:"0.8rem", color:"#525252", margin:"0 0 0.375rem", lineHeight:1.5 }}>{m.description}</p>}
+                          {m.evidence?.length > 0 && (
+                            <div style={{ display:"flex", gap:"0.375rem", flexWrap:"wrap" }}>
+                              {m.evidence.map((url: string, ei: number) => (
+                                <img key={ei} src={url} alt="" onClick={() => setLightbox(url)}
+                                  style={{ width:"64px", height:"48px", objectFit:"cover", borderRadius:"5px", border:"1px solid #E5E5E5", cursor:"zoom-in" }} />
                               ))}
                             </div>
                           )}
@@ -221,21 +264,22 @@ export default function UserRequestsPage() {
                 )}
 
                 {/* Payment plan */}
-                {r.journey?.paymentPlan&&(
-                  <div style={{border:"1.5px solid #E5E5E5",borderRadius:"10px",overflow:"hidden"}}>
-                    <div style={{padding:"0.625rem 0.875rem",background:"#F5F5F5",borderBottom:"1px solid #E5E5E5",fontFamily:"var(--font-display)",fontSize:"0.68rem",letterSpacing:"0.1em",color:"#525252"}}>PAYMENT PLAN</div>
-                    <div style={{padding:"0.875rem",display:"flex",flexDirection:"column",gap:"0.5rem"}}>
-                      <div style={{fontWeight:700,fontSize:"0.875rem",color:"#1A1A1A"}}>
-                        {r.journey.paymentPlan.type==="full"?"Full Payment":"Installments"} &mdash; NGN {(r.journey.paymentPlan.totalAmount||0).toLocaleString()}
+                {r.journey?.paymentPlan && (
+                  <div style={{ border:"1.5px solid #E5E5E5", borderRadius:"10px", overflow:"hidden" }}>
+                    <div style={{ padding:"0.6rem 0.875rem", background:"#F5F5F5", borderBottom:"1px solid #E5E5E5", fontFamily:"var(--font-display)", fontSize:"0.68rem", letterSpacing:"0.1em", color:"#525252" }}>PAYMENT PLAN</div>
+                    <div style={{ padding:"0.875rem", display:"flex", flexDirection:"column", gap:"0.5rem" }}>
+                      <div style={{ fontWeight:700, fontSize:"0.875rem", color:"#1A1A1A" }}>
+                        {r.journey.paymentPlan.type === "full" ? "Full Payment" : "Installments"} &mdash; NGN {(r.journey.paymentPlan.totalAmount||0).toLocaleString()}
                       </div>
-                      {r.journey.paymentPlan.installments?.map((inst:any,i:number)=>(
-                        <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"0.5rem 0",borderBottom:"1px solid #F5F5F5",flexWrap:"wrap",gap:"0.5rem"}}>
+                      {r.journey.paymentPlan.installments?.map((inst: any, i: number) => (
+                        <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"0.5rem 0", borderBottom:"1px solid #F5F5F5", flexWrap:"wrap", gap:"0.5rem" }}>
                           <div>
-                            <div style={{fontWeight:600,fontSize:"0.82rem"}}>{inst.label||`Installment ${i+1}`}</div>
-                            <div style={{fontSize:"0.72rem",color:"#888"}}>NGN {(inst.amount||0).toLocaleString()} &bull; {inst.dueDate||"TBD"}</div>
+                            <div style={{ fontWeight:600, fontSize:"0.82rem" }}>{inst.label || `Installment ${i+1}`}</div>
+                            <div style={{ fontSize:"0.72rem", color:"#888" }}>NGN {(inst.amount||0).toLocaleString()} &bull; {inst.dueDate || "TBD"}</div>
+                            {inst.evidence && <a href={inst.evidence} target="_blank" rel="noreferrer" style={{ fontSize:"0.7rem", color:"#F47B20" }}>View Receipt</a>}
                           </div>
-                          <span style={{fontSize:"0.7rem",fontWeight:700,padding:"0.18rem 0.5rem",borderRadius:"20px",background:inst.paid?"#F0FDF4":"#FFF7ED",color:inst.paid?"#15803D":"#D97706"}}>
-                            {inst.paid?"Paid":"Pending"}
+                          <span style={{ fontSize:"0.7rem", fontWeight:700, padding:"0.18rem 0.5rem", borderRadius:"20px", background:inst.paid?"#F0FDF4":"#FFF7ED", color:inst.paid?"#15803D":"#D97706" }}>
+                            {inst.paid ? "Paid" : "Pending"}
                           </span>
                         </div>
                       ))}
@@ -243,15 +287,10 @@ export default function UserRequestsPage() {
                   </div>
                 )}
 
-                {/* Cancel pending request */}
-                {r.status==="pending"&&(
-                  <button
-                    onClick={async()=>{
-                      if(!confirm("Cancel this request?"))return;
-                      try{await api.post(`/api/v1/users/requests/${r.requestId||r._id}/cancel`);load();}
-                      catch(e:any){alert(e.response?.data?.detail||"Failed");}
-                    }}
-                    style={{background:"#FEF2F2",color:"#DC2626",border:"1.5px solid #FECACA",borderRadius:"7px",padding:"0.5rem 0.875rem",fontSize:"0.75rem",cursor:"pointer",fontWeight:600,alignSelf:"flex-start"}}>
+                {/* Cancel pending */}
+                {r.status === "pending" && (
+                  <button onClick={() => { if(!confirm("Cancel this request?")) return; doAction(r.requestId||r._id, "cancel"); }}
+                    style={{ background:"#FEF2F2", color:"#DC2626", border:"1.5px solid #FECACA", borderRadius:"7px", padding:"0.5rem 0.875rem", fontSize:"0.75rem", cursor:"pointer", fontWeight:600, alignSelf:"flex-start" }}>
                     Cancel Request
                   </button>
                 )}
@@ -262,102 +301,131 @@ export default function UserRequestsPage() {
       )}
 
       {/* NEW REQUEST MODAL */}
-      {showNew&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
-          <div style={{background:"#fff",borderRadius:"16px",width:"100%",maxWidth:"560px",maxHeight:"90vh",overflowY:"auto",boxShadow:"0 16px 48px rgba(0,0,0,0.2)"}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"1.25rem 1.5rem",background:"#1A1A1A",borderRadius:"16px 16px 0 0",position:"sticky",top:0,zIndex:1}}>
-              <div style={{fontFamily:"var(--font-display)",fontSize:"1rem",letterSpacing:"0.1em",color:"#F47B20"}}>NEW VEHICLE REQUEST</div>
-              <button onClick={()=>setShowNew(false)} style={{background:"rgba(255,255,255,0.12)",border:"none",color:"#fff",width:"32px",height:"32px",borderRadius:"50%",cursor:"pointer",fontSize:"1rem"}}>X</button>
-            </div>
-            <form onSubmit={submit} style={{padding:"1.5rem",display:"flex",flexDirection:"column",gap:"1rem"}}>
-              {error&&<div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",color:"#DC2626",padding:"0.75rem",borderRadius:"8px",fontSize:"0.875rem"}}>{error}</div>}
+      {showNew && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000, padding:"1rem" }}>
+          <div style={{ background:"#fff", borderRadius:"16px", width:"100%", maxWidth:"560px", maxHeight:"92vh", display:"flex", flexDirection:"column", boxShadow:"0 16px 48px rgba(0,0,0,0.2)" }}>
 
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem"}}>
+            {/* Modal header - sticky */}
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"1.25rem 1.5rem", background:"#1A1A1A", borderRadius:"16px 16px 0 0", flexShrink:0 }}>
+              <div style={{ fontFamily:"var(--font-display)", fontSize:"1rem", letterSpacing:"0.1em", color:"#F47B20" }}>NEW VEHICLE REQUEST</div>
+              <button onClick={() => { setShowNew(false); setError(""); }} style={{ background:"rgba(255,255,255,0.12)", border:"none", color:"#fff", width:"32px", height:"32px", borderRadius:"50%", cursor:"pointer", fontSize:"1rem" }}>X</button>
+            </div>
+
+            {/* Modal body - scrollable */}
+            <form onSubmit={submit} style={{ overflowY:"auto", flex:1, padding:"1.5rem", display:"flex", flexDirection:"column", gap:"1rem" }}>
+              {error && <div style={{ background:"#FEF2F2", border:"1px solid #FCA5A5", color:"#DC2626", padding:"0.75rem", borderRadius:"8px", fontSize:"0.875rem" }}>{error}</div>}
+
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem" }}>
                 <div><label style={lbl}>Brand *</label>
-                  <select style={fi} value={form.carBrand} onChange={e=>setForm({...form,carBrand:e.target.value})}>
-                    {BRANDS.map(b=><option key={b}>{b}</option>)}
+                  <select style={fi} value={form.carBrand} onChange={e => setForm({...form, carBrand:e.target.value})}>
+                    {BRANDS.map(b => <option key={b}>{b}</option>)}
                   </select>
                 </div>
-                <div><label style={lbl}>Model *</label><input style={fi} placeholder="e.g. Camry" value={form.carModel} onChange={e=>setForm({...form,carModel:e.target.value})} required/></div>
+                <div><label style={lbl}>Model *</label>
+                  <input style={fi} placeholder="e.g. Camry" value={form.carModel} onChange={e => setForm({...form, carModel:e.target.value})} required />
+                </div>
               </div>
 
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem"}}>
-                <div><label style={lbl}>Year</label><input type="number" style={fi} value={form.carYear} onChange={e=>setForm({...form,carYear:Number(e.target.value)})}/></div>
-                <div><label style={lbl}>Color (optional)</label><input style={fi} placeholder="e.g. Black" value={form.carColor} onChange={e=>setForm({...form,carColor:e.target.value})}/></div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem" }}>
+                <div><label style={lbl}>Year</label>
+                  <input type="number" style={fi} value={form.carYear} onChange={e => setForm({...form, carYear:Number(e.target.value)})} />
+                </div>
+                <div><label style={lbl}>Color (optional)</label>
+                  <input style={fi} placeholder="e.g. Black" value={form.carColor} onChange={e => setForm({...form, carColor:e.target.value})} />
+                </div>
               </div>
 
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"0.75rem"}}>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"0.75rem" }}>
                 <div><label style={lbl}>Condition</label>
-                  <select style={fi} value={form.condition} onChange={e=>setForm({...form,condition:e.target.value})}>
-                    {CONDS.map(c=><option key={c} value={c}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}
+                  <select style={fi} value={form.condition} onChange={e => setForm({...form, condition:e.target.value})}>
+                    {CONDS.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}
                   </select>
                 </div>
                 <div><label style={lbl}>Gearbox</label>
-                  <select style={fi} value={form.transmission} onChange={e=>setForm({...form,transmission:e.target.value})}>
-                    {TRANS.map(t=><option key={t} value={t}>{t.toUpperCase()}</option>)}
+                  <select style={fi} value={form.transmission} onChange={e => setForm({...form, transmission:e.target.value})}>
+                    {TRANS.map(t => <option key={t} value={t}>{t.toUpperCase()}</option>)}
                   </select>
                 </div>
                 <div><label style={lbl}>Fuel</label>
-                  <select style={fi} value={form.fuelType} onChange={e=>setForm({...form,fuelType:e.target.value})}>
-                    {FUELS.map(f=><option key={f} value={f}>{f.charAt(0).toUpperCase()+f.slice(1)}</option>)}
+                  <select style={fi} value={form.fuelType} onChange={e => setForm({...form, fuelType:e.target.value})}>
+                    {FUELS.map(f => <option key={f} value={f}>{f.charAt(0).toUpperCase()+f.slice(1)}</option>)}
                   </select>
                 </div>
               </div>
 
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem"}}>
-                <div><label style={lbl}>Budget (NGN)</label><input type="number" style={fi} placeholder="Your max budget" value={form.budget} onChange={e=>setForm({...form,budget:e.target.value})}/></div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem" }}>
+                <div><label style={lbl}>Budget (NGN)</label>
+                  <input type="number" style={fi} placeholder="Your max budget" value={form.budget} onChange={e => setForm({...form, budget:e.target.value})} />
+                </div>
                 <div><label style={lbl}>Payment Type</label>
-                  <select style={fi} value={form.paymentType} onChange={e=>setForm({...form,paymentType:e.target.value})}>
-                    {["full","installment","lease"].map(p=><option key={p} value={p}>{p.charAt(0).toUpperCase()+p.slice(1)}</option>)}
+                  <select style={fi} value={form.paymentType} onChange={e => setForm({...form, paymentType:e.target.value})}>
+                    {["full","installment","lease"].map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase()+p.slice(1)}</option>)}
                   </select>
                 </div>
               </div>
 
               {/* Dealer search */}
-              <div style={{position:"relative"}}>
-                <label style={lbl}>Specific Dealer (leave blank to broadcast to all dealers)</label>
-                <input style={fi} placeholder="Search dealer name..." value={dealerSearch} onChange={e=>{setDealerSearch(e.target.value);setForm({...form,dealerId:""});}}/>
-                {dealers.length>0&&(
-                  <div style={{position:"absolute",top:"calc(100%+4px)",left:0,right:0,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"8px",zIndex:50,maxHeight:"160px",overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,0.1)"}}>
-                    {dealers.map(d=>(
-                      <div key={d._id} onClick={()=>{setForm({...form,dealerId:d._id});setDealerSearch(d.companyName);setDealers([]);}}
-                        style={{padding:"0.75rem 1rem",cursor:"pointer",borderBottom:"1px solid #F5F5F5",fontSize:"0.875rem",color:"#1A1A1A",fontWeight:500}}
-                        onMouseOver={e=>e.currentTarget.style.background="#FFF7ED"}
-                        onMouseOut={e=>e.currentTarget.style.background=""}>
-                        {d.companyName} <span style={{color:"#A3A3A3",fontSize:"0.72rem",fontWeight:400}}> {d.city||""}</span>
+              <div style={{ position:"relative" }}>
+                <label style={lbl}>Specific Dealer (leave blank to send to ALL dealers)</label>
+                <input style={fi} placeholder="Search dealer name..." value={dealerSearch}
+                  onChange={e => { setDealerSearch(e.target.value); setForm({...form, dealerId:""}); }} />
+                {dealers.length > 0 && (
+                  <div style={{ position:"absolute", top:"calc(100% + 4px)", left:0, right:0, background:"#fff", border:"1.5px solid #E5E5E5", borderRadius:"8px", zIndex:50, maxHeight:"160px", overflowY:"auto", boxShadow:"0 8px 24px rgba(0,0,0,0.1)" }}>
+                    {dealers.map(d => (
+                      <div key={d._id} onClick={() => { setForm({...form, dealerId:d._id}); setDealerSearch(d.companyName); setDealers([]); }}
+                        style={{ padding:"0.75rem 1rem", cursor:"pointer", borderBottom:"1px solid #F5F5F5", fontSize:"0.875rem", color:"#1A1A1A" }}
+                        onMouseOver={e => e.currentTarget.style.background="#FFF7ED"}
+                        onMouseOut={e => e.currentTarget.style.background=""}>
+                        {d.companyName} <span style={{ color:"#A3A3A3", fontSize:"0.72rem" }}>{d.city||""}</span>
                       </div>
                     ))}
                   </div>
                 )}
-                {form.dealerId&&<div style={{marginTop:"0.35rem",fontSize:"0.72rem",color:"#16A34A",fontWeight:600}}>Sending to: {dealerSearch}</div>}
-                {!form.dealerId&&!dealerSearch&&<div style={{marginTop:"0.35rem",fontSize:"0.72rem",color:"#A3A3A3"}}>Will be sent to all dealers on the platform</div>}
+                {form.dealerId && <div style={{ marginTop:"0.35rem", fontSize:"0.72rem", color:"#16A34A", fontWeight:600 }}>Sending to: {dealerSearch}</div>}
+                {!form.dealerId && !dealerSearch && <div style={{ marginTop:"0.35rem", fontSize:"0.72rem", color:"#A3A3A3" }}>Will be sent to ALL dealers on the platform</div>}
               </div>
 
               <div><label style={lbl}>Additional Details</label>
-                <textarea style={{...fi,minHeight:"80px",resize:"vertical" as const}} placeholder="Specific features, trim level, history, any other preferences..." value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/>
+                <textarea style={{...fi, minHeight:"80px", resize:"vertical" as const}}
+                  placeholder="Specific features, trim level, any other preferences..."
+                  value={form.description} onChange={e => setForm({...form, description:e.target.value})} />
               </div>
 
-              {/* Reference photo */}
+              {/* Reference photos - up to 3 */}
               <div>
-                <label style={lbl}>Reference Photo (optional  attach a picture of the car you want)</label>
-                {form.referencePhoto?(
-                  <div style={{display:"flex",alignItems:"center",gap:"0.875rem"}}>
-                    <img src={form.referencePhoto} alt="" style={{width:"100px",height:"72px",objectFit:"cover",borderRadius:"6px",border:"1.5px solid #E5E5E5"}}/>
-                    <button type="button" onClick={()=>setForm({...form,referencePhoto:""})} style={{background:"#FEF2F2",border:"1px solid rgba(220,38,38,0.3)",color:"#DC2626",borderRadius:"6px",padding:"0.4rem 0.75rem",fontSize:"0.78rem",cursor:"pointer"}}>Remove</button>
-                  </div>
-                ):(
-                  <button type="button" onClick={()=>photoRef.current?.click()} disabled={photoUploading}
-                    style={{background:"#F5F5F5",border:"1.5px dashed #D4D4D4",borderRadius:"8px",padding:"0.75rem 1.25rem",fontSize:"0.825rem",cursor:"pointer",color:"#737373",display:"block",width:"100%",textAlign:"center"}}>
-                    {photoUploading?"Uploading...":"+ Attach Reference Photo"}
-                  </button>
-                )}
-                <input ref={photoRef} type="file" accept="image/jpeg,image/png,image/webp" style={{display:"none"}} onChange={e=>{if(e.target.files?.[0])handlePhotoUpload(e.target.files[0]);e.target.value="";}}/>
+                <label style={lbl}>Reference Photos (up to {MAX_PHOTOS} - attach pictures of the vehicle you want)</label>
+                <div style={{ display:"flex", gap:"0.5rem", flexWrap:"wrap", marginBottom:"0.5rem" }}>
+                  {form.referencePhotos.map((url, i) => (
+                    <div key={i} style={{ position:"relative" }}>
+                      <img src={url} alt="" style={{ width:"88px", height:"66px", objectFit:"cover", borderRadius:"7px", border:"1.5px solid #E5E5E5", display:"block" }} />
+                      <button type="button" onClick={() => removePhoto(i)}
+                        style={{ position:"absolute", top:"-6px", right:"-6px", background:"#DC2626", color:"#fff", border:"none", borderRadius:"50%", width:"20px", height:"20px", cursor:"pointer", fontSize:"0.65rem", fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                        X
+                      </button>
+                    </div>
+                  ))}
+                  {form.referencePhotos.length < MAX_PHOTOS && (
+                    <button type="button" onClick={() => photoRef.current?.click()} disabled={uploading}
+                      style={{ width:"88px", height:"66px", background:"#F5F5F5", border:"1.5px dashed #D4D4D4", borderRadius:"7px", cursor:"pointer", color:"#737373", fontSize:"0.75rem", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"0.2rem", opacity:uploading?0.6:1 }}>
+                      <span style={{ fontSize:"1.5rem", lineHeight:1 }}>+</span>
+                      <span>{uploading ? "..." : "Photo"}</span>
+                    </button>
+                  )}
+                  <input ref={photoRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display:"none" }}
+                    onChange={e => { if(e.target.files?.[0]) uploadPhoto(e.target.files[0]); e.target.value=""; }} />
+                </div>
+                <div style={{ fontSize:"0.68rem", color:"#A3A3A3" }}>{form.referencePhotos.length}/{MAX_PHOTOS} photos uploaded</div>
               </div>
 
-              <div style={{display:"flex",gap:"0.75rem",marginTop:"0.5rem"}}>
-                <button type="button" onClick={()=>setShowNew(false)} style={{flex:1,background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"10px",padding:"0.875rem",fontFamily:"var(--font-body)",fontSize:"0.9rem",cursor:"pointer"}}>Cancel</button>
-                <button type="submit" disabled={submitting||!form.carModel} style={{flex:2,background:submitting||!form.carModel?"#D4D4D4":"#F47B20",color:"#fff",border:"none",borderRadius:"10px",padding:"0.875rem",fontFamily:"var(--font-display)",fontSize:"0.95rem",letterSpacing:"0.1em",cursor:submitting||!form.carModel?"not-allowed":"pointer"}}>
-                  {submitting?"Sending...":"SEND REQUEST"}
+              {/* Form footer - sticky */}
+              <div style={{ display:"flex", gap:"0.75rem", paddingTop:"0.5rem", position:"sticky", bottom:0, background:"#fff", paddingBottom:"0.25rem" }}>
+                <button type="button" onClick={() => { setShowNew(false); setError(""); }}
+                  style={{ flex:1, background:"#F5F5F5", border:"1.5px solid #E5E5E5", color:"#525252", borderRadius:"10px", padding:"0.875rem", fontFamily:"var(--font-body)", fontSize:"0.9rem", cursor:"pointer" }}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={submitting || !form.carModel}
+                  style={{ flex:2, background:submitting||!form.carModel?"#D4D4D4":"#F47B20", color:"#fff", border:"none", borderRadius:"10px", padding:"0.875rem", fontFamily:"var(--font-display)", fontSize:"0.95rem", letterSpacing:"0.1em", cursor:submitting||!form.carModel?"not-allowed":"pointer" }}>
+                  {submitting ? "Sending..." : "SEND REQUEST"}
                 </button>
               </div>
             </form>

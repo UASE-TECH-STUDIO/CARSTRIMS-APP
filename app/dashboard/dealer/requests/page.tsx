@@ -211,7 +211,7 @@ export default function DealerRequestsPage() {
       {/* DETAIL MODAL */}
       {selected && (
         <div onClick={close} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
-          <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"14px",width:"100%",maxWidth:"620px",maxHeight:"94vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(0,0,0,0.18)"}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"14px",width:"100%",maxWidth:"680px",maxHeight:"94vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(0,0,0,0.18)"}}>
 
             {/* Modal header */}
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"1rem 1.25rem",borderBottom:"1px solid #E5E5E5",position:"sticky",top:0,background:"#fff",zIndex:10}}>
@@ -260,10 +260,12 @@ export default function DealerRequestsPage() {
                     {[
                       ["Vehicle",`${selected.carBrand} ${selected.carModel} ${selected.carYear||""}`],
                       ["Color", selected.carColor||"Any"],
-                      ["Budget", selected.budget?`NGN ${selected.budget?.toLocaleString()}`:"Not specified"],
+                      ["Budget", selected.budget?`NGN ${Number(selected.budget).toLocaleString()}`:"Not specified"],
                       ["Payment", selected.paymentType],
                       ["Condition", selected.condition||"Any"],
-                      ["Transmission", selected.transmission||"Any"],
+                      ["Gearbox", selected.transmission||"Any"],
+                      ["Fuel Type", selected.fuelType||"Any"],
+                      ["Sent to", selected.dealerId?"This dealer only":"All dealers (general)"],
                       ["Requested", fmtDate(selected.createdAt)],
                       ["Status", STATUS_L[selected.status]||selected.status],
                     ].map(([l,v])=>(
@@ -281,12 +283,20 @@ export default function DealerRequestsPage() {
                     </div>
                   )}
 
-                  {selected.referencePhoto&&(
-                    <div style={{background:"#FAFAFA",border:"1px solid #F0F0F0",borderRadius:"8px",padding:"0.875rem"}}>
-                      <div style={{fontSize:"0.62rem",textTransform:"uppercase" as const,letterSpacing:"0.07em",color:"#AAA",marginBottom:"0.5rem",fontWeight:700}}>Reference Photo</div>
-                      <img src={selected.referencePhoto} alt="" style={{width:"100%",maxHeight:"200px",objectFit:"cover",borderRadius:"6px"}}/>
-                    </div>
-                  )}
+                  {/* Reference photos from buyer */}
+                  {(()=>{
+                    const photos = selected.referencePhotos?.length ? selected.referencePhotos : (selected.referencePhoto?[selected.referencePhoto]:[]);
+                    return photos.length>0?(
+                      <div style={{background:"#FAFAFA",border:"1px solid #F0F0F0",borderRadius:"8px",padding:"0.875rem"}}>
+                        <div style={{fontSize:"0.62rem",textTransform:"uppercase" as const,letterSpacing:"0.07em",color:"#AAA",marginBottom:"0.5rem",fontWeight:700}}>Reference Photos ({photos.length})</div>
+                        <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap"}}>{photos.map((url:string,i:number)=>(
+                          <a key={i} href={url} target="_blank" rel="noreferrer">
+                            <img src={url} alt="" style={{width:"100px",height:"75px",objectFit:"cover",borderRadius:"6px",border:"1.5px solid #E5E5E5",cursor:"zoom-in"}}/>
+                          </a>
+                        ))}</div>
+                      </div>
+                    ):null;
+                  })()}
 
                   {/* Counter offer sent */}
                   {selected.counterOffer&&(
