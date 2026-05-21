@@ -4,7 +4,8 @@ import api from "@/lib/api";
 
 const APT_TYPES = ["showroom_visit","test_drive","inspection","payment_meeting"];
 const STATUS_COLORS: Record<string,string> = {
-  pending:"#D97706", confirmed:"#16A34A", cancelled:"#DC2626", completed:"#888"
+  pending:"#D97706", confirmed:"#16A34A", cancelled:"#DC2626",
+  completed:"#888", cancelled_by_buyer:"#DC2626", pending_buyer:"#7B68EE"
 };
 
 export default function UserAppointmentsPage() {
@@ -19,6 +20,8 @@ export default function UserAppointmentsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [showDetail, setShowDetail] = useState<any>(null);
+  const [actioning, setActioning] = useState(false);
+  const [actionMsg, setActionMsg] = useState("");
 
   const load = () => {
     api.get("/api/v1/users/appointments")
@@ -28,6 +31,32 @@ export default function UserAppointmentsPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const cancelAppt = async (aptId: string) => {
+    if (!confirm("Cancel this appointment?")) return;
+    setActioning(true);
+    try {
+      await api.post(`/api/v1/dealers/appointments/${aptId}/cancel`);
+      setActionMsg("Appointment cancelled.");
+      setShowDetail(null);
+      load();
+    } catch(e:any) { setActionMsg(e.response?.data?.detail||"Failed"); }
+    finally { setActioning(false); }
+  };
+
+  const acceptCounter = async (aptId: string) => {
+    setActioning(true);
+    try {
+      await api.post(`/api/v1/dealers/appointments/${aptId}/accept-counter`);
+      setActionMsg("New time accepted! Appointment confirmed.");
+      load();
+      // refresh detail
+      const fresh = await api.get("/api/v1/users/appointments");
+      const updated = (fresh.data||[]).find((a:any)=>(a.appointmentId||a._id)===(aptId));
+      if (updated) setShowDetail(updated);
+    } catch(e:any) { setActionMsg(e.response?.data?.detail||"Failed"); }
+    finally { setActioning(false); }
+  };
 
   useEffect(() => {
     if (dealerSearch.length < 2) { setDealerResults([]); return; }
@@ -177,12 +206,43 @@ export default function UserAppointmentsPage() {
                 ))}
               </div>
               {showDetail.notes && <div className="detail-desc"><div className="dd-label">Notes</div><p className="dd-text">{showDetail.notes}</p></div>}
+
+              {/* Counter-proposal from dealer */}
+              {showDetail.counterProposal?.scheduledAt && (
+                <div style={{background:"#F5F3FF",border:"1.5px solid rgba(123,104,238,0.4)",borderRadius:"10px",padding:"0.875rem",display:"flex",flexDirection:"column",gap:"0.5rem"}}>
+                  <div style={{fontSize:"0.68rem",fontWeight:800,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#7B68EE"}}>Dealer Suggested a New Time</div>
+                  <div style={{fontSize:"0.9rem",fontWeight:700,color:"#1A1A1A"}}>{fmt(showDetail.counterProposal.scheduledAt)}</div>
+                  {showDetail.counterProposal.note && <p style={{fontSize:"0.82rem",color:"#525252",margin:0,lineHeight:1.5}}>{showDetail.counterProposal.note}</p>}
+                  <div style={{display:"flex",gap:"0.5rem",marginTop:"0.25rem"}}>
+                    <button onClick={()=>acceptCounter(showDetail.appointmentId||showDetail._id)} disabled={actioning}
+                      style={{flex:1,background:"#7B68EE",color:"#fff",border:"none",borderRadius:"7px",padding:"0.6rem",fontFamily:"var(--font-display)",fontSize:"0.8rem",cursor:"pointer",letterSpacing:"0.06em",fontWeight:700,opacity:actioning?0.6:1}}>
+                      Accept New Time
+                    </button>
+                    <button onClick={()=>cancelAppt(showDetail.appointmentId||showDetail._id)} disabled={actioning}
+                      style={{flex:1,background:"#FEF2F2",color:"#DC2626",border:"1.5px solid #FECACA",borderRadius:"7px",padding:"0.6rem",fontSize:"0.8rem",cursor:"pointer",fontWeight:600,opacity:actioning?0.6:1}}>
+                      Decline &amp; Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {actionMsg && (
+                <div style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"7px",padding:"0.625rem 0.875rem",fontSize:"0.82rem",color:"#15803D",fontWeight:600}}>
+                  {actionMsg}
+                </div>
+              )}
               <div className="dealer-contacts">
                 {showDetail.dealerPhone && <a href={`tel:${showDetail.dealerPhone}`} className="contact-btn"> {showDetail.dealerPhone}</a>}
                 {showDetail.dealerWhatsapp && <a href={`https://wa.me/${showDetail.dealerWhatsapp}`} target="_blank" rel="noreferrer" className="contact-btn"> WhatsApp</a>}
               </div>
               <div className="modal-footer">
-                <button className="btn-outline" onClick={() => setShowDetail(null)}>Close</button>
+                {showDetail.status === "pending" && (
+                  <button onClick={()=>cancelAppt(showDetail.appointmentId||showDetail._id)} disabled={actioning}
+                    style={{background:"#FEF2F2",color:"#DC2626",border:"1.5px solid #FECACA",borderRadius:"6px",padding:"0.6rem 1rem",fontSize:"0.82rem",cursor:"pointer",fontWeight:600,opacity:actioning?0.6:1}}>
+                    Cancel Appointment
+                  </button>
+                )}
+                <button className="btn-outline" onClick={()=>{setShowDetail(null);setActionMsg("");}}>Close</button>
               </div>
             </div>
           </div>
