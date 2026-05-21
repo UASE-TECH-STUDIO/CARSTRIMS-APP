@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore, getRoleRedirect } from "@/store/authStore";
 import { useMessagesStore } from "@/store/messagesStore";
 import Link from "next/link";
 
@@ -97,7 +97,7 @@ export default function CarDetailPage() {
       });
       const convId = r.data?.conversationId;
       if (convId) {
-        // Opens MessagesWidget floating panel directly - no navigation at all
+        // Set the conversation in the store then navigate to dashboard messages
         openConversation(convId, {
           carId: car.carId || "",
           carBrand: car.brand,
@@ -106,6 +106,9 @@ export default function CarDetailPage() {
           carImage: car.images?.[0] || undefined,
           carPrice: car.sellingPrice,
         });
+        // Navigate to dashboard so MessagesWidget is visible
+        const base = getRoleRedirect(user?.role||"");
+        router.push(`${base}/messages?conv=${convId}&carId=${car.carId||""}&carImg=${encodeURIComponent(car.images?.[0]||"")}`);
       }
     } catch (e: any) {
       alert(e.response?.data?.detail || "Could not open chat. Please use WhatsApp or Call.");

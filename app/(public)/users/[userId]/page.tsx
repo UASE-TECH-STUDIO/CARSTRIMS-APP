@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import Link from "next/link";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore, getRoleRedirect } from "@/store/authStore";
 import { useMessagesStore } from "@/store/messagesStore";
 
 export default function PublicUserProfilePage() {
@@ -34,7 +34,12 @@ export default function PublicUserProfilePage() {
     try {
       const r = await api.post("/api/v1/messages/start", { receiverId: userId });
       const convId = r.data?.conversationId;
-      if (convId) openConversation(convId);
+      if (convId) {
+        openConversation(convId);
+        // Navigate to dashboard so the MessagesWidget is visible
+        const base = getRoleRedirect(me?.role||"");
+        router.push(`${base}/messages?conv=${convId}`);
+      }
     } catch(e:any) { alert(e.response?.data?.detail || "Could not open chat."); }
     finally { setStartingMsg(false); }
   };
@@ -94,23 +99,23 @@ export default function PublicUserProfilePage() {
         {(isSelf || !isAuthenticated) && <div style={{width:"80px"}}/>}
       </header>
 
+      {/* Hero - NO background/banner, clean flat layout */}
       <div style={{background:"#fff",borderBottom:"1.5px solid #E5E5E5"}}>
-        <div style={{height:"140px",background:`linear-gradient(135deg,#1A1A1A 0%,#2D1A0A 60%,${rc} 100%)`}}/>
-        <div style={{display:"flex",alignItems:"flex-end",gap:"1.25rem",padding:"0 1.5rem 1.5rem",marginTop:"-62px",flexWrap:"wrap"}}>
+        <div style={{maxWidth:"820px",margin:"0 auto",padding:"1.25rem 1rem",display:"flex",gap:"1rem",alignItems:"flex-start",flexWrap:"wrap"}}>
           <div onClick={()=>profile.avatar&&setLightbox(true)}
-            style={{width:"120px",height:"120px",borderRadius:"50%",overflow:"hidden",border:"5px solid #fff",background:"#FFF7ED",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--font-display)",fontSize:"3rem",color:rc,flexShrink:0,cursor:profile.avatar?"zoom-in":"default",boxShadow:"0 4px 20px rgba(0,0,0,0.15)"}}>
+            style={{width:"80px",height:"80px",minWidth:"80px",borderRadius:"50%",overflow:"hidden",border:`3px solid ${rc}`,background:"#FFF7ED",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--font-display)",fontSize:"2rem",color:rc,cursor:profile.avatar?"zoom-in":"default",boxShadow:"0 2px 12px rgba(0,0,0,0.1)"}}>
             {profile.avatar
               ? <img src={profile.avatar} alt="" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
               : <span>{profile.fullName?.charAt(0)||"?"}</span>
             }
           </div>
-          <div style={{paddingTop:"0.875rem",display:"flex",flexDirection:"column",gap:"0.4rem",flex:1,minWidth:0}}>
-            <h1 style={{fontFamily:"var(--font-display)",fontSize:"clamp(1.5rem,4vw,2rem)",letterSpacing:"0.03em",color:"#1A1A1A",lineHeight:1}}>{profile.fullName}</h1>
-            <div style={{display:"inline-flex",alignItems:"center",padding:"0.28rem 0.875rem",borderRadius:"20px",fontSize:"0.75rem",fontWeight:700,letterSpacing:"0.08em",background:`${rc}18`,color:rc,border:`1.5px solid ${rc}40`,width:"fit-content"}}>
+          <div style={{flex:1,minWidth:"160px",display:"flex",flexDirection:"column",gap:"0.35rem"}}>
+            <h1 style={{fontFamily:"var(--font-display)",fontSize:"clamp(1.25rem,4vw,1.75rem)",letterSpacing:"0.03em",color:"#1A1A1A",lineHeight:1.1,margin:0}}>{profile.fullName}</h1>
+            <div style={{display:"inline-flex",alignItems:"center",padding:"0.2rem 0.75rem",borderRadius:"20px",fontSize:"0.72rem",fontWeight:700,letterSpacing:"0.08em",background:`${rc}18`,color:rc,border:`1.5px solid ${rc}40`,width:"fit-content"}}>
               {ROLE_LABEL[role]||role}
             </div>
-            {(profile.city||profile.state)&&<div style={{fontSize:"0.875rem",color:"#737373"}}>&#x1F4CD; {[profile.city,profile.state].filter(Boolean).join(", ")}</div>}
-            {profile.bio&&<p style={{fontSize:"0.9rem",color:"#525252",lineHeight:1.65,maxWidth:"480px"}}>{profile.bio}</p>}
+            {(profile.city||profile.state)&&<div style={{fontSize:"0.8rem",color:"#737373"}}>{[profile.city,profile.state].filter(Boolean).join(", ")}</div>}
+            {profile.bio&&<p style={{fontSize:"0.82rem",color:"#525252",lineHeight:1.55,maxWidth:"480px",margin:"0.1rem 0 0"}}>{profile.bio}</p>}
           </div>
         </div>
       </div>
