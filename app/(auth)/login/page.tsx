@@ -22,7 +22,7 @@ export default function LoginPage() {
         password: form.password,
       });
       const d = res.data;
-      setUser({ userId:d.userId, fullName:d.fullName, email:d.email, role:d.role, dealerId:d.dealerId, accessToken:d.accessToken, refreshToken:d.refreshToken });
+      setUser({ userId:d.userId, mongoId:d.mongoId, fullName:d.fullName, email:d.email, role:d.role, dealerId:d.dealerId, accessToken:d.accessToken, refreshToken:d.refreshToken, profilePicture:d.profilePicture });
       if (d.role === "DEALER_ADMIN" && !d.hasDealerProfile) {
         router.push("/dashboard/dealer/setup");
       } else {
@@ -161,4 +161,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

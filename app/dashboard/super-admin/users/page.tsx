@@ -183,7 +183,14 @@ export default function AdminUsersPage() {
               {users.map(u=>(
                 <tr key={u._id} style={{borderBottom:"1px solid #F5F5F5"}}>
                   <td style={{padding:"0.875rem 1rem",verticalAlign:"top"}}>
-                    <div style={{fontWeight:600,fontSize:"0.875rem",color:"#1A1A1A"}}>{u.fullName||""}</div>
+                    <Link href={`/dashboard/super-admin/users/${u._id}`}
+                      style={{textDecoration:"none"}}>
+                      <div style={{fontWeight:700,fontSize:"0.875rem",color:"#F47B20",cursor:"pointer"}}
+                        onMouseOver={e=>(e.currentTarget as HTMLElement).style.textDecoration="underline"}
+                        onMouseOut={e=>(e.currentTarget as HTMLElement).style.textDecoration="none"}>
+                        {u.fullName||""}
+                      </div>
+                    </Link>
                     <div style={{fontSize:"0.72rem",color:"#A3A3A3",fontFamily:"monospace"}}>@{u.username||"-"}</div>
                     <div style={{fontSize:"0.75rem",color:"#737373"}}>{u.email}</div>
                   </td>
@@ -250,4 +257,3 @@ export default function AdminUsersPage() {
     </div>
   );
 }
-

@@ -10,6 +10,7 @@ export type UserRole =
 
 export interface AuthUser {
   userId: string;
+  mongoId?: string;  // str(_id) - used for senderId comparison in messages
   fullName: string;
   email: string;
   role: UserRole;

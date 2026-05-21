@@ -10,7 +10,8 @@ interface Props { accentColor?: string; }
 export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
   const { user } = useAuthStore();
   const isSuperAdmin = user?.role === "SYSTEM_ADMIN";
-  const uid = user?.userId;
+  // mongoId matches str(_id) which backend stores as senderId
+  const uid = user?.mongoId || user?.userId;
   const { openConvId, openCarContext, clearOpen } = useMessagesStore();
 
   const [open, setOpen]               = useState(false);
@@ -38,25 +39,37 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
   // Auto-open widget and jump to conversation when triggered from Message Dealer button
   useEffect(() => {
     if (!openConvId) return;
+    const convId = openConvId;
+    const carCtx = openCarContext;
+    clearOpen(); // clear store immediately
     setOpen(true);
-    // Wait for conversations to load then open the right one
+    if (carCtx) {
+      setCarIdParam(carCtx.carId);
+      setCarImgParam(carCtx.carImage || null);
+    }
+    // Load conversations then open the right one
     const tryOpen = async () => {
-      await loadConvs();
-      setConvs(prev => {
-        const found = prev.find(c => c.conversationId === openConvId);
+      try {
+        const res = await api.get("/api/v1/messages/conversations");
+        const convs = res.data || [];
+        setConvs(convs);
+        setUnread(convs.reduce((acc:number,c:any)=>acc+(c.unreadCount||0),0));
+        const found = convs.find((c:any) => c.conversationId === convId);
         if (found) {
           openConv(found);
+        } else {
+          // Conversation not in list yet - create a minimal one to open
+          setTimeout(async () => {
+            const res2 = await api.get("/api/v1/messages/conversations");
+            const convs2 = res2.data || [];
+            setConvs(convs2);
+            const found2 = convs2.find((c:any) => c.conversationId === convId);
+            if (found2) openConv(found2);
+          }, 1500);
         }
-        return prev;
-      });
+      } catch {}
     };
     tryOpen();
-    // Set car context from store if available
-    if (openCarContext) {
-      setCarIdParam(openCarContext.carId);
-      setCarImgParam(openCarContext.carImage || null);
-    }
-    clearOpen();
   }, [openConvId]);
 
   const msgsEndRef   = useRef<HTMLDivElement>(null);
@@ -274,7 +287,7 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
           ) : (
             <div className="chat-view">
               <div className="chat-head">
-                <button className="chat-back" onClick={()=>{setActiveConv(null);activeRef.current=null;if(pollRef.current)clearInterval(pollRef.current);}}> back</button>
+                <button className="chat-back" onClick={()=>{setActiveConv(null);activeRef.current=null;if(pollRef.current)clearInterval(pollRef.current);}}>&lt; Back</button>
                 <div className="ch-avatar">
                   {activeConv.type==="announcement"?"":activeConv.otherUser?.profilePicture?<img src={activeConv.otherUser.profilePicture} alt=""/>:activeConv.otherUser?.fullName?.charAt(0)||"?"}
                 </div>

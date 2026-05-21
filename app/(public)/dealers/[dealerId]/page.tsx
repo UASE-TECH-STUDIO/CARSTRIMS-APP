@@ -137,16 +137,13 @@ export default function DealerProfilePage() {
         <div style={{width:"60px"}}/>
       </header>
 
-      {/* Hero */}
+      {/* Hero - NO BANNER, flat clean layout */}
       <div style={{background:"#fff",borderBottom:"1.5px solid #E5E5E5"}}>
-        <div style={{height:"180px",background:"linear-gradient(135deg,#1A1A1A 0%,#2D1A0A 60%,#F47B20 100%)",position:"relative",overflow:"hidden"}}>
-          {dealer.banner&&<img src={dealer.banner} alt="" style={{width:"100%",height:"100%",objectFit:"cover",opacity:0.6}}/>}
-        </div>
         <div style={{maxWidth:"1100px",margin:"0 auto",padding:"0 1.5rem"}}>
-          <div style={{display:"flex",alignItems:"flex-end",gap:"1.25rem",marginTop:"-52px",paddingBottom:"1.25rem",flexWrap:"wrap"}}>
+          <div style={{display:"flex",alignItems:"flex-start",gap:"1.25rem",padding:"1.5rem 0",flexWrap:"wrap"}}>
             <div onClick={()=>dealer.logo&&setLightbox(dealer.logo)}
-              style={{width:"100px",height:"100px",borderRadius:"16px",overflow:"hidden",border:"4px solid #fff",background:"#FFF7ED",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--font-display)",fontSize:"2.5rem",color:"#F47B20",flexShrink:0,cursor:dealer.logo?"zoom-in":"default",boxShadow:"0 4px 20px rgba(0,0,0,0.15)",transition:"transform 0.2s"}}
-              onMouseOver={e=>{if(dealer.logo)(e.currentTarget as HTMLElement).style.transform="scale(1.03)"}}
+              style={{width:"88px",height:"88px",borderRadius:"14px",overflow:"hidden",border:"2.5px solid #F47B20",background:"#FFF7ED",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--font-display)",fontSize:"2.5rem",color:"#F47B20",flexShrink:0,cursor:dealer.logo?"zoom-in":"default",boxShadow:"0 4px 20px rgba(0,0,0,0.1)",transition:"transform 0.2s"}}
+              onMouseOver={e=>{if(dealer.logo)(e.currentTarget as HTMLElement).style.transform="scale(1.04)"}}
               onMouseOut={e=>(e.currentTarget as HTMLElement).style.transform=""}>
               {dealer.logo?<img src={dealer.logo} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>{dealer.companyName?.charAt(0)||"D"}</span>}
             </div>
