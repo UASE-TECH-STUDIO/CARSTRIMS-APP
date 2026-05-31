@@ -73,13 +73,14 @@ export default function ReportsPage() {
       </div>
 
       <div class="section">MONTHLY REVENUE & PROFIT (LAST 6 MONTHS)</div>
-      <table><thead><tr><th>Month</th><th>Revenue</th><th>Cost of Goods</th><th>Gross Profit</th><th>Margin %</th><th>Sales Count</th></tr></thead>
+      <table><thead><tr><th>Month</th><th>Revenue</th><th>Cost of Goods</th><th>Gross Profit</th><th>Expenses</th><th>Net Income</th><th>Margin %</th><th>Sales Count</th></tr></thead>
       <tbody>${(data.monthlySales||[]).map((m:any)=>{
-        const margin=m.revenue>0?Math.round((m.profit/m.revenue)*100):0;
         const cogs=m.revenue-m.profit;
-        return `<tr><td>${m.month}</td><td style="color:#F47B20;font-weight:600">${fmt(m.revenue)}</td><td style="color:#DC2626">${fmt(cogs)}</td><td style="color:#16A34A;font-weight:600">${fmt(m.profit)}</td><td>${margin}%</td><td>${m.count}</td></tr>`;
+        const ni=m.profit-(m.expenses||0);
+        const margin=m.revenue>0?Math.round((ni/m.revenue)*100):0;
+        return `<tr><td>${m.month}</td><td style="color:#F47B20;font-weight:600">${fmt(m.revenue)}</td><td style="color:#DC2626">${fmt(cogs)}</td><td style="color:#16A34A;font-weight:600">${fmt(m.profit)}</td><td style="color:#DC2626">${fmt(m.expenses||0)}</td><td style="color:${ni>=0?'#16A34A':'#DC2626'};font-weight:600">${fmt(ni)}</td><td>${margin}%</td><td>${m.count}</td></tr>`;
       }).join("")}
-      <tr class="total-row"><td>TOTAL</td><td>${fmt((data.monthlySales||[]).reduce((a:number,m:any)=>a+m.revenue,0))}</td><td>${fmt((data.monthlySales||[]).reduce((a:number,m:any)=>a+(m.revenue-m.profit),0))}</td><td>${fmt((data.monthlySales||[]).reduce((a:number,m:any)=>a+m.profit,0))}</td><td></td><td>${(data.monthlySales||[]).reduce((a:number,m:any)=>a+m.count,0)}</td></tr>
+      <tr class="total-row"><td>TOTAL</td><td>${fmt((data.monthlySales||[]).reduce((a:number,m:any)=>a+m.revenue,0))}</td><td>${fmt((data.monthlySales||[]).reduce((a:number,m:any)=>a+(m.revenue-m.profit),0))}</td><td>${fmt((data.monthlySales||[]).reduce((a:number,m:any)=>a+m.profit,0))}</td><td>${fmt((data.monthlySales||[]).reduce((a:number,m:any)=>a+(m.expenses||0),0))}</td><td>${fmt((data.monthlySales||[]).reduce((a:number,m:any)=>a+(m.profit-(m.expenses||0)),0))}</td><td></td><td>${(data.monthlySales||[]).reduce((a:number,m:any)=>a+m.count,0)}</td></tr>
       </tbody></table>
 
       <div class="section">TOP BRANDS SOLD</div>
@@ -128,10 +129,11 @@ export default function ReportsPage() {
       ["Cars Listed", s?.totalCars||0],
       [],
       ["MONTHLY BREAKDOWN"],
-      ["Month","Revenue","Cost of Goods","Gross Profit","Margin %","Count"],
+      ["Month","Revenue","Cost of Goods","Gross Profit","Expenses","Net Income","Margin %","Sales Count"],
       ...(data.monthlySales||[]).map((m:any)=>{
-        const margin=m.revenue>0?Math.round((m.profit/m.revenue)*100):0;
-        return [m.month, m.revenue, m.revenue-m.profit, m.profit, `${margin}%`, m.count];
+        const ni=m.profit-(m.expenses||0);
+        const margin=m.revenue>0?Math.round((ni/m.revenue)*100):0;
+        return [m.month, m.revenue, m.revenue-m.profit, m.profit, m.expenses||0, ni, `${margin}%`, m.count];
       }),
       [],
       ["TOP BRANDS"],
@@ -198,9 +200,7 @@ export default function ReportsPage() {
           {label:"Gross Profit",       val:fmt(s?.totalProfit||0),    cls:"green"},
           {label:"Total Expenses",     val:fmt(s?.totalExpenses||0),  cls:"red"},
           {label:"Net Income",         val:fmt(netIncome),            cls:netIncome>=0?"green":"red"},
-          {label:"Total Transactions", val:s?.totalSales||0,          cls:""},
           {label:"Cars Sold / Listed", val:`${s?.soldCars||0} / ${s?.totalCars||0}`, cls:""},
-          {label:"Staff",              val:s?.totalStaff||0,          cls:""},
         ].map(card=>(
           <div key={card.label} className={`sum-card ${card.cls}`}>
             <div className="sc-val">{card.val}</div>

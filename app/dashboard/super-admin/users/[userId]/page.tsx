@@ -17,6 +17,9 @@ export default function SuperAdminUserDetail() {
   const [tab, setTab]           = useState<"profile"|"documents"|"dealer"|"activity">("profile");
   const [preview, setPreview]   = useState<{src:string,isPdf:boolean}|null>(null);
   const [actioning, setActioning] = useState(false);
+  const [showResetPw, setShowResetPw] = useState(false);
+  const [newPw, setNewPw] = useState("");
+  const [pwResetting, setPwResetting] = useState(false);
   const [banner, setBanner]     = useState("");
 
   // Edit state
@@ -99,6 +102,17 @@ export default function SuperAdminUserDetail() {
     setActioning(true);
     try { await api.post(`/api/v1/admin/users/${userId}/unsuspend`); setBanner("User reactivated."); load(); }
     catch { setBanner("Failed to reactivate."); } finally { setActioning(false); }
+  };
+
+  const resetPassword = async () => {
+    setPwResetting(true);
+    try {
+      const res = await api.post(`/api/v1/admin/users/${userId}/reset-password`, newPw ? { newPassword: newPw } : {});
+      const generated = res.data?.newPassword;
+      setBanner(`Password reset to: ${generated}  User has been notified by email and in-app.`);
+      setShowResetPw(false); setNewPw("");
+    } catch(e:any) { setBanner("Failed to reset password: " + (e.response?.data?.detail||"error")); }
+    finally { setPwResetting(false); }
   };
 
   const exportCSV = () => {
@@ -292,12 +306,29 @@ export default function SuperAdminUserDetail() {
         <div style={{display:"flex",gap:"0.375rem",flexWrap:"wrap"}}>
           <button onClick={exportCSV} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"7px",padding:"0.375rem 0.75rem",fontSize:"0.72rem",cursor:"pointer",fontWeight:600}}>CSV</button>
           <button onClick={exportPDF} style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"7px",padding:"0.375rem 0.75rem",fontSize:"0.72rem",cursor:"pointer",fontWeight:700}}>PDF / Print</button>
+          <button onClick={()=>setShowResetPw(!showResetPw)} style={{background:"#EFF6FF",color:"#1D4ED8",border:"1.5px solid #BFDBFE",borderRadius:"7px",padding:"0.375rem 0.75rem",fontSize:"0.72rem",cursor:"pointer",fontWeight:600}}>Reset Password</button>
           {profile.status==="suspended"
             ? <button onClick={unsuspend} disabled={actioning} style={{background:"#16A34A",color:"#fff",border:"none",borderRadius:"7px",padding:"0.375rem 0.75rem",fontSize:"0.72rem",cursor:"pointer",fontWeight:700}}>Reactivate</button>
             : <button onClick={suspend} disabled={actioning} style={{background:"#DC2626",color:"#fff",border:"none",borderRadius:"7px",padding:"0.375rem 0.75rem",fontSize:"0.72rem",cursor:"pointer",fontWeight:700}}>Suspend</button>
           }
         </div>
       </div>
+
+      {showResetPw && (
+        <div style={{background:"#EFF6FF",border:"1.5px solid #BFDBFE",borderRadius:"10px",padding:"1rem 1.25rem",marginBottom:"1rem",display:"flex",flexDirection:"column",gap:"0.75rem"}}>
+          <div style={{fontFamily:"var(--font-display)",fontSize:"0.72rem",letterSpacing:"0.1em",color:"#1D4ED8"}}>RESET USER PASSWORD</div>
+          <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap",alignItems:"center"}}>
+            <input value={newPw} onChange={e=>setNewPw(e.target.value)} placeholder="Leave blank to auto-generate"
+              style={{flex:1,minWidth:"200px",background:"#fff",border:"1.5px solid #BFDBFE",borderRadius:"7px",padding:"0.5rem 0.75rem",fontSize:"0.875rem",fontFamily:"var(--font-body)",outline:"none"}}/>
+            <button onClick={resetPassword} disabled={pwResetting}
+              style={{background:"#1D4ED8",color:"#fff",border:"none",borderRadius:"7px",padding:"0.5rem 1rem",fontSize:"0.78rem",cursor:"pointer",fontWeight:700,opacity:pwResetting?0.6:1}}>
+              {pwResetting?"Resetting...":"Reset & Notify User"}
+            </button>
+            <button onClick={()=>setShowResetPw(false)} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"7px",padding:"0.5rem 0.75rem",fontSize:"0.78rem",cursor:"pointer"}}>Cancel</button>
+          </div>
+          <div style={{fontSize:"0.72rem",color:"#1D4ED8"}}>User will be notified by email and in-app notification with the new password.</div>
+        </div>
+      )}
 
       {banner && (
         <div style={{background:banner.includes("success")||banner.includes("updated")||banner.includes("removed")||banner.includes("reactivated")?"#F0FDF4":"#FEF2F2",border:"1px solid",borderColor:banner.includes("success")||banner.includes("updated")||banner.includes("removed")||banner.includes("reactivated")?"#86EFAC":"#FECACA",borderRadius:"8px",padding:"0.75rem 1rem",marginBottom:"1rem",fontSize:"0.85rem",color:banner.includes("success")||banner.includes("updated")||banner.includes("removed")||banner.includes("reactivated")?"#15803D":"#DC2626",display:"flex",justifyContent:"space-between",alignItems:"center"}}>

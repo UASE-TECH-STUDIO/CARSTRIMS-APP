@@ -12,7 +12,7 @@ const ROLE_OPTIONS = [
 ];
 
 export default function BroadcastPage() {
-  const [form, setForm] = useState({ title:"", message:"", targetRole:"all", type:"announcement" });
+  const [form, setForm] = useState({ title:"", message:"", targetRole:"all", type:"announcement", sendEmail:false });
   const [attachUrl, setAttachUrl]   = useState("");
   const [attachName, setAttachName] = useState("");
   const [attachType, setAttachType] = useState<"image"|"video"|"document"|"">("");
@@ -75,7 +75,7 @@ export default function BroadcastPage() {
     setSending(true); setErr("");
     try {
       const payload: any = {
-        title: form.title, message: form.message,
+        title: form.title, message: form.message, sendEmail: form.sendEmail,
         targetRole: form.targetRole === "specific" ? "all" : form.targetRole,
       };
       if (form.targetRole === "specific") {
@@ -89,7 +89,7 @@ export default function BroadcastPage() {
       const res = await api.post("/api/v1/admin/broadcast", payload);
       setResult(res.data);
       setHistory(prev => [{...form, attachUrl, attachName, attachType, sentAt:new Date().toISOString(), sentTo:res.data.sentTo||0, selectedUsers:[...selectedUsers]}, ...prev]);
-      setForm({ title:"", message:"", targetRole:"all", type:"announcement" });
+      setForm({ title:"", message:"", targetRole:"all", type:"announcement", sendEmail:false });
       setAttachUrl(""); setAttachName(""); setAttachType("");
       setSelectedUsers([]); setUserSearch("");
     } catch(e:any) { setErr(e.response?.data?.detail || "Failed to send"); }
@@ -282,4 +282,3 @@ export default function BroadcastPage() {
     </div>
   );
 }
-

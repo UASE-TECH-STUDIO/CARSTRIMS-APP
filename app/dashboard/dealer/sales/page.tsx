@@ -11,7 +11,7 @@ interface Sale {
   _id:string; transactionId:string; carId:string;
   carBrand?:string; carModel?:string; carYear?:number;
   sellingPrice:number; purchasePrice:number; profit:number;
-  paymentMethod:string; buyerName?:string; buyerPhone?:string;
+  paymentMethod:string; buyerName?:string; buyerPhone?:string; buyerAddress?:string;
   notes?:string; soldAt:string; isEdited?:boolean; isManual?:boolean;
   editHistory?:any[];
 }
@@ -245,6 +245,7 @@ export default function SalesPage() {
                 <div className="field"><label className="fl">Buyer Phone</label><input className="fi" value={manualForm.buyerPhone} onChange={e=>setManualForm({...manualForm,buyerPhone:e.target.value})}/></div>
               </div>
               <div className="field"><label className="fl">Buyer Email</label><input type="email" className="fi" value={manualForm.buyerEmail} onChange={e=>setManualForm({...manualForm,buyerEmail:e.target.value})}/></div>
+              <div className="field" style={{gridColumn:"1/-1"}}><label className="fl">Buyer Address</label><input className="fi" placeholder="Street, City, State" value={manualForm.buyerAddress||""} onChange={e=>setManualForm({...manualForm,buyerAddress:e.target.value})}/></div>
               <div className="field"><label className="fl">Payment Method</label>
                 <select className="fi" value={manualForm.paymentMethod} onChange={e=>setManualForm({...manualForm,paymentMethod:e.target.value})}>
                   <option value="cash">Cash</option><option value="bank_transfer">Bank Transfer</option>
