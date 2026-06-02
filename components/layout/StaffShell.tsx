@@ -21,16 +21,19 @@ const PAGE_TITLES: Record<string,string> = {
 };
 
 const ALL_NAV = [
-  { href:"/dashboard/staff",           label:"Overview",       icon:"", exact:true, perm:null },
-  { href:"/dashboard/staff/inventory", label:"Cars & Inventory",icon:"", perm:"view_inventory" },
-  { href:"/dashboard/staff/sales",     label:"Sales",           icon:"", perm:"view_sales" },
-  { href:"/dashboard/staff/staff",     label:"Staff",           icon:"", perm:"view_staff" },
-  { href:"/dashboard/staff/partners",  label:"Partners",        icon:"", perm:"view_partners" },
-  { href:"/dashboard/staff/movements", label:"Movements",       icon:"", perm:"view_movements" },
-  { href:"/dashboard/staff/cctv",      label:"CCTV",            icon:"", perm:"view_cctv" },
-  { href:"/dashboard/staff/reports",   label:"Reports",         icon:"", perm:"view_reports" },
-  { href:"/dashboard/staff/notifications",label:"Notifications",icon:"", perm:null },
-  { href:"/dashboard/staff/settings",  label:"Settings",        icon:"", perm:null },
+  { href:"/dashboard/staff",                label:"Overview",         icon:"", exact:true, perm:null },
+  { href:"/dashboard/staff/inventory",      label:"Cars & Inventory", icon:"", perm:"view_inventory" },
+  { href:"/dashboard/staff/sales",          label:"Sales",            icon:"", perm:"view_sales" },
+  { href:"/dashboard/staff/appointments",   label:"Appointments",     icon:"", perm:"view_appointments" },
+  { href:"/dashboard/staff/requests",       label:"Requests",         icon:"", perm:"view_requests" },
+  { href:"/dashboard/staff/reports",        label:"Reports",          icon:"", perm:"view_reports" },
+  { href:"/dashboard/staff/expenses",       label:"Expenses",         icon:"", perm:"view_expenses" },
+  { href:"/dashboard/staff/movements",      label:"Movements",        icon:"", perm:"view_movements" },
+  { href:"/dashboard/staff/partners",       label:"Partners",         icon:"", perm:"view_partners" },
+  { href:"/dashboard/staff/staff",          label:"Staff",            icon:"", perm:"view_staff" },
+  { href:"/dashboard/staff/cctv",           label:"CCTV",             icon:"", perm:"view_cctv" },
+  { href:"/dashboard/staff/notifications",  label:"Notifications",    icon:"", perm:null },
+  { href:"/dashboard/staff/settings",       label:"Settings",         icon:"", perm:null },
 ];
 
 function getGreeting() {
