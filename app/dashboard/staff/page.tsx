@@ -127,11 +127,16 @@ export default function StaffOverviewPage() {
         <div style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px",padding:"1.25rem"}}>
           <div style={{fontSize:"0.68rem",fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"#A3A3A3",marginBottom:"0.875rem"}}>YOUR DEALERSHIP</div>
           <div style={{display:"flex",alignItems:"center",gap:"1rem",flexWrap:"wrap"}}>
-            <div style={{width:"48px",height:"48px",borderRadius:"8px",background:"#FFF7ED",border:"1.5px solid rgba(244,123,32,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--font-display)",fontSize:"1.3rem",color:"#F47B20",overflow:"hidden",flexShrink:0}}>
+            <a href={`/dealer/${dealer.dealerId}`} style={{width:"48px",height:"48px",borderRadius:"8px",background:"#FFF7ED",border:"1.5px solid rgba(244,123,32,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--font-display)",fontSize:"1.3rem",color:"#F47B20",overflow:"hidden",flexShrink:0,textDecoration:"none"}}>
               {dealer.logo ? <img src={dealer.logo} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/> : dealer.companyName?.charAt(0)}
-            </div>
+            </a>
             <div style={{flex:1}}>
-              <div style={{fontSize:"1rem",fontWeight:700,color:"#1A1A1A"}}>{dealer.companyName}</div>
+              <a href={`/dealer/${dealer.dealerId}`} 
+              style={{fontSize:"1rem",fontWeight:700,color:"#1A1A1A",textDecoration:"none",cursor:"pointer"}}
+              onMouseOver={e=>(e.currentTarget as HTMLElement).style.color="#F47B20"}
+              onMouseOut={e=>(e.currentTarget as HTMLElement).style.color="#1A1A1A"}>
+              {dealer.companyName}
+            </a>
               <div style={{fontSize:"0.78rem",color:"#737373"}}>{dealer.ownerName}  {[dealer.city,dealer.state].filter(Boolean).join(", ")||""}</div>
             </div>
             <div style={{textAlign:"right"}}>
