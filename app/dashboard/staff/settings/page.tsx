@@ -1,4 +1,5 @@
 "use client";
+import NotificationSettings from "@/components/ui/NotificationSettings";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import dynamic from "next/dynamic";

@@ -1,4 +1,4 @@
-const CACHE = "carstrims-v4";
+const CACHE = "carstrims-v5";
 const STATIC = [
   "/", "/feed", "/login", "/register",
   "/favicon.svg", "/logo.png", "/icon-192.png", "/icon-72.png", "/audio.mp3",
@@ -6,7 +6,7 @@ const STATIC = [
 const NOTIF_ICON  = "/icon-192.png";
 const NOTIF_BADGE = "/icon-72.png";
 
-// Install  pre-cache all static pages immediately
+// Install  pre-cache static assets
 self.addEventListener("install", (e) => {
   e.waitUntil(
     caches.open(CACHE).then(c => c.addAll(STATIC).catch(() => {}))
@@ -23,18 +23,16 @@ self.addEventListener("activate", (e) => {
   );
 });
 
-// Fetch  stale-while-revalidate for pages, cache-first for assets
+// Fetch  network first for pages, cache first for assets
 self.addEventListener("fetch", (e) => {
   const { request } = e;
   const url = new URL(request.url);
 
-  // Never intercept API calls or external requests
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/api/")) return;
   if (request.method !== "GET") return;
 
-  // Assets (js/css/images/fonts)  cache-first
-  if (/\.(js|css|png|svg|jpg|jpeg|webp|woff2?|ico)$/.test(url.pathname)) {
+  if (/\.(js|css|png|svg|jpg|jpeg|webp|woff2?|ico|mp3)$/.test(url.pathname)) {
     e.respondWith(
       caches.match(request).then(cached => cached || fetch(request).then(res => {
         if (res.ok) {
@@ -47,7 +45,6 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  // Pages  network-first with cache fallback (users always get fresh data)
   e.respondWith(
     fetch(request).then(res => {
       if (res.ok && res.status < 400) {
@@ -59,28 +56,49 @@ self.addEventListener("fetch", (e) => {
   );
 });
 
-//  PUSH from server (Web Push API) 
+//  PUSH from server 
 self.addEventListener("push", (event) => {
   let data = {};
-  try { data = event.data?.json() || {}; } catch(_) {
-    data = { title: "CARSTRIMS", body: event.data?.text() || "New notification" };
-  }
-  const title = data.title   || "CARSTRIMS";
-  const body  = data.message || data.body || "You have a new notification";
+  try { data = event.data?.json() || {}; }
+  catch(_) { data = { title: "CARSTRIMS", body: event.data?.text() || "New notification" }; }
+
+  const title   = data.title   || "CARSTRIMS";
+  const body    = data.message || data.body || "You have a new notification";
+  const tag     = data.tag     || "carstrims-" + Date.now();
+  const url     = data.url     || "/dashboard";
+  const sound   = data.sound   !== false; // default true
+
   event.waitUntil(
-    self.registration.showNotification(title, {
-      body, icon: NOTIF_ICON, badge: NOTIF_BADGE,
-      tag: data.tag || "carstrims-" + Date.now(),
-      data: { url: data.url || "/dashboard" },
-      vibrate: [200, 100, 200],
-      actions: [{ action: "open", title: "Open" }, { action: "dismiss", title: "Dismiss" }],
-    })
+    (async () => {
+      // Check user notification prefs from IndexedDB or skip
+      // Play audio by posting to all open clients
+      if (sound) {
+        const allClients = await clients.matchAll({ type: "window", includeUncontrolled: true });
+        allClients.forEach(c => c.postMessage({ type: "PLAY_SOUND" }));
+      }
+
+      await self.registration.showNotification(title, {
+        body,
+        icon:    NOTIF_ICON,
+        badge:   NOTIF_BADGE,
+        tag,
+        silent:  !sound,
+        data:    { url },
+        vibrate: [200, 100, 200],
+        actions: [
+          { action: "open",    title: "Open" },
+          { action: "dismiss", title: "Dismiss" },
+        ],
+      });
+    })()
   );
 });
 
+//  Notification click 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   if (event.action === "dismiss") return;
+
   const url = event.notification.data?.url || "/";
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then(list => {
@@ -95,7 +113,7 @@ self.addEventListener("notificationclick", (event) => {
   );
 });
 
-// Background polling fallback
+//  Messages from page 
 self.addEventListener("message", (event) => {
   if (event.data?.type === "WARM_CACHE") {
     const pages = event.data.pages || [];

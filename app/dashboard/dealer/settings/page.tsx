@@ -1,4 +1,5 @@
 "use client";
+import NotificationSettings from "@/components/ui/NotificationSettings";
 import { useEffect, useState, useRef } from "react";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
