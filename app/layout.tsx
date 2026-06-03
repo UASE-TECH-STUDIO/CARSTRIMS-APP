@@ -70,7 +70,7 @@ export const metadata: Metadata = {
     canonical: "https://www.carstrims.com",
   },
   verification: {
-    google: "",   // fill in after Google Search Console verification
+    google: "Pt4BuXRR_OoKic89iqXs0V09dw-ejlPsoDB7-CBBfgc",
   },
   category: "automotive",
 };
