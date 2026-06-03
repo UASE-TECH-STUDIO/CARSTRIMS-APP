@@ -1,4 +1,4 @@
-onst CACHE = "carstrims-v3";
+const CACHE = "carstrims-v4";
 const STATIC = [
   "/", "/feed", "/login", "/register",
   "/favicon.svg", "/logo.png", "/icon-192.png", "/icon-72.png", "/audio.mp3",
