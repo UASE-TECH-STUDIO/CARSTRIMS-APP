@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Allow: /feed
+Allow: /cars/
+Disallow: /dashboard/
+Disallow: /api/
+Disallow: /(auth)/
+Disallow: /network-error
+
+Sitemap: https://www.carstrims.com/sitemap.xml
