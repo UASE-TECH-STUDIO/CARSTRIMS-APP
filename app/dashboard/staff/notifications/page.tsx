@@ -1,18 +1,14 @@
 "use client";
+import { useEffect, useState } from "react";
+import api from "@/lib/api";
+import dynamic from "next/dynamic";
 
-import Link from "next/link";
+const Page = dynamic(
+  () => import("@/app/dashboard/dealer/notifications/page"),
+  { ssr: false, loading: () => <div style={{padding:"2rem",color:"#737373"}}>Loading Notifications...</div> }
+);
 
-export default function StaffPage() {
-  
-  return (
-    <div style={{display:"flex", flexDirection:"column", gap:"1.5rem"}}>
-      <h2 style={{fontFamily:"var(--font-display)", fontSize:"1.6rem", color:"#1A1A1A", letterSpacing:"0.04em"}}>Notifications</h2>
-      <div style={{background:"#fff", border:"1.5px solid #E5E5E5", borderRadius:"12px", padding:"2rem", textAlign:"center"}}>
-        <p style={{color:"#737373", fontSize:"0.875rem", marginBottom:"1rem"}}>This section shares data with the dealer dashboard.</p>
-        <Link href="/dashboard/dealer/notifications" style={{background:"#F47B20", color:"#fff", borderRadius:"8px", padding:"0.75rem 1.5rem", fontFamily:"var(--font-display)", fontSize:"0.875rem", letterSpacing:"0.08em", textDecoration:"none"}}>
-          Go to Notifications
-        </Link>
-      </div>
-    </div>
-  );
+export default function StaffNotificationsPage() {
+  const allowed = true;
+  return <Page />;
 }

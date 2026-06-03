@@ -1,31 +1,28 @@
 "use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
-import Link from "next/link";
+import dynamic from "next/dynamic";
 
-export default function StaffPage() {
-    const [allowed, setAllowed] = useState<boolean|null>(null);
+const Page = dynamic(
+  () => import("@/app/dashboard/dealer/reports/page"),
+  { ssr: false, loading: () => <div style={{padding:"2rem",color:"#737373"}}>Loading Reports...</div> }
+);
+
+export default function StaffReportsPage() {
+  const [allowed, setAllowed] = useState<boolean|null>(null);
   useEffect(() => {
-    api.get("/api/v1/staff/me").then((r) => {
-      setAllowed(r.data.permissions?.includes("view_reports") || false);
+    api.get("/api/v1/staff/me").then(r => {
+      const p: string[] = r.data.permissions || [];
+      setAllowed(p.includes("view_reports") || p.includes("generate_reports"));
     }).catch(() => setAllowed(false));
   }, []);
-  if (allowed === null) return <div style={{padding:"2rem",color:"#737373"}}>Checking permissions...</div>;
+  if (allowed === null) return <div style={{padding:"2rem",color:"#737373"}}>Loading...</div>;
   if (!allowed) return (
     <div style={{padding:"3rem",textAlign:"center",background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px"}}>
-      <div style={{fontSize:"1rem",fontWeight:700,color:"#DC2626"}}>Access Denied</div>
-      <p style={{color:"#737373",marginTop:"0.5rem",fontSize:"0.875rem"}}>You do not have permission to view Reports.</p>
+      <div style={{fontSize:"2rem",marginBottom:"0.75rem"}}>&#x1F512;</div>
+      <div style={{fontFamily:"var(--font-display)",fontSize:"1.1rem",color:"#DC2626",fontWeight:700}}>Access Restricted</div>
+      <p style={{color:"#737373",marginTop:"0.5rem",fontSize:"0.875rem"}}>You need permission to access Reports. Contact your dealer admin.</p>
     </div>
   );
-  return (
-    <div style={{display:"flex", flexDirection:"column", gap:"1.5rem"}}>
-      <h2 style={{fontFamily:"var(--font-display)", fontSize:"1.6rem", color:"#1A1A1A", letterSpacing:"0.04em"}}>Reports</h2>
-      <div style={{background:"#fff", border:"1.5px solid #E5E5E5", borderRadius:"12px", padding:"2rem", textAlign:"center"}}>
-        <p style={{color:"#737373", fontSize:"0.875rem", marginBottom:"1rem"}}>This section shares data with the dealer dashboard.</p>
-        <Link href="/dashboard/dealer/reports" style={{background:"#F47B20", color:"#fff", borderRadius:"8px", padding:"0.75rem 1.5rem", fontFamily:"var(--font-display)", fontSize:"0.875rem", letterSpacing:"0.08em", textDecoration:"none"}}>
-          Go to Reports
-        </Link>
-      </div>
-    </div>
-  );
+  return <Page />;
 }
