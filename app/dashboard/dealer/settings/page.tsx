@@ -408,6 +408,13 @@ export default function SettingsPage() {
         .save-btn:disabled{opacity:0.6;cursor:not-allowed}
         @media(max-width:640px){.fr{grid-template-columns:1fr}.sg{grid-template-columns:1fr}}
       `}</style>
+
+      {/* Notifications and Sound */}
+      <div style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px",padding:"1.5rem"}}>
+        <p style={{fontFamily:"var(--font-display)",fontSize:"0.75rem",letterSpacing:"0.15em",textTransform:"uppercase",color:"#888",margin:"0 0 1rem"}}>NOTIFICATIONS &amp; SOUND</p>
+        <NotificationSettings/>
+      </div>
+
     </div>
   );
 }
