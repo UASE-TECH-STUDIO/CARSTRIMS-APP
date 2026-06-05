@@ -22,6 +22,7 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
   const [sending, setSending]         = useState(false);
   const [showNew, setShowNew]         = useState(false);
   const [userSearch, setUserSearch]   = useState("");
+  const [myTeam,    setMyTeam]         = useState<any[]>([]);
   const [userResults, setUserResults] = useState<any[]>([]);
   const [startMsg, setStartMsg]       = useState("");
   const [selUser, setSelUser]         = useState<any>(null);
@@ -163,6 +164,13 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
       setTimeout(()=>msgsEndRef.current?.scrollIntoView({behavior:"smooth"}),50);
     } catch {} finally { setSending(false); }
   };
+
+  // Load team members when opening new conversation
+  useEffect(()=>{
+    if(showNew && myTeam.length===0){
+      api.get("/api/v1/messages/my-team").then(r=>setMyTeam(r.data||[])).catch(()=>{});
+    }
+  },[showNew]);
 
   useEffect(()=>{
     if(userSearch.length<2){setUserResults([]);return;}
@@ -334,8 +342,27 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
               <div className="new-conv" onClick={e=>e.stopPropagation()}>
                 <div className="nc-header"><span>New Conversation</span><button onClick={()=>setShowNew(false)} style={{background:"rgba(255,255,255,0.15)",border:"none",color:"#fff",borderRadius:"50%",width:"24px",height:"24px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.75rem"}}></button></div>
                 <div className="nc-body">
+                  {/* My Team - quick access to dealer staff */}
+                  {!selUser && myTeam.length>0 && userSearch.length<2 && (
+                    <div style={{marginBottom:"10px"}}>
+                      <div style={{fontSize:"10px",fontWeight:700,letterSpacing:"0.1em",color:"#A3A3A3",textTransform:"uppercase",marginBottom:"6px"}}>MY TEAM</div>
+                      <div style={{display:"flex",flexDirection:"column",gap:"3px"}}>
+                        {myTeam.map(u=>(
+                          <div key={u.userId} className={`nc-user${selUser?.userId===u.userId?" selected":""}`}
+                            onClick={()=>{setSelUser(u);setUserSearch(u.fullName);setUserResults([]);}}>
+                            <div className="nu-avatar" style={{background:u.role==="DEALER_ADMIN"?"#FFF7ED":"#F0FDF4",color:u.role==="DEALER_ADMIN"?"#F47B20":"#16A34A"}}>
+                              {u.profilePicture?<img src={u.profilePicture} alt=""/>:u.fullName?.charAt(0)||"?"}
+                            </div>
+                            <div><div className="nu-name">{u.fullName}</div>
+                              <div className="nu-role">{u.position||u.role?.replace(/_/g," ")}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div style={{position:"relative"}}>
-                    <input className="nc-input" placeholder="Search by name or email..." value={userSearch} onChange={e=>{setUserSearch(e.target.value);setSelUser(null);}} autoFocus/>
+                    <input className="nc-input" placeholder="Search all users by name or email..." value={userSearch} onChange={e=>{setUserSearch(e.target.value);setSelUser(null);}} autoFocus/>
                     {userResults.length>0&&(
                       <div className="nc-results">
                         {userResults.map(u=>(
