@@ -1,32 +1,28 @@
 "use client";
-import { useEffect } from "react";
-import { useSearchParams } from "next/navigation";
-import { useMessagesStore } from "@/store/messagesStore";
+import { useEffect, useState } from "react";
+import api from "@/lib/api";
+import dynamic from "next/dynamic";
 
-export default function MessagesPage() {
-  const searchParams = useSearchParams();
-  const { openConversation } = useMessagesStore();
+const Page = dynamic(
+  () => import("@/app/dashboard/dealer/messages/page"),
+  { ssr: false, loading: () => <div style={{padding:"2rem",color:"#737373"}}>Loading Messages...</div> }
+);
 
+export default function StaffMessagesPage() {
+  const [allowed, setAllowed] = useState<boolean|null>(null);
   useEffect(() => {
-    const conv = searchParams.get("conv");
-    if (conv) {
-      // Small delay to let MessagesWidget mount first
-      setTimeout(() => openConversation(conv), 400);
-    }
+    api.get("/api/v1/staff/me").then(r => {
+      const p: string[] = r.data.permissions || [];
+      setAllowed(p.includes("view_messages") || p.includes("send_messages"));
+    }).catch(() => setAllowed(false));
   }, []);
-
-  return (
-    <div style={{
-      display:"flex", flexDirection:"column", alignItems:"center",
-      justifyContent:"center", minHeight:"60vh", gap:"1rem",
-      fontFamily:"var(--font-body)", color:"#737373"
-    }}>
-      <div style={{fontFamily:"var(--font-display)",fontSize:"1.5rem",letterSpacing:"0.1em",color:"#F47B20"}}>
-        MESSAGES
-      </div>
-      <p style={{fontSize:"0.875rem",textAlign:"center",maxWidth:"320px",lineHeight:1.6}}>
-        Click the orange MSG button at the bottom-right to open your conversations.
-      </p>
+  if (allowed === null) return <div style={{padding:"2rem",color:"#737373"}}>Loading...</div>;
+  if (!allowed) return (
+    <div style={{padding:"3rem",textAlign:"center",background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px"}}>
+      <div style={{fontSize:"2rem",marginBottom:"0.75rem"}}></div>
+      <div style={{fontFamily:"var(--font-display)",fontSize:"1.1rem",color:"#DC2626",fontWeight:700}}>Access Restricted</div>
+      <p style={{color:"#737373",marginTop:"0.5rem",fontSize:"0.875rem"}}>You need message permissions to access this section.</p>
     </div>
   );
+  return <Page />;
 }

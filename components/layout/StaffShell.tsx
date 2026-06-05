@@ -32,6 +32,7 @@ const ALL_NAV = [
   { href:"/dashboard/staff/partners",       label:"Partners",         icon:"", perm:"view_partners" },
   { href:"/dashboard/staff/staff",          label:"Staff",            icon:"", perm:"view_staff" },
   { href:"/dashboard/staff/cctv",           label:"CCTV",             icon:"", perm:"view_cctv" },
+  { href:"/dashboard/staff/messages",       label:"Messages",         icon:"", perm:"view_messages" },
   { href:"/dashboard/staff/notifications",  label:"Notifications",    icon:"", perm:null },
   { href:"/dashboard/staff/settings",       label:"Settings",         icon:"", perm:null },
 ];
