@@ -25,6 +25,7 @@ export default function MovementsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [approvers, setApprovers] = useState<any[]>([]);
   
   // Search state hooks for Car Search dropdown feature
   const [movCarSearch, setMovCarSearch] = useState("");
@@ -72,6 +73,13 @@ export default function MovementsPage() {
   };
 
   useEffect(() => { fetch(); }, [statusFilter]);
+
+  // Load approvers (team members) for Permitted By dropdown
+  useEffect(() => {
+    api.get("/api/v1/messages/my-team").then(r => {
+      setApprovers(r.data || []);
+    }).catch(() => {});
+  }, []);
 
   const uploadIdCard = async (file: File): Promise<string> => {
     setUploading(true);
@@ -249,7 +257,20 @@ export default function MovementsPage() {
               <div className="form-section">DETAILS</div>
               <div className="form-row">
                 <div className="field"><label className="fl">Expected Return</label><input type="datetime-local" className="fi" value={form.expectedReturnTime} onChange={(e) => setForm({...form,expectedReturnTime:e.target.value})} /></div>
-                <div className="field"><label className="fl">Permitted By</label><input className="fi" placeholder="Staff name" value={form.permittedBy} onChange={(e) => setForm({...form,permittedBy:e.target.value})} /></div>
+                <div className="field"><label className="fl">Permitted By (Send Approval To)</label>
+                  {approvers.length > 0 ? (
+                    <select className="fi" value={form.permittedBy} onChange={e=>setForm({...form,permittedBy:e.target.value})}>
+                      <option value="">Select person to approve...</option>
+                      {approvers.map((a:any)=>(
+                        <option key={a.userId} value={a.fullName}>
+                          {a.fullName}  {a.position || (a.role==="DEALER_ADMIN"?"Owner":"Staff")}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input className="fi" placeholder="Who is permitting this movement?" value={form.permittedBy} onChange={e=>setForm({...form,permittedBy:e.target.value})}/>
+                  )}
+                </div>
               </div>
               <div className="field"><label className="fl">Notes</label><textarea className="fi fi-ta" rows={2} value={form.notes} onChange={(e) => setForm({...form,notes:e.target.value})} /></div>
               <div className="modal-footer">

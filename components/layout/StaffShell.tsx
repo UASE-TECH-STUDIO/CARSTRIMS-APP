@@ -126,13 +126,16 @@ export default function StaffShell({ children }: { children: ReactNode }) {
           </div>
         )}
 
-        {/* Permissions pills */}
+        {/* Permissions pills - collapsible */}
         {perms.length > 0 && (
-          <div className="sb-perms">
-            {perms.map(p => (
-              <span key={p} className="perm-pill">{p.replace(/_/g," ")}</span>
-            ))}
-          </div>
+          <details className="sb-perms-wrap">
+            <summary className="sb-perms-toggle">{perms.length} permissions <span className="sb-perms-arrow"></span></summary>
+            <div className="sb-perms">
+              {perms.map(p => (
+                <span key={p} className="perm-pill">{p.replace(/_/g," ")}</span>
+              ))}
+            </div>
+          </details>
         )}
 
         <nav className="sb-nav">
@@ -212,7 +215,13 @@ export default function StaffShell({ children }: { children: ReactNode }) {
         .sb-id{font-family:monospace;font-size:0.58rem;color:#A3A3A3}
         .sb-dealer{display:flex;align-items:center;gap:0.5rem;padding:0.5rem 1rem;border-bottom:1px solid #E5E5E5;background:#F5F5F5;font-size:0.75rem;color:#525252;flex-shrink:0}
         .sb-dealer-logo{width:18px;height:18px;border-radius:3px;object-fit:cover}
-        .sb-perms{display:flex;flex-wrap:wrap;gap:0.2rem;padding:0.5rem 1rem;border-bottom:1px solid #E5E5E5;background:#FAFAFA;flex-shrink:0}
+        .sb-perms-wrap{flex-shrink:0;border-bottom:1px solid #E5E5E5}
+        .sb-perms-toggle{display:flex;align-items:center;justify-content:space-between;padding:0.4rem 1rem;font-size:0.65rem;font-weight:600;color:#737373;cursor:pointer;background:#FAFAFA;list-style:none;user-select:none}
+        .sb-perms-toggle::-webkit-details-marker{display:none}
+        .sb-perms-arrow{font-size:0.6rem;transition:transform .2s}
+        details[open] .sb-perms-arrow::before{content:""}
+        .sb-perms-arrow::before{content:""}
+        .sb-perms{display:flex;flex-wrap:wrap;gap:0.2rem;padding:0.4rem 1rem 0.6rem;background:#FAFAFA;flex-shrink:0}
         .perm-pill{background:#F0FDF9;border:1px solid rgba(29,158,117,0.3);color:#1D9E75;font-size:0.56rem;padding:0.1rem 0.4rem;border-radius:10px;text-transform:capitalize;white-space:nowrap}
         .sb-nav{display:flex;flex-direction:column;flex:1;padding:0.5rem 0;overflow-y:auto}
         .sb-item{display:flex;align-items:center;gap:0.75rem;padding:0.625rem 1rem;text-decoration:none;color:#525252;font-size:0.82rem;transition:all 0.15s;border-left:3px solid transparent;white-space:nowrap}
