@@ -1,0 +1,7 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CARSTRIMS</string>
+    <string name="title_activity_main">CARSTRIMS</string>
+    <string name="package_name">com.uasetechstudio.carstrims</string>
+    <string name="custom_url_scheme">com.uasetechstudio.carstrims</string>
+</resources>
