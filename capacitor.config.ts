@@ -5,10 +5,10 @@ const config: CapacitorConfig = {
   appName: "CARSTRIMS",
   webDir: "out",
   server: {
-    url: "https://carstrims.vercel.app",
+    url: "https://carstrims.com",
     androidScheme: "https",
     cleartext: false,
-    hostname: "carstrims.vercel.app",
+    hostname: "carstrims.com",
   },
   plugins: {
     SplashScreen: {
