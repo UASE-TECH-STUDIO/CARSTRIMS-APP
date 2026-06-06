@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "332212233134",
+    "project_id": "carstrims-8a608",
+    "storage_bucket": "carstrims-8a608.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:332212233134:android:f1540fb65631330ec85e3f",
+        "android_client_info": {
+          "package_name": "com.uasetechstudio.carstrims"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAu6J_Ej8CQtvKFF9IPg577fkV1K3ClSL8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
