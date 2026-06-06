@@ -46,7 +46,15 @@ export const useAuthStore = create<AuthStore>()(
       user: null,
       isAuthenticated: false,
       _hasHydrated: false,
-      setUser: (user) => set({ user, isAuthenticated: true }),
+      setUser: (user) => {
+        set({ user, isAuthenticated: true });
+        // Request push permission immediately on login
+        setTimeout(() => {
+          if (typeof window !== "undefined" && (globalThis as any).__carstrims_requestPush) {
+            (globalThis as any).__carstrims_requestPush();
+          }
+        }, 500);
+      },
       logout: () => set({ user: null, isAuthenticated: false }),
       updateUser: (data) =>
         set((s) => ({ user: s.user ? { ...s.user, ...data } : null })),

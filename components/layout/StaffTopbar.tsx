@@ -17,7 +17,7 @@ export default function StaffTopbar() {
     <header className="topbar">
       <h1 className="page-title">{TITLES[pathname] || "Staff Dashboard"}</h1>
       <div className="topbar-right">
-        <NotificationBell />
+        <NotificationBell role="DEALER_STAFF"/>
         <div className="avatar" style={{background:"#1D9E75"}}>{user?.fullName?.charAt(0).toUpperCase() || "S"}</div>
       </div>
       <style>{`

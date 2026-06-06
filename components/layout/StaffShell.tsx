@@ -179,7 +179,7 @@ export default function StaffShell({ children }: { children: ReactNode }) {
             <span className="greeting-text">
               {getGreeting()}, <strong className="greeting-name">{user?.fullName?.split(" ")[0] || "Staff"}</strong>
             </span>
-            <NotificationBell/>
+            <NotificationBell role="DEALER_STAFF"/>
             <div className="avatar-circle" style={{background:"#1D9E75"}}>
               {user?.fullName?.charAt(0).toUpperCase() || "S"}
             </div>

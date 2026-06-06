@@ -89,7 +89,7 @@ function DealerShell({ children }: { children: ReactNode }) {
             <span className="greeting-text">
               {getGreeting()}, <strong className="greeting-name">{user?.fullName?.split(" ")[0]||"Dealer"}</strong>
             </span>
-            <NotificationBell/>
+            <NotificationBell role="dealer"/>
             <button className="avatar-btn" onClick={()=>router.push("/dashboard/dealer/settings")}>
               {dealer?.logo
                 ? <img src={dealer.logo} alt="" className="avatar-img"/>
