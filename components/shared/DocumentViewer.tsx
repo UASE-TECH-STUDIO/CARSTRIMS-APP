@@ -258,15 +258,7 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
           recursive: true,
         });
         
-        // Try to open the file after writing
-        try {
-          const { FileOpener } = await import("@capacitor-community/file-opener").catch(() => ({ FileOpener: null }));
-          if (FileOpener) {
-            await FileOpener.open({ filePath: result.uri, contentType: "text/html" });
-          }
-        } catch {}
-        
-        alert(`Document saved to: ${result.uri}`);
+        alert(`Document saved to your Documents folder: ${fileName}`);
       } catch (fsErr) {
         console.log("[Doc] Filesystem failed, trying blob:", fsErr);
         // Fallback: blob download
