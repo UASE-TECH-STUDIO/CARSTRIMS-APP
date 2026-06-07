@@ -79,7 +79,7 @@ export default function ForgotPasswordPage() {
 
   const inp: React.CSSProperties = {
     background:"#F5F5F5", border:"1.5px solid #E5E5E5", borderRadius:"8px",
-    padding:"0.875rem 1rem", color:"#1A1A1A", fontSize:"0.95rem",
+    padding:"0.875rem 1rem", color:"#525252", fontSize:"0.95rem",
     fontFamily:"var(--font-body)", outline:"none", width:"100%",
     boxSizing:"border-box" as const, transition:"border-color 0.2s", fontWeight:500,
   };
@@ -95,7 +95,7 @@ export default function ForgotPasswordPage() {
         </div>
 
         <div>
-          <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.75rem",color:"#1A1A1A",lineHeight:1,marginBottom:"0.4rem"}}>Account Recovery</h2>
+          <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.75rem",color:"#525252",lineHeight:1,marginBottom:"0.4rem"}}>Account Recovery</h2>
           <p style={{fontSize:"0.875rem",color:"#737373",lineHeight:"1.6",margin:0}}>
             {step==="email"   && "Enter the email linked to your account. We will show you recovery options."}
             {step==="options" && "Choose how to receive your new temporary password."}
@@ -170,7 +170,7 @@ export default function ForgotPasswordPage() {
 
                     <div style={{flex:1}}>
                       <div style={{display:"flex",alignItems:"center",gap:"0.5rem"}}>
-                        <span style={{fontSize:"0.9rem",fontWeight:700,color:isComingSoon?"#A3A3A3":"#1A1A1A"}}>{opt.label}</span>
+                        <span style={{fontSize:"0.9rem",fontWeight:700,color:isComingSoon?"#A3A3A3":"#525252"}}>{opt.label}</span>
                         {isComingSoon && (
                           <span style={{background:"#F0F0F0",color:"#A3A3A3",border:"1px solid #E5E5E5",borderRadius:"20px",padding:"0.1rem 0.5rem",fontSize:"0.65rem",fontWeight:700,letterSpacing:"0.06em"}}>
                             COMING SOON

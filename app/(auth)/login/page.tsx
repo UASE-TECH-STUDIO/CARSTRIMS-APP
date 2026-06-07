@@ -113,7 +113,7 @@ export default function LoginPage() {
       <style>{`
         .lg-root{display:flex;min-height:100vh;background:#F5F5F5;font-family:var(--font-body)}
         /*  Left (grey/dark panel)  */
-        .lg-left{width:42%;background:linear-gradient(160deg,#1A1A1A 0%,#262626 60%,#333 100%);display:flex;flex-direction:column;justify-content:space-between;padding:2.5rem;flex-shrink:0;position:relative;overflow:hidden}
+        .lg-left{width:42%;background:linear-gradient(160deg,#525252 0%,#3D3D3D 60%,#4A4A4A 100%);display:flex;flex-direction:column;justify-content:space-between;padding:2.5rem;flex-shrink:0;position:relative;overflow:hidden}
         .lg-left::after{content:"CARSTRIMS";position:absolute;bottom:-30px;left:-10px;font-family:var(--font-display);font-size:140px;color:rgba(244,123,32,0.04);line-height:1;pointer-events:none;white-space:nowrap}
         .lg-brand{font-family:var(--font-display);font-size:1.4rem;letter-spacing:0.25em;color:#F47B20}
         .lg-mid{display:flex;flex-direction:column;gap:1.25rem}

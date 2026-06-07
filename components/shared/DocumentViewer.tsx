@@ -239,21 +239,48 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
 <script>window.onload=()=>window.print()<\/script>
 </body></html>`;
 
-    // Detect if running inside Capacitor (Android/iOS app)
-    const isCapacitor = typeof (window as any).Capacitor !== "undefined";
+    const isCapacitor = typeof (window as any).Capacitor !== "undefined" &&
+                       (window as any).Capacitor?.isNativePlatform?.();
 
     if (isCapacitor) {
-      // In app: create blob and trigger download via anchor
-      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement("a");
-      a.href     = url;
-      a.download = `carstrims-${(docTitle || "document").toLowerCase().replace(/\s+/g,"-")}-${Date.now()}.html`;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 2000);
+      // In Capacitor app: write to device using Filesystem plugin
+      try {
+        const { Filesystem } = await import("@capacitor/filesystem");
+        const Directory = (await import("@capacitor/filesystem")).Directory;
+        
+        const fileName = `carstrims-${(docTitle || "doc").toLowerCase().replace(/[^a-z0-9]/g,"-")}-${Date.now()}.html`;
+        
+        // Write file to device Downloads folder
+        const result = await Filesystem.writeFile({
+          path: fileName,
+          data: btoa(unescape(encodeURIComponent(html))), // base64 encode
+          directory: Directory.Documents,
+          recursive: true,
+        });
+        
+        // Try to open the file after writing
+        try {
+          const { FileOpener } = await import("@capacitor-community/file-opener").catch(() => ({ FileOpener: null }));
+          if (FileOpener) {
+            await FileOpener.open({ filePath: result.uri, contentType: "text/html" });
+          }
+        } catch {}
+        
+        alert(`Document saved to: ${result.uri}`);
+      } catch (fsErr) {
+        console.log("[Doc] Filesystem failed, trying blob:", fsErr);
+        // Fallback: blob download
+        const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement("a");
+        a.href = url;
+        a.download = `carstrims-${(docTitle || "doc").toLowerCase().replace(/[^a-z0-9]/g,"-")}-${Date.now()}.html`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 2000);
+      }
     } else {
-      // On web browser: open new window and trigger print/PDF save dialog
+      // On web browser: open new window  print/Save as PDF
       const win = window.open("", "_blank");
       if (win) { win.document.write(html); win.document.close(); }
     }

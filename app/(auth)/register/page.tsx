@@ -162,7 +162,7 @@ export default function RegisterPage() {
 
       <style>{`
         .rg-root{display:flex;min-height:100vh;background:#F5F5F5;font-family:var(--font-body)}
-        .rg-left{width:42%;background:linear-gradient(160deg,#1A1A1A 0%,#262626 60%,#333 100%);display:flex;flex-direction:column;justify-content:space-between;padding:2.5rem;flex-shrink:0;overflow:hidden}
+        .rg-left{width:42%;background:linear-gradient(160deg,#525252 0%,#3D3D3D 60%,#4A4A4A 100%);display:flex;flex-direction:column;justify-content:space-between;padding:2.5rem;flex-shrink:0;overflow:hidden}
         .rg-brand{font-family:var(--font-display);font-size:1.4rem;letter-spacing:0.25em;color:#F47B20}
         .rg-mid{display:flex;flex-direction:column;gap:1.25rem}
         .rg-title{font-family:var(--font-display);font-size:clamp(1.8rem,2.5vw,3rem);line-height:1.05;color:#fff}
@@ -206,7 +206,7 @@ export default function RegisterPage() {
         .rg-wa-label{font-size:0.72rem;font-weight:600;color:#525252;margin-bottom:0.2rem}
         .rg-wa-phone{font-size:0.875rem;font-weight:700;color:#16A34A;text-decoration:none;display:block}
         .rg-wa-phone:hover{text-decoration:underline}
-        .rg-wa-code{background:#1A1A1A;color:#fff;font-family:monospace;font-size:0.875rem;padding:0.4rem 0.75rem;border-radius:6px;display:inline-block;letter-spacing:0.05em}
+        .rg-wa-code{background:#525252;color:#fff;font-family:monospace;font-size:0.875rem;padding:0.4rem 0.75rem;border-radius:6px;display:inline-block;letter-spacing:0.05em}
         .rg-wa-note{font-size:0.72rem;color:#A3A3A3;margin:0;font-style:italic}
         .rg-notice{background:#FFF7ED;border:1px solid rgba(244,123,32,0.3);color:#C4621A;padding:0.875rem 1rem;border-radius:8px;font-size:0.82rem;line-height:1.6}
         .rg-actions{display:flex;gap:0.75rem}

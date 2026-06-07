@@ -53,6 +53,17 @@ export default function NotificationBell({ role = "dealer" }: { role?: string })
   const [unread, setUnread] = useState(0);
   const ref       = useRef<HTMLDivElement>(null);
   const prevIds   = useRef<Set<string>>(new Set());
+
+  // Load already-seen IDs from sessionStorage on mount to avoid re-pushing on refresh
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem("notif_seen_ids");
+      if (stored) {
+        const ids = JSON.parse(stored) as string[];
+        ids.forEach(id => prevIds.current.add(id));
+      }
+    } catch {}
+  }, []);
   const pollRef   = useRef<ReturnType<typeof setInterval>|null>(null);
 
   const fetchNotifs = useCallback(async () => {
@@ -60,12 +71,26 @@ export default function NotificationBell({ role = "dealer" }: { role?: string })
       const res  = await api.get("/api/v1/notifications/?limit=30");
       const data: any[] = res.data.notifications || res.data || [];
 
-      // Fire push for any NEW notifications that just arrived
-      const newOnes = data.filter(n => !prevIds.current.has(n._id) && !n.isRead);
+      // Fire push ONLY for notifications that are:
+      // 1. New (not in prevIds) AND
+      // 2. Unread AND  
+      // 3. Not already attended to (check if user is currently on that page)
+      const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
+      const newOnes = data.filter(n => {
+        if (prevIds.current.has(n._id)) return false; // already seen
+        if (n.isRead) return false; // already read
+        // Don't push message notifications if user is on messages page
+        if (n.type === "message" && currentPath.includes("/messages")) return false;
+        return true;
+      });
       for (const n of newOnes) {
         await firePush({ ...n, role });
       }
+      // Save ALL IDs (read and unread) to prevIds and sessionStorage
       data.forEach(n => prevIds.current.add(n._id));
+      try {
+        sessionStorage.setItem("notif_seen_ids", JSON.stringify([...prevIds.current]));
+      } catch {}
 
       setNotifs(data);
       setUnread(data.filter((n: any) => !n.isRead).length);
@@ -74,10 +99,40 @@ export default function NotificationBell({ role = "dealer" }: { role?: string })
 
   useEffect(() => {
     fetchNotifs();
-    // Poll every 10 seconds for real-time feel
-    pollRef.current = setInterval(fetchNotifs, 10000);
+    // Poll every 15 seconds (reduced to avoid hammering backend)
+    pollRef.current = setInterval(fetchNotifs, 15000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [fetchNotifs]);
+
+  // Auto-mark notifications as read when user is on the related page
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const path = window.location.pathname;
+    const autoMarkTypes: Record<string, string[]> = {
+      "/messages": ["message"],
+      "/movements": ["movement_approval", "movement_approved"],
+      "/appointments": ["appointment"],
+      "/requests": ["request"],
+      "/partners": ["partner"],
+    };
+    const matchedTypes: string[] = [];
+    for (const [pathPart, types] of Object.entries(autoMarkTypes)) {
+      if (path.includes(pathPart)) matchedTypes.push(...types);
+    }
+    if (matchedTypes.length > 0) {
+      // Mark matching notification types as read silently
+      const toRead = notifs.filter(n => !n.isRead && matchedTypes.includes(n.type || ""));
+      toRead.forEach(n => {
+        api.post(`/api/v1/notifications/${n._id}/read`).catch(() => {});
+      });
+      if (toRead.length > 0) {
+        setNotifs(p => p.map(n =>
+          matchedTypes.includes(n.type || "") ? { ...n, isRead: true } : n
+        ));
+        setUnread(p => Math.max(0, p - toRead.length));
+      }
+    }
+  }, [notifs]);
 
   // Close on outside click
   useEffect(() => {
