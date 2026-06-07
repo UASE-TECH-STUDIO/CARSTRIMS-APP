@@ -56,7 +56,7 @@ export default function DocumentViewer({ doc: initialDoc, onClose }: Props) {
     (Array.isArray(initialDoc?.buyer?.installmentPlan) ? initialDoc?.buyer?.installmentPlan : null);
 
   //  Print 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     const d = initialDoc;
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
 <title>${docTitle} ${docNumber}</title>
