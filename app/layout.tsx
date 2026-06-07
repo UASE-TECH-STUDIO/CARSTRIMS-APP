@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import SWRegistrar from "@/components/shared/SWRegistrar";
+import CapacitorPush from "@/components/shared/CapacitorPush";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.carstrims.com"),
   title: {
-    default: "CARSTRIMS — Nigeria's Premier Car Dealer Platform",
+    default: "CARSTRIMS  Nigeria's Premier Car Dealer Platform",
     template: "%s | CARSTRIMS",
   },
-  description: "Buy and sell premium vehicles in Nigeria. CARSTRIMS connects you with trusted car dealers across Abuja, Lagos, and beyond. Browse thousands of cars — brand new, foreign used, and locally used.",
+  description: "Buy and sell premium vehicles in Nigeria. CARSTRIMS connects you with trusted car dealers across Abuja, Lagos, and beyond. Browse thousands of cars  brand new, foreign used, and locally used.",
   keywords: [
     "car dealer Nigeria", "buy car Nigeria", "sell car Nigeria",
     "car marketplace Nigeria", "foreign used cars Nigeria",
@@ -35,33 +36,36 @@ export const metadata: Metadata = {
     locale: "en_NG",
     url: "https://www.carstrims.com",
     siteName: "CARSTRIMS",
-    title: "CARSTRIMS — Nigeria's Premier Car Dealer Platform",
+    title: "CARSTRIMS  Nigeria's Premier Car Dealer Platform",
     description: "Buy and sell premium vehicles in Nigeria. Browse thousands of cars from trusted dealers across Abuja, Lagos and beyond.",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "CARSTRIMS — Nigeria's Premier Car Dealer Platform",
+        alt: "CARSTRIMS  Nigeria's Premier Car Dealer Platform",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "CARSTRIMS — Nigeria's Premier Car Dealer Platform",
+    title: "CARSTRIMS  Nigeria's Premier Car Dealer Platform",
     description: "Buy and sell premium vehicles in Nigeria. Browse thousands of cars from trusted dealers.",
     images: ["/og-image.png"],
     creator: "@carstrims",
   },
   icons: {
     icon: [
-      { url: "/favicon.ico",  sizes: "any" },
+      { url: "/favicon.ico",  sizes: "any",           type: "image/x-icon" },
+      { url: "/icon-16.png",  sizes: "16x16",         type: "image/png" },
+      { url: "/icon-32.png",  sizes: "32x32",         type: "image/png" },
+      { url: "/icon-72.png",  sizes: "72x72",         type: "image/png" },
+      { url: "/icon-192.png", sizes: "192x192",       type: "image/png" },
       { url: "/favicon.svg",  type: "image/svg+xml" },
-      { url: "/icon-72.png",  sizes: "72x72",   type: "image/png" },
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
     ],
     apple: [
       { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/logo.png",     sizes: "512x512", type: "image/png" },
     ],
     shortcut: "/favicon.ico",
   },
@@ -89,7 +93,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "name": "CARSTRIMS",
               "url": "https://www.carstrims.com",
               "logo": "https://www.carstrims.com/logo.png",
-              "description": "Nigeria's Premier Car Dealer Platform — Buy and sell premium vehicles across Nigeria.",
+              "description": "Nigeria's Premier Car Dealer Platform  Buy and sell premium vehicles across Nigeria.",
               "address": {
                 "@type": "PostalAddress",
                 "addressCountry": "NG",
@@ -131,6 +135,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <SWRegistrar />
+        <CapacitorPush />
         {children}
       </body>
     </html>

@@ -239,8 +239,24 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
 <script>window.onload=()=>window.print()<\/script>
 </body></html>`;
 
-    const win = window.open("", "_blank");
-    if (win) { win.document.write(html); win.document.close(); }
+    // Detect if running inside Capacitor (Android/iOS app)
+    const isCapacitor = typeof (window as any).Capacitor !== "undefined";
+
+    if (isCapacitor) {
+      // In app: create blob and trigger download via anchor
+      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = `carstrims-${(docTitle || "document").toLowerCase().replace(/\s+/g,"-")}-${Date.now()}.html`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 2000);
+    } else {
+      // On web browser: open new window and trigger print/PDF save dialog
+      const win = window.open("", "_blank");
+      if (win) { win.document.write(html); win.document.close(); }
+    }
   };
 
   //  Shared input style  defined as a constant STRING of CSS, applied inline 
@@ -542,7 +558,7 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
             {/* Big print button */}
             <button onClick={handlePrint}
               style={{ width: "100%", background: "#F47B20", color: "#fff", border: "none", borderRadius: "12px", padding: "16px", fontFamily: "var(--font-display)", fontSize: "16px", letterSpacing: "0.1em", cursor: "pointer", fontWeight: 700, marginBottom: "8px" }}>
-              PRINT / EXPORT PDF
+              {typeof (window as any).Capacitor !== "undefined" ? "DOWNLOAD DOCUMENT" : "PRINT / SAVE AS PDF"}
             </button>
 
           </div>
