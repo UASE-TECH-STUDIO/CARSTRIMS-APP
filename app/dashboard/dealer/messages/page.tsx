@@ -19,6 +19,7 @@ export default function MessagesPage() {
   const [loading,     setLoading]     = useState(true);
   const [showNew,     setShowNew]     = useState(false);
   const [userSearch,  setUserSearch]  = useState("");
+  const [showChat,    setShowChat]    = useState(false);
   const [userResults, setUserResults] = useState<any[]>([]);
   const [myTeam,      setMyTeam]      = useState<any[]>([]);
   const [selUser,     setSelUser]     = useState<any>(null);
@@ -145,7 +146,7 @@ export default function MessagesPage() {
 
   // Shared styles
   const accent = "#F47B20";
-  const panel: React.CSSProperties = { display:"flex", flexDirection:"column", height:"calc(100vh - 140px)", minHeight:"500px", background:"#fff", border:"1.5px solid #E5E5E5", borderRadius:"12px", overflow:"hidden" };
+  const panel: React.CSSProperties = { display:"flex", flexDirection:"column", height:"calc(100vh - 200px)", minHeight:"400px", background:"#fff", border:"1.5px solid #E5E5E5", borderRadius:"12px", overflow:"hidden" };
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:"16px" }}>
@@ -163,7 +164,7 @@ export default function MessagesPage() {
       <div style={{ display:"flex", gap:"0", ...panel }}>
 
         {/* LEFT: conversation list */}
-        <div style={{ width:"300px", flexShrink:0, borderRight:"1.5px solid #E5E5E5", display:"flex", flexDirection:"column", overflowY:"auto" }}>
+        <div className="msg-left" style={{ width:"300px", flexShrink:0, borderRight:"1.5px solid #E5E5E5", display:"flex", flexDirection:"column", overflowY:"auto" }}>
           {loading ? (
             <div style={{ display:"flex", justifyContent:"center", padding:"2rem" }}>
               <div style={{ width:"24px", height:"24px", border:"2.5px solid #E5E5E5", borderTopColor:accent, borderRadius:"50%", animation:"spin .7s linear infinite" }}/>
@@ -208,7 +209,7 @@ export default function MessagesPage() {
         </div>
 
         {/* RIGHT: active conversation or new message */}
-        <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+        <div className="msg-right" style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
 
           {/* NEW MESSAGE PANEL */}
           {showNew && (
@@ -349,5 +350,15 @@ export default function MessagesPage() {
         </div>
       </div>
     </div>
+      <style>{`
+        @media (max-width: 639px) {
+          .msg-left { ${showChat ? 'display:none' : 'display:flex'} !important; width:100% !important; max-width:100% !important; }
+          .msg-right { ${!showChat ? 'display:none' : 'display:flex'} !important; }
+        }
+        @media (min-width: 640px) {
+          .msg-left { display:flex !important; }
+          .msg-right { display:flex !important; }
+        }
+      `}</style>
   );
 }
