@@ -56,7 +56,7 @@ export default function DocumentViewer({ doc: initialDoc, onClose }: Props) {
     (Array.isArray(initialDoc?.buyer?.installmentPlan) ? initialDoc?.buyer?.installmentPlan : null);
 
   //  Print 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     const d = initialDoc;
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
 <title>${docTitle} ${docNumber}</title>
@@ -243,44 +243,17 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
                        (window as any).Capacitor?.isNativePlatform?.();
 
     if (isCapacitor) {
-      // In Capacitor app: write to device using Filesystem plugin
-      try {
-        const { Filesystem } = await import("@capacitor/filesystem");
-        const Directory = (await import("@capacitor/filesystem")).Directory;
-        
-        const fileName = `carstrims-${(docTitle || "doc").toLowerCase().replace(/[^a-z0-9]/g,"-")}-${Date.now()}.html`;
-        
-        // Write file to device Downloads folder
-        const result = await Filesystem.writeFile({
-          path: fileName,
-          data: btoa(unescape(encodeURIComponent(html))), // base64 encode
-          directory: Directory.Documents,
-          recursive: true,
-        });
-        
-        // Try to open the file after writing
-        try {
-          const { FileOpener } = await import("@capacitor-community/file-opener").catch(() => ({ FileOpener: null }));
-          if (FileOpener) {
-            await FileOpener.open({ filePath: result.uri, contentType: "text/html" });
-          }
-        } catch {}
-        
-        alert(`Document saved to: ${result.uri}`);
-      } catch (fsErr) {
-        console.log("[Doc] Filesystem failed, trying blob:", fsErr);
-        // Fallback: blob download
-        const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-        const url  = URL.createObjectURL(blob);
-        const a    = document.createElement("a");
-        a.href = url;
-        a.download = `carstrims-${(docTitle || "doc").toLowerCase().replace(/[^a-z0-9]/g,"-")}-${Date.now()}.html`;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 2000);
-      }
+      // In app: blob download (works in Capacitor WebView)
+      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = `carstrims-${(docTitle || "doc").toLowerCase().replace(/[^a-z0-9]/g, "-")}-${Date.now()}.html`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 2000);
     } else {
-      // On web browser: open new window  print/Save as PDF
+      // On web: open new window → print / Save as PDF
       const win = window.open("", "_blank");
       if (win) { win.document.write(html); win.document.close(); }
     }

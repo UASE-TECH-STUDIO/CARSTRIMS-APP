@@ -164,7 +164,7 @@ export default function MessagesPage() {
       <div style={{ display:"flex", gap:"0", ...panel }}>
 
         {/* LEFT: conversation list */}
-        <div className="msg-left" style={{ width:"300px", flexShrink:0, borderRight:"1.5px solid #E5E5E5", display:"flex", flexDirection:"column", overflowY:"auto" }}>
+        <div style={{ width:"300px", flexShrink:0, borderRight:"1.5px solid #E5E5E5", display:"flex", flexDirection:"column", overflowY:"auto" }}>
           {loading ? (
             <div style={{ display:"flex", justifyContent:"center", padding:"2rem" }}>
               <div style={{ width:"24px", height:"24px", border:"2.5px solid #E5E5E5", borderTopColor:accent, borderRadius:"50%", animation:"spin .7s linear infinite" }}/>
@@ -209,7 +209,7 @@ export default function MessagesPage() {
         </div>
 
         {/* RIGHT: active conversation or new message */}
-        <div className="msg-right" style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+        <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
 
           {/* NEW MESSAGE PANEL */}
           {showNew && (
@@ -350,15 +350,5 @@ export default function MessagesPage() {
         </div>
       </div>
     </div>
-      <style>{`
-        @media (max-width: 639px) {
-          .msg-left { ${showChat ? 'display:none' : 'display:flex'} !important; width:100% !important; max-width:100% !important; }
-          .msg-right { ${!showChat ? 'display:none' : 'display:flex'} !important; }
-        }
-        @media (min-width: 640px) {
-          .msg-left { display:flex !important; }
-          .msg-right { display:flex !important; }
-        }
-      `}</style>
   );
 }
