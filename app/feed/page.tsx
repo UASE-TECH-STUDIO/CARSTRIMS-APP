@@ -107,6 +107,18 @@ export default function FeedPage() {
   }, [buildParams]);
 
   useEffect(() => { fetchCars(true); }, [search, selectedBrand, fStatus, fCondition, fTransmission, fFuel, fState, fYearFrom, fYearTo, fColor, fPrice, fMinPrice, fMaxPrice]);
+
+  // Refresh feed when user comes back to the page (e.g. after adding a car)
+  useEffect(() => {
+    const onFocus = () => fetchCars(true);
+    const onVisibility = () => { if (document.visibilityState === "visible") fetchCars(true); };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [fetchCars]);
   useEffect(() => {
     if (isAuthenticated) {
       api.get("/api/v1/users/likes").then((r) => setUserLikes(r.data || [])).catch(() => {});

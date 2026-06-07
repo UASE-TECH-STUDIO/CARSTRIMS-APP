@@ -7,6 +7,14 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
 
     @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (this.bridge != null && this.bridge.getWebView() != null) {
+            this.bridge.getWebView().setBackgroundColor(android.graphics.Color.parseColor("#1A1A1A"));
+        }
+    }
+
+    @Override
     public void onResume() {
         super.onResume();
         // Fix black screen on resume - reload if WebView is blank
