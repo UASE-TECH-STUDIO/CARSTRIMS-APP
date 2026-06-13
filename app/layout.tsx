@@ -6,10 +6,10 @@ import CapacitorPush from "@/components/shared/CapacitorPush";
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.carstrims.com"),
   title: {
-    default: "CARSTRIMS  Nigeria's Premier Car Dealer Platform",
+    default: "CARSTRIMS — Nigeria's Premier Car Dealer Platform",
     template: "%s | CARSTRIMS",
   },
-  description: "Buy and sell premium vehicles in Nigeria. CARSTRIMS connects you with trusted car dealers across Abuja, Lagos, and beyond. Browse thousands of cars  brand new, foreign used, and locally used.",
+  description: "Buy and sell premium vehicles in Nigeria. CARSTRIMS connects you with trusted car dealers across Abuja, Lagos, and beyond. Browse thousands of cars — brand new, foreign used, and locally used.",
   keywords: [
     "car dealer Nigeria", "buy car Nigeria", "sell car Nigeria",
     "car marketplace Nigeria", "foreign used cars Nigeria",
@@ -36,36 +36,37 @@ export const metadata: Metadata = {
     locale: "en_NG",
     url: "https://www.carstrims.com",
     siteName: "CARSTRIMS",
-    title: "CARSTRIMS  Nigeria's Premier Car Dealer Platform",
+    title: "CARSTRIMS — Nigeria's Premier Car Dealer Platform",
     description: "Buy and sell premium vehicles in Nigeria. Browse thousands of cars from trusted dealers across Abuja, Lagos and beyond.",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "CARSTRIMS  Nigeria's Premier Car Dealer Platform",
+        alt: "CARSTRIMS — Nigeria's Premier Car Dealer Platform",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "CARSTRIMS  Nigeria's Premier Car Dealer Platform",
+    title: "CARSTRIMS — Nigeria's Premier Car Dealer Platform",
     description: "Buy and sell premium vehicles in Nigeria. Browse thousands of cars from trusted dealers.",
     images: ["/og-image.png"],
     creator: "@carstrims",
   },
   icons: {
+    // ── These now all point to the CARSTRIMS "C" logo ──────────────────────
     icon: [
-      { url: "/favicon.ico",  sizes: "any",           type: "image/x-icon" },
-      { url: "/icon-16.png",  sizes: "16x16",         type: "image/png" },
-      { url: "/icon-32.png",  sizes: "32x32",         type: "image/png" },
-      { url: "/icon-72.png",  sizes: "72x72",         type: "image/png" },
-      { url: "/icon-192.png", sizes: "192x192",       type: "image/png" },
-      { url: "/favicon.svg",  type: "image/svg+xml" },
+      { url: "/favicon.ico",   sizes: "any",    type: "image/x-icon"  }, // 16+32+48 multi-size ICO
+      { url: "/icon-16.png",   sizes: "16x16",  type: "image/png"     },
+      { url: "/icon-32.png",   sizes: "32x32",  type: "image/png"     },
+      { url: "/icon-72.png",   sizes: "72x72",  type: "image/png"     },
+      { url: "/icon-192.png",  sizes: "192x192",type: "image/png"     },
+      { url: "/favicon.svg",   type: "image/svg+xml"                   }, // vector fallback
     ],
     apple: [
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/logo.png",     sizes: "512x512", type: "image/png" },
+      { url: "/apple-icon.png", sizes: "180x180", type: "image/png"   }, // Apple Touch Icon
+      { url: "/icon-192.png",   sizes: "192x192", type: "image/png"   },
     ],
     shortcut: "/favicon.ico",
   },
@@ -83,7 +84,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
-        {/* Structured data - Organisation */}
+        {/*
+          ── Explicit <link> tags as belt-and-suspenders ────────────────────
+          Next.js Metadata API handles most cases, but these explicit tags
+          ensure browsers (especially Chrome) pick up the correct favicon
+          and don't fall back to Vercel's default.
+        */}
+        <link rel="icon"             href="/favicon.ico"    sizes="any"/>
+        <link rel="icon"             href="/favicon.svg"    type="image/svg+xml"/>
+        <link rel="icon"             href="/icon-32.png"    type="image/png" sizes="32x32"/>
+        <link rel="apple-touch-icon" href="/apple-icon.png" sizes="180x180"/>
+        <link rel="manifest"         href="/manifest.json"/>
+
+        {/* Structured data — Organisation */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -93,7 +106,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "name": "CARSTRIMS",
               "url": "https://www.carstrims.com",
               "logo": "https://www.carstrims.com/logo.png",
-              "description": "Nigeria's Premier Car Dealer Platform  Buy and sell premium vehicles across Nigeria.",
+              "description": "Nigeria's Premier Car Dealer Platform — Buy and sell premium vehicles across Nigeria.",
               "address": {
                 "@type": "PostalAddress",
                 "addressCountry": "NG",
@@ -106,13 +119,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 "contactType": "customer service",
                 "availableLanguage": ["English"],
               },
-              "sameAs": [
-                "https://www.carstrims.com",
-              ],
+              "sameAs": ["https://www.carstrims.com"],
             }),
           }}
         />
-        {/* Structured data - Website with SearchAction */}
+        {/* Structured data — Website with SearchAction */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
