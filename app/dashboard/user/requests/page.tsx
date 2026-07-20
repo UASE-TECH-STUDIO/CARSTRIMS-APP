@@ -1,5 +1,5 @@
-"use client";
-import { useEffect, useRef, useState } from "react";
+﻿"use client";
+import { useEffect, useRef, useState, useCallback } from "react";
 import api from "@/lib/api";
 
 const SC: Record<string,{bg:string;color:string;label:string}> = {
@@ -28,37 +28,45 @@ const blank = {
   referencePhotos:[] as string[],
 };
 
+const fi: React.CSSProperties = {
+  background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"8px",
+  padding:"0.65rem 0.875rem",color:"#1A1A1A",fontSize:"0.875rem",
+  fontFamily:"var(--font-body)",outline:"none",width:"100%",boxSizing:"border-box"
+};
+const lbl: React.CSSProperties = {
+  fontSize:"0.68rem",fontWeight:700,letterSpacing:"0.1em",
+  textTransform:"uppercase",color:"#525252",display:"block",marginBottom:"0.3rem"
+};
+
 type Mode = "view"|"edit"|"new";
 
 export default function UserRequestsPage() {
-  const [requests, setRequests]     = useState<any[]>([]);
-  const [loading,  setLoading]      = useState(true);
-  const [mode,     setMode]         = useState<Mode|null>(null);
-  const [active,   setActive]       = useState<any>(null);   // request being viewed/edited
-  const [form,     setForm]         = useState({...blank});
-  const [dealers,  setDealers]      = useState<any[]>([]);
+  const [requests,   setRequests]   = useState<any[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [mode,       setMode]       = useState<Mode|null>(null);
+  const [active,     setActive]     = useState<any>(null);
+  const [form,       setForm]       = useState({...blank});
+  const [dealers,    setDealers]    = useState<any[]>([]);
   const [dealerSearch,setDealerSearch] = useState("");
-  const [submitting,setSubmitting]  = useState(false);
-  const [saving,   setSaving]       = useState(false);
-  const [uploading,setUploading]    = useState(false);
-  const [error,    setError]        = useState("");
-  const [lightbox, setLightbox]     = useState<string|null>(null);
-  // Abort state
-  const [showAbort, setShowAbort]   = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [saving,     setSaving]     = useState(false);
+  const [uploading,  setUploading]  = useState(false);
+  const [error,      setError]      = useState("");
+  const [lightbox,   setLightbox]   = useState<string|null>(null);
+  const [showAbort,  setShowAbort]  = useState(false);
   const [abortReason,setAbortReason]= useState("");
-  const [aborting,  setAborting]    = useState(false);
+  const [aborting,   setAborting]   = useState(false);
   const photoRef    = useRef<HTMLInputElement>(null);
-  const editPhotoRef= useRef<HTMLInputElement>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const r = await api.get("/api/v1/users/requests");
       setRequests(Array.isArray(r.data) ? r.data : []);
     } catch {} finally { setLoading(false); }
-  };
-  useEffect(() => { load(); }, []);
+  }, []);
 
-  // Dealer search for new/edit form
+  useEffect(() => { load(); }, [load]);
+
   useEffect(() => {
     if (dealerSearch.length < 2) { setDealers([]); return; }
     const t = setTimeout(async () => {
@@ -70,6 +78,10 @@ export default function UserRequestsPage() {
     return () => clearTimeout(t);
   }, [dealerSearch]);
 
+  const setField = useCallback((key: string, value: any) => {
+    setForm(prev => ({ ...prev, [key]: value }));
+  }, []);
+
   const openNew = () => {
     setForm({...blank}); setDealerSearch(""); setError(""); setMode("new"); setActive(null);
   };
@@ -79,7 +91,7 @@ export default function UserRequestsPage() {
   const openEdit = (r:any) => {
     setForm({
       carBrand: r.carBrand||"Toyota", carModel: r.carModel||"",
-      carYear:  r.carYear||new Date().getFullYear(), carColor: r.carColor||"",
+      carYear: r.carYear||new Date().getFullYear(), carColor: r.carColor||"",
       condition: r.condition||"any", transmission: r.transmission||"any", fuelType: r.fuelType||"any",
       budget: r.budget?String(r.budget):"", paymentType: r.paymentType||"full",
       description: r.description||"", dealerId: r.dealerId||"",
@@ -90,9 +102,8 @@ export default function UserRequestsPage() {
   };
   const close = () => { setMode(null); setActive(null); setError(""); setShowAbort(false); };
 
-  const uploadPhoto = async (file:File, isEdit=false) => {
-    const current = isEdit ? form.referencePhotos : form.referencePhotos;
-    if (current.length >= MAX_PHOTOS) { setError(`Max ${MAX_PHOTOS} photos`); return; }
+  const uploadPhoto = async (file:File) => {
+    if (form.referencePhotos.length >= MAX_PHOTOS) { setError(`Max ${MAX_PHOTOS} photos`); return; }
     setUploading(true);
     try {
       const fd = new FormData(); fd.append("file",file);
@@ -101,6 +112,10 @@ export default function UserRequestsPage() {
       if (url) setForm(f=>({...f,referencePhotos:[...f.referencePhotos,url]}));
     } catch { setError("Photo upload failed"); } finally { setUploading(false); }
   };
+
+  const removePhoto = useCallback((i:number) => {
+    setForm(f=>({...f,referencePhotos:f.referencePhotos.filter((_,j)=>j!==i)}));
+  }, []);
 
   const doAction = async (id:string, endpoint:string, body?:any) => {
     try { await api.post(`/api/v1/users/requests/${id}/${endpoint}`,body||{}); load(); close(); }
@@ -157,106 +172,6 @@ export default function UserRequestsPage() {
   const canEdit  = (r:any) => r.status==="pending";
   const canAbort = (r:any) => !["cancelled","completed","aborted","declined"].includes(r.status);
 
-  const fi:React.CSSProperties = {background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.65rem 0.875rem",color:"#1A1A1A",fontSize:"0.875rem",fontFamily:"var(--font-body)",outline:"none",width:"100%",boxSizing:"border-box"};
-  const lbl:React.CSSProperties = {fontSize:"0.68rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:"#525252",display:"block",marginBottom:"0.3rem"};
-
-  // Shared photo upload grid used in both new + edit forms
-  const PhotoGrid = ({photos,onRemove,onAdd,ref:pRef}:{photos:string[];onRemove:(i:number)=>void;onAdd:(f:File)=>void;ref:any}) => (
-    <div>
-      <label style={lbl}>Reference Photos (up to {MAX_PHOTOS})</label>
-      <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap",marginBottom:"0.35rem"}}>
-        {photos.map((url,i)=>(
-          <div key={i} style={{position:"relative"}}>
-            <img src={url} alt="" onClick={()=>setLightbox(url)} style={{width:"84px",height:"63px",objectFit:"cover",borderRadius:"6px",border:"1.5px solid #E5E5E5",cursor:"zoom-in",display:"block"}}/>
-            <button type="button" onClick={()=>onRemove(i)} style={{position:"absolute",top:"-5px",right:"-5px",background:"#DC2626",color:"#fff",border:"none",borderRadius:"50%",width:"18px",height:"18px",cursor:"pointer",fontSize:"0.6rem",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>X</button>
-          </div>
-        ))}
-        {photos.length<MAX_PHOTOS&&(
-          <button type="button" onClick={()=>pRef.current?.click()} disabled={uploading}
-            style={{width:"84px",height:"63px",background:"#F5F5F5",border:"1.5px dashed #D4D4D4",borderRadius:"6px",cursor:"pointer",color:"#737373",fontSize:"0.75rem",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"0.15rem",opacity:uploading?0.6:1}}>
-            <span style={{fontSize:"1.4rem",lineHeight:1}}>+</span>
-            <span>{uploading?"...":"Photo"}</span>
-          </button>
-        )}
-        <input ref={pRef} type="file" accept="image/jpeg,image/png,image/webp" style={{display:"none"}} onChange={e=>{if(e.target.files?.[0])onAdd(e.target.files[0]);e.target.value="";}}/>
-      </div>
-      <div style={{fontSize:"0.65rem",color:"#A3A3A3"}}>{photos.length}/{MAX_PHOTOS} uploaded</div>
-    </div>
-  );
-
-  // The form body shared by new + edit
-  const FormFields = () => (
-    <>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0.875rem"}}>
-        <div><label style={lbl}>Brand *</label>
-          <select style={fi} value={form.carBrand} onChange={e=>setForm({...form,carBrand:e.target.value})}>
-            {BRANDS.map(b=><option key={b}>{b}</option>)}
-          </select>
-        </div>
-        <div><label style={lbl}>Model *</label>
-          <input style={fi} placeholder="e.g. Camry" value={form.carModel} onChange={e=>setForm({...form,carModel:e.target.value})} required/>
-        </div>
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0.875rem"}}>
-        <div><label style={lbl}>Year</label>
-          <input type="number" style={fi} value={form.carYear} onChange={e=>setForm({...form,carYear:Number(e.target.value)})}/>
-        </div>
-        <div><label style={lbl}>Color</label>
-          <input style={fi} placeholder="e.g. Black" value={form.carColor} onChange={e=>setForm({...form,carColor:e.target.value})}/>
-        </div>
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"0.625rem"}}>
-        <div><label style={lbl}>Condition</label>
-          <select style={fi} value={form.condition} onChange={e=>setForm({...form,condition:e.target.value})}>
-            {CONDS.map(c=><option key={c} value={c}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}
-          </select>
-        </div>
-        <div><label style={lbl}>Gearbox</label>
-          <select style={fi} value={form.transmission} onChange={e=>setForm({...form,transmission:e.target.value})}>
-            {TRANS.map(t=><option key={t} value={t}>{t.toUpperCase()}</option>)}
-          </select>
-        </div>
-        <div><label style={lbl}>Fuel</label>
-          <select style={fi} value={form.fuelType} onChange={e=>setForm({...form,fuelType:e.target.value})}>
-            {FUELS.map(f=><option key={f} value={f}>{f.charAt(0).toUpperCase()+f.slice(1)}</option>)}
-          </select>
-        </div>
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0.875rem"}}>
-        <div><label style={lbl}>Budget (NGN)</label>
-          <input type="number" style={fi} placeholder="Max budget" value={form.budget} onChange={e=>setForm({...form,budget:e.target.value})}/>
-        </div>
-        <div><label style={lbl}>Payment Type</label>
-          <select style={fi} value={form.paymentType} onChange={e=>setForm({...form,paymentType:e.target.value})}>
-            {["full","installment","lease"].map(p=><option key={p} value={p}>{p.charAt(0).toUpperCase()+p.slice(1)}</option>)}
-          </select>
-        </div>
-      </div>
-      {/* Dealer search */}
-      <div style={{position:"relative"}}>
-        <label style={lbl}>Specific Dealer (blank = all dealers)</label>
-        <input style={fi} placeholder="Search dealer..." value={dealerSearch} onChange={e=>{setDealerSearch(e.target.value);setForm({...form,dealerId:""});}}/>
-        {dealers.length>0&&(
-          <div style={{position:"absolute",top:"calc(100%+4px)",left:0,right:0,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"8px",zIndex:60,maxHeight:"150px",overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,0.1)"}}>
-            {dealers.map(d=>(
-              <div key={d._id} onClick={()=>{setForm({...form,dealerId:d._id});setDealerSearch(d.companyName);setDealers([]);}}
-                style={{padding:"0.625rem 1rem",cursor:"pointer",borderBottom:"1px solid #F5F5F5",fontSize:"0.875rem",color:"#1A1A1A"}}
-                onMouseOver={e=>e.currentTarget.style.background="#FFF7ED"} onMouseOut={e=>e.currentTarget.style.background=""}>
-                {d.companyName} <span style={{color:"#A3A3A3",fontSize:"0.72rem"}}>{d.city||""}</span>
-              </div>
-            ))}
-          </div>
-        )}
-        {form.dealerId&&<div style={{marginTop:"0.3rem",fontSize:"0.7rem",color:"#16A34A",fontWeight:600}}>Sending to: {dealerSearch}</div>}
-        {!form.dealerId&&!dealerSearch&&<div style={{marginTop:"0.3rem",fontSize:"0.7rem",color:"#A3A3A3"}}>Will be sent to ALL dealers</div>}
-      </div>
-      <div><label style={lbl}>Additional Details</label>
-        <textarea style={{...fi,minHeight:"72px",resize:"vertical"}} placeholder="Specific features, trim level, preferences..." value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/>
-      </div>
-      <PhotoGrid photos={form.referencePhotos} onRemove={i=>setForm(f=>({...f,referencePhotos:f.referencePhotos.filter((_,j)=>j!==i)}))} onAdd={uploadPhoto} ref={mode==="edit"?editPhotoRef:photoRef}/>
-    </>
-  );
-
   return (
     <div style={{display:"flex",flexDirection:"column",gap:"1.5rem",fontFamily:"var(--font-body)"}}>
 
@@ -279,7 +194,7 @@ export default function UserRequestsPage() {
         </button>
       </div>
 
-      {/* Requests list */}
+      {/* List */}
       {loading?(
         <div style={{display:"flex",justifyContent:"center",padding:"3rem"}}>
           <div style={{width:"28px",height:"28px",border:"2.5px solid #E5E5E5",borderTopColor:"#F47B20",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
@@ -287,7 +202,7 @@ export default function UserRequestsPage() {
         </div>
       ):requests.length===0?(
         <div style={{padding:"3rem",textAlign:"center",border:"1.5px dashed #E5E5E5",borderRadius:"12px",background:"#fff",display:"flex",flexDirection:"column",alignItems:"center",gap:"1rem"}}>
-          <div style={{fontSize:"2.5rem"}}>&#x1F697;</div>
+          <div style={{fontSize:"2.5rem"}}>🚗</div>
           <h3 style={{fontFamily:"var(--font-display)",fontSize:"1.1rem",color:"#1A1A1A"}}>No requests yet</h3>
           <p style={{fontSize:"0.875rem",color:"#737373",lineHeight:1.6,maxWidth:"380px"}}>Cannot find the vehicle you want? Place a request and dealers will respond.</p>
           <button onClick={openNew} style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.75rem 1.5rem",fontFamily:"var(--font-display)",fontSize:"0.875rem",cursor:"pointer"}}>Place a Request</button>
@@ -300,10 +215,7 @@ export default function UserRequestsPage() {
             const hasAction = r.status==="countered";
             const hasUpdate = r.journey?.milestones?.length>0||r.journey?.paymentPlan;
             return (
-              <div key={r._id||r.requestId}
-                style={{background:"#fff",border:`1.5px solid ${hasAction?"#F47B20":"#E5E5E5"}`,borderRadius:"12px",overflow:"hidden",boxShadow:hasAction?"0 2px 16px rgba(244,123,32,0.12)":"none"}}>
-
-                {/* Card header  clickable to view */}
+              <div key={r._id||r.requestId} style={{background:"#fff",border:`1.5px solid ${hasAction?"#F47B20":"#E5E5E5"}`,borderRadius:"12px",overflow:"hidden",boxShadow:hasAction?"0 2px 16px rgba(244,123,32,0.12)":"none"}}>
                 <div onClick={()=>openView(r)} style={{padding:"1rem 1.25rem",cursor:"pointer",display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"1rem",flexWrap:"wrap"}}
                   onMouseOver={e=>(e.currentTarget as HTMLElement).style.background="#FFFAF7"}
                   onMouseOut={e=>(e.currentTarget as HTMLElement).style.background=""}>
@@ -314,36 +226,26 @@ export default function UserRequestsPage() {
                       {r.carColor&&<span>{r.carColor}</span>}
                       {r.condition&&r.condition!=="any"&&<span>{r.condition}</span>}
                       {r.budget&&<span style={{color:"#F47B20",fontWeight:600}}>NGN {Number(r.budget).toLocaleString()}</span>}
-                      {photos.length>0&&<span style={{color:"#A3A3A3"}}>&#x1F4F7; {photos.length} photo{photos.length>1?"s":""}</span>}
+                      {photos.length>0&&<span style={{color:"#A3A3A3"}}>📷 {photos.length} photo{photos.length>1?"s":""}</span>}
                     </div>
                     <div style={{fontSize:"0.68rem",color:"#A3A3A3",marginTop:"0.25rem"}}>
-                      {r.dealerName?`Sent to: ${r.dealerName}`:"Sent to all dealers"} &bull; {fmtDate(r.createdAt)}
+                      {r.dealerName?`Sent to: ${r.dealerName}`:"Sent to all dealers"} · {fmtDate(r.createdAt)}
                     </div>
                     {hasAction&&<div style={{fontSize:"0.72rem",color:"#7B68EE",fontWeight:700,marginTop:"0.25rem"}}>Counter offer from dealer - tap to view</div>}
                     {hasUpdate&&<div style={{fontSize:"0.72rem",color:"#16A34A",fontWeight:600,marginTop:"0.15rem"}}>Order update available</div>}
                   </div>
                   <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:"0.375rem",flexShrink:0}}>
-                    <span style={{background:sc.bg,color:sc.color,padding:"0.22rem 0.625rem",borderRadius:"20px",fontSize:"0.68rem",fontWeight:700,border:`1px solid ${sc.color}44`}}>
-                      {sc.label}
-                    </span>
+                    <span style={{background:sc.bg,color:sc.color,padding:"0.22rem 0.625rem",borderRadius:"20px",fontSize:"0.68rem",fontWeight:700,border:`1px solid ${sc.color}44`}}>{sc.label}</span>
                     <span style={{fontSize:"0.65rem",color:"#A3A3A3"}}>Tap to view</span>
                   </div>
                 </div>
-
-                {/* Action bar */}
                 {(canEdit(r)||canAbort(r))&&(
                   <div style={{display:"flex",borderTop:"1px solid #F5F5F5"}}>
                     {canEdit(r)&&(
-                      <button onClick={()=>openEdit(r)}
-                        style={{flex:1,padding:"0.625rem",background:"none",border:"none",borderRight:"1px solid #F5F5F5",color:"#F47B20",fontSize:"0.78rem",cursor:"pointer",fontWeight:600,fontFamily:"var(--font-body)"}}>
-                        Edit Request
-                      </button>
+                      <button onClick={()=>openEdit(r)} style={{flex:1,padding:"0.625rem",background:"none",border:"none",borderRight:"1px solid #F5F5F5",color:"#F47B20",fontSize:"0.78rem",cursor:"pointer",fontWeight:600,fontFamily:"var(--font-body)"}}>Edit Request</button>
                     )}
                     {canAbort(r)&&(
-                      <button onClick={()=>{openView(r);setShowAbort(true);}}
-                        style={{flex:1,padding:"0.625rem",background:"none",border:"none",color:"#DC2626",fontSize:"0.78rem",cursor:"pointer",fontWeight:600,fontFamily:"var(--font-body)"}}>
-                        Abort Request
-                      </button>
+                      <button onClick={()=>{openView(r);setShowAbort(true);}} style={{flex:1,padding:"0.625rem",background:"none",border:"none",color:"#DC2626",fontSize:"0.78rem",cursor:"pointer",fontWeight:600,fontFamily:"var(--font-body)"}}>Abort Request</button>
                     )}
                   </div>
                 )}
@@ -353,44 +255,35 @@ export default function UserRequestsPage() {
         </div>
       )}
 
-      {/* 
-          SHEET MODAL  used for VIEW / EDIT / NEW
-           */}
+      {/* Modal */}
       {mode&&(
         <div onClick={close} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:1000,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-          <div onClick={e=>e.stopPropagation()}
-            style={{background:"#fff",width:"100%",maxWidth:"600px",height:"95vh",display:"flex",flexDirection:"column",borderRadius:"16px 16px 0 0",overflow:"hidden"}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:"#fff",width:"100%",maxWidth:"600px",height:"95vh",display:"flex",flexDirection:"column",borderRadius:"16px 16px 0 0",overflow:"hidden"}}>
 
-            {/* Drag handle */}
             <div style={{display:"flex",justifyContent:"center",padding:"0.5rem 0 0",flexShrink:0}}>
               <div style={{width:"36px",height:"4px",background:"#E5E5E5",borderRadius:"2px"}}/>
             </div>
 
-            {/* Header */}
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0.75rem 1.25rem",borderBottom:"1px solid #E5E5E5",flexShrink:0}}>
               <div>
                 <div style={{fontFamily:"var(--font-display)",fontSize:"0.9rem",letterSpacing:"0.06em",color:"#1A1A1A"}}>
                   {mode==="new"?"NEW VEHICLE REQUEST":mode==="edit"?"EDIT REQUEST":`${active?.carBrand} ${active?.carModel} ${active?.carYear||""}`}
                 </div>
                 {mode==="view"&&active&&(
-                  <div style={{fontSize:"0.72rem",color:SC[active.status]?.color||"#888",fontWeight:700,marginTop:"0.1rem"}}>
-                    {SC[active.status]?.label||active.status}
-                  </div>
+                  <div style={{fontSize:"0.72rem",color:SC[active.status]?.color||"#888",fontWeight:700,marginTop:"0.1rem"}}>{SC[active.status]?.label||active.status}</div>
                 )}
               </div>
               <button onClick={close} style={{background:"#F5F5F5",border:"none",color:"#525252",width:"32px",height:"32px",borderRadius:"50%",cursor:"pointer",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>X</button>
             </div>
 
-            {/* Scrollable body */}
-            <div style={{overflowY:"auto",flex:1,WebkitOverflowScrolling:"touch" as any}}>
+            <div style={{overflowY:"auto",flex:1}}>
               <div style={{padding:"1.25rem",display:"flex",flexDirection:"column",gap:"1rem",paddingBottom:"2rem"}}>
 
                 {error&&<div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",color:"#DC2626",padding:"0.75rem",borderRadius:"8px",fontSize:"0.875rem",fontWeight:500}}>{error}</div>}
 
-                {/*  VIEW MODE  */}
+                {/* VIEW */}
                 {mode==="view"&&active&&(
                   <>
-                    {/* All request details */}
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0.5rem"}}>
                       {[
                         ["Vehicle",`${active.carBrand} ${active.carModel} ${active.carYear||""}`],
@@ -418,7 +311,6 @@ export default function UserRequestsPage() {
                       </div>
                     )}
 
-                    {/* Photos */}
                     {(()=>{
                       const photos = active.referencePhotos?.length?active.referencePhotos:(active.referencePhoto?[active.referencePhoto]:[]);
                       if(!photos.length) return null;
@@ -427,15 +319,13 @@ export default function UserRequestsPage() {
                           <div style={{fontSize:"0.62rem",textTransform:"uppercase" as const,letterSpacing:"0.07em",color:"#AAA",marginBottom:"0.5rem",fontWeight:700}}>Reference Photos ({photos.length})</div>
                           <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap"}}>
                             {photos.map((url:string,i:number)=>(
-                              <img key={i} src={url} alt="" onClick={()=>setLightbox(url)}
-                                style={{width:"96px",height:"72px",objectFit:"cover",borderRadius:"7px",border:"1.5px solid #E5E5E5",cursor:"zoom-in"}}/>
+                              <img key={i} src={url} alt="" onClick={()=>setLightbox(url)} style={{width:"96px",height:"72px",objectFit:"cover",borderRadius:"7px",border:"1.5px solid #E5E5E5",cursor:"zoom-in"}}/>
                             ))}
                           </div>
                         </div>
                       );
                     })()}
 
-                    {/* Dealer response */}
                     {active.dealerResponse&&(
                       <div style={{background:"#F0FDF4",border:"1.5px solid #86EFAC",borderRadius:"8px",padding:"1rem"}}>
                         <div style={{fontSize:"0.68rem",fontWeight:800,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#16A34A",marginBottom:"0.35rem"}}>Dealer Response</div>
@@ -445,7 +335,6 @@ export default function UserRequestsPage() {
                       </div>
                     )}
 
-                    {/* Counter offer */}
                     {active.counterOffer&&active.status==="countered"&&(
                       <div style={{background:"#F5F3FF",border:"1.5px solid rgba(123,104,238,0.35)",borderRadius:"10px",padding:"1rem",display:"flex",flexDirection:"column",gap:"0.75rem"}}>
                         <div style={{fontSize:"0.68rem",fontWeight:800,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#7B68EE"}}>{active.dealerName} Has an Alternative</div>
@@ -464,19 +353,12 @@ export default function UserRequestsPage() {
                         </div>
                         {active.counterOffer.description&&<p style={{fontSize:"0.82rem",color:"#525252",margin:0,lineHeight:1.55}}>{active.counterOffer.description}</p>}
                         <div style={{display:"flex",gap:"0.5rem"}}>
-                          <button onClick={()=>{doAction(active.requestId||active._id,"accept");}}
-                            style={{flex:1,background:"#16A34A",color:"#fff",border:"none",borderRadius:"8px",padding:"0.75rem",fontFamily:"var(--font-display)",fontSize:"0.82rem",cursor:"pointer",fontWeight:700}}>
-                            Accept Offer
-                          </button>
-                          <button onClick={()=>{if(!confirm("Decline this offer?"))return;doAction(active.requestId||active._id,"decline",{reason:"Declined by buyer"});}}
-                            style={{flex:1,background:"#FEF2F2",color:"#DC2626",border:"1.5px solid #FECACA",borderRadius:"8px",padding:"0.75rem",fontSize:"0.82rem",cursor:"pointer",fontWeight:600}}>
-                            Decline
-                          </button>
+                          <button onClick={()=>doAction(active.requestId||active._id,"accept")} style={{flex:1,background:"#16A34A",color:"#fff",border:"none",borderRadius:"8px",padding:"0.75rem",fontFamily:"var(--font-display)",fontSize:"0.82rem",cursor:"pointer",fontWeight:700}}>Accept Offer</button>
+                          <button onClick={()=>{if(!confirm("Decline this offer?"))return;doAction(active.requestId||active._id,"decline",{reason:"Declined by buyer"});}} style={{flex:1,background:"#FEF2F2",color:"#DC2626",border:"1.5px solid #FECACA",borderRadius:"8px",padding:"0.75rem",fontSize:"0.82rem",cursor:"pointer",fontWeight:600}}>Decline</button>
                         </div>
                       </div>
                     )}
 
-                    {/* Journey milestones */}
                     {active.journey?.milestones?.length>0&&(
                       <div style={{display:"flex",flexDirection:"column",gap:"0.625rem"}}>
                         <div style={{fontSize:"0.68rem",fontWeight:800,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#737373"}}>Order Journey</div>
@@ -490,8 +372,7 @@ export default function UserRequestsPage() {
                               {m.evidence?.length>0&&(
                                 <div style={{display:"flex",gap:"0.375rem",flexWrap:"wrap"}}>
                                   {m.evidence.map((url:string,ei:number)=>(
-                                    <img key={ei} src={url} alt="" onClick={()=>setLightbox(url)}
-                                      style={{width:"60px",height:"45px",objectFit:"cover",borderRadius:"5px",border:"1px solid #E5E5E5",cursor:"zoom-in"}}/>
+                                    <img key={ei} src={url} alt="" onClick={()=>setLightbox(url)} style={{width:"60px",height:"45px",objectFit:"cover",borderRadius:"5px",border:"1px solid #E5E5E5",cursor:"zoom-in"}}/>
                                   ))}
                                 </div>
                               )}
@@ -501,89 +382,212 @@ export default function UserRequestsPage() {
                       </div>
                     )}
 
-                    {/* Payment plan */}
                     {active.journey?.paymentPlan&&(
                       <div style={{border:"1.5px solid #E5E5E5",borderRadius:"10px",overflow:"hidden"}}>
                         <div style={{padding:"0.625rem 0.875rem",background:"#F5F5F5",borderBottom:"1px solid #E5E5E5",fontFamily:"var(--font-display)",fontSize:"0.68rem",letterSpacing:"0.1em",color:"#525252"}}>PAYMENT PLAN</div>
                         <div style={{padding:"0.875rem",display:"flex",flexDirection:"column",gap:"0.5rem"}}>
-                          <div style={{fontWeight:700,fontSize:"0.875rem",color:"#1A1A1A"}}>
-                            {active.journey.paymentPlan.type==="full"?"Full Payment":"Installments"} &mdash; NGN {(active.journey.paymentPlan.totalAmount||0).toLocaleString()}
-                          </div>
+                          <div style={{fontWeight:700,fontSize:"0.875rem",color:"#1A1A1A"}}>{active.journey.paymentPlan.type==="full"?"Full Payment":"Installments"} — NGN {(active.journey.paymentPlan.totalAmount||0).toLocaleString()}</div>
                           {active.journey.paymentPlan.installments?.map((inst:any,i:number)=>(
                             <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"0.5rem 0",borderBottom:"1px solid #F5F5F5",flexWrap:"wrap",gap:"0.5rem"}}>
                               <div>
                                 <div style={{fontWeight:600,fontSize:"0.82rem"}}>{inst.label||`Installment ${i+1}`}</div>
-                                <div style={{fontSize:"0.72rem",color:"#888"}}>NGN {(inst.amount||0).toLocaleString()} &bull; {inst.dueDate||"TBD"}</div>
+                                <div style={{fontSize:"0.72rem",color:"#888"}}>NGN {(inst.amount||0).toLocaleString()} · {inst.dueDate||"TBD"}</div>
                                 {inst.evidence&&<a href={inst.evidence} target="_blank" rel="noreferrer" style={{fontSize:"0.7rem",color:"#F47B20",fontWeight:600}}>View Receipt</a>}
                               </div>
-                              <span style={{fontSize:"0.7rem",fontWeight:700,padding:"0.18rem 0.5rem",borderRadius:"20px",background:inst.paid?"#F0FDF4":"#FFF7ED",color:inst.paid?"#15803D":"#D97706"}}>
-                                {inst.paid?"Paid":"Pending"}
-                              </span>
+                              <span style={{fontSize:"0.7rem",fontWeight:700,padding:"0.18rem 0.5rem",borderRadius:"20px",background:inst.paid?"#F0FDF4":"#FFF7ED",color:inst.paid?"#15803D":"#D97706"}}>{inst.paid?"Paid":"Pending"}</span>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    {/*  ABORT SECTION  */}
                     {canAbort(active)&&(
                       <div style={{border:`1.5px solid ${showAbort?"#DC2626":"#E5E5E5"}`,borderRadius:"10px",overflow:"hidden",transition:"border-color 0.2s"}}>
-                        <button onClick={()=>setShowAbort(!showAbort)}
-                          style={{width:"100%",padding:"0.875rem 1rem",background:showAbort?"#FEF2F2":"#FAFAFA",border:"none",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",fontFamily:"var(--font-display)",fontSize:"0.72rem",letterSpacing:"0.08em",color:showAbort?"#DC2626":"#737373",fontWeight:700}}>
+                        <button onClick={()=>setShowAbort(!showAbort)} style={{width:"100%",padding:"0.875rem 1rem",background:showAbort?"#FEF2F2":"#FAFAFA",border:"none",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",fontFamily:"var(--font-display)",fontSize:"0.72rem",letterSpacing:"0.08em",color:showAbort?"#DC2626":"#737373",fontWeight:700}}>
                           <span>ABORT THIS REQUEST</span>
-                          <span style={{fontSize:"0.85rem"}}>{showAbort?"v":">"}</span>
+                          <span>{showAbort?"▼":"▶"}</span>
                         </button>
                         {showAbort&&(
                           <div style={{padding:"1rem",display:"flex",flexDirection:"column",gap:"0.75rem",background:"#FFFAFA",borderTop:"1px solid #FEE2E2"}}>
-                            <div style={{fontSize:"0.82rem",color:"#525252",lineHeight:1.55}}>
-                              {active.status==="pending"
-                                ?"You can abort this request before any dealer responds. You will need to provide a reason."
-                                :"You are aborting an active order. The dealer will be notified immediately. Please provide a clear reason."}
-                            </div>
+                            <div style={{fontSize:"0.82rem",color:"#525252",lineHeight:1.55}}>{active.status==="pending"?"You can abort this request before any dealer responds.":"You are aborting an active order. The dealer will be notified immediately."}</div>
                             <div>
                               <label style={{...lbl,color:"#DC2626"}}>Reason for aborting *</label>
-                              <textarea rows={3} value={abortReason} onChange={e=>setAbortReason(e.target.value)}
-                                placeholder="e.g. Found the vehicle elsewhere, changed my mind, budget changed..."
-                                style={{...fi,resize:"vertical",borderColor:abortReason?"#FECACA":"#E5E5E5",background:"#fff"}}/>
+                              <textarea rows={3} value={abortReason} onChange={e=>setAbortReason(e.target.value)} placeholder="e.g. Found the vehicle elsewhere, changed my mind..." style={{...fi,resize:"vertical",borderColor:abortReason?"#FECACA":"#E5E5E5",background:"#fff"}}/>
                             </div>
                             <div style={{display:"flex",gap:"0.5rem"}}>
-                              <button onClick={()=>setShowAbort(false)} style={{flex:1,background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.75rem",fontSize:"0.82rem",cursor:"pointer",fontWeight:600}}>
-                                Keep Request
-                              </button>
-                              <button onClick={submitAbort} disabled={aborting||!abortReason.trim()}
-                                style={{flex:1,background:"#DC2626",color:"#fff",border:"none",borderRadius:"8px",padding:"0.75rem",fontFamily:"var(--font-display)",fontSize:"0.82rem",cursor:"pointer",fontWeight:700,opacity:aborting||!abortReason.trim()?0.55:1}}>
-                                {aborting?"Aborting...":"Confirm Abort"}
-                              </button>
+                              <button onClick={()=>setShowAbort(false)} style={{flex:1,background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.75rem",fontSize:"0.82rem",cursor:"pointer",fontWeight:600}}>Keep Request</button>
+                              <button onClick={submitAbort} disabled={aborting||!abortReason.trim()} style={{flex:1,background:"#DC2626",color:"#fff",border:"none",borderRadius:"8px",padding:"0.75rem",fontFamily:"var(--font-display)",fontSize:"0.82rem",cursor:"pointer",fontWeight:700,opacity:aborting||!abortReason.trim()?0.55:1}}>{aborting?"Aborting...":"Confirm Abort"}</button>
                             </div>
                           </div>
                         )}
                       </div>
                     )}
 
-                    {/* Edit button if pending */}
                     {canEdit(active)&&!showAbort&&(
-                      <button onClick={()=>openEdit(active)}
-                        style={{background:"#1A1A1A",color:"#fff",border:"none",borderRadius:"10px",padding:"0.875rem",fontFamily:"var(--font-display)",fontSize:"0.85rem",cursor:"pointer",letterSpacing:"0.06em",fontWeight:700}}>
-                        Edit Request
-                      </button>
+                      <button onClick={()=>openEdit(active)} style={{background:"#1A1A1A",color:"#fff",border:"none",borderRadius:"10px",padding:"0.875rem",fontFamily:"var(--font-display)",fontSize:"0.85rem",cursor:"pointer",letterSpacing:"0.06em",fontWeight:700}}>Edit Request</button>
                     )}
                   </>
                 )}
 
-                {/*  NEW / EDIT FORM  */}
+                {/* NEW / EDIT FORM — inputs defined inline, no nested components */}
                 {(mode==="new"||mode==="edit")&&(
                   <form onSubmit={mode==="new"?submitNew:submitEdit} style={{display:"flex",flexDirection:"column",gap:"1rem"}}>
                     {mode==="edit"&&(
                       <div style={{background:"#FFF7ED",border:"1px solid rgba(244,123,32,0.3)",borderRadius:"8px",padding:"0.75rem 1rem",fontSize:"0.82rem",color:"#C4621A",fontWeight:500}}>
-                        You are editing your request. Changes are saved immediately. Only pending requests can be edited.
+                        You are editing your request. Only pending requests can be edited.
                       </div>
                     )}
-                    <FormFields/>
+
+                    {/* Brand + Model */}
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0.875rem"}}>
+                      <div>
+                        <label style={lbl}>Brand *</label>
+                        <select style={fi} value={form.carBrand} onChange={e=>setField("carBrand",e.target.value)}>
+                          {BRANDS.map(b=><option key={b}>{b}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={lbl}>Model *</label>
+                        <input
+                          style={fi}
+                          placeholder="e.g. Camry"
+                          value={form.carModel}
+                          onChange={e=>setField("carModel",e.target.value)}
+                          required
+                          autoComplete="off"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Year + Color */}
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0.875rem"}}>
+                      <div>
+                        <label style={lbl}>Year</label>
+                        <input
+                          type="number"
+                          style={fi}
+                          value={form.carYear}
+                          onChange={e=>setField("carYear",Number(e.target.value))}
+                          autoComplete="off"
+                        />
+                      </div>
+                      <div>
+                        <label style={lbl}>Color</label>
+                        <input
+                          style={fi}
+                          placeholder="e.g. Black"
+                          value={form.carColor}
+                          onChange={e=>setField("carColor",e.target.value)}
+                          autoComplete="off"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Condition + Gearbox + Fuel */}
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"0.625rem"}}>
+                      <div>
+                        <label style={lbl}>Condition</label>
+                        <select style={fi} value={form.condition} onChange={e=>setField("condition",e.target.value)}>
+                          {CONDS.map(c=><option key={c} value={c}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={lbl}>Gearbox</label>
+                        <select style={fi} value={form.transmission} onChange={e=>setField("transmission",e.target.value)}>
+                          {TRANS.map(t=><option key={t} value={t}>{t.toUpperCase()}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={lbl}>Fuel</label>
+                        <select style={fi} value={form.fuelType} onChange={e=>setField("fuelType",e.target.value)}>
+                          {FUELS.map(f=><option key={f} value={f}>{f.charAt(0).toUpperCase()+f.slice(1)}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Budget + Payment */}
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0.875rem"}}>
+                      <div>
+                        <label style={lbl}>Budget (NGN)</label>
+                        <input
+                          type="number"
+                          style={fi}
+                          placeholder="Max budget"
+                          value={form.budget}
+                          onChange={e=>setField("budget",e.target.value)}
+                          autoComplete="off"
+                        />
+                      </div>
+                      <div>
+                        <label style={lbl}>Payment Type</label>
+                        <select style={fi} value={form.paymentType} onChange={e=>setField("paymentType",e.target.value)}>
+                          {["full","installment","lease"].map(p=><option key={p} value={p}>{p.charAt(0).toUpperCase()+p.slice(1)}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Dealer search */}
+                    <div style={{position:"relative"}}>
+                      <label style={lbl}>Specific Dealer (blank = all dealers)</label>
+                      <input
+                        style={fi}
+                        placeholder="Search dealer..."
+                        value={dealerSearch}
+                        onChange={e=>{setDealerSearch(e.target.value);setField("dealerId","");}}
+                        autoComplete="off"
+                      />
+                      {dealers.length>0&&(
+                        <div style={{position:"absolute",top:"calc(100%+4px)",left:0,right:0,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"8px",zIndex:60,maxHeight:"150px",overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,0.1)"}}>
+                          {dealers.map(d=>(
+                            <div key={d._id} onClick={()=>{setField("dealerId",d._id);setDealerSearch(d.companyName);setDealers([]);}}
+                              style={{padding:"0.625rem 1rem",cursor:"pointer",borderBottom:"1px solid #F5F5F5",fontSize:"0.875rem",color:"#1A1A1A"}}
+                              onMouseOver={e=>e.currentTarget.style.background="#FFF7ED"}
+                              onMouseOut={e=>e.currentTarget.style.background=""}>
+                              {d.companyName} <span style={{color:"#A3A3A3",fontSize:"0.72rem"}}>{d.city||""}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {form.dealerId&&<div style={{marginTop:"0.3rem",fontSize:"0.7rem",color:"#16A34A",fontWeight:600}}>Sending to: {dealerSearch}</div>}
+                      {!form.dealerId&&!dealerSearch&&<div style={{marginTop:"0.3rem",fontSize:"0.7rem",color:"#A3A3A3"}}>Will be sent to ALL dealers</div>}
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <label style={lbl}>Additional Details</label>
+                      <textarea
+                        style={{...fi,minHeight:"72px",resize:"vertical"}}
+                        placeholder="Specific features, trim level, preferences..."
+                        value={form.description}
+                        onChange={e=>setField("description",e.target.value)}
+                      />
+                    </div>
+
+                    {/* Photos */}
+                    <div>
+                      <label style={lbl}>Reference Photos (up to {MAX_PHOTOS})</label>
+                      <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap",marginBottom:"0.35rem"}}>
+                        {form.referencePhotos.map((url,i)=>(
+                          <div key={url} style={{position:"relative"}}>
+                            <img src={url} alt="" onClick={()=>setLightbox(url)} style={{width:"84px",height:"63px",objectFit:"cover",borderRadius:"6px",border:"1.5px solid #E5E5E5",cursor:"zoom-in",display:"block"}}/>
+                            <button type="button" onClick={()=>removePhoto(i)} style={{position:"absolute",top:"-5px",right:"-5px",background:"#DC2626",color:"#fff",border:"none",borderRadius:"50%",width:"18px",height:"18px",cursor:"pointer",fontSize:"0.6rem",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>X</button>
+                          </div>
+                        ))}
+                        {form.referencePhotos.length<MAX_PHOTOS&&(
+                          <button type="button" onClick={()=>photoRef.current?.click()} disabled={uploading}
+                            style={{width:"84px",height:"63px",background:"#F5F5F5",border:"1.5px dashed #D4D4D4",borderRadius:"6px",cursor:"pointer",color:"#737373",fontSize:"0.75rem",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"0.15rem",opacity:uploading?0.6:1}}>
+                            <span style={{fontSize:"1.4rem",lineHeight:1}}>+</span>
+                            <span>{uploading?"...":"Photo"}</span>
+                          </button>
+                        )}
+                        <input ref={photoRef} type="file" accept="image/jpeg,image/png,image/webp" style={{display:"none"}} onChange={e=>{if(e.target.files?.[0])uploadPhoto(e.target.files[0]);e.target.value="";}}/>
+                      </div>
+                      <div style={{fontSize:"0.65rem",color:"#A3A3A3"}}>{form.referencePhotos.length}/{MAX_PHOTOS} uploaded</div>
+                    </div>
+
+                    {/* Submit */}
                     <div style={{display:"flex",gap:"0.75rem",position:"sticky",bottom:0,background:"#fff",paddingTop:"0.5rem",paddingBottom:"0.25rem"}}>
-                      <button type="button" onClick={close}
-                        style={{flex:1,background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"10px",padding:"0.875rem",fontFamily:"var(--font-body)",fontSize:"0.9rem",cursor:"pointer"}}>
-                        Cancel
-                      </button>
+                      <button type="button" onClick={close} style={{flex:1,background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"10px",padding:"0.875rem",fontFamily:"var(--font-body)",fontSize:"0.9rem",cursor:"pointer"}}>Cancel</button>
                       <button type="submit" disabled={submitting||saving||!form.carModel}
                         style={{flex:2,background:submitting||saving||!form.carModel?"#D4D4D4":"#F47B20",color:"#fff",border:"none",borderRadius:"10px",padding:"0.875rem",fontFamily:"var(--font-display)",fontSize:"0.95rem",letterSpacing:"0.1em",cursor:submitting||saving||!form.carModel?"not-allowed":"pointer",fontWeight:700}}>
                         {submitting||saving?"Saving...":mode==="new"?"SEND REQUEST":"SAVE CHANGES"}
