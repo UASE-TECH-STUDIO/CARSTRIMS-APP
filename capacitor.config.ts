@@ -1,23 +1,18 @@
-import type { CapacitorConfig } from "@capacitor/cli";
+﻿import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
   appId: "com.uasetechstudio.carstrims",
   appName: "CARSTRIMS",
   webDir: "out",
   server: {
-    url: "https://www.carstrims.com",
+    url: "https://carstrims.com",
     androidScheme: "https",
     cleartext: false,
-    allowNavigation: [
-      "*.carstrims.com",
-      "carstrims.com",
-      "www.carstrims.com",
-      "carstrims-backend.onrender.com",
-    ],
+    hostname: "carstrims.com",
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 2000,
+      launchShowDuration: 2500,
       launchAutoHide: true,
       backgroundColor: "#1A1A1A",
       androidSplashResourceName: "splash",
@@ -29,20 +24,29 @@ const config: CapacitorConfig = {
     StatusBar: {
       style: "Dark",
       backgroundColor: "#1A1A1A",
+      overlaysWebView: false,
+    },
+    Keyboard: {
+      resize: "body",
+      style: "dark",
+      resizeOnFullScreen: true,
     },
     PushNotifications: {
       presentationOptions: ["badge", "sound", "alert"],
     },
   },
+  ios: {
+    contentInset: "always",
+    scrollEnabled: true,
+    allowsLinkPreview: false,
+    handleApplicationNotifications: false,
+    backgroundColor: "#ffffff",
+  },
   android: {
     allowMixedContent: false,
     captureInput: true,
     webContentsDebuggingEnabled: false,
-    loggingBehavior: "none",
-  },
-  ios: {
-    contentInset: "automatic",
-    scrollEnabled: true,
+    backgroundColor: "#ffffff",
   },
 };
 

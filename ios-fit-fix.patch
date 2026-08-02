@@ -1,0 +1,362 @@
+From fc40e76ad4c60bb43c9a78a643749a3b45f11c90 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 2 Aug 2026 13:40:30 +0000
+Subject: [PATCH] fix(ios): correct viewport-fit, safe-area insets, and footer
+ jump on iPhone Dynamic Island devices
+
+- Add viewport-fit=cover so env(safe-area-inset-*) actually resolves on iOS
+- Add safe-area CSS vars + overscroll-behavior-y:none to stop iOS rubber-band bounce
+- Switch FeedFooter from position:sticky to position:fixed to match the stable
+  UserBottomNav/dashboard nav pattern, add safe-area padding + GPU layer promotion
+- Add padding-top:env(safe-area-inset-top) to every topbar (User/Dealer/Staff/
+  Partner/Admin + car detail page) so content clears the Dynamic Island/notch
+- Add safe-area padding to Dealer/Staff sidebars and floating messages widget
+- Reserve bottom padding on feed page content so it isn't hidden behind the
+  now-fixed footer
+---
+ app/(public)/cars/[carId]/page.tsx   |  2 +-
+ app/dashboard/dealer/layout.tsx      |  2 +-
+ app/dashboard/partner/layout.tsx     |  2 +-
+ app/dashboard/super-admin/layout.tsx |  2 +-
+ app/dashboard/user/layout.tsx        |  4 ++--
+ app/feed/page.tsx                    |  2 +-
+ app/globals.css                      | 16 ++++++++++++++++
+ app/layout.tsx                       | 14 +++++++++++++-
+ components/layout/AdminTopbar.tsx    |  2 +-
+ components/layout/DealerSidebar.tsx  |  4 +++-
+ components/layout/DealerTopbar.tsx   |  2 +-
+ components/layout/FeedFooter.tsx     | 10 +++++++++-
+ components/layout/PartnerTopbar.tsx  |  2 +-
+ components/layout/StaffShell.tsx     |  6 ++++--
+ components/layout/StaffTopbar.tsx    |  2 +-
+ components/layout/UserBottomNav.tsx  |  4 ++--
+ components/layout/UserTopbar.tsx     |  2 +-
+ components/shared/MessagesWidget.tsx |  6 +++---
+ 18 files changed, 62 insertions(+), 22 deletions(-)
+
+diff --git a/app/(public)/cars/[carId]/page.tsx b/app/(public)/cars/[carId]/page.tsx
+index b5c09aa..ab7963b 100644
+--- a/app/(public)/cars/[carId]/page.tsx
++++ b/app/(public)/cars/[carId]/page.tsx
+@@ -377,7 +377,7 @@ export default function CarDetailPage() {
+ 
+       <style>{`
+         .cd-page{min-height:100vh;background:#F5F5F5;color:#1A1A1A;font-family:var(--font-body);overflow-x:hidden;max-width:100vw}
+-        .cd-topbar{display:flex;align-items:center;justify-content:space-between;padding:0.875rem 1.25rem;background:#fff;border-bottom:1.5px solid #E5E5E5;position:sticky;top:0;z-index:40;gap:0.5rem}
++        .cd-topbar{display:flex;align-items:center;justify-content:space-between;padding:0.875rem 1.25rem;padding-top:calc(0.875rem + env(safe-area-inset-top,0px));background:#fff;border-bottom:1.5px solid #E5E5E5;position:sticky;top:0;z-index:40;gap:0.5rem}
+         .cd-back{background:none;border:none;color:#525252;font-size:0.95rem;cursor:pointer;font-family:var(--font-body);font-weight:600;padding:0.25rem 0}
+         .cd-back:hover{color:#F47B20}
+         .cd-topbar-right{display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap}
+diff --git a/app/dashboard/dealer/layout.tsx b/app/dashboard/dealer/layout.tsx
+index 8ba0b83..ec1952d 100644
+--- a/app/dashboard/dealer/layout.tsx
++++ b/app/dashboard/dealer/layout.tsx
+@@ -117,7 +117,7 @@ function DealerShell({ children }: { children: ReactNode }) {
+         .dealer-shell{display:flex;min-height:100vh;background:#F5F5F5;position:relative}
+         .mobile-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:55;cursor:pointer}
+         .shell-main{flex:1;margin-left:240px;display:flex;flex-direction:column;min-height:100vh;min-width:0}
+-        .shell-topbar{height:64px;background:#fff;border-bottom:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-between;padding:0 1.75rem;position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,0.06);flex-shrink:0;gap:1rem}
++        .shell-topbar{height:calc(64px + env(safe-area-inset-top,0px));background:#fff;border-bottom:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-between;padding:0 1.75rem;padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,0.06);flex-shrink:0;gap:1rem}
+         .topbar-left{display:flex;align-items:center;gap:0.875rem;min-width:0}
+         .hamburger-btn{display:none;flex-direction:column;justify-content:center;gap:5px;background:none;border:none;cursor:pointer;padding:0.4rem;border-radius:6px;flex-shrink:0}
+         .hamburger-btn:hover{background:#F5F5F5}
+diff --git a/app/dashboard/partner/layout.tsx b/app/dashboard/partner/layout.tsx
+index 0534653..b405f5e 100644
+--- a/app/dashboard/partner/layout.tsx
++++ b/app/dashboard/partner/layout.tsx
+@@ -129,7 +129,7 @@ export default function PartnerLayout({ children }: { children: ReactNode }) {
+         .logout-btn{display:flex;align-items:center;gap:0.75rem;width:100%;padding:0.65rem 0;background:none;border:none;color:#999;font-size:0.85rem;font-family:var(--font-body);cursor:pointer;transition:color 0.2s}
+         .logout-btn:hover{color:#DC2626}
+         .partner-main{flex:1;margin-left:240px;display:flex;flex-direction:column;min-height:100vh;min-width:0}
+-        .partner-topbar{height:60px;background:#fff;border-bottom:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,0.05);gap:0.75rem}
++        .partner-topbar{height:calc(60px + env(safe-area-inset-top,0px));background:#fff;border-bottom:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,0.05);gap:0.75rem}
+         .tb-left{display:flex;align-items:center;gap:0.75rem}
+         .tb-title{font-family:var(--font-display);font-size:1rem;letter-spacing:0.06em;color:#1A1A1A}
+         .tb-right{display:flex;align-items:center;gap:0.75rem;flex-shrink:0}
+diff --git a/app/dashboard/super-admin/layout.tsx b/app/dashboard/super-admin/layout.tsx
+index 9eea819..72543e8 100644
+--- a/app/dashboard/super-admin/layout.tsx
++++ b/app/dashboard/super-admin/layout.tsx
+@@ -50,7 +50,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
+       <style>{`
+         .admin-shell{display:flex;min-height:100vh;background:#F5F5F5}
+         .admin-main{flex:1;margin-left:240px;display:flex;flex-direction:column;min-height:100vh;min-width:0}
+-        .admin-topbar{height:60px;background:#fff;border-bottom:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,0.05);gap:0.75rem}
++        .admin-topbar{height:calc(60px + env(safe-area-inset-top,0px));background:#fff;border-bottom:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,0.05);gap:0.75rem}
+         .tb-left{display:flex;align-items:center;gap:0.75rem}
+         .tb-title{font-family:var(--font-display);font-size:1rem;letter-spacing:0.06em;color:#1A1A1A}
+         .tb-right{display:flex;align-items:center;gap:0.75rem;flex-shrink:0}
+diff --git a/app/dashboard/user/layout.tsx b/app/dashboard/user/layout.tsx
+index 8a88cc2..433f79b 100644
+--- a/app/dashboard/user/layout.tsx
++++ b/app/dashboard/user/layout.tsx
+@@ -185,7 +185,7 @@ export default function UserLayout({ children }: { children: ReactNode }) {
+ 
+       <style>{`
+         .user-shell{min-height:100vh;background:#F5F5F5;display:flex;flex-direction:column}
+-        .user-topbar{height:56px;background:#fff;border-bottom:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
++        .user-topbar{height:calc(56px + env(safe-area-inset-top,0px));background:#fff;border-bottom:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+         .topbar-brand{font-family:var(--font-display);font-size:1.1rem;letter-spacing:0.18em;color:#F47B20;text-decoration:none;flex-shrink:0}
+         .topbar-right{display:flex;align-items:center;gap:0.625rem}
+         .greeting{font-size:0.8rem;color:#888;white-space:nowrap}
+@@ -200,7 +200,7 @@ export default function UserLayout({ children }: { children: ReactNode }) {
+         .user-footer{background:#fff;border-top:1px solid #E5E5E5;padding:0.875rem 1.25rem;text-align:center}
+         .uf-inner{display:flex;align-items:center;justify-content:center;gap:1.5rem;font-size:0.7rem;color:#CCC;flex-wrap:wrap}
+         .uf-dev strong{color:#F47B20}
+-        .bottom-nav{position:fixed;bottom:0;left:0;right:0;height:68px;background:#fff;border-top:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-around;z-index:100;padding-bottom:env(safe-area-inset-bottom,0)}
++        .bottom-nav{position:fixed;bottom:0;left:0;right:0;height:68px;background:#fff;border-top:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-around;z-index:100;padding-bottom:env(safe-area-inset-bottom,0);padding-left:env(safe-area-inset-left,0);padding-right:env(safe-area-inset-right,0);transform:translateZ(0);-webkit-transform:translateZ(0);will-change:transform}
+         .bni{display:flex;flex-direction:column;align-items:center;gap:0.15rem;text-decoration:none;color:#AAA;background:none;border:none;cursor:pointer;padding:0.5rem;min-width:52px;transition:color 0.2s;font-family:var(--font-body)}
+         .bni:hover,.bni.active{color:#F47B20}
+         .bni-icon{display:flex;align-items:center;justify-content:center;font-size:1.15rem}
+diff --git a/app/feed/page.tsx b/app/feed/page.tsx
+index c1ec103..52623a1 100644
+--- a/app/feed/page.tsx
++++ b/app/feed/page.tsx
+@@ -513,7 +513,7 @@ export default function FeedPage() {
+ 
+       <style>{`
+         * { box-sizing:border-box; }
+-        .feed { min-height:100vh; background:#F5F5F5; display:flex; flex-direction:column; font-family:var(--font-body); }
++        .feed { min-height:100vh; min-height:100dvh; background:#F5F5F5; display:flex; flex-direction:column; font-family:var(--font-body); padding-bottom:calc(60px + var(--sab, env(safe-area-inset-bottom,0px))); }
+ 
+         /* -- TOPBAR --------------------------- */
+         .feed-topbar {
+diff --git a/app/globals.css b/app/globals.css
+index 3298a77..89de2ff 100644
+--- a/app/globals.css
++++ b/app/globals.css
+@@ -53,6 +53,12 @@
+   --primary:     #F47B20;
+   --primary-light: #FF9340;
+   --primary-dim: #C4621A;
++
++  /*  SAFE AREA (notch / Dynamic Island / home indicator)  */
++  --sat: env(safe-area-inset-top, 0px);
++  --sab: env(safe-area-inset-bottom, 0px);
++  --sal: env(safe-area-inset-left, 0px);
++  --sar: env(safe-area-inset-right, 0px);
+ }
+ 
+ *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+@@ -68,6 +74,16 @@ html, body {
+   -webkit-font-smoothing: antialiased;
+   -moz-osx-font-smoothing: grayscale;
+   min-height: 100vh;
++  min-height: 100dvh;
++  /* Stops the iOS rubber-band bounce at the top/bottom of the page.
++     That bounce is what makes fixed/sticky bars appear to detach and
++     float up and down during a scroll on iPhone — Android/desktop
++     browsers don't bounce this way, which is why it only shows on iOS. */
++  overscroll-behavior-y: none;
++  overflow-x: hidden;
++  max-width: 100vw;
++  padding-left: var(--sal);
++  padding-right: var(--sar);
+ }
+ 
+ p { font-size: 1rem; font-weight: 450; line-height: 1.7; color: var(--grey-700); }
+diff --git a/app/layout.tsx b/app/layout.tsx
+index 10dc5a2..9f20f86 100644
+--- a/app/layout.tsx
++++ b/app/layout.tsx
+@@ -1,8 +1,20 @@
+-import type { Metadata } from "next";
++import type { Metadata, Viewport } from "next";
+ import "./globals.css";
+ import SWRegistrar from "@/components/shared/SWRegistrar";
+ import CapacitorPush from "@/components/shared/CapacitorPush";
+ 
++// viewport-fit=cover tells iOS to draw the page edge-to-edge behind the
++// notch / Dynamic Island / home indicator, and is what makes
++// env(safe-area-inset-*) resolve to real values instead of 0 everywhere.
++// Without this, nothing can be "fitted" correctly on any iPhone.
++export const viewport: Viewport = {
++  width: "device-width",
++  initialScale: 1,
++  maximumScale: 1,
++  viewportFit: "cover",
++  themeColor: "#1A1A1A",
++};
++
+ export const metadata: Metadata = {
+   metadataBase: new URL("https://www.carstrims.com"),
+   title: {
+diff --git a/components/layout/AdminTopbar.tsx b/components/layout/AdminTopbar.tsx
+index c02ef66..96b5a5e 100644
+--- a/components/layout/AdminTopbar.tsx
++++ b/components/layout/AdminTopbar.tsx
+@@ -27,7 +27,7 @@ export default function AdminTopbar() {
+         <div className="topbar-avatar" style={{ background:"var(--error)" }}>A</div>
+       </div>
+       <style>{`
+-        .topbar{height:64px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;position:sticky;top:0;z-index:50}
++        .topbar{height:calc(64px + env(safe-area-inset-top,0px));background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:50}
+         .topbar-left{display:flex;flex-direction:column;gap:0.1rem}
+         .page-title{font-family:var(--font-display);font-size:1.3rem;letter-spacing:0.08em;color:var(--text);line-height:1}
+         .page-date{font-size:0.7rem;color:var(--text-dim);letter-spacing:0.05em}
+diff --git a/components/layout/DealerSidebar.tsx b/components/layout/DealerSidebar.tsx
+index 83c43b2..61004dc 100644
+--- a/components/layout/DealerSidebar.tsx
++++ b/components/layout/DealerSidebar.tsx
+@@ -92,8 +92,10 @@ export default function DealerSidebar({ isOpen, onClose }: Props) {
+ 
+       <style>{`
+         .dealer-sidebar{
+-          width:240px;height:100vh;background:#fff;border-right:1.5px solid #E5E5E5;
++          width:240px;height:100vh;height:100dvh;background:#fff;border-right:1.5px solid #E5E5E5;
+           display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:60;
++          padding-top:env(safe-area-inset-top,0px);padding-left:env(safe-area-inset-left,0px);
++          padding-bottom:env(safe-area-inset-bottom,0px);
+           overflow-y:auto;transition:transform 0.25s ease;
+         }
+         .sb-brand{
+diff --git a/components/layout/DealerTopbar.tsx b/components/layout/DealerTopbar.tsx
+index 160217c..4875fbd 100644
+--- a/components/layout/DealerTopbar.tsx
++++ b/components/layout/DealerTopbar.tsx
+@@ -63,7 +63,7 @@ export default function DealerTopbar() {
+         </button>
+       </div>
+       <style>{`
+-        .topbar{height:60px;background:#fff;border-bottom:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-between;padding:0 1.75rem;position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,0.06);flex-shrink:0}
++        .topbar{height:calc(60px + env(safe-area-inset-top,0px));background:#fff;border-bottom:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-between;padding:0 1.75rem;padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,0.06);flex-shrink:0}
+         .topbar-left{display:flex;flex-direction:column;gap:0.1rem;min-width:0}
+         .page-title{font-family:var(--font-display);font-size:1.25rem;letter-spacing:0.08em;color:#1A1A1A;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+         .page-date{font-size:0.68rem;color:#AAA;letter-spacing:0.04em}
+diff --git a/components/layout/FeedFooter.tsx b/components/layout/FeedFooter.tsx
+index 2bc27a6..2e26d9a 100644
+--- a/components/layout/FeedFooter.tsx
++++ b/components/layout/FeedFooter.tsx
+@@ -91,8 +91,16 @@ export default function FeedFooter({ onScan }: Props) {
+ 
+       <style>{`
+         .feed-footer {
+-          position: sticky; bottom: 0; z-index: 100;
++          position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+           background: #fff; border-top: 1.5px solid #E5E5E5;
++          padding-bottom: var(--sab, env(safe-area-inset-bottom, 0px));
++          padding-left: var(--sal, env(safe-area-inset-left, 0px));
++          padding-right: var(--sar, env(safe-area-inset-right, 0px));
++          /* Forces its own GPU compositing layer so iOS Safari/WKWebView
++             can't let it lag or detach from the viewport during scroll. */
++          transform: translateZ(0);
++          -webkit-transform: translateZ(0);
++          will-change: transform;
+         }
+ 
+         /* Info panel */
+diff --git a/components/layout/PartnerTopbar.tsx b/components/layout/PartnerTopbar.tsx
+index ba776b5..8f4ca4e 100644
+--- a/components/layout/PartnerTopbar.tsx
++++ b/components/layout/PartnerTopbar.tsx
+@@ -21,7 +21,7 @@ export default function PartnerTopbar() {
+         <div className="avatar" style={{background:"#3B8BD4"}}>{user?.fullName?.charAt(0).toUpperCase() || "P"}</div>
+       </div>
+       <style>{`
+-        .topbar{height:64px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;position:sticky;top:0;z-index:50}
++        .topbar{height:calc(64px + env(safe-area-inset-top,0px));background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:50}
+         .page-title{font-family:var(--font-display);font-size:1.3rem;letter-spacing:0.08em;color:var(--text);line-height:1}
+         .topbar-right{display:flex;align-items:center;gap:0.75rem}
+         .avatar{width:34px;height:34px;border-radius:50%;color:#fff;font-family:var(--font-display);font-size:1rem;display:flex;align-items:center;justify-content:center}
+diff --git a/components/layout/StaffShell.tsx b/components/layout/StaffShell.tsx
+index ca345c2..70c4bd0 100644
+--- a/components/layout/StaffShell.tsx
++++ b/components/layout/StaffShell.tsx
+@@ -197,8 +197,10 @@ export default function StaffShell({ children }: { children: ReactNode }) {
+ 
+         /* Sidebar */
+         .staff-sidebar{
+-          width:240px;height:100vh;background:#fff;border-right:1.5px solid #E5E5E5;
++          width:240px;height:100vh;height:100dvh;background:#fff;border-right:1.5px solid #E5E5E5;
+           display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:60;
++          padding-top:env(safe-area-inset-top,0px);padding-left:env(safe-area-inset-left,0px);
++          padding-bottom:env(safe-area-inset-bottom,0px);
+           overflow-y:auto;transition:transform 0.25s ease;
+         }
+         .sb-brand{display:flex;align-items:center;gap:0.6rem;padding:0 1rem;background:#1A1A1A;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0;height:64px}
+@@ -239,7 +241,7 @@ export default function StaffShell({ children }: { children: ReactNode }) {
+ 
+         /* Main */
+         .staff-main{flex:1;margin-left:240px;display:flex;flex-direction:column;min-height:100vh;min-width:0}
+-        .staff-topbar{height:64px;background:#fff;border-bottom:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-between;padding:0 1.75rem;position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,0.06);flex-shrink:0;gap:1rem}
++        .staff-topbar{height:calc(64px + env(safe-area-inset-top,0px));background:#fff;border-bottom:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-between;padding:0 1.75rem;padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,0.06);flex-shrink:0;gap:1rem}
+         .topbar-left{display:flex;align-items:center;gap:0.875rem;min-width:0}
+         .hamburger-btn{display:none;flex-direction:column;justify-content:center;gap:5px;background:none;border:none;cursor:pointer;padding:0.4rem;border-radius:6px;flex-shrink:0}
+         .hamburger-btn:hover{background:#F5F5F5}
+diff --git a/components/layout/StaffTopbar.tsx b/components/layout/StaffTopbar.tsx
+index 41c9ba4..dcc98b7 100644
+--- a/components/layout/StaffTopbar.tsx
++++ b/components/layout/StaffTopbar.tsx
+@@ -21,7 +21,7 @@ export default function StaffTopbar() {
+         <div className="avatar" style={{background:"#1D9E75"}}>{user?.fullName?.charAt(0).toUpperCase() || "S"}</div>
+       </div>
+       <style>{`
+-        .topbar{height:64px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;position:sticky;top:0;z-index:50}
++        .topbar{height:calc(64px + env(safe-area-inset-top,0px));background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:50}
+         .page-title{font-family:var(--font-display);font-size:1.3rem;letter-spacing:0.08em;color:var(--text);line-height:1}
+         .topbar-right{display:flex;align-items:center;gap:0.75rem}
+         .avatar{width:34px;height:34px;border-radius:50%;color:#fff;font-family:var(--font-display);font-size:1rem;display:flex;align-items:center;justify-content:center}
+diff --git a/components/layout/UserBottomNav.tsx b/components/layout/UserBottomNav.tsx
+index 4e0add7..6485265 100644
+--- a/components/layout/UserBottomNav.tsx
++++ b/components/layout/UserBottomNav.tsx
+@@ -49,7 +49,7 @@ export default function UserBottomNav() {
+       )}
+ 
+       <style>{`
+-        .bottom-nav{position:fixed;bottom:0;left:0;right:0;height:68px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;z-index:100;backdrop-filter:blur(10px)}
++        .bottom-nav{position:fixed;bottom:0;left:0;right:0;height:68px;padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;z-index:100;backdrop-filter:blur(10px);transform:translateZ(0);-webkit-transform:translateZ(0);will-change:transform}
+         .bn-item{display:flex;flex-direction:column;align-items:center;gap:0.2rem;text-decoration:none;color:var(--text-dim);transition:color 0.2s;background:none;border:none;cursor:pointer;padding:0.5rem;border-radius:8px;min-width:70px}
+         .bn-item:hover{color:var(--text)}
+         .bn-item.active{color:var(--gold)}
+@@ -59,7 +59,7 @@ export default function UserBottomNav() {
+         .bn-icon{font-size:1.2rem;transition:transform 0.2s}
+         .bn-label{font-size:0.65rem;letter-spacing:0.04em;color:inherit}
+         .qr-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center;z-index:200}
+-        .qr-modal{background:var(--surface);border-radius:16px 16px 0 0;width:100%;max-width:500px;padding-bottom:2rem}
++        .qr-modal{background:var(--surface);border-radius:16px 16px 0 0;width:100%;max-width:500px;padding-bottom:calc(2rem + env(safe-area-inset-bottom,0px))}
+         .qr-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border)}
+         .qr-header h3{font-family:var(--font-display);font-size:1rem;letter-spacing:0.08em;color:var(--text)}
+         .qr-close{background:none;border:none;color:var(--text-muted);font-size:1rem;cursor:pointer}
+diff --git a/components/layout/UserTopbar.tsx b/components/layout/UserTopbar.tsx
+index 24a6e42..d1fbe6a 100644
+--- a/components/layout/UserTopbar.tsx
++++ b/components/layout/UserTopbar.tsx
+@@ -16,7 +16,7 @@ export default function UserTopbar() {
+         </Link>
+       </div>
+       <style>{`
+-        .user-topbar{height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;position:sticky;top:0;z-index:50}
++        .user-topbar{height:calc(56px + env(safe-area-inset-top,0px));background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:50}
+         .topbar-brand{font-family:var(--font-display);font-size:1rem;letter-spacing:0.2em;color:var(--gold);text-decoration:none}
+         .topbar-right{display:flex;align-items:center;gap:0.75rem}
+         .user-pill{display:flex;align-items:center;gap:0.5rem;text-decoration:none;color:var(--text-muted);font-size:0.825rem;transition:color 0.2s}
+diff --git a/components/shared/MessagesWidget.tsx b/components/shared/MessagesWidget.tsx
+index 083a246..472a1ca 100644
+--- a/components/shared/MessagesWidget.tsx
++++ b/components/shared/MessagesWidget.tsx
+@@ -385,10 +385,10 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
+       )}
+ 
+       <style>{`
+-        .msg-fab{position:fixed;bottom:1.25rem;right:1.25rem;z-index:9999;background:var(--accent,#F47B20);color:#fff;border:none;border-radius:50%;width:48px;height:48px;font-family:var(--font-display);font-size:0.65rem;font-weight:700;letter-spacing:0.06em;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.2);display:flex;align-items:center;justify-content:center;transition:all 0.2s}
++        .msg-fab{position:fixed;bottom:calc(1.25rem + env(safe-area-inset-bottom,0px));right:calc(1.25rem + env(safe-area-inset-right,0px));z-index:9999;background:var(--accent,#F47B20);color:#fff;border:none;border-radius:50%;width:48px;height:48px;font-family:var(--font-display);font-size:0.65rem;font-weight:700;letter-spacing:0.06em;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.2);display:flex;align-items:center;justify-content:center;transition:all 0.2s;transform:translateZ(0);-webkit-transform:translateZ(0)}
+         .msg-fab:hover{transform:scale(1.08)}
+         .fab-badge{position:absolute;top:-4px;right:-4px;background:#DC2626;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;border:2px solid #fff}
+-        .msg-panel{position:fixed;bottom:80px;right:1.25rem;z-index:9998;background:#fff;border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,0.18);border:1.5px solid #E5E5E5;display:flex;flex-direction:column;overflow:hidden;min-width:280px;min-height:340px}
++        .msg-panel{position:fixed;bottom:calc(80px + env(safe-area-inset-bottom,0px));right:calc(1.25rem + env(safe-area-inset-right,0px));z-index:9998;background:#fff;border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,0.18);border:1.5px solid #E5E5E5;display:flex;flex-direction:column;overflow:hidden;min-width:280px;min-height:340px}
+         .resize-handle{position:absolute;top:0;left:0;width:24px;height:24px;cursor:nw-resize;display:flex;align-items:center;justify-content:center;z-index:10;border-radius:0 0 8px 0;background:rgba(0,0,0,0.04);transition:background 0.2s}
+         .resize-handle:hover{background:rgba(0,0,0,0.1)}
+         .mp-header{display:flex;align-items:center;gap:0.5rem;padding:0.875rem 1rem 0.875rem 1.5rem;border-bottom:1px solid #E5E5E5;background:var(--accent,#F47B20);color:#fff;flex-shrink:0}
+@@ -441,7 +441,7 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
+         .nc-msg:focus{border-color:var(--accent,#F47B20);background:#fff}
+         .nc-send{width:100%;background:var(--accent,#F47B20);color:#fff;border:none;border-radius:6px;padding:0.75rem;font-family:var(--font-display);font-size:0.85rem;letter-spacing:0.06em;cursor:pointer}
+         .nc-send:disabled{opacity:0.5;cursor:not-allowed}
+-        @media(max-width:640px){.msg-panel{width:calc(100vw - 1.5rem)!important;right:0.75rem;bottom:80px;max-height:70vh}}
++        @media(max-width:640px){.msg-panel{width:calc(100vw - 1.5rem)!important;right:calc(0.75rem + env(safe-area-inset-right,0px));bottom:calc(80px + env(safe-area-inset-bottom,0px));max-height:70vh}}
+       `}</style>
+     </>
+   );
+-- 
+2.43.0
+

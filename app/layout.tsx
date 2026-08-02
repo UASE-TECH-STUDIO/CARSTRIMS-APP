@@ -6,10 +6,10 @@ import CapacitorPush from "@/components/shared/CapacitorPush";
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.carstrims.com"),
   title: {
-    default: "CARSTRIMS — Nigeria's Premier Car Dealer Platform",
+    default: "CARSTRIMS Ã¢â‚¬â€ Nigeria's Premier Car Dealer Platform",
     template: "%s | CARSTRIMS",
   },
-  description: "Buy and sell premium vehicles in Nigeria. CARSTRIMS connects you with trusted car dealers across Abuja, Lagos, and beyond. Browse thousands of cars — brand new, foreign used, and locally used.",
+  description: "Buy and sell premium vehicles in Nigeria. CARSTRIMS connects you with trusted car dealers across Abuja, Lagos, and beyond. Browse thousands of cars Ã¢â‚¬â€ brand new, foreign used, and locally used.",
   keywords: [
     "car dealer Nigeria", "buy car Nigeria", "sell car Nigeria",
     "car marketplace Nigeria", "foreign used cars Nigeria",
@@ -36,26 +36,26 @@ export const metadata: Metadata = {
     locale: "en_NG",
     url: "https://www.carstrims.com",
     siteName: "CARSTRIMS",
-    title: "CARSTRIMS — Nigeria's Premier Car Dealer Platform",
+    title: "CARSTRIMS Ã¢â‚¬â€ Nigeria's Premier Car Dealer Platform",
     description: "Buy and sell premium vehicles in Nigeria. Browse thousands of cars from trusted dealers across Abuja, Lagos and beyond.",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "CARSTRIMS — Nigeria's Premier Car Dealer Platform",
+        alt: "CARSTRIMS Ã¢â‚¬â€ Nigeria's Premier Car Dealer Platform",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "CARSTRIMS — Nigeria's Premier Car Dealer Platform",
+    title: "CARSTRIMS Ã¢â‚¬â€ Nigeria's Premier Car Dealer Platform",
     description: "Buy and sell premium vehicles in Nigeria. Browse thousands of cars from trusted dealers.",
     images: ["/og-image.png"],
     creator: "@carstrims",
   },
   icons: {
-    // ── These now all point to the CARSTRIMS "C" logo ──────────────────────
+    // Ã¢â€â‚¬Ã¢â€â‚¬ These now all point to the CARSTRIMS "C" logo Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     icon: [
       { url: "/favicon.ico",   sizes: "any",    type: "image/x-icon"  }, // 16+32+48 multi-size ICO
       { url: "/icon-16.png",   sizes: "16x16",  type: "image/png"     },
@@ -85,7 +85,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <head>
         {/*
-          ── Explicit <link> tags as belt-and-suspenders ────────────────────
+          Ã¢â€â‚¬Ã¢â€â‚¬ Explicit <link> tags as belt-and-suspenders Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
           Next.js Metadata API handles most cases, but these explicit tags
           ensure browsers (especially Chrome) pick up the correct favicon
           and don't fall back to Vercel's default.
@@ -96,7 +96,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/apple-icon.png" sizes="180x180"/>
         <link rel="manifest"         href="/manifest.json"/>
 
-        {/* Structured data — Organisation */}
+        {/* Structured data Ã¢â‚¬â€ Organisation */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -106,7 +106,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "name": "CARSTRIMS",
               "url": "https://www.carstrims.com",
               "logo": "https://www.carstrims.com/logo.png",
-              "description": "Nigeria's Premier Car Dealer Platform — Buy and sell premium vehicles across Nigeria.",
+              "description": "Nigeria's Premier Car Dealer Platform Ã¢â‚¬â€ Buy and sell premium vehicles across Nigeria.",
               "address": {
                 "@type": "PostalAddress",
                 "addressCountry": "NG",
@@ -123,7 +123,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             }),
           }}
         />
-        {/* Structured data — Website with SearchAction */}
+        {/* Structured data Ã¢â‚¬â€ Website with SearchAction */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -152,3 +152,4 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
+

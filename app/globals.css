@@ -100,3 +100,459 @@ input:-webkit-autofill {
 
 @media (max-width: 768px) { html { font-size: 15.5px; } }
 @media (max-width: 480px) { html { font-size: 15px; } }
+/* â”€â”€ iOS Safe Area & Viewport Fixes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+:root {
+  --safe-top:    env(safe-area-inset-top,    0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left,   0px);
+  --safe-right:  env(safe-area-inset-right,  0px);
+}
+
+/* Fix full height on ALL iPhones including Dynamic Island models */
+html, body {
+  height: 100%;
+  min-height: 100%;
+  min-height: -webkit-fill-available;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Next.js root div */
+#__next {
+  min-height: 100%;
+  min-height: -webkit-fill-available;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Fix viewport on iOS Safari and Capacitor WebView */
+@supports (padding-top: env(safe-area-inset-top)) {
+  body {
+    padding-top:    env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left:   env(safe-area-inset-left);
+    padding-right:  env(safe-area-inset-right);
+  }
+}
+
+/* â”€â”€ Fixed Footer Fix â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Stop footer from jumping â€” keep it at bottom always */
+.fixed-bottom-nav,
+nav[class*="bottom"],
+div[class*="bottom-nav"],
+div[class*="tab-bar"],
+div[class*="footer-nav"] {
+  position: fixed !important;
+  bottom: 0 !important;
+  bottom: env(safe-area-inset-bottom) !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 999 !important;
+  padding-bottom: env(safe-area-inset-bottom) !important;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Give page content bottom padding so footer doesnt cover it */
+main,
+.page-content,
+div[class*="page"],
+div[class*="content"] {
+  padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
+}
+
+/* â”€â”€ Prevent iOS bounce scroll â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+body {
+  position: fixed;
+  width: 100%;
+  overflow: hidden;
+}
+
+.scroll-container,
+main,
+.page-content {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}
+
+/* â”€â”€ iPhone Dynamic Island fix â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+@media screen and (min-device-width: 390px) and (max-device-width: 430px) {
+  body {
+    padding-top: max(env(safe-area-inset-top), 47px);
+  }
+}
+
+/* â”€â”€ All screen sizes responsive fix â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+img, video {
+  max-width: 100%;
+  height: auto;
+}
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   iOS SAFE AREA & SCREEN FIT FIXES
+   Fixes: not fitted on iPhone screen, footer jumping
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+
+/* Safe area CSS variables */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
+/* Fix iOS full height â€” prevents white bars on iPhone */
+html {
+  height: 100%;
+  height: -webkit-fill-available;
+  overflow-x: hidden;
+}
+
+body {
+  min-height: 100%;
+  min-height: -webkit-fill-available;
+  min-height: 100dvh;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  /* Safe area padding for notch/Dynamic Island */
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  /* Don't pad bottom here â€” footer handles it */
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
+}
+
+/* Next.js root wrapper */
+#__next {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+/* â”€â”€ FOOTER FIX â€” stop it jumping up and down â”€â”€â”€ */
+/* Any fixed bottom nav stays pinned to bottom with safe area */
+[class*="bottom-nav"],
+[class*="bottom_nav"],
+[class*="tab-bar"],
+[class*="tab_bar"],
+[class*="footer-nav"],
+[class*="bottomNav"],
+[class*="tabBar"],
+nav[style*="position: fixed"],
+nav[style*="position:fixed"],
+div[style*="position: fixed; bottom"],
+div[style*="position:fixed;bottom"] {
+  position: fixed !important;
+  bottom: 0 !important;
+  bottom: env(safe-area-inset-bottom) !important;
+  left: 0 !important;
+  right: 0 !important;
+  padding-bottom: max(env(safe-area-inset-bottom), 8px) !important;
+  /* GPU layer â€” prevents jitter/jumping */
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  z-index: 100;
+}
+
+/* Give page content bottom padding so footer doesn't cover it */
+main,
+[class*="page-content"],
+[class*="pageContent"],
+[class*="dashboard-content"],
+[class*="dashboardContent"] {
+  padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important;
+}
+
+/* â”€â”€ ALL IPHONE SCREEN SIZE FITS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Prevent horizontal overflow on ALL screens */
+* {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+img, video, iframe {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Prevent iOS bounce scroll */
+html, body {
+  position: relative;
+  overscroll-behavior-y: none;
+}
+
+/* Fix 100vw including scrollbar causing overflow */
+.full-width,
+[class*="full-width"],
+[class*="fullWidth"] {
+  width: 100vw;
+  width: 100dvw;
+  max-width: 100%;
+}
+
+/* â”€â”€ DYNAMIC ISLAND / NOTCH MODELS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* iPhone 14 Pro, 15 Pro, 16 Pro â€” Dynamic Island */
+@supports (padding-top: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* â”€â”€ PREVENT ZOOM ON INPUT FOCUS (iOS) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="search"],
+input[type="url"],
+select,
+textarea {
+  font-size: 16px !important;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* â”€â”€ iOS TAP HIGHLIGHT REMOVAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, a {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* â”€â”€ FIX IMAGES FITTING ALL SCREENS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.car-img,
+[class*="car-img"],
+[class*="carImg"] {
+  width: 100% !important;
+  aspect-ratio: 4/3 !important;
+  object-fit: cover !important;
+  max-width: 100% !important;
+}
+
+/* Grid cards responsive on all phone sizes */
+.cars-grid,
+[class*="cars-grid"],
+[class*="carsGrid"],
+[class*="card-grid"],
+[class*="cardGrid"] {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)) !important;
+  gap: 0.875rem !important;
+}
+
+/* â”€â”€ SMALLEST PHONES (iPhone SE, 375px) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+@media screen and (max-width: 390px) {
+  .cars-grid,
+  [class*="cars-grid"] {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.625rem !important;
+  }
+  body {
+    font-size: 14px;
+  }
+}
+
+/* â”€â”€ VERY SMALL PHONES (320px) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+@media screen and (max-width: 360px) {
+  .cars-grid,
+  [class*="cars-grid"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════
+   iOS SAFE AREA & SCREEN FIT FIXES
+   Fixes: not fitted on iPhone screen, footer jumping
+   ════════════════════════════════════════════════════════ */
+
+/* Safe area CSS variables */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
+/* Fix iOS full height — prevents white bars on iPhone */
+html {
+  height: 100%;
+  height: -webkit-fill-available;
+  overflow-x: hidden;
+}
+
+body {
+  min-height: 100%;
+  min-height: -webkit-fill-available;
+  min-height: 100dvh;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  /* Safe area padding for notch/Dynamic Island */
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  /* Don't pad bottom here — footer handles it */
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
+}
+
+/* Next.js root wrapper */
+#__next {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+/* ── FOOTER FIX — stop it jumping up and down ─── */
+/* Any fixed bottom nav stays pinned to bottom with safe area */
+[class*="bottom-nav"],
+[class*="bottom_nav"],
+[class*="tab-bar"],
+[class*="tab_bar"],
+[class*="footer-nav"],
+[class*="bottomNav"],
+[class*="tabBar"],
+nav[style*="position: fixed"],
+nav[style*="position:fixed"],
+div[style*="position: fixed; bottom"],
+div[style*="position:fixed;bottom"] {
+  position: fixed !important;
+  bottom: 0 !important;
+  bottom: env(safe-area-inset-bottom) !important;
+  left: 0 !important;
+  right: 0 !important;
+  padding-bottom: max(env(safe-area-inset-bottom), 8px) !important;
+  /* GPU layer — prevents jitter/jumping */
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  z-index: 100;
+}
+
+/* Give page content bottom padding so footer doesn't cover it */
+main,
+[class*="page-content"],
+[class*="pageContent"],
+[class*="dashboard-content"],
+[class*="dashboardContent"] {
+  padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important;
+}
+
+/* ── ALL IPHONE SCREEN SIZE FITS ─────────────────── */
+/* Prevent horizontal overflow on ALL screens */
+* {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+img, video, iframe {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Prevent iOS bounce scroll */
+html, body {
+  position: relative;
+  overscroll-behavior-y: none;
+}
+
+/* Fix 100vw including scrollbar causing overflow */
+.full-width,
+[class*="full-width"],
+[class*="fullWidth"] {
+  width: 100vw;
+  width: 100dvw;
+  max-width: 100%;
+}
+
+/* ── DYNAMIC ISLAND / NOTCH MODELS ───────────────── */
+/* iPhone 14 Pro, 15 Pro, 16 Pro — Dynamic Island */
+@supports (padding-top: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* ── PREVENT ZOOM ON INPUT FOCUS (iOS) ───────────── */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="search"],
+input[type="url"],
+select,
+textarea {
+  font-size: 16px !important;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* ── iOS TAP HIGHLIGHT REMOVAL ───────────────────── */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, a {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* ── FIX IMAGES FITTING ALL SCREENS ─────────────── */
+.car-img,
+[class*="car-img"],
+[class*="carImg"] {
+  width: 100% !important;
+  aspect-ratio: 4/3 !important;
+  object-fit: cover !important;
+  max-width: 100% !important;
+}
+
+/* Grid cards responsive on all phone sizes */
+.cars-grid,
+[class*="cars-grid"],
+[class*="carsGrid"],
+[class*="card-grid"],
+[class*="cardGrid"] {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)) !important;
+  gap: 0.875rem !important;
+}
+
+/* ── SMALLEST PHONES (iPhone SE, 375px) ─────────── */
+@media screen and (max-width: 390px) {
+  .cars-grid,
+  [class*="cars-grid"] {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.625rem !important;
+  }
+  body {
+    font-size: 14px;
+  }
+}
+
+/* ── VERY SMALL PHONES (320px) ───────────────────── */
+@media screen and (max-width: 360px) {
+  .cars-grid,
+  [class*="cars-grid"] {
+    grid-template-columns: 1fr !important;
+  }
+}
