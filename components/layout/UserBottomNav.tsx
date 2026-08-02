@@ -49,7 +49,7 @@ export default function UserBottomNav() {
       )}
 
       <style>{`
-        .bottom-nav{position:fixed;bottom:0;left:0;right:0;height:68px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;z-index:100;backdrop-filter:blur(10px)}
+        .bottom-nav{position:fixed;bottom:0;left:0;right:0;height:68px;padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;z-index:100;backdrop-filter:blur(10px);transform:translateZ(0);-webkit-transform:translateZ(0);will-change:transform}
         .bn-item{display:flex;flex-direction:column;align-items:center;gap:0.2rem;text-decoration:none;color:var(--text-dim);transition:color 0.2s;background:none;border:none;cursor:pointer;padding:0.5rem;border-radius:8px;min-width:70px}
         .bn-item:hover{color:var(--text)}
         .bn-item.active{color:var(--gold)}
@@ -59,7 +59,7 @@ export default function UserBottomNav() {
         .bn-icon{font-size:1.2rem;transition:transform 0.2s}
         .bn-label{font-size:0.65rem;letter-spacing:0.04em;color:inherit}
         .qr-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center;z-index:200}
-        .qr-modal{background:var(--surface);border-radius:16px 16px 0 0;width:100%;max-width:500px;padding-bottom:2rem}
+        .qr-modal{background:var(--surface);border-radius:16px 16px 0 0;width:100%;max-width:500px;padding-bottom:calc(2rem + env(safe-area-inset-bottom,0px))}
         .qr-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border)}
         .qr-header h3{font-family:var(--font-display);font-size:1rem;letter-spacing:0.08em;color:var(--text)}
         .qr-close{background:none;border:none;color:var(--text-muted);font-size:1rem;cursor:pointer}

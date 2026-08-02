@@ -185,7 +185,7 @@ export default function UserLayout({ children }: { children: ReactNode }) {
 
       <style>{`
         .user-shell{min-height:100vh;background:#F5F5F5;display:flex;flex-direction:column}
-        .user-topbar{height:56px;background:#fff;border-bottom:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+        .user-topbar{height:calc(56px + env(safe-area-inset-top,0px));background:#fff;border-bottom:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
         .topbar-brand{font-family:var(--font-display);font-size:1.1rem;letter-spacing:0.18em;color:#F47B20;text-decoration:none;flex-shrink:0}
         .topbar-right{display:flex;align-items:center;gap:0.625rem}
         .greeting{font-size:0.8rem;color:#888;white-space:nowrap}
@@ -200,7 +200,7 @@ export default function UserLayout({ children }: { children: ReactNode }) {
         .user-footer{background:#fff;border-top:1px solid #E5E5E5;padding:0.875rem 1.25rem;text-align:center}
         .uf-inner{display:flex;align-items:center;justify-content:center;gap:1.5rem;font-size:0.7rem;color:#CCC;flex-wrap:wrap}
         .uf-dev strong{color:#F47B20}
-        .bottom-nav{position:fixed;bottom:0;left:0;right:0;height:68px;background:#fff;border-top:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-around;z-index:100;padding-bottom:env(safe-area-inset-bottom,0)}
+        .bottom-nav{position:fixed;bottom:0;left:0;right:0;height:68px;background:#fff;border-top:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-around;z-index:100;padding-bottom:env(safe-area-inset-bottom,0);padding-left:env(safe-area-inset-left,0);padding-right:env(safe-area-inset-right,0);transform:translateZ(0);-webkit-transform:translateZ(0);will-change:transform}
         .bni{display:flex;flex-direction:column;align-items:center;gap:0.15rem;text-decoration:none;color:#AAA;background:none;border:none;cursor:pointer;padding:0.5rem;min-width:52px;transition:color 0.2s;font-family:var(--font-body)}
         .bni:hover,.bni.active{color:#F47B20}
         .bni-icon{display:flex;align-items:center;justify-content:center;font-size:1.15rem}

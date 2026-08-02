@@ -92,8 +92,10 @@ export default function DealerSidebar({ isOpen, onClose }: Props) {
 
       <style>{`
         .dealer-sidebar{
-          width:240px;height:100vh;background:#fff;border-right:1.5px solid #E5E5E5;
+          width:240px;height:100vh;height:100dvh;background:#fff;border-right:1.5px solid #E5E5E5;
           display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:60;
+          padding-top:env(safe-area-inset-top,0px);padding-left:env(safe-area-inset-left,0px);
+          padding-bottom:env(safe-area-inset-bottom,0px);
           overflow-y:auto;transition:transform 0.25s ease;
         }
         .sb-brand{

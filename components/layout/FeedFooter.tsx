@@ -91,8 +91,16 @@ export default function FeedFooter({ onScan }: Props) {
 
       <style>{`
         .feed-footer {
-          position: sticky; bottom: 0; z-index: 100;
+          position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
           background: #fff; border-top: 1.5px solid #E5E5E5;
+          padding-bottom: var(--sab, env(safe-area-inset-bottom, 0px));
+          padding-left: var(--sal, env(safe-area-inset-left, 0px));
+          padding-right: var(--sar, env(safe-area-inset-right, 0px));
+          /* Forces its own GPU compositing layer so iOS Safari/WKWebView
+             can't let it lag or detach from the viewport during scroll. */
+          transform: translateZ(0);
+          -webkit-transform: translateZ(0);
+          will-change: transform;
         }
 
         /* Info panel */

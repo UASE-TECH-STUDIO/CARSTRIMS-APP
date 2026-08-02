@@ -1,15 +1,27 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import SWRegistrar from "@/components/shared/SWRegistrar";
 import CapacitorPush from "@/components/shared/CapacitorPush";
 
+// viewport-fit=cover tells iOS to draw the page edge-to-edge behind the
+// notch / Dynamic Island / home indicator, and is what makes
+// env(safe-area-inset-*) resolve to real values instead of 0 everywhere.
+// Without this, nothing can be "fitted" correctly on any iPhone.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+  themeColor: "#1A1A1A",
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.carstrims.com"),
   title: {
-    default: "CARSTRIMS Ã¢â‚¬â€ Nigeria's Premier Car Dealer Platform",
+    default: "CARSTRIMS — Nigeria's Premier Car Dealer Platform",
     template: "%s | CARSTRIMS",
   },
-  description: "Buy and sell premium vehicles in Nigeria. CARSTRIMS connects you with trusted car dealers across Abuja, Lagos, and beyond. Browse thousands of cars Ã¢â‚¬â€ brand new, foreign used, and locally used.",
+  description: "Buy and sell premium vehicles in Nigeria. CARSTRIMS connects you with trusted car dealers across Abuja, Lagos, and beyond. Browse thousands of cars — brand new, foreign used, and locally used.",
   keywords: [
     "car dealer Nigeria", "buy car Nigeria", "sell car Nigeria",
     "car marketplace Nigeria", "foreign used cars Nigeria",
@@ -36,26 +48,26 @@ export const metadata: Metadata = {
     locale: "en_NG",
     url: "https://www.carstrims.com",
     siteName: "CARSTRIMS",
-    title: "CARSTRIMS Ã¢â‚¬â€ Nigeria's Premier Car Dealer Platform",
+    title: "CARSTRIMS — Nigeria's Premier Car Dealer Platform",
     description: "Buy and sell premium vehicles in Nigeria. Browse thousands of cars from trusted dealers across Abuja, Lagos and beyond.",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "CARSTRIMS Ã¢â‚¬â€ Nigeria's Premier Car Dealer Platform",
+        alt: "CARSTRIMS — Nigeria's Premier Car Dealer Platform",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "CARSTRIMS Ã¢â‚¬â€ Nigeria's Premier Car Dealer Platform",
+    title: "CARSTRIMS — Nigeria's Premier Car Dealer Platform",
     description: "Buy and sell premium vehicles in Nigeria. Browse thousands of cars from trusted dealers.",
     images: ["/og-image.png"],
     creator: "@carstrims",
   },
   icons: {
-    // Ã¢â€â‚¬Ã¢â€â‚¬ These now all point to the CARSTRIMS "C" logo Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // ── These now all point to the CARSTRIMS "C" logo ──────────────────────
     icon: [
       { url: "/favicon.ico",   sizes: "any",    type: "image/x-icon"  }, // 16+32+48 multi-size ICO
       { url: "/icon-16.png",   sizes: "16x16",  type: "image/png"     },
@@ -85,7 +97,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <head>
         {/*
-          Ã¢â€â‚¬Ã¢â€â‚¬ Explicit <link> tags as belt-and-suspenders Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+          ── Explicit <link> tags as belt-and-suspenders ────────────────────
           Next.js Metadata API handles most cases, but these explicit tags
           ensure browsers (especially Chrome) pick up the correct favicon
           and don't fall back to Vercel's default.
@@ -96,7 +108,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/apple-icon.png" sizes="180x180"/>
         <link rel="manifest"         href="/manifest.json"/>
 
-        {/* Structured data Ã¢â‚¬â€ Organisation */}
+        {/* Structured data — Organisation */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -106,7 +118,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "name": "CARSTRIMS",
               "url": "https://www.carstrims.com",
               "logo": "https://www.carstrims.com/logo.png",
-              "description": "Nigeria's Premier Car Dealer Platform Ã¢â‚¬â€ Buy and sell premium vehicles across Nigeria.",
+              "description": "Nigeria's Premier Car Dealer Platform — Buy and sell premium vehicles across Nigeria.",
               "address": {
                 "@type": "PostalAddress",
                 "addressCountry": "NG",
@@ -123,7 +135,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             }),
           }}
         />
-        {/* Structured data Ã¢â‚¬â€ Website with SearchAction */}
+        {/* Structured data — Website with SearchAction */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -152,4 +164,3 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
-

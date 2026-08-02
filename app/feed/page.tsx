@@ -513,7 +513,7 @@ export default function FeedPage() {
 
       <style>{`
         * { box-sizing:border-box; }
-        .feed { min-height:100vh; background:#F5F5F5; display:flex; flex-direction:column; font-family:var(--font-body); }
+        .feed { min-height:100vh; min-height:100dvh; background:#F5F5F5; display:flex; flex-direction:column; font-family:var(--font-body); padding-bottom:calc(60px + var(--sab, env(safe-area-inset-bottom,0px))); }
 
         /* -- TOPBAR --------------------------- */
         .feed-topbar {

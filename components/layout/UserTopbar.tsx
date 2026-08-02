@@ -16,7 +16,7 @@ export default function UserTopbar() {
         </Link>
       </div>
       <style>{`
-        .user-topbar{height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;position:sticky;top:0;z-index:50}
+        .user-topbar{height:calc(56px + env(safe-area-inset-top,0px));background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:50}
         .topbar-brand{font-family:var(--font-display);font-size:1rem;letter-spacing:0.2em;color:var(--gold);text-decoration:none}
         .topbar-right{display:flex;align-items:center;gap:0.75rem}
         .user-pill{display:flex;align-items:center;gap:0.5rem;text-decoration:none;color:var(--text-muted);font-size:0.825rem;transition:color 0.2s}
