@@ -94,13 +94,17 @@ export default function FeedPage() {
     return p;
   }, [search, selectedBrand, fStatus, fCondition, fTransmission, fFuel, fState, fYearFrom, fYearTo, fColor, fPrice, fMinPrice, fMaxPrice]);
 
-  const fetchCars = useCallback(async (reset = false) => {
-    if (reset) { setLoading(true); skipRef.current = 0; }
-    else setLoadingMore(true);
+  const fetchCars = useCallback(async (reset = false, silent = false) => {
+    if (reset && !silent) { setLoading(true); }
+    if (reset) skipRef.current = 0;
+    if (!reset) setLoadingMore(true);
     try {
       const res = await api.get("/api/v1/public/cars", { params: buildParams(reset ? 0 : skipRef.current) });
       const newCars = res.data.cars || [];
       setTotal(res.data.total || 0);
+      // For a silent background refresh, only swap the list once the new
+      // data has actually arrived — the old cars stay on screen the whole
+      // time, so there's no flash/reset and scroll position isn't disturbed.
       if (reset) { setCars(newCars); skipRef.current = LIMIT; }
       else { setCars((p) => [...p, ...newCars]); skipRef.current += LIMIT; }
     } catch { } finally { setLoading(false); setLoadingMore(false); }
@@ -108,10 +112,24 @@ export default function FeedPage() {
 
   useEffect(() => { fetchCars(true); }, [search, selectedBrand, fStatus, fCondition, fTransmission, fFuel, fState, fYearFrom, fYearTo, fColor, fPrice, fMinPrice, fMaxPrice]);
 
-  // Refresh feed when user comes back to the page (e.g. after adding a car)
+  // Silently refresh in the background when the user comes back to the
+  // page (e.g. app resumed from background, or switched tabs). This does
+  // NOT show the loading skeleton and does NOT clear the existing list
+  // first — the current view stays visible the whole time, and only
+  // swaps in new data once it's actually arrived. Throttled to avoid
+  // re-fetching on every quick app-switch, which matters a lot on slow
+  // connections.
+  const lastRefreshRef = useRef(Date.now());
+  const MIN_REFRESH_INTERVAL_MS = 45_000;
   useEffect(() => {
-    const onFocus = () => fetchCars(true);
-    const onVisibility = () => { if (document.visibilityState === "visible") fetchCars(true); };
+    const maybeSilentRefresh = () => {
+      const now = Date.now();
+      if (now - lastRefreshRef.current < MIN_REFRESH_INTERVAL_MS) return;
+      lastRefreshRef.current = now;
+      fetchCars(true, true);
+    };
+    const onFocus = () => maybeSilentRefresh();
+    const onVisibility = () => { if (document.visibilityState === "visible") maybeSilentRefresh(); };
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
