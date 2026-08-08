@@ -1,5 +1,6 @@
 "use client";
 import NotificationSettings from "@/components/ui/NotificationSettings";
+import PasswordInput from "@/components/ui/PasswordInput";
 import { useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
@@ -96,17 +97,17 @@ export default function AdminSettingsPage() {
           <form onSubmit={changePw} className="form">
             <div className="field">
               <label className="fl">Current Password</label>
-              <input type="password" className="fi" value={pw.currentPassword}
+              <PasswordInput className="fi" value={pw.currentPassword}
                 onChange={(e) => setPw({...pw, currentPassword:e.target.value})} required />
             </div>
             <div className="field">
               <label className="fl">New Password</label>
-              <input type="password" className="fi" value={pw.newPassword}
+              <PasswordInput className="fi" value={pw.newPassword}
                 onChange={(e) => setPw({...pw, newPassword:e.target.value})} required />
             </div>
             <div className="field">
               <label className="fl">Confirm New Password</label>
-              <input type="password" className="fi" value={pw.confirmPassword}
+              <PasswordInput className="fi" value={pw.confirmPassword}
                 onChange={(e) => setPw({...pw, confirmPassword:e.target.value})} required />
             </div>
             <button type="submit" className="save-btn" disabled={pwSaving}>

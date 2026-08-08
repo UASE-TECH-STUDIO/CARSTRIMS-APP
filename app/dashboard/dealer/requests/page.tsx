@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import api from "@/lib/api";
+import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 
 const STATUS_C: Record<string,string> = {
   pending:"#D97706", accepted_by_dealer:"#16A34A", countered:"#7B68EE",
@@ -452,7 +453,7 @@ export default function DealerRequestsPage() {
                                 <div><label style={lbl}>Model</label><input value={altModel} onChange={e=>setAltModel(e.target.value)} style={inp} placeholder="e.g. Camry"/></div>
                                 <div><label style={lbl}>Year</label><input value={altYear}  onChange={e=>setAltYear(e.target.value)}  style={inp} placeholder="2023"/></div>
                                 <div><label style={lbl}>Color</label><input value={altColor} onChange={e=>setAltColor(e.target.value)} style={inp} placeholder="e.g. Black"/></div>
-                                <div><label style={lbl}>Price (NGN)</label><input type="number" value={altPrice} onChange={e=>setAltPrice(e.target.value)} style={inp} placeholder="0"/></div>
+                                <div><label style={lbl}>Price (NGN)</label><FormattedNumberInput value={altPrice} onChange={(raw)=>setAltPrice(raw)} style={inp} placeholder="0"/></div>
                                 <div><label style={lbl}>Est. Delivery</label><input value={altDelivery} onChange={e=>setAltDelivery(e.target.value)} style={inp} placeholder="4-6 weeks"/></div>
                               </div>
                               <div><label style={lbl}>Description</label>
@@ -609,7 +610,7 @@ export default function DealerRequestsPage() {
                           ))}
                         </div>
                         <div><label style={lbl}>Total Amount (NGN) *</label>
-                          <input type="number" value={planTotal} onChange={e=>setPlanTotal(e.target.value)} style={inp} placeholder="0"/>
+                          <FormattedNumberInput value={planTotal} onChange={(raw)=>setPlanTotal(raw)} style={inp} placeholder="0"/>
                         </div>
                         {planType === "installmental" && (
                           <div style={{display:"flex",flexDirection:"column",gap:"0.5rem"}}>
@@ -617,7 +618,7 @@ export default function DealerRequestsPage() {
                             {installments.map((inst,i)=>(
                               <div key={i} style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr auto",gap:"0.375rem",alignItems:"center"}}>
                                 <input placeholder="Label" value={inst.label} onChange={e=>setInstallments(p=>p.map((x,j)=>j===i?{...x,label:e.target.value}:x))} style={{...inp,padding:"0.4rem 0.5rem",fontSize:"0.8rem"}}/>
-                                <input type="number" placeholder="Amount" value={inst.amount} onChange={e=>setInstallments(p=>p.map((x,j)=>j===i?{...x,amount:e.target.value}:x))} style={{...inp,padding:"0.4rem 0.5rem",fontSize:"0.8rem"}}/>
+                                <FormattedNumberInput placeholder="Amount" value={inst.amount} onChange={(raw)=>setInstallments(p=>p.map((x,j)=>j===i?{...x,amount:raw}:x))} style={{...inp,padding:"0.4rem 0.5rem",fontSize:"0.8rem"}}/>
                                 <input type="date" value={inst.dueDate} onChange={e=>setInstallments(p=>p.map((x,j)=>j===i?{...x,dueDate:e.target.value}:x))} style={{...inp,padding:"0.4rem 0.5rem",fontSize:"0.75rem"}}/>
                                 {i>0 && <button onClick={()=>setInstallments(p=>p.filter((_,j)=>j!==i))} style={{background:"#FEF2F2",color:"#DC2626",border:"none",borderRadius:"4px",cursor:"pointer",padding:"0.3rem 0.5rem",fontSize:"0.72rem",fontWeight:700}}>X</button>}
                               </div>

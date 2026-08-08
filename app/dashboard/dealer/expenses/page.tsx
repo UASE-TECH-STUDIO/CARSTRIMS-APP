@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
+import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 
 const CATEGORIES = [
   "repairs","maintenance","fuel","insurance","registration",
@@ -223,7 +224,7 @@ export default function ExpensesPage() {
                   {CATEGORIES.map(c=><option key={c} value={c}>{c.replace(/_/g," ")}</option>)}
                 </select>
               </div>
-              <div className="field"><label className="fl">Amount (NGN) *</label><input type="number" className="fi" value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})} required/></div>
+              <div className="field"><label className="fl">Amount (NGN) *</label><FormattedNumberInput className="fi" value={form.amount} onChange={(raw)=>setForm({...form,amount:raw})} required/></div>
               <div className="field"><label className="fl">Description</label><textarea className="fi" rows={3} value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder="What was this expense for?" style={{resize:"vertical" as const}}/></div>
               <div className="modal-ftr">
                 <button type="button" className="btn-outline" onClick={()=>setShowAdd(false)}>Cancel</button>
@@ -251,7 +252,7 @@ export default function ExpensesPage() {
                   {CATEGORIES.map(c=><option key={c} value={c}>{c.replace(/_/g," ")}</option>)}
                 </select>
               </div>
-              <div className="field"><label className="fl">Amount (NGN) *</label><input type="number" className="fi" value={editForm.amount} onChange={e=>setEditForm({...editForm,amount:e.target.value})} required/></div>
+              <div className="field"><label className="fl">Amount (NGN) *</label><FormattedNumberInput className="fi" value={editForm.amount} onChange={(raw)=>setEditForm({...editForm,amount:raw})} required/></div>
               <div className="field"><label className="fl">Description</label><textarea className="fi" rows={3} value={editForm.description} onChange={e=>setEditForm({...editForm,description:e.target.value})} style={{resize:"vertical" as const}}/></div>
               <div className="field"><label className="fl">Reason for Edit *</label><input className="fi" value={editForm.editReason} onChange={e=>setEditForm({...editForm,editReason:e.target.value})} required placeholder="Why are you editing this?"/></div>
               <div className="modal-ftr">

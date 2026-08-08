@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import api from "@/lib/api";
+import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 
 interface Car {
   carId: string;
@@ -170,15 +171,15 @@ export default function MarkSoldModal({ car: initialCar, onClose, onSold }: Prop
           {/* Prices */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem"}}>
             <div style={{display:"flex",flexDirection:"column",gap:"0.4rem"}}>
-              <label style={lbl}>Selling Price () *</label>
-              <input style={inp} type="number" min="0" step="1000" placeholder="e.g. 5000000"
-                value={form.sellingPrice} onChange={e=>setForm({...form,sellingPrice:e.target.value})} required
+              <label style={lbl}>Selling Price (NGN) *</label>
+              <FormattedNumberInput style={inp} placeholder="e.g. 5000000"
+                value={form.sellingPrice} onChange={(raw)=>setForm({...form,sellingPrice:raw})} required
                 onFocus={ev=>ev.target.style.borderColor="#F47B20"} onBlur={ev=>ev.target.style.borderColor="#E5E5E5"}/>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:"0.4rem"}}>
-              <label style={lbl}>Cost / Purchase Price ()</label>
-              <input style={inp} type="number" min="0" step="1000" placeholder="Auto-filled if set"
-                value={form.purchasePrice} onChange={e=>setForm({...form,purchasePrice:e.target.value})}
+              <label style={lbl}>Cost / Purchase Price (NGN)</label>
+              <FormattedNumberInput style={inp} placeholder="Auto-filled if set"
+                value={form.purchasePrice} onChange={(raw)=>setForm({...form,purchasePrice:raw})}
                 onFocus={ev=>ev.target.style.borderColor="#F47B20"} onBlur={ev=>ev.target.style.borderColor="#E5E5E5"}/>
             </div>
           </div>

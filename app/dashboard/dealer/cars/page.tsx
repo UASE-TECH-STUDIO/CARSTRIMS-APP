@@ -4,6 +4,7 @@ import api from "@/lib/api";
 import MarkSoldModal from "@/components/shared/MarkSoldModal";
 import CarFinancialReport from "@/components/dealer/CarFinancialReport";
 import DocumentViewer from "@/components/shared/DocumentViewer";
+import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 import Link from "next/link";
 
 const BRANDS = ["Toyota","Honda","Mercedes","BMW","Lexus","Ford","Hyundai","Kia","Chevrolet","Audi","Land Rover","Jeep","Volkswagen","Nissan","Mazda","Peugeot","Mitsubishi","Subaru","Isuzu","Other"];
@@ -309,10 +310,10 @@ export default function DealerCarsPage() {
                   {label:"Color",key:"color",placeholder:"e.g. Black"},
                   {label:"Condition",key:"condition",type:"select",opts:CONDITIONS},
                   {label:"Status",key:"status",type:"select",opts:STATUSES},
-                  {label:"Selling Price (NGN) *",key:"sellingPrice",type:"number"},
-                  {label:"Purchase Price (NGN)",key:"purchasePrice",type:"number"},
-                  {label:"Promo Price (NGN)",key:"promoPrice",type:"number"},
-                  {label:"Mileage (km)",key:"mileage",type:"number"},
+                  {label:"Selling Price (NGN) *",key:"sellingPrice",type:"number",format:"price"},
+                  {label:"Purchase Price (NGN)",key:"purchasePrice",type:"number",format:"price"},
+                  {label:"Promo Price (NGN)",key:"promoPrice",type:"number",format:"price"},
+                  {label:"Mileage (km)",key:"mileage",type:"number",format:"price"},
                   {label:"Fuel Type",key:"fuelType",type:"select",opts:FUEL_TYPES},
                   {label:"Transmission",key:"transmission",type:"select",opts:TRANS},
                   {label:"Engine",key:"engineType",placeholder:"e.g. V6 3.5L"},
@@ -324,6 +325,8 @@ export default function DealerCarsPage() {
                     <label style={lbl}>{f.label}</label>
                     {f.type==="select"
                       ?<select value={form[f.key]||""} onChange={e=>setForm((p:any)=>({...p,[f.key]:e.target.value}))} style={{...fi,cursor:"pointer",textTransform:"capitalize" as const}}>{(f.opts||[]).map((o:string)=><option key={o} value={o}>{o}</option>)}</select>
+                      :f.format==="price"
+                      ?<FormattedNumberInput value={form[f.key]} onChange={(raw)=>setForm((p:any)=>({...p,[f.key]:raw}))} placeholder={f.placeholder||""} style={fi}/>
                       :<input type={f.type||"text"} value={form[f.key]||""} onChange={e=>setForm((p:any)=>({...p,[f.key]:e.target.value}))} placeholder={f.placeholder||""} style={fi}/>
                     }
                   </div>

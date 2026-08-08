@@ -1,6 +1,7 @@
 ﻿"use client";
 import { useEffect, useRef, useState, useCallback } from "react";
 import api from "@/lib/api";
+import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 
 const SC: Record<string,{bg:string;color:string;label:string}> = {
   pending:           {bg:"#FFF7ED",  color:"#D97706", label:"Pending"},
@@ -509,13 +510,11 @@ export default function UserRequestsPage() {
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0.875rem"}}>
                       <div>
                         <label style={lbl}>Budget (NGN)</label>
-                        <input
-                          type="number"
+                        <FormattedNumberInput
                           style={fi}
                           placeholder="Max budget"
                           value={form.budget}
-                          onChange={e=>setField("budget",e.target.value)}
-                          autoComplete="off"
+                          onChange={(raw)=>setField("budget",raw)}
                         />
                       </div>
                       <div>

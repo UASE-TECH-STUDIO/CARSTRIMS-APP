@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
+import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 
 const STEPS = [
   { num:1, label:"Company Info" },
@@ -371,8 +372,8 @@ export default function DealerSetupPage() {
                 <div><label style={lbl}>Color</label><input style={fi} placeholder="e.g. Black" value={car.color} onChange={e=>setCar({...car,color:e.target.value})} /></div>
               </div>
               <div style={row}>
-                <div><label style={lbl}>Selling Price () *</label><input type="number" style={fi} placeholder="0" value={car.sellingPrice} onChange={e=>setCar({...car,sellingPrice:e.target.value})} required /></div>
-                <div><label style={lbl}>Purchase Price ()</label><input type="number" style={fi} placeholder="0" value={car.purchasePrice} onChange={e=>setCar({...car,purchasePrice:e.target.value})} /></div>
+                <div><label style={lbl}>Selling Price (NGN) *</label><FormattedNumberInput style={fi} placeholder="0" value={car.sellingPrice} onChange={(raw)=>setCar({...car,sellingPrice:raw})} required /></div>
+                <div><label style={lbl}>Purchase Price (NGN)</label><FormattedNumberInput style={fi} placeholder="0" value={car.purchasePrice} onChange={(raw)=>setCar({...car,purchasePrice:raw})} /></div>
               </div>
               <div style={row}>
                 <div><label style={lbl}>Condition</label>

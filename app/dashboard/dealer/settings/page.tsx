@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
 import DealerQRCode from "@/components/ui/DealerQRCode";
+import PasswordInput from "@/components/ui/PasswordInput";
 
 export default function SettingsPage() {
   const { user } = useAuthStore();
@@ -366,9 +367,9 @@ export default function SettingsPage() {
         <div className="sc">
           <h3 className="ct">CHANGE PASSWORD</h3>
           <form onSubmit={handleChangePassword} style={{display:"flex",flexDirection:"column",gap:"0.875rem"}}>
-            <div className="fd"><label style={fl}>Current Password</label><input type="password" style={fi} value={pwForm.currentPassword} onChange={e=>setPwForm({...pwForm,currentPassword:e.target.value})} required onFocus={e=>e.target.style.borderColor="#F47B20"} onBlur={e=>e.target.style.borderColor="#DDD"}/></div>
-            <div className="fd"><label style={fl}>New Password</label><input type="password" style={fi} value={pwForm.newPassword} onChange={e=>setPwForm({...pwForm,newPassword:e.target.value})} required onFocus={e=>e.target.style.borderColor="#F47B20"} onBlur={e=>e.target.style.borderColor="#DDD"}/></div>
-            <div className="fd"><label style={fl}>Confirm New Password</label><input type="password" style={fi} value={pwForm.confirmPassword} onChange={e=>setPwForm({...pwForm,confirmPassword:e.target.value})} required onFocus={e=>e.target.style.borderColor="#F47B20"} onBlur={e=>e.target.style.borderColor="#DDD"}/></div>
+            <div className="fd"><label style={fl}>Current Password</label><PasswordInput style={fi} value={pwForm.currentPassword} onChange={e=>setPwForm({...pwForm,currentPassword:e.target.value})} required onFocus={e=>e.target.style.borderColor="#F47B20"} onBlur={e=>e.target.style.borderColor="#DDD"}/></div>
+            <div className="fd"><label style={fl}>New Password</label><PasswordInput style={fi} value={pwForm.newPassword} onChange={e=>setPwForm({...pwForm,newPassword:e.target.value})} required onFocus={e=>e.target.style.borderColor="#F47B20"} onBlur={e=>e.target.style.borderColor="#DDD"}/></div>
+            <div className="fd"><label style={fl}>Confirm New Password</label><PasswordInput style={fi} value={pwForm.confirmPassword} onChange={e=>setPwForm({...pwForm,confirmPassword:e.target.value})} required onFocus={e=>e.target.style.borderColor="#F47B20"} onBlur={e=>e.target.style.borderColor="#DDD"}/></div>
             <button type="submit" className="save-btn" disabled={pwSaving}>{pwSaving?"Changing":"Change Password"}</button>
           </form>
         </div>

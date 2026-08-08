@@ -4,6 +4,7 @@ import api from "@/lib/api";
 import InvoiceGenerator from "@/components/dealer/InvoiceGenerator";
 import CarFinancialReport from "@/components/dealer/CarFinancialReport";
 import CarIdSearch from "@/components/dealer/CarIdSearch";
+import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 
 const PAYMENT_COLORS:Record<string,string>={cash:"#16A34A",bank_transfer:"#F47B20",card:"#3B8BD4",installment:"#DC2626"};
 
@@ -237,8 +238,8 @@ export default function SalesPage() {
                 <div className="field"><label className="fl">Year</label><input type="number" className="fi" value={manualForm.carYear} onChange={e=>setManualForm({...manualForm,carYear:e.target.value as any})}/></div>
               </div>
               <div className="form-row">
-                <div className="field"><label className="fl">Selling Price () *</label><input type="number" className="fi" value={manualForm.sellingPrice} onChange={e=>setManualForm({...manualForm,sellingPrice:e.target.value})} required/></div>
-                <div className="field"><label className="fl">Purchase / Cost Price ()</label><input type="number" className="fi" value={manualForm.purchasePrice} onChange={e=>setManualForm({...manualForm,purchasePrice:e.target.value})} placeholder="For profit calculation"/></div>
+                <div className="field"><label className="fl">Selling Price (NGN) *</label><FormattedNumberInput className="fi" value={manualForm.sellingPrice} onChange={(raw)=>setManualForm({...manualForm,sellingPrice:raw})} required/></div>
+                <div className="field"><label className="fl">Purchase / Cost Price (NGN)</label><FormattedNumberInput className="fi" value={manualForm.purchasePrice} onChange={(raw)=>setManualForm({...manualForm,purchasePrice:raw})} placeholder="For profit calculation"/></div>
               </div>
               <div className="form-row">
                 <div className="field"><label className="fl">Buyer Name</label><input className="fi" value={manualForm.buyerName} onChange={e=>setManualForm({...manualForm,buyerName:e.target.value})}/></div>
@@ -276,7 +277,7 @@ export default function SalesPage() {
             <div className="edit-info">{showEdit.transactionId}{showEdit.isEdited?"  edited":""}</div>
             {error&&<div className="form-error">{error}</div>}
             <form onSubmit={handleEditSale} className="modal-form">
-              <div className="field"><label className="fl">Selling Price ()</label><input type="number" className="fi" value={editForm.sellingPrice} onChange={e=>setEditForm({...editForm,sellingPrice:e.target.value})}/></div>
+              <div className="field"><label className="fl">Selling Price (NGN)</label><FormattedNumberInput className="fi" value={editForm.sellingPrice} onChange={(raw)=>setEditForm({...editForm,sellingPrice:raw})}/></div>
               <div className="form-row">
                 <div className="field"><label className="fl">Buyer Name</label><input className="fi" value={editForm.buyerName} onChange={e=>setEditForm({...editForm,buyerName:e.target.value})}/></div>
                 <div className="field"><label className="fl">Buyer Phone</label><input className="fi" value={editForm.buyerPhone} onChange={e=>setEditForm({...editForm,buyerPhone:e.target.value})}/></div>

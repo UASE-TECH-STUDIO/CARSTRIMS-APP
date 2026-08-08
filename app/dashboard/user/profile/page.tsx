@@ -1,6 +1,7 @@
 "use client";
 
 import NotificationSettings from "@/components/ui/NotificationSettings";
+import PasswordInput from "@/components/ui/PasswordInput";
 import { useEffect, useRef, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
@@ -223,9 +224,9 @@ export default function UserProfilePage() {
         {activeTab==="security" && (
           <form onSubmit={changePw} style={{display:"flex",flexDirection:"column",gap:"1rem"}}>
             <div style={{fontSize:"0.68rem",fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase" as const,color:"#A3A3A3",marginBottom:"0.5rem"}}>CHANGE PASSWORD</div>
-            <div><label style={fl}>Current Password</label><input type="password" style={fi} value={pw.currentPassword} onChange={e=>setPw({...pw,currentPassword:e.target.value})} required/></div>
-            <div><label style={fl}>New Password</label><input type="password" style={fi} value={pw.newPassword} onChange={e=>setPw({...pw,newPassword:e.target.value})} required/></div>
-            <div><label style={fl}>Confirm New Password</label><input type="password" style={fi} value={pw.confirmPassword} onChange={e=>setPw({...pw,confirmPassword:e.target.value})} required/></div>
+            <div><label style={fl}>Current Password</label><PasswordInput style={fi} value={pw.currentPassword} onChange={e=>setPw({...pw,currentPassword:e.target.value})} required/></div>
+            <div><label style={fl}>New Password</label><PasswordInput style={fi} value={pw.newPassword} onChange={e=>setPw({...pw,newPassword:e.target.value})} required/></div>
+            <div><label style={fl}>Confirm New Password</label><PasswordInput style={fi} value={pw.confirmPassword} onChange={e=>setPw({...pw,confirmPassword:e.target.value})} required/></div>
             <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:"8px",padding:"0.75rem 1rem",fontSize:"0.8rem",color:"#1D4ED8",lineHeight:1.5}}>
                Use at least 8 characters with a mix of letters, numbers and symbols.
             </div>

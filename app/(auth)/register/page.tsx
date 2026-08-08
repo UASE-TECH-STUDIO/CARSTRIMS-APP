@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import api from "@/lib/api";
 import { useAuthStore, getRoleRedirect } from "@/store/authStore";
+import PasswordInput from "@/components/ui/PasswordInput";
 
 const ROLES = [
   { value:"DEALER_ADMIN", label:"Dealership", icon:"", desc:"Manage inventory, staff and sales from your own dealership" },
@@ -108,7 +109,7 @@ export default function RegisterPage() {
               </div>
               <div className="rg-field">
                 <label className="rg-lbl">Password *</label>
-                <input type="password" className="rg-input" placeholder="Minimum 8 characters" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} required minLength={8}/>
+                <PasswordInput className="rg-input" placeholder="Minimum 8 characters" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} required minLength={8}/>
               </div>
               <div className="rg-row">
                 <div className="rg-field">

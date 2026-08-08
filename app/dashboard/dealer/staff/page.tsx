@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
+import PasswordInput from "@/components/ui/PasswordInput";
 
 const PERM_GROUPS = [
   { group:"Inventory",        color:"#F47B20", perms:[
@@ -474,7 +475,7 @@ export default function DealerStaffPage() {
               {mode==="create" &&
                 <div style={FIELD}>
                   <label htmlFor="sf-pw" style={LBL}>Password</label>
-                  <input id="sf-pw" type="password" style={INP}
+                  <PasswordInput id="sf-pw" style={INP}
                     value={fPw} placeholder="Blank = Staff@1234"
                     onChange={e => setFPw(e.target.value)}/>
                 </div>

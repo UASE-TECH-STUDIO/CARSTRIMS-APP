@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 
 interface Props { doc: any; onClose: () => void; }
 
@@ -477,7 +478,7 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" }}>
                   <div style={fieldWrap}>
                     <label htmlFor="f-amt" style={labelStyle}>Amount (NGN)</label>
-                    <input id="f-amt" type="number" style={inputStyle} value={amount} placeholder="0" onChange={e => setAmount(e.target.value)} />
+                    <FormattedNumberInput id="f-amt" style={inputStyle} value={amount} placeholder="0" onChange={(raw) => setAmount(raw)} />
                   </div>
                   <div style={fieldWrap}>
                     <label htmlFor="f-docnum" style={labelStyle}>Document Number</label>
