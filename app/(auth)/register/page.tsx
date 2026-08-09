@@ -5,6 +5,7 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { useAuthStore, getRoleRedirect } from "@/store/authStore";
 import PasswordInput from "@/components/ui/PasswordInput";
+import { useToast } from "@/store/toastStore";
 
 const ROLES = [
   { value:"DEALER_ADMIN", label:"Dealership", icon:"", desc:"Manage inventory, staff and sales from your own dealership" },
@@ -24,6 +25,8 @@ export default function RegisterPage() {
   const [form, setForm]       = useState({ fullName:"", username:"", email:"", password:"", phone:"", whatsapp:"" });
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState("");
+  const showToast = useToast();
+  const showErr = (msg: string) => { setError(msg); if (msg) showToast(msg, "error"); };
   const [showWaSandbox, setShowWaSandbox] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
@@ -39,8 +42,8 @@ export default function RegisterPage() {
     } catch (err: any) {
       const msg = err.response?.data?.detail || "";
       if (msg.toLowerCase().includes("already registered") || msg.toLowerCase().includes("already exists")) {
-        setError("An account with this email already exists. Please sign in instead.");
-      } else { setError(msg || "Registration failed. Please try again."); }
+        showErr("An account with this email already exists. Please sign in instead.");
+      } else { showErr(msg || "Registration failed. Please try again."); }
     } finally { setLoading(false); }
   };
 

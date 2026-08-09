@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import SWRegistrar from "@/components/shared/SWRegistrar";
 import CapacitorPush from "@/components/shared/CapacitorPush";
+import ToastContainer from "@/components/ui/ToastContainer";
 
 // viewport-fit=cover tells iOS to draw the page edge-to-edge behind the
 // notch / Dynamic Island / home indicator, and is what makes
@@ -159,6 +160,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <SWRegistrar />
         <CapacitorPush />
+        <ToastContainer />
         {children}
       </body>
     </html>

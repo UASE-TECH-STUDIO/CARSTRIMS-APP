@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import api from "@/lib/api";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
+import { useToast } from "@/store/toastStore";
 
 const STATUS_C: Record<string,string> = {
   pending:"#D97706", accepted_by_dealer:"#16A34A", countered:"#7B68EE",
@@ -40,6 +41,8 @@ export default function DealerRequestsPage() {
   const [filter,    setFilter]    = useState("all");
   const [saving,    setSaving]    = useState(false);
   const [msg,       setMsg]       = useState("");
+  const showToast = useToast();
+  const showMsg = (text: string) => { setMsg(text); if (text) showToast(text, text.startsWith("Error") ? "error" : "success"); };
   const [tab,       setTab]       = useState<"details"|"journey"|"payment">("details");
   const [lightbox,  setLightbox]  = useState<string|null>(null);
 
@@ -108,11 +111,11 @@ export default function DealerRequestsPage() {
         payload.altDescription = altDesc; payload.estimatedDelivery = altDelivery;
       }
       await api.post(`/api/v1/users/requests/${selected.requestId||selected._id}/respond`, payload);
-      setMsg(responseType === "accept"
+      showMsg(responseType === "accept"
         ? "Accepted! Journey started. Go to Payment tab to set up payment plan."
         : "Counter-offer sent to buyer! They will be notified.");
       refresh();
-    } catch(e:any) { setMsg("Error: " + (e.response?.data?.detail || "Failed to send")); }
+    } catch(e:any) { showMsg("Error: " + (e.response?.data?.detail || "Failed to send")); }
     finally { setSaving(false); }
   };
 
@@ -123,7 +126,7 @@ export default function DealerRequestsPage() {
       const r = await api.post("/api/v1/upload/temp/image", fd, { headers:{"Content-Type":"multipart/form-data"} });
       const url = r.data?.url || r.data?.secure_url;
       if (url) setMsEvidence(prev => [...prev, url]);
-    } catch { setMsg("Upload failed"); }
+    } catch { showMsg("Upload failed"); }
     finally { setMsUploading(false); }
   };
 
@@ -134,10 +137,10 @@ export default function DealerRequestsPage() {
       await api.post(`/api/v1/users/requests/${selected.requestId||selected._id}/milestone`, {
         stage: msStage, title: msTitle, description: msDesc, evidence: msEvidence,
       });
-      setMsg("Update posted! Buyer has been notified.");
+      showMsg("Update posted! Buyer has been notified.");
       setMsTitle(""); setMsDesc(""); setMsEvidence([]);
       refresh();
-    } catch(e:any) { setMsg("Error: " + (e.response?.data?.detail || "Failed")); }
+    } catch(e:any) { showMsg("Error: " + (e.response?.data?.detail || "Failed")); }
     finally { setSaving(false); }
   };
 
@@ -151,9 +154,9 @@ export default function DealerRequestsPage() {
           ? installments.map(i => ({...i, amount: parseFloat(i.amount)||0}))
           : [],
       });
-      setMsg("Payment plan sent to buyer!");
+      showMsg("Payment plan sent to buyer!");
       refresh();
-    } catch(e:any) { setMsg("Error: " + (e.response?.data?.detail || "Failed")); }
+    } catch(e:any) { showMsg("Error: " + (e.response?.data?.detail || "Failed")); }
     finally { setSaving(false); }
   };
 

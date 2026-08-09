@@ -5,6 +5,7 @@ import InvoiceGenerator from "@/components/dealer/InvoiceGenerator";
 import CarFinancialReport from "@/components/dealer/CarFinancialReport";
 import CarIdSearch from "@/components/dealer/CarIdSearch";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
+import { useToast } from "@/store/toastStore";
 
 const PAYMENT_COLORS:Record<string,string>={cash:"#16A34A",bank_transfer:"#F47B20",card:"#3B8BD4",installment:"#DC2626"};
 
@@ -37,6 +38,8 @@ export default function SalesPage() {
   const [editForm,setEditForm]       = useState({sellingPrice:"",buyerName:"",buyerPhone:"",paymentMethod:"cash",notes:"",editReason:""});
   const [submitting,setSubmitting]   = useState(false);
   const [error,setError]   = useState("");
+  const showToast = useToast();
+  const showErr = (msg: string) => { setError(msg); if (msg) showToast(msg, "error"); };
   const [invoiceTxn,setInvoiceTxn]   = useState<string|null>(null);
   const [reportCarId,setReportCarId] = useState<string|null>(null);
   const LIMIT=20;
@@ -63,7 +66,7 @@ export default function SalesPage() {
         purchasePrice:manualForm.purchasePrice?Number(manualForm.purchasePrice):0,
       });
       setShowManual(false);setManualForm(emptyManual);fetchSales();
-    } catch(err:any){setError(err.response?.data?.detail||"Failed");}
+    } catch(err:any){showErr(err.response?.data?.detail||"Failed");}
     finally{setSubmitting(false);}
   };
 
@@ -73,14 +76,14 @@ export default function SalesPage() {
     try{
       await api.patch(`/api/v1/inventory/sales/${showEdit.transactionId}`,{...editForm,sellingPrice:editForm.sellingPrice?Number(editForm.sellingPrice):undefined});
       setShowEdit(null);fetchSales();
-    } catch(err:any){setError(err.response?.data?.detail||"Failed");}
+    } catch(err:any){showErr(err.response?.data?.detail||"Failed");}
     finally{setSubmitting(false);}
   };
 
   const handleRevert=async(txId:string)=>{
     if(!confirm("Revert to previous values?"))return;
     try{await api.post(`/api/v1/inventory/sales/${txId}/revert`);fetchSales();}
-    catch(err:any){alert(err.response?.data?.detail||"Failed");}
+    catch(err:any){showErr(err.response?.data?.detail||"Failed");}
   };
 
   /*  Exports  */

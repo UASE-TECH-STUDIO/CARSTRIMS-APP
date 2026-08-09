@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
+import { useToast } from "@/store/toastStore";
 
 const STEPS = [
   { num:1, label:"Company Info" },
@@ -56,6 +57,8 @@ export default function DealerSetupPage() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const showToast = useToast();
+  const showErr = (msg: string) => { setError(msg); if (msg) showToast(msg, "error"); };
   const [uploadingLabel, setUploadingLabel] = useState("");
   const [preview, setPreview] = useState<{src:string;type:"image"|"video"|"pdf"}|null>(null);
 
@@ -99,17 +102,17 @@ export default function DealerSetupPage() {
         url = await tempUploadImage(file, folder || "logos");
       }
       if (url) setter(url);
-      else setError(`${label}: upload succeeded but no URL returned`);
+      else showErr(`${label}: upload succeeded but no URL returned`);
     } catch(e:any) {
-      setError(`${label} upload failed: ${e.response?.data?.detail || e.message}`);
+      showErr(`${label} upload failed: ${e.response?.data?.detail || e.message}`);
     } finally { setUploadingLabel(""); }
   };
 
   const handleStep1 = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!company.companyName.trim()) { setError("Company name is required"); return; }
-    if (!company.phone.trim()) { setError("Phone number is required"); return; }
-    if (!company.state) { setError("Please select your state"); return; }
+    if (!company.companyName.trim()) { showErr("Company name is required"); return; }
+    if (!company.phone.trim()) { showErr("Phone number is required"); return; }
+    if (!company.state) { showErr("Please select your state"); return; }
     // Logo optional  can be uploaded later from Settings
     // Passport optional  can be uploaded later from Settings
     setLoading(true); setError("");
@@ -119,41 +122,41 @@ export default function DealerSetupPage() {
     } catch(err:any) {
       const detail = err.response?.data?.detail || "";
       if (detail.includes("already exists")) { setStep(2); }
-      else { setError(detail || "Failed to save company info. Please try again."); }
+      else { showErr(detail || "Failed to save company info. Please try again."); }
     } finally { setLoading(false); }
   };
 
   const handleStep2 = async (skip?: boolean) => {
     if (skip) { setStep(3); return; }
-    if (!idUrl) { setError("Please upload a government-issued ID"); return; }
+    if (!idUrl) { showErr("Please upload a government-issued ID"); return; }
     setLoading(true); setError("");
     try {
       await api.patch("/api/v1/dealers/me", { idCardUrl: idUrl, cacUrl: cacUrl||undefined, isRegisteredBusiness: isRegistered });
       setStep(3);
-    } catch(err:any) { setError(err.response?.data?.detail || "Failed to save documents."); }
+    } catch(err:any) { showErr(err.response?.data?.detail || "Failed to save documents."); }
     finally { setLoading(false); }
   };
 
   const handleStep3 = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!car.model.trim()) { setError("Car model is required"); return; }
-    if (!car.sellingPrice) { setError("Selling price is required"); return; }
+    if (!car.model.trim()) { showErr("Car model is required"); return; }
+    if (!car.sellingPrice) { showErr("Selling price is required"); return; }
     setLoading(true); setError("");
     try {
       await api.post("/api/v1/cars/", { ...car, year:Number(car.year), mileage:car.mileage?Number(car.mileage):0, purchasePrice:car.purchasePrice?Number(car.purchasePrice):0, sellingPrice:Number(car.sellingPrice) });
       setStep(4);
-    } catch(err:any) { setError(err.response?.data?.detail || "Failed to add car."); }
+    } catch(err:any) { showErr(err.response?.data?.detail || "Failed to add car."); }
     finally { setLoading(false); }
   };
 
   const handleStep4 = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!staff.fullName.trim() || !staff.email.trim()) { setError("Full name and email are required"); return; }
+    if (!staff.fullName.trim() || !staff.email.trim()) { showErr("Full name and email are required"); return; }
     setLoading(true); setError("");
     try {
       await api.post("/api/v1/staff/", staff);
       setStep(5);
-    } catch(err:any) { setError(err.response?.data?.detail || "Failed to create staff."); }
+    } catch(err:any) { showErr(err.response?.data?.detail || "Failed to create staff."); }
     finally { setLoading(false); }
   };
 

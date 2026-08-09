@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
+import { useToast } from "@/store/toastStore";
 
 const CATEGORIES = [
   "repairs","maintenance","fuel","insurance","registration",
@@ -28,6 +29,8 @@ export default function ExpensesPage() {
   const [editForm, setEditForm]   = useState({ ...emptyForm, editReason:"" });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError]         = useState("");
+  const showToast = useToast();
+  const showErr = (msg: string) => { setError(msg); if (msg) showToast(msg, "error"); };
   const [success, setSuccess]     = useState("");
   // Car search
   const [carSearch, setCarSearch]     = useState("");
@@ -82,7 +85,7 @@ export default function ExpensesPage() {
         ...form, amount: Number(form.amount),
       });
       setShowAdd(false); setForm(emptyForm); setCarSearch(""); setSuccess("Expense added!"); fetchExpenses();
-    } catch (err: any) { setError(err.response?.data?.detail || "Failed to add expense"); }
+    } catch (err: any) { showErr(err.response?.data?.detail || "Failed to add expense"); }
     finally { setSubmitting(false); }
   };
 
@@ -93,14 +96,14 @@ export default function ExpensesPage() {
         ...editForm, amount: Number(editForm.amount),
       });
       setShowEdit(null); setSuccess("Expense updated!"); fetchExpenses();
-    } catch (err: any) { setError(err.response?.data?.detail || "Failed to update"); }
+    } catch (err: any) { showErr(err.response?.data?.detail || "Failed to update"); }
     finally { setSubmitting(false); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this expense?")) return;
     try { await api.delete(`/api/v1/inventory/expenses/${id}`); setSuccess("Expense deleted"); fetchExpenses(); }
-    catch (err: any) { setError(err.response?.data?.detail || "Delete failed"); }
+    catch (err: any) { showErr(err.response?.data?.detail || "Delete failed"); }
   };
 
   const exportCSV = () => {

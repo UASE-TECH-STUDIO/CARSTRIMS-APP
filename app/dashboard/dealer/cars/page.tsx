@@ -5,6 +5,7 @@ import MarkSoldModal from "@/components/shared/MarkSoldModal";
 import CarFinancialReport from "@/components/dealer/CarFinancialReport";
 import DocumentViewer from "@/components/shared/DocumentViewer";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
+import { useToast } from "@/store/toastStore";
 import Link from "next/link";
 
 const BRANDS = ["Toyota","Honda","Mercedes","BMW","Lexus","Ford","Hyundai","Kia","Chevrolet","Audi","Land Rover","Jeep","Volkswagen","Nissan","Mazda","Peugeot","Mitsubishi","Subaru","Isuzu","Other"];
@@ -62,6 +63,11 @@ export default function DealerCarsPage() {
   const [uploadProgress,setUploadProgress] = useState("");
   const [saving,setSaving]     = useState(false);
   const [err,setErr]           = useState("");
+  const showToast = useToast();
+  // Sets the inline error banner (unchanged, existing behavior) AND fires
+  // a floating toast so the error is visible even if the user is scrolled
+  // deep into this long form and can't see the top of the modal.
+  const showErr = (msg: string) => { setErr(msg); if (msg) showToast(msg, "error"); };
   const [savedCarId,setSavedCarId] = useState<string|null>(null);
   const [search,setSearch]     = useState("");
   const [statusFilter,setStatusFilter] = useState("all");
@@ -95,19 +101,19 @@ export default function DealerCarsPage() {
 
   const ensureCarSaved = async():Promise<string|null>=>{
     if(savedCarId) return savedCarId;
-    if(!form.model.trim()){setErr("Enter the car model first");return null;}
+    if(!form.model.trim()){showErr("Enter the car model first");return null;}
     setSaving(true);
     try {
       const payload={...form,year:Number(form.year),sellingPrice:Number(form.sellingPrice)||0,purchasePrice:Number(form.purchasePrice)||0,promoPrice:Number(form.promoPrice)||0,mileage:Number(form.mileage)||0,images:[],video:undefined};
       const res=await api.post("/api/v1/cars/",payload);
       const cid=res.data.carId||res.data.car?.carId;
       setSavedCarId(cid); return cid;
-    } catch(ex:any){setErr(ex.response?.data?.detail||"Save car info first");return null;}
+    } catch(ex:any){showErr(ex.response?.data?.detail||"Save car info first");return null;}
     finally{setSaving(false);}
   };
 
   const handleImgFiles = async(files:FileList)=>{
-    if(images.length+files.length>MAX_IMAGES){setErr(`Max ${MAX_IMAGES} photos`);return;}
+    if(images.length+files.length>MAX_IMAGES){showErr(`Max ${MAX_IMAGES} photos`);return;}
     setUploading(true);
     try {
       const carId=await ensureCarSaved();
@@ -116,7 +122,7 @@ export default function DealerCarsPage() {
       for(let i=0;i<files.length;i++){
         setUploadProgress(`Uploading photo ${i+1} of ${files.length}...`);
         try{const url=await uploadViaBackend(files[i],`/api/v1/upload/car/${carId}/images`);if(url)newUrls.push(url);}
-        catch(e:any){setErr(`Photo ${i+1} failed: ${e.response?.data?.detail||e.message}`);}
+        catch(e:any){showErr(`Photo ${i+1} failed: ${e.response?.data?.detail||e.message}`);}
       }
       if(newUrls.length>0){
         const r=await api.get("/api/v1/cars/",{params:{carId}}).catch(()=>null);
@@ -124,12 +130,12 @@ export default function DealerCarsPage() {
         setImages(uc?.images||[...images,...newUrls]);
       }
       if(imgInputRef.current) imgInputRef.current.value="";
-    } catch(e:any){setErr(e.response?.data?.detail||"Photo upload failed.");}
+    } catch(e:any){showErr(e.response?.data?.detail||"Photo upload failed.");}
     finally{setUploading(false);setUploadProgress("");}
   };
 
   const handleVideoFile = async(file:File)=>{
-    if(file.size>100*1024*1024){setErr("Video must be under 100MB");return;}
+    if(file.size>100*1024*1024){showErr("Video must be under 100MB");return;}
     setUploading(true);setUploadProgress("Uploading video...");
     try {
       const carId=await ensureCarSaved();
@@ -137,13 +143,13 @@ export default function DealerCarsPage() {
       const url=await uploadViaBackend(file,`/api/v1/upload/car/${carId}/video`);
       setVideo(url);
       if(vidInputRef.current) vidInputRef.current.value="";
-    } catch(e:any){setErr(e.response?.data?.detail||"Video upload failed.");}
+    } catch(e:any){showErr(e.response?.data?.detail||"Video upload failed.");}
     finally{setUploading(false);setUploadProgress("");}
   };
 
   const handleSave = async()=>{
-    if(!form.model.trim()){setErr("Car model is required");return;}
-    if(!form.sellingPrice){setErr("Selling price is required");return;}
+    if(!form.model.trim()){showErr("Car model is required");return;}
+    if(!form.sellingPrice){showErr("Selling price is required");return;}
     setSaving(true);setErr("");
     try {
       const payload={...form,year:Number(form.year),sellingPrice:Number(form.sellingPrice),purchasePrice:Number(form.purchasePrice)||0,promoPrice:Number(form.promoPrice)||0,mileage:Number(form.mileage)||0};
@@ -151,7 +157,7 @@ export default function DealerCarsPage() {
       else if(modal==="edit"&&editCar){await api.patch(`/api/v1/cars/${editCar.carId}`,payload);}
       else{await api.post("/api/v1/cars/",payload);}
       await load();closeModal();
-    } catch(ex:any){setErr(ex.response?.data?.detail||"Save failed.");}
+    } catch(ex:any){showErr(ex.response?.data?.detail||"Save failed.");}
     finally{setSaving(false);}
   };
 
@@ -167,7 +173,7 @@ export default function DealerCarsPage() {
       const eps:Record<string,string>={proforma:`/api/v1/cars/${carId}/proforma-invoice`,invoice:`/api/v1/cars/${carId}/invoice`,receipt:`/api/v1/cars/${carId}/receipt`};
       const res=await api.get(eps[type]);
       setDocData(res.data);
-    } catch(e:any){setErr(e.response?.data?.detail||`Could not generate ${type}. Record a sale first for invoice/receipt.`);}
+    } catch(e:any){showErr(e.response?.data?.detail||`Could not generate ${type}. Record a sale first for invoice/receipt.`);}
     finally{setDocLoading(null);}
   };
 
