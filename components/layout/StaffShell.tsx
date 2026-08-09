@@ -100,7 +100,7 @@ export default function StaffShell({ children }: { children: ReactNode }) {
         <div className="sb-brand">
           <span className="sb-bi"></span>
           <span className="sb-bn">CARSTRIMS</span>
-          <button className="sb-x" onClick={() => setSideOpen(false)}></button>
+          <button className="sb-x" onClick={() => setSideOpen(false)}>×</button>
         </div>
 
         {/* Staff profile */}

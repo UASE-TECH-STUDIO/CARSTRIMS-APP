@@ -46,7 +46,7 @@ export default function DealerSidebar({ isOpen, onClose }: Props) {
         <div className="sb-brand">
           <span className="sb-bi"></span>
           <span className="sb-bn">CARSTRIMS</span>
-          <button className="sb-x" onClick={onClose} aria-label="Close menu"></button>
+          <button className="sb-x" onClick={onClose} aria-label="Close menu">×</button>
         </div>
 
         <Link href="/dashboard/dealer/settings" className="sb-profile" onClick={handleNav}>

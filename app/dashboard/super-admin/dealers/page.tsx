@@ -172,7 +172,7 @@ export default function AdminDealersPage() {
                  actionModal.type === "reset" ? " Reset Password" :
                  " Delete Dealer"}
               </h3>
-              <button className="modal-close" onClick={() => setActionModal(null)}></button>
+              <button className="modal-close" onClick={() => setActionModal(null)}>×</button>
             </div>
             <div className="modal-body">
               <div className="action-dealer-info">

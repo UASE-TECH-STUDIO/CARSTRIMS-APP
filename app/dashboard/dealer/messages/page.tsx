@@ -263,7 +263,7 @@ export default function MessagesPage() {
               {selUser && (
                 <div style={{ background:"#F0FDF4", border:"1px solid #86EFAC", borderRadius:"8px", padding:"10px 14px", fontSize:"13px", color:"#15803D", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                   <span>Sending to: <strong>{selUser.fullName||selUser.username}</strong></span>
-                  <button onClick={() => { setSelUser(null); setUserSearch(""); }} style={{ background:"none", border:"none", cursor:"pointer", color:"#DC2626", fontSize:"16px" }}></button>
+                  <button onClick={() => { setSelUser(null); setUserSearch(""); }} style={{ background:"none", border:"none", cursor:"pointer", color:"#DC2626", fontSize:"16px" }}>×</button>
                 </div>
               )}
 
@@ -293,7 +293,7 @@ export default function MessagesPage() {
               {/* Conv header */}
               <div style={{ padding:"14px 20px", borderBottom:"1.5px solid #E5E5E5", background:"#FAFAFA", display:"flex", alignItems:"center", gap:"12px", flexShrink:0 }}>
                 <button onClick={() => { setActiveConv(null); activeRef.current=null; if(pollRef.current)clearInterval(pollRef.current); }}
-                  style={{ background:"none", border:"none", cursor:"pointer", color:"#525252", fontSize:"18px", lineHeight:1, padding:"0" }}></button>
+                  style={{ background:"none", border:"none", cursor:"pointer", color:"#525252", fontSize:"18px", lineHeight:1, padding:"0" }}>←</button>
                 <div style={{ width:"38px", height:"38px", borderRadius:"50%", background:"#FFF7ED", color:accent, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"16px", fontWeight:700, flexShrink:0 }}>
                   {activeConv.otherUser?.fullName?.charAt(0)?.toUpperCase() || "?"}
                 </div>

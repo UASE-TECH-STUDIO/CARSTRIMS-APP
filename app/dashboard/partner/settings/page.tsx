@@ -73,8 +73,8 @@ export default function PartnerSettingsPage() {
       <h2 className="page-heading">My Settings</h2>
       <p className="page-sub">Manage your partner account</p>
 
-      {msg && <div className="success-banner"> {msg}<button onClick={()=>setMsg("")} className="dismiss"></button></div>}
-      {err && <div className="error-banner"> {err}<button onClick={()=>setErr("")} className="dismiss"></button></div>}
+      {msg && <div className="success-banner"> {msg}<button onClick={()=>setMsg("")} className="dismiss">×</button></div>}
+      {err && <div className="error-banner"> {err}<button onClick={()=>setErr("")} className="dismiss">×</button></div>}
 
       <div className="settings-grid">
         {/* Photo + Info */}

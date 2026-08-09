@@ -256,8 +256,8 @@ export default function SettingsPage() {
     <div className="sp">
       <h2 className="sh">Settings</h2>
 
-      {success && <div className="sb ok"> {success}<button onClick={()=>setSuccess("")} className="dm"></button></div>}
-      {error   && <div className="sb er"> {error  }<button onClick={()=>setError("")}   className="dm"></button></div>}
+      {success && <div className="sb ok"> {success}<button onClick={()=>setSuccess("")} className="dm">×</button></div>}
+      {error   && <div className="sb er"> {error  }<button onClick={()=>setError("")}   className="dm">×</button></div>}
 
       {/* hidden file inputs */}
       <input ref={logoRef} type="file" accept="image/jpeg,image/png,image/webp" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)handleLogoUpload(f);e.target.value="";}}/>

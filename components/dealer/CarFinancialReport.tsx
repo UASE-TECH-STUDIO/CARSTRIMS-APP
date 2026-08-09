@@ -59,7 +59,7 @@ export default function CarFinancialReport({ carId, onClose }: Props) {
           <span style={{fontFamily:"var(--font-display)",fontSize:"0.875rem",letterSpacing:"0.08em",color:"#1A1A1A",flex:1}}>CAR FINANCIAL REPORT</span>
           <button onClick={printReport} style={{background:"#1A1A1A",color:"#fff",border:"none",borderRadius:"8px",padding:"0.5rem 0.875rem",fontSize:"0.78rem",cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}> Print / PDF</button>
           <button onClick={shareReport} style={{background:"#F0FDF4",color:"#16A34A",border:"1.5px solid #86EFAC",borderRadius:"8px",padding:"0.5rem 0.875rem",fontSize:"0.78rem",cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}> Share</button>
-          <button onClick={onClose} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.5rem 0.75rem",fontSize:"0.78rem",cursor:"pointer"}}></button>
+          <button onClick={onClose} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.5rem 0.75rem",fontSize:"0.78rem",cursor:"pointer"}}>×</button>
         </div>
 
         <div ref={printRef} style={{padding:"2rem",background:"#fff"}}>

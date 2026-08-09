@@ -42,7 +42,7 @@ function PreviewModal({src,type,onClose}:{src:string;type:"image"|"video";onClos
   return (
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
       <div onClick={e=>e.stopPropagation()} style={{position:"relative",maxWidth:"92vw",maxHeight:"92vh"}}>
-        <button onClick={onClose} style={{position:"absolute",top:"-2rem",right:0,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:"50%",width:"32px",height:"32px",color:"#fff",fontSize:"1rem",cursor:"pointer"}}></button>
+        <button onClick={onClose} style={{position:"absolute",top:"-2rem",right:0,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:"50%",width:"32px",height:"32px",color:"#fff",fontSize:"1rem",cursor:"pointer"}}>×</button>
         {type==="image"?<img src={src} alt="" style={{maxWidth:"88vw",maxHeight:"88vh",objectFit:"contain",borderRadius:"8px",display:"block"}}/>:<video src={src} controls autoPlay style={{maxWidth:"88vw",maxHeight:"88vh",borderRadius:"8px"}}/>}
       </div>
     </div>
@@ -202,7 +202,7 @@ export default function DealerCarsPage() {
           </select>
         </div>
 
-        {err&&<div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",color:"#DC2626",padding:"0.75rem 1rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between"}}><span>{err}</span><button onClick={()=>setErr("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}></button></div>}
+        {err&&<div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",color:"#DC2626",padding:"0.75rem 1rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between"}}><span>{err}</span><button onClick={()=>setErr("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}>×</button></div>}
 
         {loading?<div className="cp-loading"><div className="spinner"/></div>
         :cars.length===0?<div className="cp-empty">
@@ -267,10 +267,10 @@ export default function DealerCarsPage() {
                   <h3 className="modal-title">{modal==="add"?"ADD NEW CAR":"EDIT CAR"}</h3>
                   {savedCarId&&modal==="add"&&<div style={{fontSize:"0.68rem",color:"#16A34A",marginTop:"0.1rem"}}> Draft saved ({savedCarId})</div>}
                 </div>
-                <button onClick={closeModal} className="modal-close"></button>
+                <button onClick={closeModal} className="modal-close">×</button>
               </div>
               <div className="modal-body">
-                {err&&<div className="modal-err"><span>{err}</span><button onClick={()=>setErr("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}></button></div>}
+                {err&&<div className="modal-err"><span>{err}</span><button onClick={()=>setErr("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}>×</button></div>}
 
                 <div>
                   <label style={lbl}>Photos ({images.length}/{MAX_IMAGES})</label>
@@ -279,7 +279,7 @@ export default function DealerCarsPage() {
                     {images.map((img,i)=>(
                       <div key={i} className="photo-thumb" onClick={()=>setPreview({src:img,type:"image"})}>
                         <img src={img} alt=""/>
-                        <button onClick={async e=>{e.stopPropagation();const cid=savedCarId||editCar?.carId;if(cid){try{await api.delete(`/api/v1/upload/car/${cid}/images`,{data:{image_url:img}});}catch(_){}}setImages(p=>p.filter((_,j)=>j!==i));}} className="photo-del"></button>
+                        <button onClick={async e=>{e.stopPropagation();const cid=savedCarId||editCar?.carId;if(cid){try{await api.delete(`/api/v1/upload/car/${cid}/images`,{data:{image_url:img}});}catch(_){}}setImages(p=>p.filter((_,j)=>j!==i));}} className="photo-del">×</button>
                       </div>
                     ))}
                     {images.length<MAX_IMAGES&&<button className="photo-add" onClick={()=>imgInputRef.current?.click()} disabled={uploading}>{uploading&&uploadProgress.includes("photo")?"...":"+"}</button>}

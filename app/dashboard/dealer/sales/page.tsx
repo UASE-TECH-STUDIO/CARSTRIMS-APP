@@ -217,7 +217,7 @@ export default function SalesPage() {
       {showManual&&(
         <div className="modal-overlay" onClick={()=>setShowManual(false)}>
           <div className="modal" onClick={e=>e.stopPropagation()}>
-            <div className="modal-header"><h3 className="modal-title">ADD MANUAL SALE</h3><button className="modal-close" onClick={()=>setShowManual(false)}></button></div>
+            <div className="modal-header"><h3 className="modal-title">ADD MANUAL SALE</h3><button className="modal-close" onClick={()=>setShowManual(false)}>×</button></div>
             {error&&<div className="form-error">{error}</div>}
             <form onSubmit={handleManualSale} className="modal-form">
               {/* Car ID search  auto-fills details */}
@@ -273,7 +273,7 @@ export default function SalesPage() {
       {showEdit&&(
         <div className="modal-overlay" onClick={()=>setShowEdit(null)}>
           <div className="modal modal-sm" onClick={e=>e.stopPropagation()}>
-            <div className="modal-header"><h3 className="modal-title">EDIT SALE</h3><button className="modal-close" onClick={()=>setShowEdit(null)}></button></div>
+            <div className="modal-header"><h3 className="modal-title">EDIT SALE</h3><button className="modal-close" onClick={()=>setShowEdit(null)}>×</button></div>
             <div className="edit-info">{showEdit.transactionId}{showEdit.isEdited?"  edited":""}</div>
             {error&&<div className="form-error">{error}</div>}
             <form onSubmit={handleEditSale} className="modal-form">
@@ -302,7 +302,7 @@ export default function SalesPage() {
       {showHistory&&(
         <div className="modal-overlay" onClick={()=>setShowHistory(null)}>
           <div className="modal modal-sm" onClick={e=>e.stopPropagation()}>
-            <div className="modal-header"><h3 className="modal-title">EDIT HISTORY  {showHistory.transactionId}</h3><button className="modal-close" onClick={()=>setShowHistory(null)}></button></div>
+            <div className="modal-header"><h3 className="modal-title">EDIT HISTORY  {showHistory.transactionId}</h3><button className="modal-close" onClick={()=>setShowHistory(null)}>×</button></div>
             <div className="history-list">
               {!showHistory.editHistory?.length?<div className="no-history">No edit history</div>
               :showHistory.editHistory?.map((h:any,i:number)=>(

@@ -196,7 +196,7 @@ export default function CCTVPage() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">ADD CAMERA</h3>
-              <button className="modal-close" onClick={() => setShowAdd(false)}></button>
+              <button className="modal-close" onClick={() => setShowAdd(false)}>×</button>
             </div>
             {error && <div className="form-error">{error}</div>}
             <form onSubmit={handleAdd} className="cam-form">

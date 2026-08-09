@@ -141,7 +141,7 @@ export default function UserAppointmentsPage() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">SCHEDULE APPOINTMENT</h3>
-              <button className="modal-close" onClick={() => setShowForm(false)}></button>
+              <button className="modal-close" onClick={() => setShowForm(false)}>×</button>
             </div>
             {error && <div className="form-error">{error}</div>}
             <form onSubmit={submit} className="modal-form">
@@ -165,7 +165,7 @@ export default function UserAppointmentsPage() {
                 </div>
                 {selectedDealer && (
                   <div className="selected-dealer"> {selectedDealer.companyName}
-                    <button type="button" onClick={() => { setSelectedDealer(null); setDealerSearch(""); setForm({...form,dealerId:""}); }} style={{background:"none",border:"none",cursor:"pointer",color:"#DC2626",marginLeft:"0.5rem"}}></button>
+                    <button type="button" onClick={() => { setSelectedDealer(null); setDealerSearch(""); setForm({...form,dealerId:""}); }} style={{background:"none",border:"none",cursor:"pointer",color:"#DC2626",marginLeft:"0.5rem"}}>×</button>
                   </div>
                 )}
               </div>
@@ -191,7 +191,7 @@ export default function UserAppointmentsPage() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">APPOINTMENT DETAILS</h3>
-              <button className="modal-close" onClick={() => setShowDetail(null)}></button>
+              <button className="modal-close" onClick={() => setShowDetail(null)}>×</button>
             </div>
             <div className="modal-form">
               <div className="detail-grid">

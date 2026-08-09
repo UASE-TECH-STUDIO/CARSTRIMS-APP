@@ -91,7 +91,7 @@ export default function FindDealerPage() {
         </button>
       </form>
 
-      {error && <div className="error-msg"> {error}<button onClick={() => setError("")} style={{background:"none",border:"none",cursor:"pointer",marginLeft:"0.5rem"}}></button></div>}
+      {error && <div className="error-msg"> {error}<button onClick={() => setError("")} style={{background:"none",border:"none",cursor:"pointer",marginLeft:"0.5rem"}}>×</button></div>}
 
       {results.length === 0 && !loading ? (
         <div className="empty"><div className="ei"></div><h3>No dealers found</h3><p>Try a different search term</p></div>
@@ -160,7 +160,7 @@ export default function FindDealerPage() {
                   <div className="modal-id">{selectedDealer.dealerId}</div>
                 </div>
               </div>
-              <button className="modal-close" onClick={() => setSelectedDealer(null)}></button>
+              <button className="modal-close" onClick={() => setSelectedDealer(null)}>×</button>
             </div>
 
             <div className="modal-body">

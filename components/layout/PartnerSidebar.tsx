@@ -37,7 +37,7 @@ export default function PartnerSidebar() {
       <div className="sb-brand">
         <span className="sb-bi"></span>
         <span className="sb-bn">CARSTRIMS</span>
-        <button className="sb-x" onClick={close}></button>
+        <button className="sb-x" onClick={close}>×</button>
       </div>
 
       <Link href="/dashboard/partner/settings" className="sb-profile" onClick={handleNav}>

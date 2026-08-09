@@ -75,7 +75,7 @@ export default function RegisterPage() {
             <h2 className="rg-card-title">{step===1?"Choose Account Type":"Create Your Account"}</h2>
             <p className="rg-card-sub">{step===1?"Select how you will use CARSTRIMS":"Fill in your details below"}</p>
           </div>
-          {error && <div className="rg-err"><span>{error}</span><button onClick={()=>setError("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}></button></div>}
+          {error && <div className="rg-err"><span>{error}</span><button onClick={()=>setError("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}>×</button></div>}
 
           {step===1 ? (
             <div className="rg-roles">

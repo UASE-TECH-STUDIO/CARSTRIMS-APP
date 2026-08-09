@@ -53,7 +53,7 @@ export default function CarContextCard({ car, onClose, compact }: Props) {
           {car.sellingPrice && <div style={{fontFamily:"var(--font-display)",fontSize:"1rem",color:"#F47B20",marginTop:"0.1rem"}}>{fmt(car.sellingPrice)}</div>}
         </div>
         <div style={{display:"flex",flexDirection:"column",justifyContent:"space-between",padding:"0.5rem",flexShrink:0,alignItems:"flex-end"}}>
-          {onClose && <button onClick={onClose} style={{background:"none",border:"none",color:"#A3A3A3",cursor:"pointer",fontSize:"0.9rem",lineHeight:1}}></button>}
+          {onClose && <button onClick={onClose} style={{background:"none",border:"none",color:"#A3A3A3",cursor:"pointer",fontSize:"0.9rem",lineHeight:1}}>×</button>}
           <Link href={`/cars/${car.carId}`} style={{fontSize:"0.7rem",color:"#F47B20",textDecoration:"none",fontWeight:700,display:"flex",alignItems:"center",gap:"0.2rem",marginTop:"auto"}}>
             View car 
           </Link>

@@ -110,12 +110,12 @@ export default function BroadcastPage() {
       {result && (
         <div style={{background:"#F0FDF4",border:"1px solid #86EFAC",color:"#15803D",padding:"0.875rem 1.25rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <span> Sent to <strong>{result.sentTo||"all"}</strong> users successfully.</span>
-          <button onClick={()=>setResult(null)} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}></button>
+          <button onClick={()=>setResult(null)} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}>×</button>
         </div>
       )}
       {err && (
         <div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",color:"#DC2626",padding:"0.875rem 1.25rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between"}}>
-          <span> {err}</span><button onClick={()=>setErr("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}></button>
+          <span> {err}</span><button onClick={()=>setErr("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}>×</button>
         </div>
       )}
 
@@ -172,7 +172,7 @@ export default function BroadcastPage() {
                     {selectedUsers.map(u => (
                       <div key={u._id} style={{background:"#FFF7ED",border:"1px solid rgba(244,123,32,0.3)",borderRadius:"20px",padding:"0.25rem 0.625rem",fontSize:"0.75rem",color:"#C4621A",display:"flex",alignItems:"center",gap:"0.375rem"}}>
                         {u.fullName}
-                        <button type="button" onClick={()=>removeUser(u._id)} style={{background:"none",border:"none",cursor:"pointer",color:"#DC2626",fontSize:"0.8rem",padding:0,lineHeight:1}}></button>
+                        <button type="button" onClick={()=>removeUser(u._id)} style={{background:"none",border:"none",cursor:"pointer",color:"#DC2626",fontSize:"0.8rem",padding:0,lineHeight:1}}>×</button>
                       </div>
                     ))}
                   </div>

@@ -102,7 +102,7 @@ export default function MarkSoldModal({ car: initialCar, onClose, onSold }: Prop
             <div style={{fontFamily:"var(--font-display)",fontSize:"1rem",letterSpacing:"0.1em",color:"#F47B20"}}>RECORD SALE / MARK SOLD</div>
             <div style={{fontSize:"0.75rem",color:"#A3A3A3",marginTop:"0.2rem"}}>{car ? `${car.brand} ${car.model} ${car.year}  ${car.carId}` : "Search and select a car below"}</div>
           </div>
-          <button onClick={onClose} style={{background:"rgba(255,255,255,0.12)",border:"none",color:"#fff",width:"32px",height:"32px",borderRadius:"50%",cursor:"pointer",fontSize:"1rem"}}></button>
+          <button onClick={onClose} style={{background:"rgba(255,255,255,0.12)",border:"none",color:"#fff",width:"32px",height:"32px",borderRadius:"50%",cursor:"pointer",fontSize:"1rem"}}>×</button>
         </div>
 
         {/* Car context (if pre-filled from inventory) */}

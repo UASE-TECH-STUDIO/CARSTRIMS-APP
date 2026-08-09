@@ -289,7 +289,7 @@ export default function MovementsPage() {
           <div onClick={e => e.stopPropagation()} style={{ background:"#fff", width:"100%", maxWidth:"720px", maxHeight:"94vh", borderRadius:"16px 16px 0 0", overflow:"hidden", display:"flex", flexDirection:"column" }}>
             <div style={{ padding:"14px 20px", background:"#1A1A1A", flexShrink:0, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
               <div style={{ fontFamily:"var(--font-display)", fontSize:"14px", letterSpacing:"0.08em", color:"#F47B20" }}>LOG VEHICLE MOVEMENT</div>
-              <button onClick={() => setShowLog(false)} style={{ background:"rgba(255,255,255,.15)", border:"none", color:"#fff", borderRadius:"50%", width:"28px", height:"28px", cursor:"pointer", fontSize:"16px" }}></button>
+              <button onClick={() => setShowLog(false)} style={{ background:"rgba(255,255,255,.15)", border:"none", color:"#fff", borderRadius:"50%", width:"28px", height:"28px", cursor:"pointer", fontSize:"16px" }}>×</button>
             </div>
             {error && <div style={{ background:"#FEF2F2", color:"#DC2626", padding:"10px 20px", fontSize:"13px", fontWeight:600, flexShrink:0 }}>{error}</div>}
             <form onSubmit={submitLog} style={{ overflowY:"auto", flex:1, padding:"20px", display:"flex", flexDirection:"column" }}>
@@ -437,7 +437,7 @@ export default function MovementsPage() {
           <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"14px",width:"100%",maxWidth:"580px",maxHeight:"92vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(0,0,0,0.18)"}}>
             <div style={{padding:"14px 20px",background:"#1A1A1A",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
               <div style={{fontFamily:"var(--font-display)",fontSize:"14px",letterSpacing:"0.08em",color:"#F47B20"}}>MOVEMENT DETAILS</div>
-              <button onClick={()=>setShowDetail(null)} style={{background:"rgba(255,255,255,.15)",border:"none",color:"#fff",borderRadius:"50%",width:"28px",height:"28px",cursor:"pointer",fontSize:"16px"}}></button>
+              <button onClick={()=>setShowDetail(null)} style={{background:"rgba(255,255,255,.15)",border:"none",color:"#fff",borderRadius:"50%",width:"28px",height:"28px",cursor:"pointer",fontSize:"16px"}}>×</button>
             </div>
             <div style={{overflowY:"auto",flex:1,padding:"20px",display:"flex",flexDirection:"column",gap:"14px"}}>
               <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}><ApprovalBadge m={showDetail}/><span style={{padding:"2px 8px",borderRadius:"20px",fontSize:"11px",fontWeight:600,background:"#F5F5F5",color:"#525252",textTransform:"capitalize" as const}}>{showDetail.status}</span></div>
@@ -516,7 +516,7 @@ export default function MovementsPage() {
           <div onClick={e=>e.stopPropagation()} style={{background:"#fff",width:"100%",maxWidth:"680px",maxHeight:"90vh",borderRadius:"16px 16px 0 0",overflow:"hidden",display:"flex",flexDirection:"column"}}>
             <div style={{padding:"14px 20px",background:"#1A1A1A",flexShrink:0,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div style={{fontFamily:"var(--font-display)",fontSize:"14px",letterSpacing:"0.08em",color:"#F47B20"}}>EDIT MOVEMENT  {showEdit.carId}</div>
-              <button onClick={()=>setShowEdit(null)} style={{background:"rgba(255,255,255,.15)",border:"none",color:"#fff",borderRadius:"50%",width:"28px",height:"28px",cursor:"pointer",fontSize:"16px"}}></button>
+              <button onClick={()=>setShowEdit(null)} style={{background:"rgba(255,255,255,.15)",border:"none",color:"#fff",borderRadius:"50%",width:"28px",height:"28px",cursor:"pointer",fontSize:"16px"}}>×</button>
             </div>
             {error&&<div style={{background:"#FEF2F2",color:"#DC2626",padding:"10px 20px",fontSize:"13px",fontWeight:600}}>{error}</div>}
             <form onSubmit={submitEdit} style={{overflowY:"auto",flex:1,padding:"20px",display:"flex",flexDirection:"column"}}>
@@ -553,7 +553,7 @@ export default function MovementsPage() {
           <div onClick={e=>e.stopPropagation()} style={{background:"#fff",width:"100%",maxWidth:"600px",maxHeight:"90vh",borderRadius:"16px 16px 0 0",overflow:"hidden",display:"flex",flexDirection:"column"}}>
             <div style={{padding:"14px 20px",background:"#1A1A1A",flexShrink:0,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div style={{fontFamily:"var(--font-display)",fontSize:"14px",letterSpacing:"0.08em",color:"#F47B20"}}>LOG VEHICLE RETURN</div>
-              <button onClick={()=>setShowReturn(null)} style={{background:"rgba(255,255,255,.15)",border:"none",color:"#fff",borderRadius:"50%",width:"28px",height:"28px",cursor:"pointer",fontSize:"16px"}}></button>
+              <button onClick={()=>setShowReturn(null)} style={{background:"rgba(255,255,255,.15)",border:"none",color:"#fff",borderRadius:"50%",width:"28px",height:"28px",cursor:"pointer",fontSize:"16px"}}>×</button>
             </div>
             {error&&<div style={{background:"#FEF2F2",color:"#DC2626",padding:"10px 20px",fontSize:"13px",fontWeight:600,flexShrink:0}}>{error}</div>}
             <div style={{overflowY:"auto",flex:1,padding:"20px",display:"flex",flexDirection:"column",gap:"14px"}}>

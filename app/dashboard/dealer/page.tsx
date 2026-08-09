@@ -137,7 +137,7 @@ export default function DealerOverviewPage() {
       {/* Lightbox for logo */}
       {lightbox && dealer?.logo && (
         <div onClick={()=>setLightbox(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.9)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",cursor:"zoom-out"}}>
-          <button onClick={()=>setLightbox(false)} style={{position:"absolute",top:"1rem",right:"1rem",background:"rgba(255,255,255,0.15)",border:"none",color:"#fff",fontSize:"1.3rem",width:"40px",height:"40px",borderRadius:"50%",cursor:"pointer"}}></button>
+          <button onClick={()=>setLightbox(false)} style={{position:"absolute",top:"1rem",right:"1rem",background:"rgba(255,255,255,0.15)",border:"none",color:"#fff",fontSize:"1.3rem",width:"40px",height:"40px",borderRadius:"50%",cursor:"pointer"}}>×</button>
           <img src={dealer.logo} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"88vw",maxHeight:"88vh",objectFit:"contain",borderRadius:"12px"}}/>
         </div>
       )}
@@ -163,7 +163,7 @@ export default function DealerOverviewPage() {
                 : dealer?.logo ? <img src={dealer.logo} alt=""/> : <span>{dealer?.companyName?.charAt(0)||"D"}</span>
               }
             </div>
-            <button className="ov-logo-edit" onClick={()=>logoRef.current?.click()} title="Change logo"></button>
+            <button className="ov-logo-edit" onClick={()=>logoRef.current?.click()} title="Change logo">✎</button>
             <input ref={logoRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)handleLogoUpload(f);}}/>
           </div>
           <div>

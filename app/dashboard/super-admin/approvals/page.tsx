@@ -6,7 +6,7 @@ function PreviewModal({ src, type, onClose }: { src:string; type:"image"|"pdf"; 
   return (
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
       <div onClick={e=>e.stopPropagation()} style={{position:"relative",maxWidth:"90vw",maxHeight:"92vh"}}>
-        <button onClick={onClose} style={{position:"absolute",top:"-2.5rem",right:0,background:"rgba(255,255,255,0.2)",border:"none",borderRadius:"50%",width:"36px",height:"36px",color:"#fff",fontSize:"1.1rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}></button>
+        <button onClick={onClose} style={{position:"absolute",top:"-2.5rem",right:0,background:"rgba(255,255,255,0.2)",border:"none",borderRadius:"50%",width:"36px",height:"36px",color:"#fff",fontSize:"1.1rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
         {type==="image"
           ? <img src={src} alt="" style={{maxWidth:"88vw",maxHeight:"86vh",objectFit:"contain",borderRadius:"8px",display:"block"}}/>
           : <iframe src={src} style={{width:"80vw",height:"86vh",border:"none",borderRadius:"8px"}}/>
@@ -183,7 +183,7 @@ export default function ApprovalsPage() {
 
       {msg&&(
         <div style={{background:msgType==="success"?"#F0FDF4":"#FEF2F2",border:`1px solid ${msgType==="success"?"#86EFAC":"#FCA5A5"}`,color:msgType==="success"?"#15803D":"#DC2626",padding:"0.875rem 1.25rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between",gap:"1rem"}}>
-          <span>{msg}</span><button onClick={()=>setMsg("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}></button>
+          <span>{msg}</span><button onClick={()=>setMsg("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}>×</button>
         </div>
       )}
 

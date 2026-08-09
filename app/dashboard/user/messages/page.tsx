@@ -252,7 +252,7 @@ export default function UserMessagesPage() {
           <div style={{background:"#fff",borderRadius:"14px",width:"100%",maxWidth:"440px",overflow:"hidden",boxShadow:"0 16px 48px rgba(0,0,0,0.2)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"1rem 1.25rem",background:"#F47B20",color:"#fff"}}>
               <span style={{fontFamily:"var(--font-display)",fontSize:"0.95rem",letterSpacing:"0.08em"}}>NEW CONVERSATION</span>
-              <button onClick={()=>setShowNew(false)} style={{background:"none",border:"none",color:"#fff",fontSize:"1.1rem",cursor:"pointer",fontWeight:700}}></button>
+              <button onClick={()=>setShowNew(false)} style={{background:"none",border:"none",color:"#fff",fontSize:"1.1rem",cursor:"pointer",fontWeight:700}}>×</button>
             </div>
             <div style={{padding:"1.25rem",display:"flex",flexDirection:"column",gap:"0.875rem"}}>
               <div style={{position:"relative"}}>
@@ -270,7 +270,7 @@ export default function UserMessagesPage() {
                   </div>
                 )}
               </div>
-              {selUser&&<div style={{background:"#FFF7ED",border:"1px solid rgba(244,123,32,0.3)",color:"#C4621A",padding:"0.5rem 0.875rem",borderRadius:"6px",fontSize:"0.85rem",display:"flex",alignItems:"center",justifyContent:"space-between"}}>To: <strong>{selUser.fullName}</strong><button onClick={()=>{setSelUser(null);setUserSearch("");}} style={{background:"none",border:"none",cursor:"pointer",color:"#DC2626",fontSize:"1rem"}}></button></div>}
+              {selUser&&<div style={{background:"#FFF7ED",border:"1px solid rgba(244,123,32,0.3)",color:"#C4621A",padding:"0.5rem 0.875rem",borderRadius:"6px",fontSize:"0.85rem",display:"flex",alignItems:"center",justifyContent:"space-between"}}>To: <strong>{selUser.fullName}</strong><button onClick={()=>{setSelUser(null);setUserSearch("");}} style={{background:"none",border:"none",cursor:"pointer",color:"#DC2626",fontSize:"1rem"}}>×</button></div>}
               <textarea style={{width:"100%",background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.75rem",color:"#1A1A1A",fontSize:"0.875rem",fontFamily:"var(--font-body)",outline:"none",resize:"vertical" as const,minHeight:"80px",boxSizing:"border-box" as const}} placeholder="Write your message..." value={startMsg} onChange={e=>setStartMsg(e.target.value)}/>
               <button onClick={startConversation} disabled={!selUser||!startMsg.trim()} style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.875rem",fontFamily:"var(--font-display)",fontSize:"0.9rem",letterSpacing:"0.08em",cursor:"pointer",opacity:!selUser||!startMsg.trim()?0.5:1}}>Start Conversation</button>
             </div>

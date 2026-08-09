@@ -57,13 +57,13 @@ export default function AdminSettingsPage() {
       {msg && (
         <div className="success-banner">
            {msg}
-          <button onClick={() => setMsg("")} className="dismiss"></button>
+          <button onClick={() => setMsg("")} className="dismiss">×</button>
         </div>
       )}
       {err && (
         <div className="error-banner">
            {err}
-          <button onClick={() => setErr("")} className="dismiss"></button>
+          <button onClick={() => setErr("")} className="dismiss">×</button>
         </div>
       )}
 

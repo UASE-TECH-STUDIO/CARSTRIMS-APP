@@ -31,7 +31,7 @@ export default function AdminSidebar() {
       <div className="sb-brand">
         <span className="sb-bi"></span>
         <span className="sb-bn">CARSTRIMS</span>
-        <button className="sb-x" onClick={close}></button>
+        <button className="sb-x" onClick={close}>×</button>
       </div>
 
       <div className="sb-profile">

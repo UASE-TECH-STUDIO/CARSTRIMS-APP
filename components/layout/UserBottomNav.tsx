@@ -29,7 +29,7 @@ export default function UserBottomNav() {
           <div className="qr-modal" onClick={(e) => e.stopPropagation()}>
             <div className="qr-header">
               <h3>Scan Dealer QR Code</h3>
-              <button onClick={() => setShowQR(false)} className="qr-close"></button>
+              <button onClick={() => setShowQR(false)} className="qr-close">×</button>
             </div>
             <div className="qr-body">
               <div className="qr-viewfinder">

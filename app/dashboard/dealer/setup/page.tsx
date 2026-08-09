@@ -41,7 +41,7 @@ function PreviewModal({ src, type, onClose }: { src: string; type: "image"|"vide
   return (
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
       <div onClick={e=>e.stopPropagation()} style={{background:"#1A1A1A",borderRadius:"12px",overflow:"hidden",maxWidth:"90vw",maxHeight:"90vh",position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-        <button onClick={onClose} style={{position:"absolute",top:"0.5rem",right:"0.5rem",background:"rgba(255,255,255,0.15)",border:"none",borderRadius:"50%",width:"32px",height:"32px",color:"#fff",fontSize:"1rem",cursor:"pointer",zIndex:10}}></button>
+        <button onClick={onClose} style={{position:"absolute",top:"0.5rem",right:"0.5rem",background:"rgba(255,255,255,0.15)",border:"none",borderRadius:"50%",width:"32px",height:"32px",color:"#fff",fontSize:"1rem",cursor:"pointer",zIndex:10}}>×</button>
         {type==="image" && <img src={src} alt="" style={{maxWidth:"85vw",maxHeight:"85vh",objectFit:"contain",display:"block"}} />}
         {type==="video" && <video src={src} controls autoPlay style={{maxWidth:"85vw",maxHeight:"85vh"}} />}
         {type==="pdf" && <iframe src={src} style={{width:"80vw",height:"85vh",border:"none"}} />}
@@ -250,7 +250,7 @@ export default function DealerSetupPage() {
         {error && (
           <div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",color:"#DC2626",padding:"0.875rem 1rem",borderRadius:"8px",fontSize:"0.875rem",marginBottom:"1.25rem",display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:"0.75rem",lineHeight:1.5}}>
             <span>{error}</span>
-            <button onClick={()=>setError("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer",flexShrink:0}}></button>
+            <button onClick={()=>setError("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer",flexShrink:0}}>×</button>
           </div>
         )}
 

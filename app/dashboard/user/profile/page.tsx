@@ -159,8 +159,8 @@ export default function UserProfilePage() {
       </div>
 
       {/* Banners */}
-      {success&&<div style={{background:"#F0FDF4",border:"1px solid #86EFAC",color:"#15803D",padding:"0.875rem 1.25rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}> {success}<button onClick={()=>setSuccess("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}></button></div>}
-      {error&&<div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",color:"#DC2626",padding:"0.875rem 1.25rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}> {error}<button onClick={()=>setError("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}></button></div>}
+      {success&&<div style={{background:"#F0FDF4",border:"1px solid #86EFAC",color:"#15803D",padding:"0.875rem 1.25rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}> {success}<button onClick={()=>setSuccess("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}>×</button></div>}
+      {error&&<div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",color:"#DC2626",padding:"0.875rem 1.25rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}> {error}<button onClick={()=>setError("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}>×</button></div>}
 
       {/* Tab bar */}
       <div style={{display:"flex",gap:"0.25rem",background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",padding:"0.375rem",flexWrap:"wrap"}}>

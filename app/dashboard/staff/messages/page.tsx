@@ -270,7 +270,7 @@ function ConvPanel({mode,canReply}:{mode:"dealer"|"mine";canReply:boolean}) {
           <div style={{flex:1,overflowY:"auto",padding:"14px",display:"flex",flexDirection:"column",gap:"10px"}}>
             <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
               <button onClick={()=>{setShowNew(false);setChat(false);setSel(null);setUS("");setStart("");}}
-                style={{background:"none",border:"none",cursor:"pointer",color:"#525252",fontSize:"18px"}}></button>
+                style={{background:"none",border:"none",cursor:"pointer",color:"#525252",fontSize:"18px"}}>←</button>
               <span style={{fontFamily:"var(--font-display)",fontSize:"12px",letterSpacing:"0.08em",color:ac}}>NEW CONVERSATION</span>
             </div>
 
@@ -318,7 +318,7 @@ function ConvPanel({mode,canReply}:{mode:"dealer"|"mine";canReply:boolean}) {
               <div style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"7px",
                 padding:"8px 10px",fontSize:"12px",color:"#15803D",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <span>To: <strong>{selUser.fullName||selUser.username}</strong></span>
-                <button onClick={()=>{setSel(null);setUS("");}} style={{background:"none",border:"none",cursor:"pointer",color:"#DC2626",fontSize:"14px"}}></button>
+                <button onClick={()=>{setSel(null);setUS("");}} style={{background:"none",border:"none",cursor:"pointer",color:"#DC2626",fontSize:"14px"}}>×</button>
               </div>
             )}
 
@@ -345,7 +345,7 @@ function ConvPanel({mode,canReply}:{mode:"dealer"|"mine";canReply:boolean}) {
           <>
             <div style={{padding:"10px 14px",borderBottom:"1px solid #E5E5E5",background:"#FAFAFA",
               display:"flex",alignItems:"center",gap:"10px",flexShrink:0}}>
-              <button onClick={goBack} style={{background:"none",border:"none",cursor:"pointer",color:"#525252",fontSize:"18px",padding:0}}></button>
+              <button onClick={goBack} style={{background:"none",border:"none",cursor:"pointer",color:"#525252",fontSize:"18px",padding:0}}>←</button>
               <div style={{width:"30px",height:"30px",borderRadius:"50%",background:"#FFF7ED",color:ac,
                 display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:700,flexShrink:0}}>
                 {active.otherUser?.fullName?.charAt(0)?.toUpperCase()||"?"}

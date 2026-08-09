@@ -90,7 +90,7 @@ export default function AdminUsersPage() {
 
       {msg&&(
         <div style={{background:"#F0FDF4",border:"1px solid #86EFAC",color:"#15803D",padding:"0.75rem 1rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between"}}>
-          <span>{msg}</span><button onClick={()=>setMsg("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}></button>
+          <span>{msg}</span><button onClick={()=>setMsg("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}>×</button>
         </div>
       )}
 
@@ -118,7 +118,7 @@ export default function AdminUsersPage() {
               <h3 style={{fontFamily:"var(--font-display)",fontSize:"1rem",letterSpacing:"0.08em",color:"#1A1A1A"}}>
                 {actionModal.type==="suspend"?" SUSPEND USER":actionModal.type==="unsuspend"?" REACTIVATE USER":actionModal.type==="warn"?" WARN USER":actionModal.type==="delete"?" DELETE USER":" RESET PASSWORD"}
               </h3>
-              <button onClick={()=>setActionModal(null)} style={{background:"none",border:"none",cursor:"pointer",fontSize:"1rem",color:"#737373"}}></button>
+              <button onClick={()=>setActionModal(null)} style={{background:"none",border:"none",cursor:"pointer",fontSize:"1rem",color:"#737373"}}>×</button>
             </div>
             <div style={{background:"#F5F5F5",borderRadius:"6px",padding:"0.75rem",display:"flex",flexDirection:"column",gap:"0.2rem"}}>
               <strong style={{fontSize:"0.875rem",color:"#1A1A1A"}}>{actionModal.user.fullName}</strong>

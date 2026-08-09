@@ -70,7 +70,7 @@ export default function LoginPage() {
           {error && (
             <div className="lg-err">
               <span>{error}</span>
-              <button onClick={()=>setError("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer",fontSize:"1rem",lineHeight:1,flexShrink:0}}></button>
+              <button onClick={()=>setError("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer",fontSize:"1rem",lineHeight:1,flexShrink:0}}>×</button>
             </div>
           )}
 

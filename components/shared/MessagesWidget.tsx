@@ -266,7 +266,7 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
           <div className="mp-header">
             <span className="mp-title">Messages</span>
             <button className="mp-new" onClick={()=>setShowNew(true)}>+ New</button>
-            <button className="mp-close" onClick={()=>{setOpen(false);setActiveConv(null);activeRef.current=null;if(pollRef.current)clearInterval(pollRef.current);}}></button>
+            <button className="mp-close" onClick={()=>{setOpen(false);setActiveConv(null);activeRef.current=null;if(pollRef.current)clearInterval(pollRef.current);}}>×</button>
           </div>
 
           {!activeConv ? (
@@ -340,7 +340,7 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
           {showNew && !activeConv && (
             <div className="new-conv-overlay" onClick={()=>setShowNew(false)}>
               <div className="new-conv" onClick={e=>e.stopPropagation()}>
-                <div className="nc-header"><span>New Conversation</span><button onClick={()=>setShowNew(false)} style={{background:"rgba(255,255,255,0.15)",border:"none",color:"#fff",borderRadius:"50%",width:"24px",height:"24px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.75rem"}}></button></div>
+                <div className="nc-header"><span>New Conversation</span><button onClick={()=>setShowNew(false)} style={{background:"rgba(255,255,255,0.15)",border:"none",color:"#fff",borderRadius:"50%",width:"24px",height:"24px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.75rem"}}>×</button></div>
                 <div className="nc-body">
                   {/* My Team - quick access to dealer staff */}
                   {!selUser && myTeam.length>0 && userSearch.length<2 && (
@@ -374,7 +374,7 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
                       </div>
                     )}
                   </div>
-                  {selUser&&<div className="nc-selected">To: <strong>{selUser.fullName}</strong><button onClick={()=>{setSelUser(null);setUserSearch("");}} style={{background:"none",border:"none",cursor:"pointer",color:"#DC2626",marginLeft:"0.5rem"}}></button></div>}
+                  {selUser&&<div className="nc-selected">To: <strong>{selUser.fullName}</strong><button onClick={()=>{setSelUser(null);setUserSearch("");}} style={{background:"none",border:"none",cursor:"pointer",color:"#DC2626",marginLeft:"0.5rem"}}>×</button></div>}
                   <textarea className="nc-msg" placeholder="Write your message..." value={startMsg} onChange={e=>setStartMsg(e.target.value)} rows={3}/>
                   <button className="nc-send" onClick={startConversation} disabled={!selUser||!startMsg.trim()}>Start Conversation</button>
                 </div>
