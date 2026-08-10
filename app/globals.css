@@ -109,8 +109,14 @@ input:-webkit-autofill {
   -webkit-text-fill-color: var(--text) !important;
 }
 
-@media (max-width: 768px) { html { font-size: 15.5px; } }
-@media (max-width: 480px) { html { font-size: 15px; } }
+/* Mobile: keep text at full size (never shrink it — smaller screens are
+   exactly where clarity matters most) and bump weight slightly for
+   easier scanning at a glance, similar to how listing apps like Jiji
+   keep body text bold/legible on small screens rather than shrinking it. */
+@media (max-width: 768px) {
+  html { font-size: 16px; }
+  body, p { font-weight: 500; }
+}
 
 /* Prevents iOS Safari/WKWebView from auto-zooming in when a form field
    is focused (iOS does this automatically for any input under 16px). */

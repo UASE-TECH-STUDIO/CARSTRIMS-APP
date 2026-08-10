@@ -130,6 +130,17 @@ export default function CarCard({ car, onLike, onSave, liked, saved, compact }: 
         .cc-act-btn:hover{border-color:#F47B20;color:#F47B20;background:#FFF7ED}
         .cc-act-btn.liked{color:#DC2626;border-color:rgba(220,38,38,0.4);background:rgba(220,38,38,0.06)}
         .cc-act-btn.saved{color:#F47B20;border-color:rgba(244,123,32,0.4);background:#FFF7ED}
+
+        /* Mobile: listing text is the most-scanned content in the app —
+           bump size/weight so titles, meta, and location are easy to
+           read at a glance without straining, closer to how apps like
+           Jiji keep their listing cards bold and legible on small screens. */
+        @media (max-width: 768px) {
+          .cc-title{font-size:1rem}
+          .cc-meta{font-size:0.78rem;font-weight:500}
+          .cc-loc{font-size:0.74rem}
+          .cc-dealer{font-size:0.74rem}
+        }
       `}</style>
     </div>
   );
