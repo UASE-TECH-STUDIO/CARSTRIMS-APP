@@ -292,7 +292,7 @@ export default function MovementsPage() {
               <button onClick={() => setShowLog(false)} style={{ background:"rgba(255,255,255,.15)", border:"none", color:"#fff", borderRadius:"50%", width:"28px", height:"28px", cursor:"pointer", fontSize:"16px" }}>×</button>
             </div>
             {error && <div style={{ background:"#FEF2F2", color:"#DC2626", padding:"10px 20px", fontSize:"13px", fontWeight:600, flexShrink:0 }}>{error}</div>}
-            <form onSubmit={submitLog} style={{ overflowY:"auto", flex:1, padding:"20px", display:"flex", flexDirection:"column" }}>
+            <form onSubmit={submitLog} style={{ overflowY:"auto", flex:1, minHeight:0, padding:"20px", display:"flex", flexDirection:"column" }}>
 
               {/* Vehicle */}
               <div style={fw}>
@@ -439,7 +439,7 @@ export default function MovementsPage() {
               <div style={{fontFamily:"var(--font-display)",fontSize:"14px",letterSpacing:"0.08em",color:"#F47B20"}}>MOVEMENT DETAILS</div>
               <button onClick={()=>setShowDetail(null)} style={{background:"rgba(255,255,255,.15)",border:"none",color:"#fff",borderRadius:"50%",width:"28px",height:"28px",cursor:"pointer",fontSize:"16px"}}>×</button>
             </div>
-            <div style={{overflowY:"auto",flex:1,padding:"20px",display:"flex",flexDirection:"column",gap:"14px"}}>
+            <div style={{overflowY:"auto",flex:1,minHeight:0,padding:"20px",display:"flex",flexDirection:"column",gap:"14px"}}>
               <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}><ApprovalBadge m={showDetail}/><span style={{padding:"2px 8px",borderRadius:"20px",fontSize:"11px",fontWeight:600,background:"#F5F5F5",color:"#525252",textTransform:"capitalize" as const}}>{showDetail.status}</span></div>
               <div style={{background:"#FFF7ED",border:"1px solid rgba(244,123,32,0.2)",borderRadius:"8px",padding:"12px"}}>
                 <div style={{fontSize:"10px",fontWeight:700,letterSpacing:"0.1em",color:"#F47B20",marginBottom:"4px"}}>VEHICLE</div>
@@ -519,7 +519,7 @@ export default function MovementsPage() {
               <button onClick={()=>setShowEdit(null)} style={{background:"rgba(255,255,255,.15)",border:"none",color:"#fff",borderRadius:"50%",width:"28px",height:"28px",cursor:"pointer",fontSize:"16px"}}>×</button>
             </div>
             {error&&<div style={{background:"#FEF2F2",color:"#DC2626",padding:"10px 20px",fontSize:"13px",fontWeight:600}}>{error}</div>}
-            <form onSubmit={submitEdit} style={{overflowY:"auto",flex:1,padding:"20px",display:"flex",flexDirection:"column"}}>
+            <form onSubmit={submitEdit} style={{overflowY:"auto",flex:1,minHeight:0,padding:"20px",display:"flex",flexDirection:"column"}}>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 14px"}}>
                 <div style={fw}><label style={la}>Taken By (Name)</label><input style={fi} value={editForm.takenByName||""} onChange={e=>setEditForm({...editForm,takenByName:e.target.value})} placeholder="Full name"/></div>
                 <div style={fw}><label style={la}>Phone Number</label><input style={fi} value={editForm.takenByPhone||""} onChange={e=>setEditForm({...editForm,takenByPhone:e.target.value})} placeholder="Phone"/></div>
@@ -556,7 +556,7 @@ export default function MovementsPage() {
               <button onClick={()=>setShowReturn(null)} style={{background:"rgba(255,255,255,.15)",border:"none",color:"#fff",borderRadius:"50%",width:"28px",height:"28px",cursor:"pointer",fontSize:"16px"}}>×</button>
             </div>
             {error&&<div style={{background:"#FEF2F2",color:"#DC2626",padding:"10px 20px",fontSize:"13px",fontWeight:600,flexShrink:0}}>{error}</div>}
-            <div style={{overflowY:"auto",flex:1,padding:"20px",display:"flex",flexDirection:"column",gap:"14px"}}>
+            <div style={{overflowY:"auto",flex:1,minHeight:0,padding:"20px",display:"flex",flexDirection:"column",gap:"14px"}}>
 
               <div style={{background:"#FFF7ED",borderRadius:"8px",padding:"12px",fontSize:"13px",color:"#737373"}}>
                 Logging return of: <strong style={{color:"#1A1A1A"}}>{showReturn.carBrand} {showReturn.carModel}</strong>  {showReturn.carId}

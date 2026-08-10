@@ -318,7 +318,7 @@ export default function DealerRequestsPage() {
             </div>
 
             {/*  SCROLLABLE BODY  this is the ONLY scrolling region */}
-            <div style={{overflowY:"auto",flex:1,WebkitOverflowScrolling:"touch" as any}}>
+            <div style={{overflowY:"auto",flex:1,minHeight:0,WebkitOverflowScrolling:"touch" as any}}>
               <div style={{padding:"1.25rem",display:"flex",flexDirection:"column",gap:"1rem",paddingBottom:"2rem"}}>
 
                 {/* Message banner */}

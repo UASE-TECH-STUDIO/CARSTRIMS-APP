@@ -222,7 +222,7 @@ export default function DealerAppointmentsPage() {
             </div>
 
             {/* Modal body */}
-            <div style={{overflowY:"auto",padding:"1.25rem",display:"flex",flexDirection:"column",gap:"1rem",flex:1}}>
+            <div style={{overflowY:"auto",padding:"1.25rem",display:"flex",flexDirection:"column",gap:"1rem",flex:1,minHeight:0}}>
 
               {msg && (
                 <div style={{background:msg.startsWith("Error")?"#FEF2F2":"#F0FDF4",border:`1px solid ${msg.startsWith("Error")?"#FECACA":"#86EFAC"}`,borderRadius:"8px",padding:"0.75rem 1rem",fontSize:"0.82rem",color:msg.startsWith("Error")?"#DC2626":"#15803D",fontWeight:600}}>

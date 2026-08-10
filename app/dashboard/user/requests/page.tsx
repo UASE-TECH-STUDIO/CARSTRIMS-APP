@@ -277,7 +277,7 @@ export default function UserRequestsPage() {
               <button onClick={close} style={{background:"#F5F5F5",border:"none",color:"#525252",width:"32px",height:"32px",borderRadius:"50%",cursor:"pointer",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>X</button>
             </div>
 
-            <div style={{overflowY:"auto",flex:1}}>
+            <div style={{overflowY:"auto",flex:1,minHeight:0}}>
               <div style={{padding:"1.25rem",display:"flex",flexDirection:"column",gap:"1rem",paddingBottom:"2rem"}}>
 
                 {error&&<div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",color:"#DC2626",padding:"0.75rem",borderRadius:"8px",fontSize:"0.875rem",fontWeight:500}}>{error}</div>}

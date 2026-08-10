@@ -268,7 +268,7 @@ function ConvPanel({mode,canReply,dealerName}:{mode:"dealer"|"mine";canReply:boo
 
         {/* NEW CONVERSATION */}
         {showNew&&(
-          <div style={{flex:1,overflowY:"auto",padding:"14px",display:"flex",flexDirection:"column",gap:"10px"}}>
+          <div style={{flex:1,overflowY:"auto",minHeight:0,padding:"14px",display:"flex",flexDirection:"column",gap:"10px"}}>
             <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
               <button onClick={()=>{setShowNew(false);setChat(false);setSel(null);setUS("");setStart("");}}
                 style={{background:"none",border:"none",cursor:"pointer",color:"#525252",fontSize:"18px"}}>←</button>
@@ -359,7 +359,7 @@ function ConvPanel({mode,canReply,dealerName}:{mode:"dealer"|"mine";canReply:boo
               </div>
             </div>
 
-            <div style={{flex:1,overflowY:"auto",padding:"10px",display:"flex",flexDirection:"column",gap:"3px"}}>
+            <div style={{flex:1,overflowY:"auto",minHeight:0,padding:"10px",display:"flex",flexDirection:"column",gap:"3px"}}>
               {messages.length===0&&<div style={{textAlign:"center",color:"#A3A3A3",padding:"2rem",fontSize:"13px"}}>No messages yet</div>}
               {messages.map(m=>{
                 // In "dealer" mode, messages sent on the dealer's behalf

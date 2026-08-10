@@ -209,7 +209,7 @@ export default function MessagesPage() {
 
           {/* NEW MESSAGE PANEL */}
           {showNew && (
-            <div style={{ flex:1, display:"flex", flexDirection:"column", padding:"20px", gap:"16px", overflowY:"auto" }}>
+            <div style={{ flex:1, minHeight:0, display:"flex", flexDirection:"column", padding:"20px", gap:"16px", overflowY:"auto" }}>
               <div style={{ fontFamily:"var(--font-display)", fontSize:"13px", letterSpacing:"0.08em", color:"#F47B20" }}>NEW CONVERSATION</div>
 
               {/* My Team quick access */}
@@ -300,7 +300,7 @@ export default function MessagesPage() {
               </div>
 
               {/* Messages */}
-              <div style={{ flex:1, overflowY:"auto", padding:"16px", display:"flex", flexDirection:"column", gap:"4px" }}>
+              <div style={{ flex:1, minHeight:0, overflowY:"auto", padding:"16px", display:"flex", flexDirection:"column", gap:"4px" }}>
                 {messages.length === 0 && <div style={{ textAlign:"center", color:"#A3A3A3", padding:"2rem", fontSize:"14px" }}>No messages yet. Say hello!</div>}
                 {messages.map(m => {
                   const isMe = m.senderId === uid;

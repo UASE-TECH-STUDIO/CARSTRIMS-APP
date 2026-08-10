@@ -121,7 +121,7 @@ export default function DealerProfilePage() {
               <span style={{fontFamily:"var(--font-display)",fontSize:"0.9rem",letterSpacing:"0.08em"}}>FOLLOWERS ({followerCount})</span>
               <button onClick={()=>setShowFollowers(false)} style={{background:"none",border:"none",color:"#fff",cursor:"pointer",fontSize:"1.1rem",fontWeight:700}}>X</button>
             </div>
-            <div style={{flex:1,overflowY:"auto",padding:"0.5rem"}}>
+            <div style={{flex:1,overflowY:"auto",minHeight:0,padding:"0.5rem"}}>
               {followers.length===0
                 ? <div style={{textAlign:"center",padding:"2rem",color:"#A3A3A3",fontSize:"0.875rem"}}>No followers yet</div>
                 : followers.map((f:any,i:number)=>(

@@ -194,7 +194,7 @@ export default function PartnersPage() {
             </div>
 
             {/* Modal body */}
-            <div style={{overflowY:"auto",padding:"1.25rem",display:"flex",flexDirection:"column",gap:"1.25rem",flex:1}}>
+            <div style={{overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"1.25rem",display:"flex",flexDirection:"column",gap:"1.25rem",flex:1,minHeight:0}}>
               {detailLoading ? (
                 <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"200px"}}>
                   <div style={{width:"28px",height:"28px",border:"2.5px solid #E5E5E5",borderTopColor:"#F47B20",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
@@ -255,7 +255,7 @@ export default function PartnersPage() {
                               {availCars.length===0 ? "No available vehicles in inventory" : "No vehicles match your search"}
                             </div>
                           ) : (
-                            <div style={{maxHeight:"320px",overflowY:"auto",display:"flex",flexDirection:"column",gap:"0.5rem",paddingRight:"0.25rem"}}>
+                            <div style={{maxHeight:"320px",overflowY:"auto",WebkitOverflowScrolling:"touch",display:"flex",flexDirection:"column",gap:"0.5rem",paddingRight:"0.25rem"}}>
                               {filteredCars.map(c=>(
                                 <div key={c.carId}
                                   style={{display:"flex",alignItems:"center",gap:"0.75rem",padding:"0.625rem 0.875rem",background:"#FAFAFA",borderRadius:"8px",border:"1px solid #F0F0F0",transition:"all 0.15s"}}
