@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
+import { timeAgoShort } from "@/lib/timeUtils";
 
 // Consistent message system  same engine as MessagesWidget used by all other roles
 export default function UserMessagesPage() {
@@ -123,11 +124,7 @@ export default function UserMessagesPage() {
     } catch(err:any){alert(err.response?.data?.detail||"Failed");}
   };
 
-  const fmtTime=(iso:string)=>{
-    if(!iso) return "";
-    const d=Date.now()-new Date(iso).getTime(); const m=Math.floor(d/60000);
-    return m<1?"now":m<60?`${m}m`:m<1440?`${Math.floor(m/60)}h`:new Date(iso).toLocaleDateString();
-  };
+  const fmtTime=(iso:string)=>timeAgoShort(iso);
 
   const MsgBubble = ({m}:{m:any}) => {
     const isMe = m.senderId===uid;

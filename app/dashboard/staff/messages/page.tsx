@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useRef, useCallback } from "react";
 import api from "@/lib/api";
+import { timeAgoShort, fmtFullDate } from "@/lib/timeUtils";
 
 export default function StaffMessagesPage() {
   const [tab, setTab]      = useState<"dealer"|"mine">("dealer");
@@ -85,14 +86,14 @@ export default function StaffMessagesPage() {
           </p>
         </div>
       ) : (
-        <ConvPanel key={tab} mode={tab} canReply={tab==="mine"||canReply}/>
+        <ConvPanel key={tab} mode={tab} canReply={tab==="mine"||canReply} dealerName={dlrName}/>
       )}
     </div>
   );
 }
 
 //  CONVERSATION PANEL 
-function ConvPanel({mode,canReply}:{mode:"dealer"|"mine";canReply:boolean}) {
+function ConvPanel({mode,canReply,dealerName}:{mode:"dealer"|"mine";canReply:boolean;dealerName:string}) {
   const [convs,    setConvs]   = useState<any[]>([]);
   const [active,   setActive]  = useState<any>(null);
   const [messages, setMsgs]    = useState<any[]>([]);
@@ -183,8 +184,8 @@ function ConvPanel({mode,canReply}:{mode:"dealer"|"mine";canReply:boolean}) {
 
   const goBack=()=>{setChat(false);setActive(null);activeRef.current=null;if(pollRef.current)clearInterval(pollRef.current);};
 
-  const fmt=(iso:string)=>{if(!iso)return"";const m=Math.floor((Date.now()-new Date(iso).getTime())/60000);if(m<1)return"now";if(m<60)return`${m}m`;if(m<1440)return`${Math.floor(m/60)}h`;return new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short"});};
-  const fmtFull=(iso:string)=>iso?new Date(iso).toLocaleString("en-NG",{hour:"2-digit",minute:"2-digit"}):""
+  const fmt=(iso:string)=>timeAgoShort(iso);
+  const fmtFull=(iso:string)=>fmtFullDate(iso)
 
   const fi:React.CSSProperties={width:"100%",background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"9px 12px",fontSize:"14px",outline:"none",boxSizing:"border-box",fontFamily:"var(--font-body)"};
   const H="calc(100vh - 260px)";
@@ -361,7 +362,20 @@ function ConvPanel({mode,canReply}:{mode:"dealer"|"mine";canReply:boolean}) {
             <div style={{flex:1,overflowY:"auto",padding:"10px",display:"flex",flexDirection:"column",gap:"3px"}}>
               {messages.length===0&&<div style={{textAlign:"center",color:"#A3A3A3",padding:"2rem",fontSize:"13px"}}>No messages yet</div>}
               {messages.map(m=>{
-                const isMe=m.senderId===myUid;
+                // In "dealer" mode, messages sent on the dealer's behalf
+                // (by this staff member OR any teammate) are stored with
+                // the DEALER's id as sender, not the individual staff
+                // member's id — so "is this my side of the chat" has to
+                // compare against the dealer's id here, not myUid.
+                // Otherwise every message the staff themselves just sent
+                // would incorrectly show as if it came from the other party.
+                const compareUid = mode==="dealer" ? (active.dealerUserId||myUid) : myUid;
+                const isMe=m.senderId===compareUid;
+                // Who actually typed this, for internal clarity (never
+                // shown to the external party, only here on the team side).
+                const attribution = mode==="dealer"
+                  ? (m.sentByStaffId ? (m.sentByStaffId===myUid ? "You" : (m.sentByStaffName||"Staff")) : (isMe ? dealerName : ""))
+                  : "";
                 return(
                   <div key={m._id} style={{display:"flex",justifyContent:isMe?"flex-end":"flex-start",marginBottom:"3px"}}>
                     <div style={{maxWidth:"80%",background:isMe?ac:"#F5F5F5",color:isMe?"#fff":"#1A1A1A",
@@ -371,7 +385,10 @@ function ConvPanel({mode,canReply}:{mode:"dealer"|"mine";canReply:boolean}) {
                         {m.senderName||""}
                       </div>}
                       <div style={{fontSize:"13px",lineHeight:1.4,wordBreak:"break-word" as const}}>{m.message}</div>
-                      <div style={{fontSize:"10px",opacity:.6,textAlign:"right" as const,marginTop:"2px"}}>{fmtFull(m.createdAt)}</div>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:"8px",marginTop:"2px"}}>
+                        {attribution && <span style={{fontSize:"9.5px",opacity:.75,fontWeight:600,fontStyle:"italic"}}>{attribution}</span>}
+                        <span style={{fontSize:"10px",opacity:.6,marginLeft:"auto"}}>{fmtFull(m.createdAt)}</span>
+                      </div>
                     </div>
                   </div>
                 );

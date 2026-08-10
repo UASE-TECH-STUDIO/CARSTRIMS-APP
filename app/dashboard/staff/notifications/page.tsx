@@ -2,12 +2,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
+import { timeAgoLong } from "@/lib/timeUtils";
 
 function fmtTime(iso: string) {
-  const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
-  if (m < 1) return "now"; if (m < 60) return `${m}m ago`;
-  if (m < 1440) return `${Math.floor(m/60)}h ago`;
-  return new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"});
+  return timeAgoLong(iso);
 }
 
 function getNotifUrl(n: any, isDealer = false) {

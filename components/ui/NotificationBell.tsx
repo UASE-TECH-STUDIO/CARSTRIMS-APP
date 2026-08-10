@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
+import { timeAgoShort } from "@/lib/timeUtils";
 
 function getNotifUrl(n: any): string {
   const msg   = (n.message || "").toLowerCase();
@@ -155,12 +156,7 @@ export default function NotificationBell({ role = "dealer" }: { role?: string })
     setUnread(0);
   };
 
-  const fmtTime = (iso: string) => {
-    const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
-    if (m < 1) return "now"; if (m < 60) return `${m}m`;
-    if (m < 1440) return `${Math.floor(m/60)}h`;
-    return new Date(iso).toLocaleDateString("en-NG", { day:"numeric", month:"short" });
-  };
+  const fmtTime = (iso: string) => timeAgoShort(iso);
 
   return (
     <div className="bell-wrap" ref={ref}>

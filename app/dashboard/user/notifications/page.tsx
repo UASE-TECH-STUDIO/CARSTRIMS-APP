@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
+import { timeAgoLong } from "@/lib/timeUtils";
 
 function getLink(n: any): string | null {
   const msg = (n.message||"").toLowerCase();
@@ -39,14 +40,7 @@ export default function UserNotificationsPage() {
     setNotifs((p) => p.map((n) => ({...n,isRead:true})));
   };
 
-  const fmtTime = (iso: string) => {
-    const d = Date.now() - new Date(iso).getTime();
-    const m = Math.floor(d/60000);
-    if (m < 1) return "just now";
-    if (m < 60) return `${m}m ago`;
-    if (m < 1440) return `${Math.floor(m/60)}h ago`;
-    return new Date(iso).toLocaleDateString("en-NG");
-  };
+  const fmtTime = (iso: string) => timeAgoLong(iso);
 
   const unread = notifs.filter((n) => !n.isRead).length;
 

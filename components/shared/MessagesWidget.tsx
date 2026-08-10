@@ -4,6 +4,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useMessagesStore } from "@/store/messagesStore";
 import Link from "next/link";
 import api from "@/lib/api";
+import { timeAgoShort } from "@/lib/timeUtils";
 
 interface Props { accentColor?: string; }
 
@@ -192,11 +193,7 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
     } catch(err:any){alert(err.response?.data?.detail||"Failed");}
   };
 
-  const fmtTime=(iso:string)=>{
-    if(!iso) return "";
-    const d=Date.now()-new Date(iso).getTime(); const m=Math.floor(d/60000);
-    return m<1?"now":m<60?`${m}m`:m<1440?`${Math.floor(m/60)}h`:new Date(iso).toLocaleDateString();
-  };
+  const fmtTime=(iso:string)=>timeAgoShort(iso);
 
   // Render a message bubble  handles announcement + normal messages
   const MsgBubble = ({m}:{m:any}) => {

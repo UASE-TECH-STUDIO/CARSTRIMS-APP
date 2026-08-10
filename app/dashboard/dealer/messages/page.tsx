@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useMessagesStore } from "@/store/messagesStore";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
+import { timeAgoShort, fmtFullDate } from "@/lib/timeUtils";
 
 export default function MessagesPage() {
   const searchParams = useSearchParams();
@@ -135,14 +136,9 @@ export default function MessagesPage() {
     } catch {} finally { setSending2(false); }
   };
 
-  const fmtTime = (iso: string) => {
-    const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
-    if (m < 1) return "now"; if (m < 60) return `${m}m`;
-    if (m < 1440) return `${Math.floor(m/60)}h`;
-    return new Date(iso).toLocaleDateString("en-NG", { day: "numeric", month: "short" });
-  };
+  const fmtTime = (iso: string) => timeAgoShort(iso);
 
-  const fmtFull = (iso: string) => iso ? new Date(iso).toLocaleString("en-NG", { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" }) : "";
+  const fmtFull = (iso: string) => fmtFullDate(iso);
 
   // Shared styles
   const accent = "#F47B20";
@@ -308,13 +304,23 @@ export default function MessagesPage() {
                 {messages.length === 0 && <div style={{ textAlign:"center", color:"#A3A3A3", padding:"2rem", fontSize:"14px" }}>No messages yet. Say hello!</div>}
                 {messages.map(m => {
                   const isMe = m.senderId === uid;
+                  // If a staff member sent this on our behalf, show who —
+                  // the customer/other party only ever sees "the dealer",
+                  // but the dealer themselves should know which teammate
+                  // actually typed it.
+                  const attribution = isMe
+                    ? (m.sentByStaffId ? (m.sentByStaffName || "Staff") : "You")
+                    : "";
                   return (
                     <div key={m._id} style={{ display:"flex", justifyContent:isMe?"flex-end":"flex-start", marginBottom:"6px" }}>
                       <div style={{ maxWidth:"82%", background:isMe?accent:"#F5F5F5", color:isMe?"#fff":"#1A1A1A",
                         borderRadius:isMe?"10px 10px 0 10px":"10px 10px 10px 0", padding:"9px 13px" }}>
                         <div style={{ fontSize:"13px", lineHeight:1.5, wordBreak:"break-word" as const }}>{m.message}</div>
                         {m.imageUrl && <img src={m.imageUrl} alt="" style={{ maxWidth:"200px", borderRadius:"6px", marginTop:"6px", display:"block" }}/>}
-                        <div style={{ fontSize:"10px", opacity:.6, textAlign:"right", marginTop:"3px" }}>{fmtFull(m.createdAt)}</div>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:"8px", marginTop:"3px" }}>
+                          {attribution && <span style={{ fontSize:"9.5px", opacity:.75, fontWeight:600, fontStyle:"italic" }}>{attribution}</span>}
+                          <span style={{ fontSize:"10px", opacity:.6, marginLeft:"auto" }}>{fmtFull(m.createdAt)}</span>
+                        </div>
                       </div>
                     </div>
                   );
