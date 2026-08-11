@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
+import { renderHtmlStringToPdfBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+import { useToast } from "@/store/toastStore";
 
 interface Props { doc: any; onClose: () => void; }
 
@@ -56,8 +58,8 @@ export default function DocumentViewer({ doc: initialDoc, onClose }: Props) {
     initialDoc?.buyer?.installmentPlan?.installments ||
     (Array.isArray(initialDoc?.buyer?.installmentPlan) ? initialDoc?.buyer?.installmentPlan : null);
 
-  //  Print 
-  const handlePrint = async () => {
+  //  Build the document HTML (unchanged) 
+  const buildHtml = (): string => {
     const d = initialDoc;
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
 <title>${docTitle} ${docNumber}</title>
@@ -239,24 +241,37 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
 <div class="ft">${dealerName} | RC: 7753519 | 108B Muhammadu Buhari Way Central Business District, Abuja | 0806 520 6576 | Powered by CARSTRIMS  UASE TECH STUDIO</div>
 <script>window.onload=()=>window.print()<\/script>
 </body></html>`;
+    return html;
+  };
 
-    const isCapacitor = typeof (window as any).Capacitor !== "undefined" &&
-                       (window as any).Capacitor?.isNativePlatform?.();
+  const docFilename = () =>
+    `carstrims-${(docTitle || "doc").toLowerCase().replace(/[^a-z0-9]/g, "-")}-${Date.now()}`;
 
-    if (isCapacitor) {
-      // In app: blob download (works in Capacitor WebView)
-      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement("a");
-      a.href     = url;
-      a.download = `carstrims-${(docTitle || "doc").toLowerCase().replace(/[^a-z0-9]/g, "-")}-${Date.now()}.html`;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 2000);
-    } else {
-      // On web: open new window → print / Save as PDF
-      const win = window.open("", "_blank");
-      if (win) { win.document.write(html); win.document.close(); }
+  const [busy, setBusy] = useState<"" | "download" | "share">("");
+  const showToast = useToast();
+
+  const handleDownload = async () => {
+    setBusy("download");
+    try {
+      const blob = await renderHtmlStringToPdfBlob(buildHtml(), docTitle);
+      await downloadBlob(blob, `${docFilename()}.pdf`);
+      showToast("Downloaded", "success");
+    } catch (e: any) {
+      showToast(e?.message || "Download failed — please try again", "error");
+    } finally {
+      setBusy("");
+    }
+  };
+
+  const handleShare = async () => {
+    setBusy("share");
+    try {
+      const blob = await renderHtmlStringToPdfBlob(buildHtml(), docTitle);
+      await shareBlob(blob, `${docFilename()}.pdf`, docTitle);
+    } catch (e: any) {
+      showToast(e?.message || "Share failed — please try again", "error");
+    } finally {
+      setBusy("");
     }
   };
 
@@ -333,9 +348,13 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
                 Edit Fields
               </button>
             </div>
-            <button onClick={handlePrint}
-              style={{ background: "#16A34A", border: "none", color: "#fff", borderRadius: "8px", padding: "8px 14px", fontSize: "13px", cursor: "pointer", fontWeight: 700 }}>
-              Print / PDF
+            <button onClick={handleDownload} disabled={busy !== ""}
+              style={{ background: "#16A34A", border: "none", color: "#fff", borderRadius: "8px", padding: "8px 14px", fontSize: "13px", cursor: "pointer", fontWeight: 700, opacity: busy ? 0.7 : 1 }}>
+              {busy === "download" ? "Downloading…" : "Download"}
+            </button>
+            <button onClick={handleShare} disabled={busy !== ""}
+              style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", borderRadius: "8px", padding: "8px 14px", fontSize: "13px", cursor: "pointer", fontWeight: 700, opacity: busy ? 0.7 : 1 }}>
+              {busy === "share" ? "Sharing…" : "Share"}
             </button>
             <button onClick={onClose}
               style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", borderRadius: "8px", padding: "8px 12px", fontSize: "16px", cursor: "pointer", lineHeight: 1 }}>
@@ -347,7 +366,7 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
         {/*  Hint  */}
         <div style={{ padding: "10px 16px", background: step === "edit" ? "#FFF7ED" : "#EFF6FF", borderBottom: "1px solid", borderColor: step === "edit" ? "#FDE68A" : "#BFDBFE", fontSize: "13px", color: step === "edit" ? "#92400E" : "#1E40AF", fontWeight: 500, lineHeight: 1.5 }}>
           {step === "edit"
-            ? "Fill in or edit any detail below, then tap Print / PDF to generate your document. You can print as many times as you like."
+            ? "Fill in or edit any detail below, then tap Download or Share to generate your document. You can generate it as many times as you like."
             : "Preview of your document. Tap Edit Fields to add customer name, address and payment details."}
         </div>
 
@@ -556,10 +575,20 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
               </div>
             </div>
 
-            {/* Big print button */}
-            <button onClick={handlePrint}
-              style={{ width: "100%", background: "#F47B20", color: "#fff", border: "none", borderRadius: "12px", padding: "16px", fontFamily: "var(--font-display)", fontSize: "16px", letterSpacing: "0.1em", cursor: "pointer", fontWeight: 700, marginBottom: "8px" }}>
-              {typeof (window as any).Capacitor !== "undefined" ? "DOWNLOAD DOCUMENT" : "PRINT / SAVE AS PDF"}
+            {/* Download / Share / Cancel */}
+            <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
+              <button onClick={handleDownload} disabled={busy !== ""}
+                style={{ flex: 1, background: "#F47B20", color: "#fff", border: "none", borderRadius: "12px", padding: "16px", fontFamily: "var(--font-display)", fontSize: "15px", letterSpacing: "0.08em", cursor: "pointer", fontWeight: 700, opacity: busy ? 0.7 : 1 }}>
+                {busy === "download" ? "DOWNLOADING…" : "DOWNLOAD DOCUMENT"}
+              </button>
+              <button onClick={handleShare} disabled={busy !== ""}
+                style={{ flex: 1, background: "#1A1A1A", color: "#fff", border: "none", borderRadius: "12px", padding: "16px", fontFamily: "var(--font-display)", fontSize: "15px", letterSpacing: "0.08em", cursor: "pointer", fontWeight: 700, opacity: busy ? 0.7 : 1 }}>
+                {busy === "share" ? "SHARING…" : "SHARE"}
+              </button>
+            </div>
+            <button onClick={onClose}
+              style={{ width: "100%", background: "#F5F5F5", color: "#525252", border: "1.5px solid #E5E5E5", borderRadius: "12px", padding: "12px", fontSize: "14px", cursor: "pointer", fontWeight: 600, marginBottom: "8px" }}>
+              Cancel
             </button>
 
           </div>
