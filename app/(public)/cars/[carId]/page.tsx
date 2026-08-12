@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { useAuthStore, getRoleRedirect } from "@/store/authStore";
@@ -27,6 +27,56 @@ export default function CarDetailPage() {
   const [replyText, setReplyText] = useState("");
   const [startingMsg, setStartingMsg] = useState(false);
   const [lightbox, setLightbox] = useState<string|null>(null);
+
+  // Swipe-to-next/previous-car (like Jiji) — reads the ordered list of
+  // car IDs the user was browsing (set by the feed page) so swiping
+  // moves through cars in the same order, without going back to the
+  // feed first.
+  const [carList, setCarList] = useState<string[]>([]);
+  const [slideDir, setSlideDir] = useState<"in-left" | "in-right" | "">("");
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+  const swipeAreaRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("carstrims:car-list");
+      if (raw) setCarList(JSON.parse(raw));
+    } catch {}
+  }, []);
+
+  const carIndex = carList.indexOf(carId);
+  const nextCarId = carIndex >= 0 && carIndex < carList.length - 1 ? carList[carIndex + 1] : null;
+  const prevCarId = carIndex > 0 ? carList[carIndex - 1] : null;
+
+  const goToCar = (id: string, dir: "in-left" | "in-right") => {
+    setSlideDir(dir);
+    router.push(`/cars/${id}`);
+  };
+
+  useEffect(() => {
+    // Briefly show the slide-in animation, then clear it so it doesn't
+    // replay on unrelated re-renders (like/favorite toggles, etc).
+    if (!slideDir) return;
+    const t = setTimeout(() => setSlideDir(""), 350);
+    return () => clearTimeout(t);
+  }, [slideDir, carId]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    touchStartX.current = null;
+    touchStartY.current = null;
+    // Require a clearly horizontal swipe so vertical scrolling isn't hijacked.
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (dx < 0 && nextCarId) goToCar(nextCarId, "in-right");
+    else if (dx > 0 && prevCarId) goToCar(prevCarId, "in-left");
+  };
 
   useEffect(() => {
     if (!carId) return;
@@ -198,7 +248,13 @@ export default function CarDetailPage() {
       <div className="cd-body">
         {/* Gallery */}
         <div className="cd-gallery">
-          <div className="cd-main-img" onClick={()=>car.images?.[activeImage]&&setLightbox(car.images[activeImage])}>
+          <div
+            className={`cd-main-img ${slideDir ? `cd-slide-${slideDir}` : ""}`}
+            ref={swipeAreaRef}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onClick={()=>car.images?.[activeImage]&&setLightbox(car.images[activeImage])}
+          >
             {car.images?.[0]
               ? <img src={car.images[activeImage]} alt={`${car.brand} ${car.model}`} />
               : <div className="cd-no-img"></div>
@@ -208,6 +264,14 @@ export default function CarDetailPage() {
             )}
             {car.images?.length > 1 && (
               <div className="cd-img-count">{activeImage+1}/{car.images.length} . tap to zoom</div>
+            )}
+            {prevCarId && (
+              <button type="button" className="cd-swipe-arrow cd-swipe-arrow-left"
+                onClick={(e)=>{e.stopPropagation(); goToCar(prevCarId,"in-left");}} aria-label="Previous car">‹</button>
+            )}
+            {nextCarId && (
+              <button type="button" className="cd-swipe-arrow cd-swipe-arrow-right"
+                onClick={(e)=>{e.stopPropagation(); goToCar(nextCarId,"in-right");}} aria-label="Next car">›</button>
             )}
           </div>
           {car.images?.length > 1 && (
@@ -388,7 +452,15 @@ export default function CarDetailPage() {
         .cd-del{color:#DC2626!important;border-color:rgba(220,38,38,0.3)!important}
         .cd-body{display:grid;grid-template-columns:1fr 380px;gap:1.5rem;padding:1.5rem;max-width:1280px;margin:0 auto;align-items:start;box-sizing:border-box;width:100%}
         .cd-gallery{display:flex;flex-direction:column;gap:0.75rem;min-width:0;overflow:hidden}
-        .cd-main-img{aspect-ratio:16/10;border-radius:14px;overflow:hidden;position:relative;background:#E5E5E5;display:flex;align-items:center;justify-content:center;cursor:zoom-in;width:100%;max-width:100%;box-sizing:border-box}
+        .cd-main-img{aspect-ratio:16/10;border-radius:14px;overflow:hidden;position:relative;background:#E5E5E5;display:flex;align-items:center;justify-content:center;cursor:zoom-in;width:100%;max-width:100%;box-sizing:border-box;touch-action:pan-y}
+        .cd-slide-in-left{animation:cd-slide-from-left 0.32s ease}
+        .cd-slide-in-right{animation:cd-slide-from-right 0.32s ease}
+        @keyframes cd-slide-from-left{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:translateX(0)}}
+        @keyframes cd-slide-from-right{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
+        .cd-swipe-arrow{position:absolute;top:50%;transform:translateY(-50%);background:rgba(26,26,26,0.55);color:#fff;border:none;width:36px;height:36px;border-radius:50%;font-size:1.4rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;transition:background 0.2s}
+        .cd-swipe-arrow:hover{background:rgba(26,26,26,0.8)}
+        .cd-swipe-arrow-left{left:0.625rem}
+        .cd-swipe-arrow-right{right:0.625rem}
         .cd-main-img img{width:100%;height:100%;object-fit:cover;transition:transform 0.3s}
         .cd-main-img:hover img{transform:scale(1.02)}
         .cd-no-img{font-size:3rem;opacity:0.2}

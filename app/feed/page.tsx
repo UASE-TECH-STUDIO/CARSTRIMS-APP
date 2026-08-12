@@ -114,6 +114,16 @@ export default function FeedPage() {
 
   useEffect(() => { fetchCars(true); }, [search, selectedBrand, fStatus, fCondition, fTransmission, fFuel, fState, fYearFrom, fYearTo, fColor, fPrice, fMinPrice, fMaxPrice]);
 
+  // Keep a session-scoped ordered list of car IDs so the car detail page
+  // can support swiping to the next/previous car in the SAME order the
+  // user was browsing, without needing to come back to the feed first.
+  useEffect(() => {
+    if (!cars.length) return;
+    try {
+      sessionStorage.setItem("carstrims:car-list", JSON.stringify(cars.map((c: any) => c.carId)));
+    } catch {}
+  }, [cars]);
+
   // Silently refresh in the background when the user comes back to the
   // page (e.g. app resumed from background, or switched tabs). This does
   // NOT show the loading skeleton and does NOT clear the existing list
