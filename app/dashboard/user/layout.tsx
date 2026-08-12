@@ -7,6 +7,7 @@ import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
 import NotificationBell from "@/components/ui/NotificationBell";
 import MessagesWidget from "@/components/shared/MessagesWidget";
+import GlobalSearchModal from "@/components/shared/GlobalSearchModal";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -30,6 +31,7 @@ export default function UserLayout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuthStore();
   const [me, setMe]           = useState<any>(null);
   const [showScan, setShowScan]   = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const [scanInput, setScanInput] = useState("");
 
   useEffect(() => {
@@ -102,6 +104,7 @@ export default function UserLayout({ children }: { children: ReactNode }) {
           <Link href="/feed" className="topbar-brand">CARSTRIMS</Link>
           <div className="topbar-right">
             <span className="greeting">{getGreeting()}, <strong>{me?.fullName?.split(" ")[0]||"User"}</strong></span>
+            <button className="search-topbar-btn" onClick={() => setShowSearch(true)} title="Search" aria-label="Search">🔍</button>
             <NotificationBell />
             <button className="avatar-btn" onClick={() => router.push("/dashboard/user/profile")} title="My Profile">
               {me?.profilePicture
@@ -114,6 +117,7 @@ export default function UserLayout({ children }: { children: ReactNode }) {
             </button>
           </div>
         </header>
+        {showSearch && <GlobalSearchModal onClose={() => setShowSearch(false)} />}
 
         {/* Content */}
         <main className="user-content">{children}</main>
@@ -188,6 +192,7 @@ export default function UserLayout({ children }: { children: ReactNode }) {
         .user-topbar{height:calc(56px + env(safe-area-inset-top,0px));background:#fff;border-bottom:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
         .topbar-brand{font-family:var(--font-display);font-size:1.1rem;letter-spacing:0.18em;color:#F47B20;text-decoration:none;flex-shrink:0}
         .topbar-right{display:flex;align-items:center;gap:0.625rem}
+        .search-topbar-btn{background:none;border:none;font-size:1.05rem;cursor:pointer;padding:0.25rem;line-height:1;color:#737373}
         .greeting{font-size:0.8rem;color:#888;white-space:nowrap}
         .greeting strong{color:#F47B20}
         .avatar-btn{width:32px;height:32px;border-radius:50%;border:2px solid #F47B20;background:#FFF7ED;cursor:pointer;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;transition:transform 0.2s}

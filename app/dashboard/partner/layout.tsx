@@ -9,6 +9,7 @@ import NotificationBell from "@/components/ui/NotificationBell";
 import MenuToggle from "@/components/layout/MenuToggle";
 import SidebarWrapper from "@/components/layout/SidebarWrapper";
 import MessagesWidget from "@/components/shared/MessagesWidget";
+import GlobalSearchModal from "@/components/shared/GlobalSearchModal";
 import { useSidebar } from "@/hooks/useSidebar";
 
 const NAV = [
@@ -36,6 +37,7 @@ export default function PartnerLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { user, logout } = useAuthStore();
   const [me, setMe] = useState<any>(null);
+  const [showSearch, setShowSearch] = useState(false);
 
   useEffect(() => {
     api.get("/api/v1/auth/me").then((r) => setMe(r.data)).catch(() => {});
@@ -91,12 +93,14 @@ export default function PartnerLayout({ children }: { children: ReactNode }) {
             </div>
             <div className="tb-right">
               <span className="greeting">Good {getGreeting()}, <strong>{me?.fullName?.split(" ")[0] || "Partner"}</strong></span>
+              <button className="search-topbar-btn" onClick={() => setShowSearch(true)} title="Search" aria-label="Search">🔍</button>
               <NotificationBell />
               <button className="av-btn" onClick={() => router.push("/dashboard/partner/settings")}>
                 {me?.profilePicture ? <img src={me.profilePicture} alt="" className="av-img" /> : <span>{user?.fullName?.charAt(0).toUpperCase() || "P"}</span>}
               </button>
             </div>
           </header>
+          {showSearch && <GlobalSearchModal onClose={() => setShowSearch(false)} />}
           <main className="partner-content">{children}</main>
           <footer className="partner-footer">Powered by <strong>UASE TECH STUDIO</strong> for CARSTRIMS 2026</footer>
         </div>
@@ -133,6 +137,7 @@ export default function PartnerLayout({ children }: { children: ReactNode }) {
         .tb-left{display:flex;align-items:center;gap:0.75rem}
         .tb-title{font-family:var(--font-display);font-size:1rem;letter-spacing:0.06em;color:#1A1A1A}
         .tb-right{display:flex;align-items:center;gap:0.75rem;flex-shrink:0}
+        .search-topbar-btn{background:none;border:none;font-size:1.05rem;cursor:pointer;padding:0.25rem;line-height:1;color:#737373}
         .greeting{font-size:0.78rem;color:#888;white-space:nowrap}
         .greeting strong{color:#F47B20}
         .av-btn{width:34px;height:34px;border-radius:50%;border:2px solid #F47B20;background:#FFF7ED;cursor:pointer;overflow:hidden;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:0.9rem;color:#F47B20;transition:all 0.2s;padding:0}

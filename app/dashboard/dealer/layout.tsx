@@ -3,6 +3,7 @@ import { ReactNode, useEffect, useState } from "react";
 import AuthGuard from "@/components/layout/AuthGuard";
 import DealerSidebar from "@/components/layout/DealerSidebar";
 import MessagesWidget from "@/components/shared/MessagesWidget";
+import GlobalSearchModal from "@/components/shared/GlobalSearchModal";
 import { useRouter, usePathname } from "next/navigation";
 import { useSidebar } from "@/hooks/useSidebar";
 import NotificationBell from "@/components/ui/NotificationBell";
@@ -39,6 +40,7 @@ function DealerShell({ children }: { children: ReactNode }) {
   const { isOpen, toggle, close } = useSidebar();
   const { user } = useAuthStore();
   const [ready, setReady] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const [dealerStatus, setDealerStatus] = useState<string|null>(null);
   const [dealer, setDealer] = useState<any>(null);
   const title = PAGE_TITLES[pathname] || "Dashboard";
@@ -89,6 +91,7 @@ function DealerShell({ children }: { children: ReactNode }) {
             <span className="greeting-text">
               {getGreeting()}, <strong className="greeting-name">{user?.fullName?.split(" ")[0]||"Dealer"}</strong>
             </span>
+            <button className="search-topbar-btn" onClick={()=>setShowSearch(true)} title="Search" aria-label="Search">🔍</button>
             <NotificationBell role="dealer"/>
             <button className="avatar-btn" onClick={()=>router.push("/dashboard/dealer/settings")}>
               {dealer?.logo
@@ -98,6 +101,7 @@ function DealerShell({ children }: { children: ReactNode }) {
             </button>
           </div>
         </header>
+        {showSearch && <GlobalSearchModal onClose={() => setShowSearch(false)} />}
 
         {isPending && (
           <div className="pending-notice">
@@ -125,6 +129,7 @@ function DealerShell({ children }: { children: ReactNode }) {
         .page-title{font-family:var(--font-display);font-size:1.15rem;letter-spacing:0.06em;color:#1A1A1A;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .page-date{font-size:0.65rem;color:#AAA;letter-spacing:0.04em}
         .topbar-right{display:flex;align-items:center;gap:0.875rem;flex-shrink:0}
+        .search-topbar-btn{background:none;border:none;font-size:1.05rem;cursor:pointer;padding:0.25rem;line-height:1;color:#737373}
         .greeting-text{font-size:0.8rem;color:#888;white-space:nowrap}
         .greeting-name{color:#F47B20;font-weight:600}
         .avatar-btn{width:36px;height:36px;border-radius:50%;border:2px solid #F47B20;background:#FFF0E6;cursor:pointer;overflow:hidden;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;padding:0}

@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import NotificationBell from "@/components/ui/NotificationBell";
 import MessagesWidget from "@/components/shared/MessagesWidget";
+import GlobalSearchModal from "@/components/shared/GlobalSearchModal";
 import Link from "next/link";
 import api from "@/lib/api";
 
@@ -54,6 +55,7 @@ export default function StaffShell({ children }: { children: ReactNode }) {
   const [dealer,   setDealer]   = useState<any>(null);
   const [sideOpen, setSideOpen] = useState(false);
   const [ready,    setReady]    = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
 
   const title = PAGE_TITLES[pathname] || "Staff Dashboard";
   const perms: string[] = staff?.permissions || [];
@@ -179,12 +181,14 @@ export default function StaffShell({ children }: { children: ReactNode }) {
             <span className="greeting-text">
               {getGreeting()}, <strong className="greeting-name">{user?.fullName?.split(" ")[0] || "Staff"}</strong>
             </span>
+            <button className="search-topbar-btn" onClick={() => setShowSearch(true)} title="Search" aria-label="Search">🔍</button>
             <NotificationBell role="DEALER_STAFF"/>
             <div className="avatar-circle" style={{background:"#1D9E75"}}>
               {user?.fullName?.charAt(0).toUpperCase() || "S"}
             </div>
           </div>
         </header>
+        {showSearch && <GlobalSearchModal onClose={() => setShowSearch(false)} />}
 
         <main className="staff-content">{children}</main>
       </div>
@@ -249,6 +253,7 @@ export default function StaffShell({ children }: { children: ReactNode }) {
         .page-title{font-family:var(--font-display);font-size:1.15rem;letter-spacing:0.06em;color:#1A1A1A;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .page-date{font-size:0.65rem;color:#AAA;letter-spacing:0.04em}
         .topbar-right{display:flex;align-items:center;gap:0.875rem;flex-shrink:0}
+        .search-topbar-btn{background:none;border:none;font-size:1.05rem;cursor:pointer;padding:0.25rem;line-height:1;color:#737373}
         .greeting-text{font-size:0.8rem;color:#888;white-space:nowrap}
         .greeting-name{color:#1D9E75;font-weight:600}
         .avatar-circle{width:34px;height:34px;border-radius:50%;color:#fff;font-family:var(--font-display);font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}

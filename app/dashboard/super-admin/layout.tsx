@@ -1,11 +1,12 @@
 "use client";
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import AuthGuard from "@/components/layout/AuthGuard";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import SidebarWrapper from "@/components/layout/SidebarWrapper";
 import MenuToggle from "@/components/layout/MenuToggle";
 import NotificationBell from "@/components/ui/NotificationBell";
 import MessagesWidget from "@/components/shared/MessagesWidget";
+import GlobalSearchModal from "@/components/shared/GlobalSearchModal";
 import { useSidebar } from "@/hooks/useSidebar";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
@@ -22,6 +23,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const { isOpen, toggle, close } = useSidebar();
   const { user } = useAuthStore();
   const router = useRouter();
+  const [showSearch, setShowSearch] = useState(false);
 
   return (
     <AuthGuard allowedRoles={["SYSTEM_ADMIN"]}>
@@ -37,12 +39,14 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             </div>
             <div className="tb-right">
               <span className="greeting">Good {getGreeting()}, <strong>{user?.fullName?.split(" ")[0]}</strong></span>
+              <button className="search-topbar-btn" onClick={() => setShowSearch(true)} title="Search" aria-label="Search">🔍</button>
               <NotificationBell />
               <button className="av-btn" onClick={() => router.push("/dashboard/super-admin/settings")}>
                 A
               </button>
             </div>
           </header>
+          {showSearch && <GlobalSearchModal onClose={() => setShowSearch(false)} />}
           <main className="admin-content">{children}</main>
         </div>
         <MessagesWidget accentColor="#F47B20" />
@@ -54,6 +58,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         .tb-left{display:flex;align-items:center;gap:0.75rem}
         .tb-title{font-family:var(--font-display);font-size:1rem;letter-spacing:0.06em;color:#1A1A1A}
         .tb-right{display:flex;align-items:center;gap:0.75rem;flex-shrink:0}
+        .search-topbar-btn{background:none;border:none;font-size:1.05rem;cursor:pointer;padding:0.25rem;line-height:1;color:#737373}
         .greeting{font-size:0.78rem;color:#888;white-space:nowrap}
         .greeting strong{color:#DC2626}
         .av-btn{width:34px;height:34px;border-radius:50%;border:2px solid #DC2626;background:#FEF2F2;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:0.9rem;color:#DC2626;font-weight:700}

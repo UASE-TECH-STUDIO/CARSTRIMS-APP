@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
+import GlobalSearchModal from "@/components/shared/GlobalSearchModal";
 
 const BRANDS = ["Toyota","Honda","Mercedes","BMW","Lexus","Ford","Hyundai","Kia","Chevrolet","Audi","Land Rover","Jeep","Volkswagen","Nissan","Mazda","Peugeot","Mitsubishi","Subaru","Volvo","Porsche"];
 const CONDITIONS = ["brand_new","foreign_used","locally_used"];
@@ -43,6 +44,7 @@ export default function FeedPage() {
   const [search, setSearch] = useState("");
   const [selectedBrand, setSelectedBrand] = useState("");
   const [showFilter, setShowFilter] = useState(false);
+  const [showGlobalSearch, setShowGlobalSearch] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
 
   const [fStatus, setFStatus] = useState("available");
@@ -268,6 +270,8 @@ export default function FeedPage() {
             {searchInput && <button type="button" className="s-clear" onClick={() => { setSearchInput(""); setSearch(""); }}>X</button>}
           </div>
 
+          <button type="button" className="everything-search-btn" onClick={() => setShowGlobalSearch(true)} title="Search users, dealers, and more">🔍</button>
+
           {/* FILTER DROPDOWN */}
           <div className="filter-wrap" ref={filterRef}>
             <button type="button" className={`filter-btn ${showFilter?"open":""}`} onClick={() => setShowFilter(!showFilter)}>
@@ -374,6 +378,7 @@ export default function FeedPage() {
             )}
           </div>
         </form>
+        {showGlobalSearch && <GlobalSearchModal onClose={() => setShowGlobalSearch(false)} />}
 
         <div className="topbar-right">
             {isAuthenticated ? (
@@ -553,6 +558,7 @@ export default function FeedPage() {
         .search-input { flex:1; background:transparent; border:none; padding:0.625rem 0.5rem; color:#171717; font-size:0.875rem; font-family:var(--font-body); outline:none; min-width:0; }
         .search-input::placeholder { color:#A3A3A3; }
         .s-clear { background:none; border:none; color:#A3A3A3; cursor:pointer; padding:0 0.5rem; font-size:0.75rem; font-weight:700; }
+        .everything-search-btn { background:none; border:none; font-size:1.05rem; cursor:pointer; padding:0.5rem; line-height:1; color:#737373; flex-shrink:0; }
 
         /* Filter dropdown */
         .filter-wrap { position:relative; flex-shrink:0; }
@@ -856,6 +862,8 @@ export default function FeedPage() {
           .guest-note { display:none; }
           .filter-dropdown { width:calc(100vw - 1.5rem); right:-0.5rem; }
         }
+
+        @media(max-width:400px) {
           .auth-btns { display:none; }
           .scan-btn { padding:0.5rem 0.625rem; font-size:0.7rem; }
           .cars-grid { grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:0.75rem; padding:0 0.875rem 1rem; }
