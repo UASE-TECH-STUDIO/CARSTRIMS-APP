@@ -6,6 +6,7 @@ import { useAuthStore, getRoleRedirect } from "@/store/authStore";
 import { useMessagesStore } from "@/store/messagesStore";
 import Link from "next/link";
 import { useToast } from "@/store/toastStore";
+import ZoomableImage from "@/components/ui/ZoomableImage";
 
 export default function CarDetailPage() {
   const params = useParams();
@@ -76,8 +77,22 @@ export default function CarDetailPage() {
     touchStartY.current = null;
     // Require a clearly horizontal swipe so vertical scrolling isn't hijacked.
     if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-    if (dx < 0 && nextCarId) goToCar(nextCarId, "in-right");
-    else if (dx > 0 && prevCarId) goToCar(prevCarId, "in-left");
+
+    const images = car?.images || [];
+    const atLastPhoto = activeImage >= images.length - 1;
+    const atFirstPhoto = activeImage <= 0;
+
+    if (dx < 0) {
+      // Swiping left: go to the next photo of THIS car first. Only once
+      // you're on the last photo does it move on to the next car.
+      if (!atLastPhoto) { setActiveImage((i) => i + 1); return; }
+      if (nextCarId) goToCar(nextCarId, "in-right");
+    } else {
+      // Swiping right: previous photo first, then the previous car once
+      // you're back at the first photo.
+      if (!atFirstPhoto) { setActiveImage((i) => i - 1); return; }
+      if (prevCarId) goToCar(prevCarId, "in-left");
+    }
   };
 
   useEffect(() => {
@@ -90,6 +105,7 @@ export default function CarDetailPage() {
           api.get(`/api/v1/public/cars/${carId}/comments`).catch(()=>({ data:{ comments:[] } })),
         ]);
         setCar(carRes.data);
+        setActiveImage(0);
         setLikeCount(carRes.data.likeCount || 0);
         setComments(commentRes.data.comments || []);
         if (isAuthenticated) {
@@ -228,7 +244,9 @@ export default function CarDetailPage() {
       {lightbox && (
         <div onClick={()=>setLightbox(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.94)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <button onClick={()=>setLightbox(null)} style={{position:"absolute",top:"1rem",right:"1rem",background:"rgba(255,255,255,0.15)",border:"none",color:"#fff",fontSize:"1.3rem",width:"40px",height:"40px",borderRadius:"50%",cursor:"pointer"}}>x</button>
-          <img src={lightbox} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"92vw",maxHeight:"90vh",objectFit:"contain",borderRadius:"8px"}}/>
+          <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={e=>e.stopPropagation()}>
+            <ZoomableImage src={lightbox} alt="" />
+          </div>
         </div>
       )}
 

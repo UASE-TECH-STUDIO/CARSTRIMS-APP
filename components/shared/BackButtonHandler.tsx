@@ -52,7 +52,7 @@ export default function BackButtonHandler() {
       try {
         const { App } = await import("@capacitor/app");
 
-        const handle = await App.addListener("backButton", () => {
+        const handle = await App.addListener("backButton", (event: { canGoBack?: boolean }) => {
           const current = pathnameRef.current || "/";
 
           // Close any open modal/overlay first if the app has flagged one
@@ -63,7 +63,12 @@ export default function BackButtonHandler() {
           const notPrevented = window.dispatchEvent(closeEvent);
           if (!notPrevented) return; // something handled it (closed a modal)
 
-          if (HOME_PATHS.has(current) || window.history.length <= 1) {
+          // Prefer Capacitor's own signal for whether the WebView has
+          // somewhere to go back to; fall back to our own home-path list
+          // and history length if that's not available on this platform.
+          const canGoBack = event?.canGoBack ?? (!HOME_PATHS.has(current) && window.history.length > 1);
+
+          if (!canGoBack) {
             App.minimizeApp();
             return;
           }
