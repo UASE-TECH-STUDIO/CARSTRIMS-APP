@@ -5,6 +5,7 @@ import api from "@/lib/api";
 import { useAuthStore, getRoleRedirect } from "@/store/authStore";
 import { useMessagesStore } from "@/store/messagesStore";
 import Link from "next/link";
+import { useToast } from "@/store/toastStore";
 
 export default function CarDetailPage() {
   const params = useParams();
@@ -12,6 +13,7 @@ export default function CarDetailPage() {
   const carId = params?.carId as string;
   const { user, isAuthenticated } = useAuthStore();
   const isAdmin = user?.role === "SYSTEM_ADMIN";
+  const showToast = useToast();
 
   const [car, setCar] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -188,8 +190,8 @@ export default function CarDetailPage() {
 
   const handleAdminDeleteCar = async () => {
     if (!confirm("Remove this car from the platform?")) return;
-    try { await api.delete(`/api/v1/cars/${carId}`); router.push("/feed"); }
-    catch(e:any) { alert(e.response?.data?.detail || "Delete failed"); }
+    try { await api.delete(`/api/v1/cars/${carId}`); showToast("Car removed", "success"); router.push("/feed"); }
+    catch(e:any) { showToast(e.response?.data?.detail || "Delete failed", "error"); }
   };
 
   const handleShare = () => {
@@ -407,7 +409,8 @@ export default function CarDetailPage() {
                     <span className="cd-comment-time">{fmtTime(c.createdAt)}</span>
                     {(isAdmin||(user&&c.userId===user.userId)) && (
                       <button className="cd-del-comment" onClick={async()=>{
-                        try { await api.delete(`/api/v1/public/cars/${carId}/comments/${c.commentId}`); setComments(p=>p.filter(x=>x.commentId!==c.commentId)); } catch {}
+                        try { await api.delete(`/api/v1/public/cars/${carId}/comments/${c.commentId}`); setComments(p=>p.filter(x=>x.commentId!==c.commentId)); }
+                        catch(e:any) { showToast(e?.response?.data?.detail || "Couldn't delete comment", "error"); }
                       }}>x</button>
                     )}
                   </div>

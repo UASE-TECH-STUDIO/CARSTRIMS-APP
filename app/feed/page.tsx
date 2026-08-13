@@ -6,6 +6,7 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import GlobalSearchModal from "@/components/shared/GlobalSearchModal";
+import { useToast } from "@/store/toastStore";
 
 const BRANDS = ["Toyota","Honda","Mercedes","BMW","Lexus","Ford","Hyundai","Kia","Chevrolet","Audi","Land Rover","Jeep","Volkswagen","Nissan","Mazda","Peugeot","Mitsubishi","Subaru","Volvo","Porsche"];
 const CONDITIONS = ["brand_new","foreign_used","locally_used"];
@@ -200,11 +201,26 @@ export default function FeedPage() {
     } catch { }
   };
 
+  const showToast = useToast();
+  const isAdmin = user?.role === "SYSTEM_ADMIN";
+
   const handleShare = async (e: React.MouseEvent, car: Car) => {
     e.preventDefault(); e.stopPropagation();
     const url = `${window.location.origin}/cars/${car.carId}`;
     if (navigator.share) navigator.share({ title:`${car.brand} ${car.model}`, url });
     else { await navigator.clipboard.writeText(url); alert("Link copied!"); }
+  };
+
+  const handleAdminDelete = async (e: React.MouseEvent, car: Car) => {
+    e.preventDefault(); e.stopPropagation();
+    if (!confirm(`Remove "${car.brand} ${car.model}" from the platform?`)) return;
+    try {
+      await api.delete(`/api/v1/cars/${car.carId}`);
+      setCars((prev) => prev.filter((c) => c.carId !== car.carId));
+      showToast("Car removed", "success");
+    } catch (err: any) {
+      showToast(err?.response?.data?.detail || "Delete failed", "error");
+    }
   };
 
   const clearAll = () => {
@@ -479,6 +495,7 @@ export default function FeedPage() {
                       {userFavs.includes(car.carId) ? "SAVED" : "SAVE"}
                     </button>
                     <button className="ca-btn" onClick={(e) => handleShare(e, car)}>SHARE</button>
+                    {isAdmin && <button className="ca-btn ca-admin-del" onClick={(e) => handleAdminDelete(e, car)}>DELETE</button>}
                   </div>
                 </div>
 
@@ -732,6 +749,7 @@ export default function FeedPage() {
         .ca-btn:hover { background:rgba(23,23,23,0.8); }
         .ca-btn.liked { background:rgba(220,38,38,0.75); }
         .ca-btn.faved { background:rgba(244,123,32,0.75); }
+        .ca-admin-del { background:rgba(220,38,38,0.9)!important; }
 
         .dealer-strip {
           display:flex; align-items:center; gap:0.4rem;

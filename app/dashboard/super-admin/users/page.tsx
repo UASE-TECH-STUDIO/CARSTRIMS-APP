@@ -28,6 +28,7 @@ export default function AdminUsersPage() {
   const [skip, setSkip] = useState(0);
   const [actionModal, setActionModal] = useState<{type:string;user:any}|null>(null);
   const [actionNote, setActionNote] = useState("");
+  const [deleteScope, setDeleteScope] = useState<"user" | "cascade">("user");
   const [actionLoading, setActionLoading] = useState(false);
   const [resetResult, setResetResult] = useState<{password:string;user:any}|null>(null);
   const [msg, setMsg] = useState("");
@@ -63,14 +64,20 @@ export default function AdminUsersPage() {
         await api.post(`/api/v1/admin/users/${id}/warn`, { reason: actionNote });
         showMsg(`Warning sent to ${actionModal.user.fullName}.`);
       } else if (actionModal.type==="delete") {
-        await api.delete(`/api/v1/admin/users/${id}`);
-        showMsg(`${actionModal.user.fullName} deleted.`);
+        const res = await api.delete(`/api/v1/admin/users/${id}`, { params: { cascade: deleteScope === "cascade" } });
+        if (deleteScope === "cascade" && res.data?.removedCounts) {
+          const counts = res.data.removedCounts;
+          const summary = Object.entries(counts).filter(([,v])=>Number(v)>0).map(([k,v])=>`${v} ${k.replace(/_/g," ")}`).join(", ");
+          showMsg(`${actionModal.user.fullName} and all their records deleted${summary ? ` (${summary})` : ""}.`);
+        } else {
+          showMsg(`${actionModal.user.fullName} deleted.`);
+        }
       } else if (actionModal.type==="reset") {
         const newPassword = genPassword();
         await api.post(`/api/v1/admin/users/${id}/reset-password`, { newPassword });
         setResetResult({ password:newPassword, user:actionModal.user });
       }
-      setActionModal(null); setActionNote("");
+      setActionModal(null); setActionNote(""); setDeleteScope("user");
       fetchUsers();
     } catch (err:any) {
       showMsg("Action failed: " + (err.response?.data?.detail || "Unknown error"));
@@ -133,8 +140,18 @@ export default function AdminUsersPage() {
               </div>
             )}
             {actionModal.type==="delete"&&(
-              <div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",borderRadius:"8px",padding:"0.75rem",fontSize:"0.825rem",color:"#DC2626",lineHeight:1.5}}>
-                 This will mark the account as deleted. The user will not be able to log in.
+              <div style={{display:"flex",flexDirection:"column",gap:"0.6rem"}}>
+                <label style={{fontSize:"0.7rem",fontWeight:600,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#525252"}}>What should be deleted?</label>
+                <button type="button" onClick={()=>setDeleteScope("user")}
+                  style={{textAlign:"left" as const,background:deleteScope==="user"?"#FFF7ED":"#F5F5F5",border:`1.5px solid ${deleteScope==="user"?"#F47B20":"#E5E5E5"}`,borderRadius:"8px",padding:"0.75rem",cursor:"pointer",fontFamily:"var(--font-body)"}}>
+                  <div style={{fontSize:"0.85rem",fontWeight:700,color:"#1A1A1A"}}>Just this user account</div>
+                  <div style={{fontSize:"0.75rem",color:"#737373",marginTop:"0.15rem"}}>Marks the account as deleted. They can't log in, but their cars, listings, and records stay on the platform.</div>
+                </button>
+                <button type="button" onClick={()=>setDeleteScope("cascade")}
+                  style={{textAlign:"left" as const,background:deleteScope==="cascade"?"#FEF2F2":"#F5F5F5",border:`1.5px solid ${deleteScope==="cascade"?"#DC2626":"#E5E5E5"}`,borderRadius:"8px",padding:"0.75rem",cursor:"pointer",fontFamily:"var(--font-body)"}}>
+                  <div style={{fontSize:"0.85rem",fontWeight:700,color:"#DC2626"}}>This user AND all their records</div>
+                  <div style={{fontSize:"0.75rem",color:"#737373",marginTop:"0.15rem"}}>Also permanently removes their cars, expenses, sales, staff accounts (if a dealer), comments, likes, and requests. This cannot be undone.</div>
+                </button>
               </div>
             )}
             <div style={{display:"flex",gap:"0.75rem"}}>
