@@ -1,0 +1,20 @@
+diff a/app/dashboard/dealer/partners/page.tsx b/app/dashboard/dealer/partners/page.tsx	(rejected hunks)
+@@ -86,7 +86,17 @@ export default function PartnersPage() {
+ 
+   const handleAction = async (linkId: string, action: string, data?: any) => {
+     try {
+-      if (action === "approve") await api.post(`/api/v1/partners/${linkId}/approve`);
++      if (action === "approve") {
++        await api.post(`/api/v1/partners/${linkId}/approve`);
++        // Keep the detail view open and reload it in place so the
++        // "Assign Vehicles" section appears immediately — previously
++        // this closed the whole modal, and the dealer had to realize
++        // they needed to re-open the same partner from the list to see it.
++        await refreshDetail();
++        setShowDetail((prev: any) => prev ? { ...prev, status: "approved" } : prev);
++        fetchPartners();
++        return;
++      }
+       else if (action === "reject") await api.post(`/api/v1/partners/${linkId}/reject`, data);
+       else if (action === "remove") {
+         if (!confirm("Remove this partner permanently?")) return;
