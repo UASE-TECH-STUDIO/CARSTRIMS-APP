@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 
 const ROLES = ["all","DEALER_ADMIN","DEALER_STAFF","PARTNER_USER","PUBLIC_USER","SYSTEM_ADMIN"];
@@ -24,7 +25,11 @@ export default function AdminUsersPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all");
+  const searchParams = useSearchParams();
+  const [roleFilter, setRoleFilter] = useState(() => {
+    const fromUrl = searchParams.get("role");
+    return fromUrl && ROLES.includes(fromUrl) ? fromUrl : "all";
+  });
   const [skip, setSkip] = useState(0);
   const [actionModal, setActionModal] = useState<{type:string;user:any}|null>(null);
   const [actionNote, setActionNote] = useState("");

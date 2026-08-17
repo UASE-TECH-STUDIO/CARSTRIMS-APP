@@ -7,6 +7,7 @@ import { useSidebar } from "@/hooks/useSidebar";
 const NAV = [
   { href:"/dashboard/super-admin", label:"Overview", icon:"", exact:true },
   { href:"/dashboard/super-admin/dealers", label:"Dealers", icon:"" },
+  { href:"/dashboard/super-admin/cars", label:"Cars", icon:"" },
   { href:"/dashboard/super-admin/users", label:"Users", icon:"" },
   { href:"/dashboard/super-admin/approvals", label:"Approvals", icon:"" },
   { href:"/dashboard/super-admin/analytics", label:"Analytics", icon:"" },
