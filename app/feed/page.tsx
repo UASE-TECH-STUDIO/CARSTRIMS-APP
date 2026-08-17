@@ -32,20 +32,44 @@ interface Car {
   dealerName?:string; dealerLogo?:string; condition?:string;
 }
 
+const RESUME_KEY = "carstrims:feed-resume";
+const RESUME_MAX_AGE_MS = 30 * 60 * 1000; // 30 minutes — a reasonable single browsing session
+
+function readFeedResumeState(): any {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(RESUME_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || Date.now() - parsed.timestamp > RESUME_MAX_AGE_MS) return null;
+    return parsed;
+  } catch { return null; }
+}
+
 export default function FeedPage() {
   const router = useRouter();
   const { isAuthenticated, user } = useAuthStore();
-  const [cars, setCars] = useState<Car[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+  // If the user is coming BACK to the feed (e.g. from a car detail
+  // page) rather than opening it fresh, restore exactly where they
+  // left off — same cars already loaded, same scroll position — instead
+  // of refetching from scratch and losing their place. A fresh app
+  // open has no sessionStorage resume data, so this only kicks in for
+  // genuine in-app back-navigation.
+  const initialResume = typeof window !== "undefined" ? readFeedResumeState() : null;
+  const [cars, setCars] = useState<Car[]>(initialResume?.cars || []);
+  const [total, setTotal] = useState(initialResume?.total || 0);
+  const [loading, setLoading] = useState(!initialResume);
   const [loadingMore, setLoadingMore] = useState(false);
-  const skipRef = useRef(0);
+  const skipRef = useRef(initialResume?.skip || 0);
   // One random seed per fresh visit to this page — stays the same while
   // scrolling/paginating (so the feed doesn't repeat or skip cars as
   // more load), but a genuinely new one is generated every time the
   // feed is freshly opened (component remount) or explicitly refreshed,
   // so the order feels different each time, like Instagram/TikTok.
-  const feedSeedRef = useRef<string>(Math.random().toString(36).slice(2) + Date.now().toString(36));
+  // Restored from resume state when navigating back in-app, so the
+  // order stays consistent with what was already loaded.
+  const feedSeedRef = useRef<string>(initialResume?.seed || (Math.random().toString(36).slice(2) + Date.now().toString(36)));
+  const didRestoreRef = useRef(!!initialResume);
 
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -129,6 +153,7 @@ export default function FeedPage() {
     } catch { } finally { setLoading(false); setLoadingMore(false); }
   }, [buildParams]);
 
+<<<<<<< ours
   // Live search-as-you-type for the car feed (debounced), in addition
   // to the existing on-submit behavior — so typing "camry 2019 used"
   // filters the grid without needing to press Enter.
@@ -140,6 +165,42 @@ export default function FeedPage() {
   }, [searchInput]);
 
   useEffect(() => { fetchCars(true); }, [search, selectedBrand, fStatus, fCondition, fTransmission, fFuel, fState, fYearFrom, fYearTo, fColor, fPrice, fMinPrice, fMaxPrice]);
+=======
+  useEffect(() => {
+    if (didRestoreRef.current) {
+      didRestoreRef.current = false;
+      // Restore scroll position after the resumed cars have painted.
+      const savedScrollY = initialResume?.scrollY || 0;
+      requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo(0, savedScrollY)));
+      return; // skip the fetch this one time — we already have the data
+    }
+    fetchCars(true);
+  }, [search, selectedBrand, fStatus, fCondition, fTransmission, fFuel, fState, fYearFrom, fYearTo, fColor, fPrice, fMinPrice, fMaxPrice]);
+
+  // Save enough state to resume exactly where the user left off if they
+  // navigate away (e.g. into a car detail) and come back — same cars,
+  // same scroll position, same feed order. Uses refs updated alongside
+  // state so the unmount cleanup always captures the latest values
+  // without needing to re-run this effect on every cars/total change.
+  const carsRef = useRef(cars);
+  useEffect(() => { carsRef.current = cars; }, [cars]);
+  const totalRef = useRef(total);
+  useEffect(() => { totalRef.current = total; }, [total]);
+  useEffect(() => {
+    return () => {
+      try {
+        sessionStorage.setItem(RESUME_KEY, JSON.stringify({
+          cars: carsRef.current,
+          total: totalRef.current,
+          skip: skipRef.current,
+          seed: feedSeedRef.current,
+          scrollY: window.scrollY,
+          timestamp: Date.now(),
+        }));
+      } catch {}
+    };
+  }, []);
+>>>>>>> theirs
 
   // Debounced dealer/people lookup for the unified search box — shows
   // as a small dropdown under the search input, alongside the car
