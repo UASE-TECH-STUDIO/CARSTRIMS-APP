@@ -5,14 +5,19 @@ const config: CapacitorConfig = {
   appName: "CARSTRIMS",
   webDir: "out",
   server: {
-    url: "https://carstrims.com",
+    url: "https://www.carstrims.com",
     androidScheme: "https",
     cleartext: false,
-    hostname: "carstrims.com",
+    allowNavigation: [
+      "*.carstrims.com",
+      "carstrims.com",
+      "www.carstrims.com",
+      "carstrims-backend.onrender.com",
+    ],
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 2500,
+      launchShowDuration: 2000,
       launchAutoHide: true,
       backgroundColor: "#1A1A1A",
       androidSplashResourceName: "splash",
@@ -24,29 +29,21 @@ const config: CapacitorConfig = {
     StatusBar: {
       style: "Dark",
       backgroundColor: "#1A1A1A",
-      overlaysWebView: false,
-    },
-    Keyboard: {
-      resize: "body",
-      style: "dark",
-      resizeOnFullScreen: true,
+      overlaysWebView: false, // Prevents status bar from drawing over application UI on Android
     },
     PushNotifications: {
       presentationOptions: ["badge", "sound", "alert"],
     },
   },
-  ios: {
-    contentInset: "always",
-    scrollEnabled: true,
-    allowsLinkPreview: false,
-    handleApplicationNotifications: false,
-    backgroundColor: "#ffffff",
-  },
   android: {
     allowMixedContent: false,
     captureInput: true,
     webContentsDebuggingEnabled: false,
-    backgroundColor: "#ffffff",
+    loggingBehavior: "none",
+  },
+  ios: {
+    contentInset: "automatic",
+    scrollEnabled: true,
   },
 };
 

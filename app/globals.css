@@ -77,6 +77,10 @@ html, body {
   min-height: 100dvh;
   overflow-x: hidden;
   max-width: 100vw;
+  
+  /* Apply top, bottom, left, and right safe area insets */
+  padding-top: var(--sat);
+  padding-bottom: var(--sab);
   padding-left: var(--sal);
   padding-right: var(--sar);
 }
@@ -109,17 +113,11 @@ input:-webkit-autofill {
   -webkit-text-fill-color: var(--text) !important;
 }
 
-/* Mobile: keep text at full size (never shrink it — smaller screens are
-   exactly where clarity matters most) and bump weight slightly for
-   easier scanning at a glance, similar to how listing apps like Jiji
-   keep body text bold/legible on small screens rather than shrinking it. */
 @media (max-width: 768px) {
   html { font-size: 16px; }
   body, p { font-weight: 500; }
 }
 
-/* Prevents iOS Safari/WKWebView from auto-zooming in when a form field
-   is focused (iOS does this automatically for any input under 16px). */
 input[type="text"], input[type="email"], input[type="password"],
 input[type="number"], input[type="tel"], input[type="search"],
 input[type="url"], select, textarea {
