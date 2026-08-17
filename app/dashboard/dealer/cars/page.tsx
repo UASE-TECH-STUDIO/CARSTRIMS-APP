@@ -6,6 +6,7 @@ import CarFinancialReport from "@/components/dealer/CarFinancialReport";
 import DocumentViewer from "@/components/shared/DocumentViewer";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 import { useToast } from "@/store/toastStore";
+import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import Link from "next/link";
 
 const BRANDS = ["Toyota","Honda","Mercedes","BMW","Lexus","Ford","Hyundai","Kia","Chevrolet","Audi","Land Rover","Jeep","Volkswagen","Nissan","Mazda","Peugeot","Mitsubishi","Subaru","Isuzu","Other"];
@@ -78,6 +79,8 @@ export default function DealerCarsPage() {
   const [docLoading,setDocLoading] = useState<string|null>(null);
   const imgInputRef = useRef<HTMLInputElement>(null);
   const vidInputRef = useRef<HTMLInputElement>(null);
+  const [exportBusy, setExportBusy] = useState<"" | "pdf" | "jpg" | "excel">("");
+  const [showExportPicker, setShowExportPicker] = useState(false);
 
   const load = useCallback(async()=>{
     setLoading(true);
@@ -89,6 +92,67 @@ export default function DealerCarsPage() {
       setCars(r.data.cars||[]); setTotal(r.data.total||0);
     } catch {} finally {setLoading(false);}
   },[search,statusFilter]);
+
+  // Exports the FULL set of cars matching the current search/status
+  // filter (not just whatever page is currently loaded) — so "export
+  // sold cars" or "export everything" genuinely covers all of them,
+  // respecting whatever filter is already applied on screen.
+  const buildInventoryHtml = (rows: Car[]) => {
+    const title = statusFilter === "all" ? "Full Car Inventory" : `Inventory — ${statusFilter.replace(/_/g," ")} Cars`;
+    const now = new Date().toLocaleString("en-NG");
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      *{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:28px 32px;color:#1A1A1A;font-size:12px}
+      h1{font-size:18px;margin:0 0 4px}
+      .sub{color:#737373;font-size:11px;margin-bottom:16px}
+      table{width:100%;border-collapse:collapse}
+      th{background:#1A1A1A;color:#fff;text-align:left;padding:8px 10px;font-size:10px;letter-spacing:0.05em;text-transform:uppercase}
+      td{padding:7px 10px;border-bottom:1px solid #E5E5E5;font-size:11px}
+      tr:nth-child(even) td{background:#FAFAFA}
+      .footer{margin-top:16px;font-size:9px;color:#A3A3A3;text-align:center}
+      </style></head><body>
+      <h1>${title}</h1>
+      <div class="sub">${rows.length} vehicle${rows.length!==1?"s":""} &bull; Generated ${now}</div>
+      <table><thead><tr><th>Car ID</th><th>Vehicle</th><th>Color</th><th>Condition</th><th>Status</th><th>Price (NGN)</th></tr></thead>
+      <tbody>${rows.map(c=>`<tr><td>${c.carId}</td><td>${c.brand} ${c.model} ${c.year}</td><td>${c.color||""}</td><td>${c.condition||""}</td><td>${c.status}</td><td>${Number(c.sellingPrice||0).toLocaleString()}</td></tr>`).join("")}</tbody>
+      </table>
+      <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
+      </body></html>`;
+  };
+
+  const fetchAllForExport = async (): Promise<Car[]> => {
+    const params: any = { limit: 1000 };
+    if (search) params.search = search;
+    if (statusFilter !== "all") params.status = statusFilter;
+    const r = await api.get("/api/v1/cars/", { params });
+    return r.data.cars || [];
+  };
+
+  const handleInventoryExport = async (format: "pdf" | "jpg" | "excel") => {
+    setShowExportPicker(false);
+    setExportBusy(format);
+    try {
+      const rows = await fetchAllForExport();
+      if (!rows.length) { showToast("No cars to export", "error"); return; }
+      const filename = `carstrims-inventory-${statusFilter}-${Date.now()}`;
+      if (format === "excel") {
+        const blob = rowsToExcelBlob(rows.map(c => ({
+          "Car ID": c.carId, Brand: c.brand, Model: c.model, Year: c.year,
+          Color: c.color, Condition: c.condition, Status: c.status,
+          "Selling Price (NGN)": c.sellingPrice || 0,
+        })), "Inventory");
+        await downloadBlob(blob, `${filename}.xlsx`);
+      } else {
+        const html = buildInventoryHtml(rows);
+        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Car Inventory");
+        await downloadBlob(blob, `${filename}.${format}`);
+      }
+      showToast("Downloaded", "success");
+    } catch (e: any) {
+      showToast(e?.message || "Export failed", "error");
+    } finally {
+      setExportBusy("");
+    }
+  };
 
   useEffect(()=>{load();},[load]);
 
@@ -195,6 +259,18 @@ export default function DealerCarsPage() {
             <p className="cp-sub">{total} total vehicles</p>
           </div>
           <div className="cp-btns">
+            <div style={{position:"relative"}}>
+              <button className="btn-outline" onClick={()=>setShowExportPicker(v=>!v)} disabled={exportBusy!==""}>
+                {exportBusy ? "Exporting…" : `Export ${statusFilter==="all"?"All":statusFilter.replace(/_/g," ")}`}
+              </button>
+              {showExportPicker && (
+                <div style={{position:"absolute",top:"calc(100% + 6px)",left:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"150px"}}>
+                  <button onClick={()=>handleInventoryExport("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as PDF</button>
+                  <button onClick={()=>handleInventoryExport("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as JPG Image</button>
+                  <button onClick={()=>handleInventoryExport("excel")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as Excel</button>
+                </div>
+              )}
+            </div>
             <button className="btn-outline" onClick={()=>setMarkSoldCar({} as Car)}>Record Sale</button>
             <button className="btn-primary" onClick={openAdd}>+ Add Car</button>
           </div>
