@@ -29,7 +29,7 @@ export default function CarDetailPage() {
   const [replyTo, setReplyTo] = useState<string|null>(null);
   const [replyText, setReplyText] = useState("");
   const [startingMsg, setStartingMsg] = useState(false);
-  const [lightbox, setLightbox] = useState<string|null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   // Swipe-to-next/previous-car (like Jiji) — reads the ordered list of
   // car IDs the user was browsing (set by the feed page) so swiping
@@ -65,6 +65,24 @@ export default function CarDetailPage() {
     return () => clearTimeout(t);
   }, [slideDir, carId]);
 
+  // Shared by both the main gallery swipe AND the lightbox swipe (via
+  // ZoomableImage's onSwipeLeft/onSwipeRight) — cycles through this
+  // car's own photos first, only moving to the next/previous car once
+  // you're on the last/first photo.
+  const navigatePhotoOrCar = (direction: "left" | "right") => {
+    const images = car?.images || [];
+    const atLastPhoto = activeImage >= images.length - 1;
+    const atFirstPhoto = activeImage <= 0;
+
+    if (direction === "left") {
+      if (!atLastPhoto) { setActiveImage((i) => i + 1); return; }
+      if (nextCarId) goToCar(nextCarId, "in-right");
+    } else {
+      if (!atFirstPhoto) { setActiveImage((i) => i - 1); return; }
+      if (prevCarId) goToCar(prevCarId, "in-left");
+    }
+  };
+
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
@@ -77,22 +95,7 @@ export default function CarDetailPage() {
     touchStartY.current = null;
     // Require a clearly horizontal swipe so vertical scrolling isn't hijacked.
     if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-
-    const images = car?.images || [];
-    const atLastPhoto = activeImage >= images.length - 1;
-    const atFirstPhoto = activeImage <= 0;
-
-    if (dx < 0) {
-      // Swiping left: go to the next photo of THIS car first. Only once
-      // you're on the last photo does it move on to the next car.
-      if (!atLastPhoto) { setActiveImage((i) => i + 1); return; }
-      if (nextCarId) goToCar(nextCarId, "in-right");
-    } else {
-      // Swiping right: previous photo first, then the previous car once
-      // you're back at the first photo.
-      if (!atFirstPhoto) { setActiveImage((i) => i - 1); return; }
-      if (prevCarId) goToCar(prevCarId, "in-left");
-    }
+    navigatePhotoOrCar(dx < 0 ? "left" : "right");
   };
 
   useEffect(() => {
@@ -242,11 +245,16 @@ export default function CarDetailPage() {
   return (
     <div className="cd-page">
       {/* Lightbox */}
-      {lightbox && (
-        <div onClick={()=>setLightbox(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.94)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <button onClick={()=>setLightbox(null)} style={{position:"absolute",top:"1rem",right:"1rem",background:"rgba(255,255,255,0.15)",border:"none",color:"#fff",fontSize:"1.3rem",width:"40px",height:"40px",borderRadius:"50%",cursor:"pointer"}}>x</button>
+      {lightboxOpen && car?.images?.[activeImage] && (
+        <div onClick={()=>setLightboxOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.94)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <button onClick={()=>setLightboxOpen(false)} style={{position:"absolute",top:"1rem",right:"1rem",background:"rgba(255,255,255,0.15)",border:"none",color:"#fff",fontSize:"1.3rem",width:"40px",height:"40px",borderRadius:"50%",cursor:"pointer"}}>x</button>
           <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={e=>e.stopPropagation()}>
-            <ZoomableImage src={lightbox} alt="" />
+            <ZoomableImage
+              src={car.images[activeImage]}
+              alt=""
+              onSwipeLeft={()=>navigatePhotoOrCar("left")}
+              onSwipeRight={()=>navigatePhotoOrCar("right")}
+            />
           </div>
         </div>
       )}
@@ -274,7 +282,7 @@ export default function CarDetailPage() {
             ref={swipeAreaRef}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
-            onClick={()=>car.images?.[activeImage]&&setLightbox(car.images[activeImage])}
+            onClick={()=>car.images?.[activeImage]&&setLightboxOpen(true)}
           >
             {car.images?.[0]
               ? <img src={car.images[activeImage]} alt={`${car.brand} ${car.model}`} />

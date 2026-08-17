@@ -5,6 +5,9 @@ interface Props {
   src: string;
   alt?: string;
   onRequestClose?: () => void;
+  /** Fired on a clear horizontal swipe while NOT zoomed in (scale===1) — lets the parent move to the next/previous photo or car, same as the main (non-lightbox) view. */
+  onSwipeLeft?: () => void;
+  onSwipeRight?: () => void;
 }
 
 /**
@@ -13,8 +16,13 @@ interface Props {
  * touch events rather than a library, kept intentionally simple:
  * scale 1x-4x, resets to 1x on a new image or on double-tap while
  * already zoomed in.
+ *
+ * While at 1x (not zoomed), a horizontal swipe is forwarded via
+ * onSwipeLeft/onSwipeRight instead of panning — so browsing between
+ * photos/cars still works from inside the lightbox, not just the main
+ * gallery view.
  */
-export default function ZoomableImage({ src, alt = "", onRequestClose }: Props) {
+export default function ZoomableImage({ src, alt = "", onRequestClose, onSwipeLeft, onSwipeRight }: Props) {
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
   const pinchStartDist = useRef<number | null>(null);
@@ -22,6 +30,7 @@ export default function ZoomableImage({ src, alt = "", onRequestClose }: Props) 
   const panStart = useRef<{ x: number; y: number } | null>(null);
   const panOrigin = useRef({ x: 0, y: 0 });
   const lastTapRef = useRef(0);
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
 
   const dist = (touches: React.TouchList) => {
     const [a, b] = [touches[0], touches[1]];
@@ -37,10 +46,12 @@ export default function ZoomableImage({ src, alt = "", onRequestClose }: Props) 
         panStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
         panOrigin.current = { ...translate };
       } else {
-        // Double-tap-to-zoom detection (no native dblclick on touch).
+        // Not zoomed: track for both swipe-navigation and double-tap-zoom.
+        swipeStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
         const now = Date.now();
         if (now - lastTapRef.current < 300) {
           setScale(2);
+          swipeStart.current = null; // this was a double-tap, not a swipe
         }
         lastTapRef.current = now;
       }
@@ -68,6 +79,16 @@ export default function ZoomableImage({ src, alt = "", onRequestClose }: Props) 
       // Snap back to a sane state if the pinch ended below 1x, and
       // reset panning if zoomed all the way back out.
       if (scale <= 1.05) { setScale(1); setTranslate({ x: 0, y: 0 }); }
+
+      if (swipeStart.current && scale === 1) {
+        const dx = e.changedTouches[0].clientX - swipeStart.current.x;
+        const dy = e.changedTouches[0].clientY - swipeStart.current.y;
+        swipeStart.current = null;
+        if (Math.abs(dx) >= 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+          if (dx < 0) onSwipeLeft?.();
+          else onSwipeRight?.();
+        }
+      }
     }
   };
 
