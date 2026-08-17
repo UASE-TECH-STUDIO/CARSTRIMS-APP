@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import api from "@/lib/api";
 import CarFinancialReport from "@/components/dealer/CarFinancialReport";
+import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 
 //  Period presets 
 const PERIODS = [
@@ -80,9 +81,9 @@ export default function ReportsPage() {
     return rev > 0 ? Math.round((gp / rev) * 100) : 0;
   };
 
-  // ── PDF Export ────────────────────────────────────────────────────────────
-  const exportPDF = () => {
-    if (!data) return;
+  //  Report HTML (used for both PDF and JPG export) 
+  const buildReportHtml = (): string => {
+    if (!data) return "";
     const s        = data.summary;
     const cogs     = (s?.totalRevenue||0) - (s?.totalProfit||0);
     const netProfit = calcNetProfit(s);
@@ -292,12 +293,34 @@ export default function ReportsPage() {
         ${dealer?.companyName||"CARSTRIMS"} | Dealer ID: ${dealer?.dealerId||""} |
         Report generated ${now} | Powered by UASE TECH STUDIO
       </div>
-      <script>window.onload=()=>window.print()<\/script>
     </body></html>`;
-
-    const win = window.open("","_blank");
-    if (win) { win.document.write(html); win.document.close(); }
+    return html;
   };
+
+  const [exportBusy, setExportBusy] = useState<"" | "pdf" | "jpg" | "share">("");
+  const [showExportPicker, setShowExportPicker] = useState<"download" | "share" | "">("");
+  const reportExportFilename = () => `carstrims-report-${reportType}-${period}-${Date.now()}`;
+
+  const handleReportDownload = async (format: "pdf" | "jpg") => {
+    setShowExportPicker(""); setExportBusy(format);
+    try {
+      const html = buildReportHtml();
+      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Financial Report");
+      await downloadBlob(blob, `${reportExportFilename()}.${format}`);
+    } catch (e: any) { alert(e?.message || "Export failed"); }
+    finally { setExportBusy(""); }
+  };
+
+  const handleReportShare = async (format: "pdf" | "jpg") => {
+    setShowExportPicker(""); setExportBusy("share");
+    try {
+      const html = buildReportHtml();
+      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Financial Report");
+      await shareBlob(blob, `${reportExportFilename()}.${format}`, "Financial Report");
+    } catch (e: any) { alert(e?.message || "Share failed"); }
+    finally { setExportBusy(""); }
+  };
+
 
   // ── CSV Export ──────────────────────────────────────────────────────────────
   const exportCSV = () => {
@@ -397,7 +420,28 @@ export default function ReportsPage() {
           </div>
           <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap"}}>
             <button className="btn-export" onClick={exportCSV} style={{background:"#F0FDF4",color:"#16A34A",border:"1.5px solid #86EFAC"}}>CSV</button>
-            <button className="btn-export" onClick={exportPDF}>PDF / Print</button>
+            <div style={{position:"relative"}}>
+              <button className="btn-export" onClick={()=>setShowExportPicker(showExportPicker==="download"?"":"download")} disabled={exportBusy!==""}>
+                {exportBusy==="pdf"||exportBusy==="jpg" ? "Exporting…" : "Download"}
+              </button>
+              {showExportPicker==="download" && (
+                <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"130px"}}>
+                  <button onClick={()=>handleReportDownload("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as PDF</button>
+                  <button onClick={()=>handleReportDownload("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as JPG Image</button>
+                </div>
+              )}
+            </div>
+            <div style={{position:"relative"}}>
+              <button className="btn-export" onClick={()=>setShowExportPicker(showExportPicker==="share"?"":"share")} disabled={exportBusy!==""} style={{background:"#FFF7ED",color:"#F47B20",border:"1.5px solid #FED7AA"}}>
+                {exportBusy==="share" ? "Sharing…" : "Share"}
+              </button>
+              {showExportPicker==="share" && (
+                <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"130px"}}>
+                  <button onClick={()=>handleReportShare("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as PDF</button>
+                  <button onClick={()=>handleReportShare("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as JPG Image</button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
