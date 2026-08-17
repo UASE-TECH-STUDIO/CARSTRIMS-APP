@@ -38,21 +38,18 @@ api.interceptors.response.use(
 
     //  Auto-refresh token on 401 
     if (status === 401 && !origReq._retry && typeof window !== "undefined") {
-      const p = window.location.pathname;
-      const publicPaths = ["/feed","/login","/register","/forgot-password","/cars/","/dealers/"];
-      const isPublic = publicPaths.some(x => p.startsWith(x)) || p === "/";
+      const raw = localStorage.getItem("auth-storage");
+      const parsed = raw ? JSON.parse(raw) : null;
+      const refreshToken = parsed?.state?.user?.refreshToken;
 
-      if (!isPublic) {
-        // Try to refresh token
-        try {
-          const raw = localStorage.getItem("auth-storage");
-          const parsed = raw ? JSON.parse(raw) : null;
-          const refreshToken = parsed?.state?.user?.refreshToken;
-
-          if (refreshToken && !isRefreshing) {
-            isRefreshing = true;
-            origReq._retry = true;
-
+      // Only bother attempting a refresh if there's actually a session to
+      // refresh — a guest with no token browsing the feed/car detail/
+      // dealer profile pages shouldn't trigger any of this.
+      if (refreshToken) {
+        if (!isRefreshing) {
+          isRefreshing = true;
+          origReq._retry = true;
+          try {
             const refreshRes = await axios.post(
               `${API_BASE}/api/v1/auth/refresh`,
               { refreshToken },
@@ -61,7 +58,6 @@ api.interceptors.response.use(
 
             const newToken = refreshRes.data?.accessToken;
             if (newToken) {
-              // Update stored token
               const updated = JSON.parse(localStorage.getItem("auth-storage") || "{}");
               if (updated?.state?.user) {
                 updated.state.user.accessToken = newToken;
@@ -70,31 +66,35 @@ api.interceptors.response.use(
                 }
                 localStorage.setItem("auth-storage", JSON.stringify(updated));
               }
-              // Retry all queued requests
               refreshQueue.forEach(cb => cb(newToken));
               refreshQueue = [];
               isRefreshing = false;
               origReq.headers.Authorization = "Bearer " + newToken;
               return api(origReq);
             }
-          } else if (isRefreshing) {
-            // Wait for refresh to complete
-            return new Promise(resolve => {
-              refreshQueue.push((token: string) => {
-                origReq.headers.Authorization = "Bearer " + token;
-                resolve(api(origReq));
-              });
-            });
+            isRefreshing = false;
+          } catch (_) {
+            isRefreshing = false;
+            refreshQueue = [];
+            // Refresh genuinely failed (expired/invalid refresh token).
+            // Only force a redirect away from pages that require login —
+            // don't yank a guest away from a page they can browse without
+            // an account just because a background authenticated action
+            // (like/comment/favorite) failed to refresh.
+            const p = window.location.pathname;
+            const publicPaths = ["/feed","/login","/register","/forgot-password","/cars/","/dealers/"];
+            const isPublic = publicPaths.some(x => p.startsWith(x)) || p === "/";
+            localStorage.removeItem("auth-storage");
+            if (!isPublic) window.location.href = "/login";
           }
-        } catch (_) {
-          isRefreshing = false;
-          refreshQueue = [];
+        } else {
+          return new Promise(resolve => {
+            refreshQueue.push((token: string) => {
+              origReq.headers.Authorization = "Bearer " + token;
+              resolve(api(origReq));
+            });
+          });
         }
-
-        // Refresh failed - redirect to login
-        localStorage.removeItem("auth-storage");
-        window.location.href = "/login";
-        return Promise.reject(error);
       }
     }
 

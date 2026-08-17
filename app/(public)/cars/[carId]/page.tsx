@@ -125,7 +125,7 @@ export default function CarDetailPage() {
       const r = await api.post(`/api/v1/public/cars/${carId}/like`);
       setLiked(r.data.liked);
       setLikeCount(c => r.data.liked ? c+1 : Math.max(0,c-1));
-    } catch {}
+    } catch (e: any) { showToast(e?.userMessage || e?.response?.data?.detail || "Couldn't update like", "error"); }
   };
 
   const handleFavorite = async () => {
@@ -133,7 +133,7 @@ export default function CarDetailPage() {
     try {
       if (favorited) { await api.delete(`/api/v1/public/cars/${carId}/favorite`); setFavorited(false); }
       else { await api.post(`/api/v1/public/cars/${carId}/favorite`); setFavorited(true); }
-    } catch {}
+    } catch (e: any) { showToast(e?.userMessage || e?.response?.data?.detail || "Couldn't update saved status", "error"); }
   };
 
   // Message dealer  opens conversation with car context card shown
@@ -191,7 +191,8 @@ export default function CarDetailPage() {
     try {
       const r = await api.post(`/api/v1/public/cars/${carId}/comments`, { text: commentText });
       setComments(p => [r.data, ...p]); setCommentText("");
-    } catch {} finally { setSubmittingComment(false); }
+    } catch (e: any) { showToast(e?.userMessage || e?.response?.data?.detail || "Couldn't post comment", "error"); }
+    finally { setSubmittingComment(false); }
   };
 
   const handleReply = async (commentId: string) => {
