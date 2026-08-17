@@ -26,25 +26,48 @@ async function isNative(): Promise<boolean> {
 /** Renders a DOM element to a single-page-per-screenful PDF Blob. */
 export async function renderElementToPdfBlob(element: HTMLElement, title = "Document"): Promise<Blob> {
   const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
-  const imgData = canvas.toDataURL("image/png");
 
   const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
-  const imgWidth = pageWidth;
-  const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-  let heightLeft = imgHeight;
-  let position = 0;
+  // A small margin all round makes the result look like an actual
+  // printed document rather than a browser screenshot pasted onto a
+  // page, and gives page breaks (when they do happen) some breathing
+  // room instead of cutting content right at the edge.
+  const margin = 24;
+  const usableWidth = pageWidth - margin * 2;
+  const usableHeight = pageHeight - margin * 2;
 
-  pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-  heightLeft -= pageHeight;
+  const naturalImgHeight = (canvas.height * usableWidth) / canvas.width;
+  const imgData = canvas.toDataURL("image/png");
 
-  while (heightLeft > 0) {
-    position = heightLeft - imgHeight;
-    pdf.addPage();
-    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
+  if (naturalImgHeight <= usableHeight * 1.15) {
+    // Content is one page's worth, or only slightly over (the common
+    // case for receipts/invoices/proformas — usually just a little
+    // taller than A4 at full width because of a signature block or
+    // footer). Rather than spilling that small overflow onto an
+    // almost-entirely-blank second page, shrink the whole document
+    // slightly so it fits cleanly on exactly one page.
+    const scale = Math.min(1, usableHeight / naturalImgHeight);
+    const drawWidth = usableWidth * scale;
+    const drawHeight = naturalImgHeight * scale;
+    const xOffset = margin + (usableWidth - drawWidth) / 2; // center horizontally if shrunk
+    pdf.addImage(imgData, "PNG", xOffset, margin, drawWidth, drawHeight);
+  } else {
+    // Genuinely multi-page content (e.g. a long itemized report) —
+    // split across as many pages as needed, each with the same margin.
+    let heightLeft = naturalImgHeight;
+    let position = margin;
+    pdf.addImage(imgData, "PNG", margin, position, usableWidth, naturalImgHeight);
+    heightLeft -= usableHeight;
+
+    while (heightLeft > 0) {
+      position = margin - (naturalImgHeight - heightLeft);
+      pdf.addPage();
+      pdf.addImage(imgData, "PNG", margin, position, usableWidth, naturalImgHeight);
+      heightLeft -= usableHeight;
+    }
   }
 
   pdf.setProperties({ title });
