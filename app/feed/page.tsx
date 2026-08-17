@@ -40,6 +40,12 @@ export default function FeedPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const skipRef = useRef(0);
+  // One random seed per fresh visit to this page — stays the same while
+  // scrolling/paginating (so the feed doesn't repeat or skip cars as
+  // more load), but a genuinely new one is generated every time the
+  // feed is freshly opened (component remount) or explicitly refreshed,
+  // so the order feels different each time, like Instagram/TikTok.
+  const feedSeedRef = useRef<string>(Math.random().toString(36).slice(2) + Date.now().toString(36));
 
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -86,7 +92,7 @@ export default function FeedPage() {
   ].filter(Boolean);
 
   const buildParams = useCallback((skip = 0) => {
-    const p: any = { skip, limit: LIMIT, sort: "score" };
+    const p: any = { skip, limit: LIMIT, sort: "score", seed: feedSeedRef.current };
     if (search) p.search = search;
     if (selectedBrand) p.brand = selectedBrand;
     if (fState) p.city = fState;
@@ -184,6 +190,7 @@ export default function FeedPage() {
       const now = Date.now();
       if (now - lastRefreshRef.current < MIN_REFRESH_INTERVAL_MS) return;
       lastRefreshRef.current = now;
+      feedSeedRef.current = Math.random().toString(36).slice(2) + Date.now().toString(36);
       fetchCars(true, true);
     };
     const onFocus = () => maybeSilentRefresh();
