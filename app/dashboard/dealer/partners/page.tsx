@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import api from "@/lib/api";
+import { renderElementToPdfBlob, renderElementToJpgBlob, rowsToExcelBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+import { useToast } from "@/store/toastStore";
 
 export default function PartnersPage() {
   const [partners, setPartners]     = useState<any[]>([]);
@@ -122,6 +124,56 @@ export default function PartnersPage() {
     return [c.brand,c.model,c.year,c.carId,c.color].some(v=>String(v||"").toLowerCase().includes(q));
   });
 
+  // detailData.link.status is freshly fetched from the single-partner
+  // /detail endpoint every time the modal opens or refreshes — more
+  // reliable than showDetail.status, which comes from the list fetch
+  // and can go stale (this was the actual cause of the "Assign Vehicle"
+  // button sometimes not appearing for partners that were genuinely
+  // already approved).
+  const effectiveStatus = detailData?.link?.status || showDetail?.status;
+  const exportRef = useRef<HTMLDivElement>(null);
+  const showToast = useToast();
+  const [exportBusy, setExportBusy] = useState<"" | "download" | "share">("");
+  const [exportPicker, setExportPicker] = useState<"download" | "share" | "">("");
+
+  const partnerExportRows = () => (detailData?.cars || []).map((c: any) => ({
+    Car: `${c.brand} ${c.model} ${c.year}`,
+    "Car ID": c.carId,
+    Status: c.status,
+    "Selling Price (NGN)": c.sellingPrice || 0,
+    "Total Expenses (NGN)": c.totalExpenses || 0,
+    "Sold To": c.saleRecord?.buyerName || "",
+    "Sale Price (NGN)": c.saleRecord?.sellingPrice || "",
+  }));
+
+  const exportFilename = () => `carstrims-partner-${(showDetail?.partnerName||"partner").toLowerCase().replace(/[^a-z0-9]/g,"-")}-${Date.now()}`;
+
+  const handleExportDownload = async (format: "pdf" | "jpg" | "excel") => {
+    setExportPicker(""); setExportBusy("download");
+    try {
+      if (format === "excel") {
+        const blob = rowsToExcelBlob(partnerExportRows(), "Assigned Cars");
+        await downloadBlob(blob, `${exportFilename()}.xlsx`);
+      } else {
+        if (!exportRef.current) throw new Error("Nothing to export yet");
+        const blob = format === "jpg" ? await renderElementToJpgBlob(exportRef.current) : await renderElementToPdfBlob(exportRef.current, "Partner History");
+        await downloadBlob(blob, `${exportFilename()}.${format}`);
+      }
+      showToast("Downloaded", "success");
+    } catch (e: any) { showToast(e?.message || "Download failed", "error"); }
+    finally { setExportBusy(""); }
+  };
+
+  const handleExportShare = async (format: "pdf" | "jpg") => {
+    setExportPicker(""); setExportBusy("share");
+    try {
+      if (!exportRef.current) throw new Error("Nothing to export yet");
+      const blob = format === "jpg" ? await renderElementToJpgBlob(exportRef.current) : await renderElementToPdfBlob(exportRef.current, "Partner History");
+      await shareBlob(blob, `${exportFilename()}.${format}`, "Partner History");
+    } catch (e: any) { showToast(e?.message || "Share failed", "error"); }
+    finally { setExportBusy(""); }
+  };
+
   return (
     <div style={{display:"flex",flexDirection:"column",gap:"1.5rem"}}>
       {/* Header */}
@@ -191,20 +243,51 @@ export default function PartnersPage() {
             style={{background:"#fff",borderRadius:"14px",width:"100%",maxWidth:"780px",maxHeight:"92vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(0,0,0,0.15)"}}>
 
             {/* Modal header */}
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"1rem 1.25rem",borderBottom:"1px solid #E5E5E5",background:"#fff",position:"sticky",top:0,zIndex:10}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"1rem 1.25rem",borderBottom:"1px solid #E5E5E5",background:"#fff",position:"sticky",top:0,zIndex:10,gap:"0.75rem",flexWrap:"wrap" as const}}>
               <h3 style={{fontFamily:"var(--font-display)",fontSize:"0.95rem",letterSpacing:"0.08em",color:"#1A1A1A"}}>
                 PARTNER: {showDetail.partnerName||showDetail.partnerEmail||"DETAILS"}
               </h3>
-              <button onClick={()=>{setShowDetail(null);setDetailData(null);setShowAssign(false);}}
-                style={{background:"none",border:"none",color:"#AAA",fontSize:"1.1rem",cursor:"pointer",width:"32px",height:"32px",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center"}}
-                onMouseOver={e=>(e.currentTarget.style.background="#F5F5F5")}
-                onMouseOut={e=>(e.currentTarget.style.background="none")}>
-                X
-              </button>
+              <div style={{display:"flex",alignItems:"center",gap:"0.5rem"}}>
+                {detailData && (
+                  <>
+                    <div style={{position:"relative"}}>
+                      <button onClick={()=>setExportPicker(exportPicker==="download"?"":"download")} disabled={exportBusy!==""}
+                        style={{background:"#1A1A1A",color:"#fff",border:"none",borderRadius:"7px",padding:"0.4rem 0.75rem",fontSize:"0.72rem",cursor:"pointer",fontWeight:600,opacity:exportBusy?0.7:1}}>
+                        {exportBusy==="download"?"Exporting…":"Export"}
+                      </button>
+                      {exportPicker==="download" && (
+                        <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.18)",overflow:"hidden",minWidth:"120px"}}>
+                          <button onClick={()=>handleExportDownload("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.55rem 0.8rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.75rem",fontWeight:600}}>as PDF</button>
+                          <button onClick={()=>handleExportDownload("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.55rem 0.8rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.75rem",fontWeight:600}}>as JPG Image</button>
+                          <button onClick={()=>handleExportDownload("excel")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.55rem 0.8rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.75rem",fontWeight:600}}>as Excel</button>
+                        </div>
+                      )}
+                    </div>
+                    <div style={{position:"relative"}}>
+                      <button onClick={()=>setExportPicker(exportPicker==="share"?"":"share")} disabled={exportBusy!==""}
+                        style={{background:"#F5F5F5",color:"#525252",border:"1.5px solid #E5E5E5",borderRadius:"7px",padding:"0.4rem 0.75rem",fontSize:"0.72rem",cursor:"pointer",fontWeight:600,opacity:exportBusy?0.7:1}}>
+                        {exportBusy==="share"?"Sharing…":"Share"}
+                      </button>
+                      {exportPicker==="share" && (
+                        <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.18)",overflow:"hidden",minWidth:"120px"}}>
+                          <button onClick={()=>handleExportShare("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.55rem 0.8rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.75rem",fontWeight:600}}>as PDF</button>
+                          <button onClick={()=>handleExportShare("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.55rem 0.8rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.75rem",fontWeight:600}}>as JPG Image</button>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+                <button onClick={()=>{setShowDetail(null);setDetailData(null);setShowAssign(false);}}
+                  style={{background:"none",border:"none",color:"#AAA",fontSize:"1.1rem",cursor:"pointer",width:"32px",height:"32px",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center"}}
+                  onMouseOver={e=>(e.currentTarget.style.background="#F5F5F5")}
+                  onMouseOut={e=>(e.currentTarget.style.background="none")}>
+                  X
+                </button>
+              </div>
             </div>
 
             {/* Modal body */}
-            <div style={{overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"1.25rem",display:"flex",flexDirection:"column",gap:"1.25rem",flex:1,minHeight:0}}>
+            <div ref={exportRef} style={{overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"1.25rem",display:"flex",flexDirection:"column",gap:"1.25rem",flex:1,minHeight:0}}>
               {detailLoading ? (
                 <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"200px"}}>
                   <div style={{width:"28px",height:"28px",border:"2.5px solid #E5E5E5",borderTopColor:"#F47B20",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
@@ -217,7 +300,7 @@ export default function PartnersPage() {
                       ["Name",detailData.partner?.fullName||showDetail.partnerName],
                       ["Email",detailData.partner?.email||showDetail.partnerEmail],
                       ["Phone",detailData.partner?.phone||showDetail.partnerPhone],
-                      ["Status",showDetail.status],
+                      ["Status",effectiveStatus],
                       ["Vehicles Assigned",detailData.totalCars||0],
                       ["Vehicles Sold",detailData.carsSold||0],
                     ].map(([l,v])=>(
@@ -229,7 +312,7 @@ export default function PartnersPage() {
                   </div>
 
                   {/* Assign vehicles section - only for approved partners */}
-                  {showDetail.status==="approved" && (
+                  {effectiveStatus==="approved" && (
                     <div style={{border:"1.5px solid #E5E5E5",borderRadius:"12px",overflow:"hidden"}}>
                       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0.875rem 1rem",background:"#F5F5F5",borderBottom:"1px solid #E5E5E5"}}>
                         <div style={{fontFamily:"var(--font-display)",fontSize:"0.72rem",letterSpacing:"0.1em",color:"#525252"}}>
@@ -313,21 +396,46 @@ export default function PartnersPage() {
                       </div>
                       <div style={{display:"flex",flexDirection:"column",gap:0}}>
                         {detailData.cars.map((c:any,i:number)=>(
-                          <div key={c._id||c.carId}
-                            style={{display:"flex",alignItems:"center",gap:"0.75rem",padding:"0.75rem 1rem",borderBottom:i<detailData.cars.length-1?"1px solid #F5F5F5":"none"}}>
+                          <a key={c._id||c.carId} href={`/cars/${c.carId}`} target="_blank" rel="noopener noreferrer"
+                            style={{display:"flex",alignItems:"center",gap:"0.75rem",padding:"0.75rem 1rem",borderBottom:i<detailData.cars.length-1?"1px solid #F5F5F5":"none",textDecoration:"none",color:"inherit",cursor:"pointer"}}
+                            onMouseOver={e=>(e.currentTarget.style.background="#FAFAFA")}
+                            onMouseOut={e=>(e.currentTarget.style.background="transparent")}>
                             <div style={{width:"48px",height:"36px",borderRadius:"5px",overflow:"hidden",background:"#F5F5F5",flexShrink:0}}>
                               {c.images?.[0]?<img src={c.images[0]} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",fontSize:"1rem",opacity:0.3}}>&#x1F697;</span>}
                             </div>
-                            <div style={{flex:1}}>
+                            <div style={{flex:1,minWidth:0}}>
                               <div style={{fontWeight:700,fontSize:"0.83rem",color:"#1A1A1A"}}>{c.brand} {c.model} {c.year}</div>
-                              <div style={{fontSize:"0.68rem",color:"#888"}}>{c.carId}</div>
+                              <div style={{fontSize:"0.68rem",color:"#888"}}>{c.carId}{c.totalExpenses>0 ? ` · NGN ${Number(c.totalExpenses).toLocaleString()} in expenses` : ""}</div>
+                              {c.saleRecord && (
+                                <div style={{fontSize:"0.68rem",color:"#15803D",marginTop:"0.1rem"}}>Sold · NGN {Number(c.saleRecord.sellingPrice||0).toLocaleString()}{c.saleRecord.buyerName?` to ${c.saleRecord.buyerName}`:""}</div>
+                              )}
                             </div>
                             <div style={{textAlign:"right",flexShrink:0}}>
                               <div style={{fontSize:"0.8rem",color:"#F47B20",fontWeight:700}}>NGN {(c.sellingPrice||0).toLocaleString()}</div>
-                              <span style={{fontSize:"0.65rem",padding:"0.1rem 0.35rem",borderRadius:"4px",background:c.status==="available"?"#F0FDF4":"c.status==='sold'?'#FEF2F2':'#F5F5F5'",color:c.status==="available"?"#15803D":"c.status==='sold'?'#DC2626':'#737373'",fontWeight:600}}>
+                              <span style={{fontSize:"0.65rem",padding:"0.1rem 0.35rem",borderRadius:"4px",background:c.status==="available"?"#F0FDF4":c.status==="sold"?"#FEF2F2":"#F5F5F5",color:c.status==="available"?"#15803D":c.status==="sold"?"#DC2626":"#737373",fontWeight:600}}>
                                 {c.status}
                               </span>
                             </div>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Recent movements for this partner's assigned vehicles */}
+                  {detailData.recentMovements?.length > 0 && (
+                    <div style={{border:"1.5px solid #E5E5E5",borderRadius:"12px",overflow:"hidden"}}>
+                      <div style={{padding:"0.875rem 1rem",background:"#F5F5F5",borderBottom:"1px solid #E5E5E5",fontFamily:"var(--font-display)",fontSize:"0.72rem",letterSpacing:"0.1em",color:"#525252"}}>
+                        RECENT MOVEMENTS ({detailData.recentMovements.length})
+                      </div>
+                      <div style={{display:"flex",flexDirection:"column",gap:0,maxHeight:"260px",overflowY:"auto",WebkitOverflowScrolling:"touch" as any}}>
+                        {detailData.recentMovements.map((m:any,i:number)=>(
+                          <div key={m._id||i} style={{padding:"0.75rem 1rem",borderBottom:i<detailData.recentMovements.length-1?"1px solid #F5F5F5":"none"}}>
+                            <div style={{display:"flex",justifyContent:"space-between",gap:"0.5rem"}}>
+                              <div style={{fontSize:"0.8rem",fontWeight:600,color:"#1A1A1A"}}>{m.type||m.action||"Movement"} · {m.carId}</div>
+                              <div style={{fontSize:"0.68rem",color:"#AAA",flexShrink:0}}>{m.createdAt?new Date(m.createdAt).toLocaleDateString("en-NG",{day:"numeric",month:"short"}):""}</div>
+                            </div>
+                            {m.notes && <div style={{fontSize:"0.72rem",color:"#737373",marginTop:"0.15rem"}}>{m.notes}</div>}
                           </div>
                         ))}
                       </div>
@@ -355,7 +463,7 @@ export default function PartnersPage() {
 
             {/* Footer actions */}
             <div style={{display:"flex",gap:"0.75rem",justifyContent:"flex-end",padding:"0.875rem 1.25rem",borderTop:"1px solid #E5E5E5",background:"#FAFAFA",flexWrap:"wrap"}}>
-              {showDetail.status==="pending" && (
+              {effectiveStatus==="pending" && (
                 <>
                   <button onClick={()=>handleAction(showDetail._id||showDetail.linkId,"approve")}
                     style={{background:"#16A34A",color:"#fff",border:"none",borderRadius:"7px",padding:"0.6rem 1.25rem",fontFamily:"var(--font-display)",fontSize:"0.82rem",cursor:"pointer",letterSpacing:"0.06em",fontWeight:700}}>
@@ -367,7 +475,7 @@ export default function PartnersPage() {
                   </button>
                 </>
               )}
-              {showDetail.status==="approved" && (
+              {effectiveStatus==="approved" && (
                 <button onClick={()=>handleAction(showDetail._id||showDetail.linkId,"remove")}
                   style={{background:"#DC2626",color:"#fff",border:"none",borderRadius:"7px",padding:"0.6rem 1.25rem",fontFamily:"var(--font-display)",fontSize:"0.82rem",cursor:"pointer",letterSpacing:"0.06em",fontWeight:700}}>
                   Remove Partner
