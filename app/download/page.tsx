@@ -118,7 +118,7 @@ export default function DownloadPage() {
             www.carstrims.com →
           </a>
           <p style={{ fontSize:"11px", color:"#A3A3A3", marginTop:"12px" }}>
-            Built by UASE Tech Studio · v1.0
+            Built by UASE Tech Studio · v1.0.1
           </p>
         </div>
       </div>
