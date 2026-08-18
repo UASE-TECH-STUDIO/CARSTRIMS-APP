@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
+import { rowsToExcelBlob, renderHtmlStringToPdfBlob, downloadBlob } from "@/lib/documentExport";
+import { useToast } from "@/store/toastStore";
 
 const APT_TYPES = ["showroom_visit","test_drive","inspection","payment_meeting"];
 const STATUS_COLORS: Record<string,string> = {
@@ -95,6 +97,50 @@ export default function UserAppointmentsPage() {
     weekday:"short", year:"numeric", month:"short", day:"numeric", hour:"2-digit", minute:"2-digit"
   }) : "";
 
+  const showToast = useToast();
+  const [exportBusy, setExportBusy] = useState<""|"pdf"|"excel">("");
+  const [showExportPicker, setShowExportPicker] = useState(false);
+
+  const handleAptExport = async (format: "pdf" | "excel") => {
+    setShowExportPicker(false);
+    setExportBusy(format);
+    try {
+      const filename = `carstrims-my-appointments-${Date.now()}`;
+      if (format === "excel") {
+        const blob = rowsToExcelBlob(appointments.map((a:any) => ({
+          Type: (a.type||"").replace(/_/g," "), Dealer: a.dealerName || "",
+          When: fmt(a.scheduledAt), Status: a.status, Notes: a.notes || "",
+        })), "My Appointments");
+        await downloadBlob(blob, `${filename}.xlsx`);
+      } else {
+        const now = new Date().toLocaleString("en-NG");
+        const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+          *{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:28px 32px;color:#1A1A1A;font-size:12px}
+          h1{font-size:18px;margin:0 0 4px} .sub{color:#737373;font-size:11px;margin-bottom:16px}
+          table{width:100%;border-collapse:collapse}
+          th{background:#1A1A1A;color:#fff;text-align:left;padding:8px 10px;font-size:10px;letter-spacing:0.05em;text-transform:uppercase}
+          td{padding:7px 10px;border-bottom:1px solid #E5E5E5;font-size:11px}
+          tr:nth-child(even) td{background:#FAFAFA}
+          .footer{margin-top:16px;font-size:9px;color:#A3A3A3;text-align:center}
+          </style></head><body>
+          <h1>My Appointments</h1>
+          <div class="sub">${appointments.length} appointment${appointments.length!==1?"s":""} &bull; Generated ${now}</div>
+          <table><thead><tr><th>Type</th><th>Dealer</th><th>When</th><th>Status</th></tr></thead>
+          <tbody>${appointments.map((a:any)=>`<tr><td>${(a.type||"").replace(/_/g," ")}</td><td>${a.dealerName||""}</td><td>${fmt(a.scheduledAt)}</td><td>${a.status}</td></tr>`).join("")}</tbody>
+          </table>
+          <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
+          </body></html>`;
+        const blob = await renderHtmlStringToPdfBlob(html, "My Appointments");
+        await downloadBlob(blob, `${filename}.pdf`);
+      }
+      showToast("Downloaded", "success");
+    } catch (e: any) {
+      showToast(e?.message || "Export failed", "error");
+    } finally {
+      setExportBusy("");
+    }
+  };
+
   return (
     <div className="apts-page">
       <div className="page-header">
@@ -102,7 +148,20 @@ export default function UserAppointmentsPage() {
           <h2 className="page-heading">Appointments</h2>
           <p className="page-sub">{appointments.length} scheduled</p>
         </div>
-        <button className="btn-primary" onClick={() => { setShowForm(true); setError(""); }}>+ Schedule</button>
+        <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap" as const,alignItems:"center"}}>
+          <div style={{position:"relative"}}>
+            <button onClick={()=>setShowExportPicker(v=>!v)} disabled={exportBusy!==""} style={{background:"#F5F5F5",color:"#525252",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.7rem 1rem",fontSize:"0.85rem",cursor:"pointer",fontWeight:600}}>
+              {exportBusy ? "Exporting…" : "Export"}
+            </button>
+            {showExportPicker && (
+              <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"120px"}}>
+                <button onClick={()=>handleAptExport("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as PDF</button>
+                <button onClick={()=>handleAptExport("excel")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as Excel</button>
+              </div>
+            )}
+          </div>
+          <button className="btn-primary" onClick={() => { setShowForm(true); setError(""); }}>+ Schedule</button>
+        </div>
       </div>
 
       {loading ? <div className="loading"><div className="spinner" /></div>
