@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 import { useToast } from "@/store/toastStore";
+import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, downloadBlob } from "@/lib/documentExport";
 
 const CATEGORIES = [
   "repairs","maintenance","fuel","insurance","registration",
@@ -114,11 +115,64 @@ export default function ExpensesPage() {
         e.carId || "", e.category, e.amount, e.description || "",
       ]),
     ];
-    const csv = rows.map(r => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
+    // Quote + escape every field — the previous version joined with a
+    // bare comma, so any description containing a comma would silently
+    // shift every column after it out of alignment.
+    const csv = "\uFEFF" + rows.map(r => r.map(c => `"${String(c ?? "").replace(/"/g,'""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
-    a.download = `expenses-${Date.now()}.csv`; a.click();
+    a.download = `expenses-${Date.now()}.csv`; a.click(); URL.revokeObjectURL(a.href);
   };
+
+  const [exportBusy, setExportBusy] = useState<"" | "pdf" | "jpg" | "excel">("");
+  const [showExportPicker, setShowExportPicker] = useState(false);
+
+  const buildExpensesHtml = () => {
+    const now = new Date().toLocaleString("en-NG");
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      *{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:28px 32px;color:#1A1A1A;font-size:12px}
+      h1{font-size:18px;margin:0 0 4px} .sub{color:#737373;font-size:11px;margin-bottom:16px}
+      table{width:100%;border-collapse:collapse}
+      th{background:#1A1A1A;color:#fff;text-align:left;padding:8px 10px;font-size:10px;letter-spacing:0.05em;text-transform:uppercase}
+      td{padding:7px 10px;border-bottom:1px solid #E5E5E5;font-size:11px}
+      tr:nth-child(even) td{background:#FAFAFA}
+      .total-row td{font-weight:700;border-top:2px solid #1A1A1A}
+      .footer{margin-top:16px;font-size:9px;color:#A3A3A3;text-align:center}
+      </style></head><body>
+      <h1>Expenses${catFilter!=="all"?` &mdash; ${catFilter.replace(/_/g," ")}`:""}</h1>
+      <div class="sub">${expenses.length} entr${expenses.length!==1?"ies":"y"} &bull; Generated ${now}</div>
+      <table><thead><tr><th>Date</th><th>Car ID</th><th>Category</th><th>Description</th><th>Amount (NGN)</th></tr></thead>
+      <tbody>${expenses.map(e=>`<tr><td>${fmtDate(e.createdAt)}</td><td>${e.carId||"-"}</td><td>${(e.category||"").replace(/_/g," ")}</td><td>${e.description||""}</td><td>${Number(e.amount||0).toLocaleString()}</td></tr>`).join("")}
+      <tr class="total-row"><td colspan="4">TOTAL</td><td>${Number(total).toLocaleString()}</td></tr></tbody>
+      </table>
+      <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
+      </body></html>`;
+  };
+
+  const handleExpensesExport = async (format: "pdf" | "jpg" | "excel") => {
+    setShowExportPicker(false);
+    setExportBusy(format);
+    try {
+      const filename = `carstrims-expenses-${catFilter}-${Date.now()}`;
+      if (format === "excel") {
+        const blob = rowsToExcelBlob(expenses.map(e => ({
+          Date: fmtDate(e.createdAt), "Car ID": e.carId || "", Category: e.category,
+          Description: e.description || "", "Amount (NGN)": e.amount || 0,
+        })), "Expenses");
+        await downloadBlob(blob, `${filename}.xlsx`);
+      } else {
+        const html = buildExpensesHtml();
+        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Expenses");
+        await downloadBlob(blob, `${filename}.${format}`);
+      }
+      setSuccess("Downloaded");
+    } catch (e: any) {
+      showErr(e?.message || "Export failed");
+    } finally {
+      setExportBusy("");
+    }
+  };
+
 
   const fmt = (n: number) => `NGN ${(n || 0).toLocaleString()}`;
   const fmtDate = (iso: string) => iso ? new Date(iso).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" }) : "-";
@@ -157,6 +211,18 @@ export default function ExpensesPage() {
         </div>
         <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap"}}>
           <button className="btn-outline" onClick={exportCSV}>Export CSV</button>
+          <div style={{position:"relative",display:"inline-block"}}>
+            <button className="btn-outline" onClick={()=>setShowExportPicker(v=>!v)} disabled={exportBusy!==""}>
+              {exportBusy ? "Exporting…" : "Export PDF/JPG/Excel"}
+            </button>
+            {showExportPicker && (
+              <div style={{position:"absolute",top:"calc(100% + 6px)",left:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"130px"}}>
+                <button onClick={()=>handleExpensesExport("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as PDF</button>
+                <button onClick={()=>handleExpensesExport("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as JPG Image</button>
+                <button onClick={()=>handleExpensesExport("excel")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as Excel</button>
+              </div>
+            )}
+          </div>
           <button className="btn-primary" onClick={()=>{setShowAdd(true);setForm(emptyForm);setCarSearch("");setError("");}}>+ Add Expense</button>
         </div>
       </div>
