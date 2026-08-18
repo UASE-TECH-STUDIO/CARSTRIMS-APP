@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState, useRef, useCallback } from "react";
 import api from "@/lib/api";
+import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, downloadBlob } from "@/lib/documentExport";
+import { useToast } from "@/store/toastStore";
 
 const PURPOSES   = ["test_drive","inspection","repair","delivery","personal_use","showroom","other"];
 const ID_TYPES   = ["NIN","BVN","Driver's License","International Passport","Voter's Card","Other"];
@@ -165,6 +167,56 @@ export default function MovementsPage() {
     ? new Date(iso).toLocaleString("en-NG", { day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" })
     : "";
 
+  const showToast = useToast();
+  const [exportBusy, setExportBusy] = useState<"" | "pdf" | "jpg" | "excel">("");
+  const [showExportPicker, setShowExportPicker] = useState(false);
+
+  const buildMovementsHtml = () => {
+    const now = new Date().toLocaleString("en-NG");
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      *{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:28px 32px;color:#1A1A1A;font-size:12px}
+      h1{font-size:18px;margin:0 0 4px} .sub{color:#737373;font-size:11px;margin-bottom:16px}
+      table{width:100%;border-collapse:collapse}
+      th{background:#1A1A1A;color:#fff;text-align:left;padding:8px 10px;font-size:10px;letter-spacing:0.05em;text-transform:uppercase}
+      td{padding:7px 10px;border-bottom:1px solid #E5E5E5;font-size:11px}
+      tr:nth-child(even) td{background:#FAFAFA}
+      .footer{margin-top:16px;font-size:9px;color:#A3A3A3;text-align:center}
+      </style></head><body>
+      <h1>Vehicle Movements</h1>
+      <div class="sub">${movements.length} record${movements.length!==1?"s":""} &bull; Generated ${now}</div>
+      <table><thead><tr><th>Car</th><th>Taken By</th><th>Purpose</th><th>Status</th><th>Out</th><th>Returned</th></tr></thead>
+      <tbody>${movements.map((m:any)=>`<tr><td>${m.carBrand||""} ${m.carModel||""}<br/><span style="color:#A3A3A3;font-size:9px">${m.carId}</span></td><td>${m.takenByName||""}</td><td>${(m.purpose||"").replace(/_/g," ")}</td><td>${m.status}</td><td>${fmtDate(m.timeOut||m.createdAt)}</td><td>${m.timeIn?fmtDate(m.timeIn):"—"}</td></tr>`).join("")}</tbody>
+      </table>
+      <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
+      </body></html>`;
+  };
+
+  const handleMovementsExport = async (format: "pdf" | "jpg" | "excel") => {
+    setShowExportPicker(false);
+    setExportBusy(format);
+    try {
+      const filename = `carstrims-movements-${Date.now()}`;
+      if (format === "excel") {
+        const blob = rowsToExcelBlob(movements.map((m:any) => ({
+          Car: `${m.carBrand||""} ${m.carModel||""}`, "Car ID": m.carId,
+          "Taken By": m.takenByName || "", Purpose: (m.purpose||"").replace(/_/g," "),
+          Status: m.status, "Time Out": fmtDate(m.timeOut||m.createdAt),
+          "Time In": m.timeIn ? fmtDate(m.timeIn) : "",
+        })), "Movements");
+        await downloadBlob(blob, `${filename}.xlsx`);
+      } else {
+        const html = buildMovementsHtml();
+        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Vehicle Movements");
+        await downloadBlob(blob, `${filename}.${format}`);
+      }
+      showToast("Downloaded", "success");
+    } catch (e: any) {
+      showToast(e?.message || "Export failed", "error");
+    } finally {
+      setExportBusy("");
+    }
+  };
+
   // Toggle an approver in the multi-select list
   const toggleApprover = (uid: string) => {
     setForm(f => ({
@@ -202,10 +254,25 @@ export default function MovementsPage() {
           <h2 style={{ fontFamily:"var(--font-display)", fontSize:"1.5rem", letterSpacing:"0.05em", color:"#1A1A1A", margin:"0 0 4px" }}>Vehicle Movements</h2>
           <p style={{ fontSize:"13px", color:"#888", margin:0 }}>{total} total movements</p>
         </div>
-        <button onClick={() => { setShowLog(true); setError(""); setForm(emptyForm); setMovCarSearch(""); }}
-          style={{ background:"#F47B20", color:"#fff", border:"none", borderRadius:"8px", padding:"11px 20px", fontFamily:"var(--font-display)", fontSize:"14px", letterSpacing:"0.08em", cursor:"pointer", fontWeight:700 }}>
-          + Log Movement
-        </button>
+        <div style={{display:"flex",gap:"8px",flexWrap:"wrap" as const,alignItems:"center"}}>
+          <div style={{position:"relative"}}>
+            <button onClick={()=>setShowExportPicker(v=>!v)} disabled={exportBusy!==""}
+              style={{ background:"#F5F5F5", color:"#525252", border:"1.5px solid #E5E5E5", borderRadius:"8px", padding:"11px 18px", fontSize:"13px", cursor:"pointer", fontWeight:600 }}>
+              {exportBusy ? "Exporting…" : "Export"}
+            </button>
+            {showExportPicker && (
+              <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"130px"}}>
+                <button onClick={()=>handleMovementsExport("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as PDF</button>
+                <button onClick={()=>handleMovementsExport("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as JPG Image</button>
+                <button onClick={()=>handleMovementsExport("excel")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as Excel</button>
+              </div>
+            )}
+          </div>
+          <button onClick={() => { setShowLog(true); setError(""); setForm(emptyForm); setMovCarSearch(""); }}
+            style={{ background:"#F47B20", color:"#fff", border:"none", borderRadius:"8px", padding:"11px 20px", fontFamily:"var(--font-display)", fontSize:"14px", letterSpacing:"0.08em", cursor:"pointer", fontWeight:700 }}>
+            + Log Movement
+          </button>
+        </div>
       </div>
 
       {/* Pending approvals banner */}
