@@ -2,6 +2,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import api from "@/lib/api";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
+import { rowsToExcelBlob, renderHtmlStringToPdfBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+import { useToast } from "@/store/toastStore";
 
 const SC: Record<string,{bg:string;color:string;label:string}> = {
   pending:           {bg:"#FFF7ED",  color:"#D97706", label:"Pending"},
@@ -170,6 +172,52 @@ export default function UserRequestsPage() {
   };
 
   const fmtDate = (iso:any) => iso?new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}):"";
+  const showToast = useToast();
+  const [exportBusy, setExportBusy] = useState<""|"pdf"|"excel">("");
+  const [showExportPicker, setShowExportPicker] = useState(false);
+
+  const handleRequestsExport = async (format: "pdf" | "excel") => {
+    setShowExportPicker(false);
+    setExportBusy(format);
+    try {
+      const filename = `carstrims-my-requests-${Date.now()}`;
+      if (format === "excel") {
+        const blob = rowsToExcelBlob(requests.map((r:any) => ({
+          "Request ID": r.requestId, Vehicle: `${r.carBrand||""} ${r.carModel||""} ${r.carYear||""}`,
+          Condition: r.condition || "", Budget: r.budget || "",
+          "Sent To": r.dealerName || "All dealers", Status: (SC[r.status]||SC.pending).label,
+          Date: fmtDate(r.createdAt),
+        })), "My Requests");
+        await downloadBlob(blob, `${filename}.xlsx`);
+      } else {
+        const now = new Date().toLocaleString("en-NG");
+        const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+          *{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:28px 32px;color:#1A1A1A;font-size:12px}
+          h1{font-size:18px;margin:0 0 4px} .sub{color:#737373;font-size:11px;margin-bottom:16px}
+          table{width:100%;border-collapse:collapse}
+          th{background:#1A1A1A;color:#fff;text-align:left;padding:8px 10px;font-size:10px;letter-spacing:0.05em;text-transform:uppercase}
+          td{padding:7px 10px;border-bottom:1px solid #E5E5E5;font-size:11px}
+          tr:nth-child(even) td{background:#FAFAFA}
+          .footer{margin-top:16px;font-size:9px;color:#A3A3A3;text-align:center}
+          </style></head><body>
+          <h1>My Vehicle Requests</h1>
+          <div class="sub">${requests.length} request${requests.length!==1?"s":""} &bull; Generated ${now}</div>
+          <table><thead><tr><th>Vehicle</th><th>Budget</th><th>Sent To</th><th>Status</th><th>Date</th></tr></thead>
+          <tbody>${requests.map((r:any)=>`<tr><td>${r.carBrand||""} ${r.carModel||""} ${r.carYear||""}</td><td>${r.budget?"NGN "+Number(r.budget).toLocaleString():"-"}</td><td>${r.dealerName||"All dealers"}</td><td>${(SC[r.status]||SC.pending).label}</td><td>${fmtDate(r.createdAt)}</td></tr>`).join("")}</tbody>
+          </table>
+          <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
+          </body></html>`;
+        const blob = await renderHtmlStringToPdfBlob(html, "My Vehicle Requests");
+        await downloadBlob(blob, `${filename}.pdf`);
+      }
+      showToast("Downloaded", "success");
+    } catch (e: any) {
+      showToast(e?.message || "Export failed", "error");
+    } finally {
+      setExportBusy("");
+    }
+  };
+
   const canEdit  = (r:any) => r.status==="pending";
   const canAbort = (r:any) => !["cancelled","completed","aborted","declined"].includes(r.status);
 
@@ -190,9 +238,22 @@ export default function UserRequestsPage() {
           <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.5rem",letterSpacing:"0.05em",color:"#1A1A1A",lineHeight:1}}>Vehicle Requests</h2>
           <p style={{fontSize:"0.8rem",color:"#737373",marginTop:"0.3rem"}}>Request a specific vehicle - dealers will respond</p>
         </div>
-        <button onClick={openNew} style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.7rem 1.25rem",fontFamily:"var(--font-display)",fontSize:"0.9rem",letterSpacing:"0.08em",cursor:"pointer",whiteSpace:"nowrap"}}>
-          + New Request
-        </button>
+        <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap" as const,alignItems:"center"}}>
+          <div style={{position:"relative"}}>
+            <button onClick={()=>setShowExportPicker(v=>!v)} disabled={exportBusy!==""} style={{background:"#F5F5F5",color:"#525252",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.7rem 1rem",fontSize:"0.85rem",cursor:"pointer",fontWeight:600}}>
+              {exportBusy ? "Exporting…" : "Export"}
+            </button>
+            {showExportPicker && (
+              <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"120px"}}>
+                <button onClick={()=>handleRequestsExport("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as PDF</button>
+                <button onClick={()=>handleRequestsExport("excel")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as Excel</button>
+              </div>
+            )}
+          </div>
+          <button onClick={openNew} style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.7rem 1.25rem",fontFamily:"var(--font-display)",fontSize:"0.9rem",letterSpacing:"0.08em",cursor:"pointer",whiteSpace:"nowrap"}}>
+            + New Request
+          </button>
+        </div>
       </div>
 
       {/* List */}
