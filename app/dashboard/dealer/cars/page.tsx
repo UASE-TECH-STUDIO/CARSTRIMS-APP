@@ -388,7 +388,7 @@ export default function DealerCarsPage() {
                 {([
                   {label:"Brand *",key:"brand",type:"select",opts:BRANDS},
                   {label:"Model *",key:"model",placeholder:"e.g. Camry, Accord..."},
-                  {label:"Year",key:"year",type:"number"},
+                  {label:"Year *",key:"year",type:"number"},
                   {label:"Color",key:"color",placeholder:"e.g. Black"},
                   {label:"Condition",key:"condition",type:"select",opts:CONDITIONS},
                   {label:"Status",key:"status",type:"select",opts:STATUSES},
