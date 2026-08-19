@@ -1,0 +1,32 @@
+From 3a8f657186c75220d55b986583ea09f0295aa4cb Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Wed, 19 Aug 2026 03:44:58 +0000
+Subject: [PATCH] chore: mark Year as required in the car form label
+
+Year is genuinely required by the backend (year: int, no default) but
+was the only required field missing its asterisk - Brand*, Model*, and
+Selling Price* were already correctly marked. Low practical risk since
+the form always has a default year value, but the label should be
+honest about what's actually required. Pairs with the backend commit
+relaxing purchasePrice/color, which the UI already (correctly) treated
+as optional.
+---
+ app/dashboard/dealer/cars/page.tsx | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/app/dashboard/dealer/cars/page.tsx b/app/dashboard/dealer/cars/page.tsx
+index 27aa03c..1ef4564 100644
+--- a/app/dashboard/dealer/cars/page.tsx
++++ b/app/dashboard/dealer/cars/page.tsx
+@@ -312,7 +312,7 @@ export default function DealerCarsPage() {
+                 {([
+                   {label:"Brand *",key:"brand",type:"select",opts:BRANDS},
+                   {label:"Model *",key:"model",placeholder:"e.g. Camry, Accord..."},
+-                  {label:"Year",key:"year",type:"number"},
++                  {label:"Year *",key:"year",type:"number"},
+                   {label:"Color",key:"color",placeholder:"e.g. Black"},
+                   {label:"Condition",key:"condition",type:"select",opts:CONDITIONS},
+                   {label:"Status",key:"status",type:"select",opts:STATUSES},
+-- 
+2.43.0
+

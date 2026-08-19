@@ -1,0 +1,174 @@
+From d69f0e2307e9891cf5cdc7b06b5fbb1e54596589 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Tue, 18 Aug 2026 10:16:58 +0000
+Subject: [PATCH] =?UTF-8?q?feat:=20partner's=20own=20dashboard=20=E2=80=94?=
+ =?UTF-8?q?=20expenses,=20movements,=20and=20export=20for=20assigned=20car?=
+ =?UTF-8?q?s?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The partner 'My Cars' page already existed and aggregated cars from
+multiple dealers correctly, but was missing: expense totals per car
+(now shown), a Recent Movements section (the backend was already
+sending this data, just never rendered), and any export capability.
+
+Added Export (PDF/JPG/Excel) covering every assigned car with dealer,
+status, price, expenses, and profit — completing the partner-side
+mirror of what was already built for the dealer's view of a partner's
+history earlier in this session.
+---
+ app/dashboard/partner/cars/page.tsx | 89 ++++++++++++++++++++++++++++-
+ 1 file changed, 88 insertions(+), 1 deletion(-)
+
+diff --git a/app/dashboard/partner/cars/page.tsx b/app/dashboard/partner/cars/page.tsx
+index 0985d61..6335eee 100644
+--- a/app/dashboard/partner/cars/page.tsx
++++ b/app/dashboard/partner/cars/page.tsx
+@@ -2,6 +2,8 @@
+ import { useEffect, useState } from "react";
+ import { useRouter } from "next/navigation";
+ import api from "@/lib/api";
++import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
++import { useToast } from "@/store/toastStore";
+ 
+ const STATUS_COLORS: Record<string,string> = {
+   available:"#16A34A", sold:"#888", reserved:"#D97706",
+@@ -10,13 +12,17 @@ const STATUS_COLORS: Record<string,string> = {
+ 
+ export default function PartnerCarsPage() {
+   const router = useRouter();
++  const showToast = useToast();
+   const [cars, setCars] = useState<any[]>([]);
++  const [movements, setMovements] = useState<any[]>([]);
+   const [loading, setLoading] = useState(true);
+   const [filter, setFilter] = useState("all");
++  const [exportBusy, setExportBusy] = useState<""|"pdf"|"jpg"|"excel">("");
++  const [showExportPicker, setShowExportPicker] = useState(false);
+ 
+   useEffect(() => {
+     api.get("/api/v1/partners/my-dashboard")
+-      .then((r) => setCars(r.data.cars || []))
++      .then((r) => { setCars(r.data.cars || []); setMovements(r.data.recentMovements || []); })
+       .catch(() => {})
+       .finally(() => setLoading(false));
+   }, []);
+@@ -24,6 +30,49 @@ export default function PartnerCarsPage() {
+   const filtered = filter === "all" ? cars : cars.filter((c) => c.status === filter);
+   const fmt = (n: number) => `${(n||0).toLocaleString()}`;
+ 
++  const handleExport = async (format: "pdf" | "jpg" | "excel") => {
++    setShowExportPicker(false);
++    setExportBusy(format);
++    try {
++      const filename = `carstrims-my-assigned-cars-${Date.now()}`;
++      if (format === "excel") {
++        const blob = rowsToExcelBlob(filtered.map((c:any) => ({
++          "Car ID": c.carId, Vehicle: `${c.brand} ${c.model} ${c.year}`,
++          Dealer: c.dealerName || "", Status: c.status,
++          "Selling Price (NGN)": c.sellingPrice || 0,
++          "Total Expenses (NGN)": c.totalExpenses || 0,
++          "Profit (NGN)": c.status==="sold" ? (c.actualProfit||c.estimatedProfit||0) : "",
++        })), "My Assigned Cars");
++        await downloadBlob(blob, `${filename}.xlsx`);
++      } else {
++        const now = new Date().toLocaleString("en-NG");
++        const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
++          *{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:28px 32px;color:#1A1A1A;font-size:12px}
++          h1{font-size:18px;margin:0 0 4px} .sub{color:#737373;font-size:11px;margin-bottom:16px}
++          table{width:100%;border-collapse:collapse}
++          th{background:#1A1A1A;color:#fff;text-align:left;padding:8px 10px;font-size:10px;letter-spacing:0.05em;text-transform:uppercase}
++          td{padding:7px 10px;border-bottom:1px solid #E5E5E5;font-size:11px}
++          tr:nth-child(even) td{background:#FAFAFA}
++          .footer{margin-top:16px;font-size:9px;color:#A3A3A3;text-align:center}
++          </style></head><body>
++          <h1>My Assigned Cars</h1>
++          <div class="sub">${filtered.length} vehicle${filtered.length!==1?"s":""} &bull; Generated ${now}</div>
++          <table><thead><tr><th>Car</th><th>Dealer</th><th>Status</th><th>Price</th><th>Expenses</th><th>Profit</th></tr></thead>
++          <tbody>${filtered.map((c:any)=>`<tr><td>${c.brand} ${c.model} ${c.year}<br/><span style="color:#A3A3A3;font-size:9px">${c.carId}</span></td><td>${c.dealerName||""}</td><td>${c.status}</td><td>${fmt(c.sellingPrice)}</td><td>${fmt(c.totalExpenses)}</td><td>${c.status==="sold"?fmt(c.actualProfit||c.estimatedProfit||0):"-"}</td></tr>`).join("")}</tbody>
++          </table>
++          <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
++          </body></html>`;
++        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "My Assigned Cars");
++        await downloadBlob(blob, `${filename}.${format}`);
++      }
++      showToast("Downloaded", "success");
++    } catch (e: any) {
++      showToast(e?.message || "Export failed", "error");
++    } finally {
++      setExportBusy("");
++    }
++  };
++
+   return (
+     <div className="cars-page">
+       <div className="page-header">
+@@ -31,6 +80,18 @@ export default function PartnerCarsPage() {
+           <h2 className="page-heading">My Cars</h2>
+           <p className="page-sub">{cars.length} vehicle{cars.length!==1?"s":""} assigned</p>
+         </div>
++        <div style={{position:"relative"}}>
++          <button className="ftab" style={{background:"#1A1A1A",color:"#fff",borderColor:"#1A1A1A"}} onClick={()=>setShowExportPicker(v=>!v)} disabled={exportBusy!==""}>
++            {exportBusy ? "Exporting…" : "Export"}
++          </button>
++          {showExportPicker && (
++            <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"130px"}}>
++              <button onClick={()=>handleExport("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as PDF</button>
++              <button onClick={()=>handleExport("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as JPG Image</button>
++              <button onClick={()=>handleExport("excel")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as Excel</button>
++            </div>
++          )}
++        </div>
+       </div>
+ 
+       <div className="filter-tabs">
+@@ -65,6 +126,7 @@ export default function PartnerCarsPage() {
+                 <div className="car-title">{c.brand} {c.model} {c.year}</div>
+                 <div className="car-meta">{c.color}  {c.transmission}</div>
+                 <div className="car-price">{fmt(c.sellingPrice)}</div>
++                {c.totalExpenses > 0 && <div className="car-meta" style={{color:"#DC2626"}}>Expenses: {fmt(c.totalExpenses)}</div>}
+                 {c.status === "sold" && (
+                   <div className="profit-row">
+                     <span className="profit-label">Profit:</span>
+@@ -77,6 +139,23 @@ export default function PartnerCarsPage() {
+         </div>
+       )}
+ 
++      {!!movements.length && (
++        <div className="movements-section">
++          <h3 className="section-title">Recent Movements ({movements.length})</h3>
++          <div className="movements-list">
++            {movements.map((m: any, i: number) => (
++              <div key={m._id || i} className="mv-row">
++                <div>
++                  <div className="mv-title">{m.type || m.purpose || "Movement"} &middot; {m.carId}</div>
++                  {m.takenByName && <div className="mv-sub">Taken by {m.takenByName}</div>}
++                </div>
++                <div className="mv-date">{m.createdAt ? new Date(m.createdAt).toLocaleDateString("en-NG",{day:"numeric",month:"short"}) : ""}</div>
++              </div>
++            ))}
++          </div>
++        </div>
++      )}
++
+       <style>{`
+         .cars-page{display:flex;flex-direction:column;gap:1.5rem}
+         .page-header{display:flex;align-items:flex-start;justify-content:space-between}
+@@ -115,6 +194,14 @@ export default function PartnerCarsPage() {
+         .profit-row{display:flex;align-items:center;gap:0.4rem;margin-top:0.2rem}
+         .profit-label{font-size:0.72rem;color:#888}
+         .profit-val{font-size:0.78rem;color:#16A34A;font-weight:600}
++        .movements-section{border:1.5px solid #E5E5E5;border-radius:12px;overflow:hidden}
++        .section-title{font-family:var(--font-display);font-size:0.85rem;letter-spacing:0.08em;color:#525252;padding:0.875rem 1rem;background:#F5F5F5;border-bottom:1px solid #E5E5E5;margin:0}
++        .movements-list{max-height:280px;overflow-y:auto}
++        .mv-row{display:flex;justify-content:space-between;gap:0.75rem;padding:0.75rem 1rem;border-bottom:1px solid #F5F5F5}
++        .mv-row:last-child{border-bottom:none}
++        .mv-title{font-size:0.82rem;font-weight:600;color:#1A1A1A}
++        .mv-sub{font-size:0.7rem;color:#888;margin-top:0.1rem}
++        .mv-date{font-size:0.7rem;color:#AAA;white-space:nowrap;flex-shrink:0}
+       `}</style>
+     </div>
+   );
+-- 
+2.43.0
+
