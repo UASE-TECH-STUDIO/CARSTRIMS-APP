@@ -5,6 +5,7 @@ import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
 import DealerQRCode from "@/components/ui/DealerQRCode";
 import PasswordInput from "@/components/ui/PasswordInput";
+import BackgroundRemovalPreview from "@/components/ui/BackgroundRemovalPreview";
 
 export default function SettingsPage() {
   const { user } = useAuthStore();
@@ -13,6 +14,7 @@ export default function SettingsPage() {
   const [saving, setSaving]             = useState(false);
   const [pwSaving, setPwSaving]         = useState(false);
   const [logoUploading, setLogoUploading]   = useState(false);
+  const [bgRemovalFile, setBgRemovalFile] = useState<{ file: File; type: "logo" | "signature" } | null>(null);
   const [picUploading, setPicUploading]     = useState(false);
   const [sigUploading, setSigUploading]     = useState(false);
   const [locLoading, setLocLoading]         = useState(false);
@@ -260,9 +262,21 @@ export default function SettingsPage() {
       {error   && <div className="sb er"> {error  }<button onClick={()=>setError("")}   className="dm">×</button></div>}
 
       {/* hidden file inputs */}
-      <input ref={logoRef} type="file" accept="image/jpeg,image/png,image/webp" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)handleLogoUpload(f);e.target.value="";}}/>
+      <input ref={logoRef} type="file" accept="image/jpeg,image/png,image/webp" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)setBgRemovalFile({file:f,type:"logo"});e.target.value="";}}/>
       <input ref={picRef}  type="file" accept="image/jpeg,image/png,image/webp" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)handlePicUpload(f);e.target.value="";}}/>
-      <input ref={sigRef}  type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)handleSigUpload(f);e.target.value="";}}/>
+      <input ref={sigRef}  type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)setBgRemovalFile({file:f,type:"signature"});e.target.value="";}}/>
+      {bgRemovalFile && (
+        <BackgroundRemovalPreview
+          file={bgRemovalFile.file}
+          label={bgRemovalFile.type === "logo" ? "Company Logo" : "Signature"}
+          onConfirm={(finalFile) => {
+            if (bgRemovalFile.type === "logo") handleLogoUpload(finalFile);
+            else handleSigUpload(finalFile);
+            setBgRemovalFile(null);
+          }}
+          onCancel={() => setBgRemovalFile(null)}
+        />
+      )}
 
       <div className="sg">
 
