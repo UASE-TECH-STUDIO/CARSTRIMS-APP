@@ -153,6 +153,20 @@ export default function DealerOverviewPage() {
         </div>
       )}
 
+      {/* First-run welcome — shown once the account is approved but
+          before the dealer has listed their first car, so the very
+          first thing they see isn't just a grid of zeros with no
+          direction on what to do next. */}
+      {!isPending && (stats?.totalCars ?? 0) === 0 && (
+        <div className="welcome-banner">
+          <div className="wb-text">
+            <strong>Welcome to CARSTRIMS, {dealer?.companyName || "there"}!</strong>
+            <span>You're all set up — list your first car to start showing up in the feed and reaching buyers.</span>
+          </div>
+          <Link href="/dashboard/dealer/cars" className="wb-cta">+ List Your First Car</Link>
+        </div>
+      )}
+
       {/* Dealer header */}
       <div className="ov-header">
         <div className="ov-header-left">
@@ -266,6 +280,12 @@ export default function DealerOverviewPage() {
         .pb-text{display:flex;flex-direction:column;gap:0.2rem}
         .pb-text strong{font-size:0.9rem;color:#C4621A;display:block}
         .pb-text span{color:#92400E;font-size:0.82rem;line-height:1.55}
+        .welcome-banner{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;background:#F0FDF4;border:1.5px solid rgba(22,163,74,0.3);border-left:4px solid #16A34A;padding:1rem 1.25rem;border-radius:10px}
+        .wb-text{display:flex;flex-direction:column;gap:0.2rem;min-width:0}
+        .wb-text strong{font-size:0.9rem;color:#15803D;display:block}
+        .wb-text span{color:#166534;font-size:0.82rem;line-height:1.55}
+        .wb-cta{background:#16A34A;color:#fff;border-radius:8px;padding:0.6rem 1.1rem;font-family:var(--font-display);font-size:0.78rem;letter-spacing:0.06em;text-decoration:none;white-space:nowrap;flex-shrink:0}
+        .wb-cta:hover{opacity:0.9}
         .ov-header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap}
         .ov-header-left{display:flex;align-items:center;gap:0.875rem;min-width:0}
         .ov-logo-wrap{position:relative;flex-shrink:0}
