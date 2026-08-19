@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
-import { rowsToExcelBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+import { rowsToExcelBlob, renderHtmlStringToPdfBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
 
 const STATUSES = ["all", "available", "sold", "pending", "unavailable"];
@@ -26,6 +26,7 @@ export default function AdminCarsPage() {
   const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "all");
   const [skip, setSkip] = useState(0);
   const [exportBusy, setExportBusy] = useState("");
+  const [showExportPicker, setShowExportPicker] = useState(false);
   const showToast = useToast();
   const LIMIT = 20;
 
@@ -43,7 +44,7 @@ export default function AdminCarsPage() {
 
   useEffect(() => { fetchCars(); }, [search, statusFilter, skip]);
 
-  const exportRows = () => cars.map((c: any) => ({
+  const rowsFor = (list: any[]) => list.map((c: any) => ({
     "Car ID": c.carId,
     Brand: c.brand,
     Model: c.model,
@@ -54,11 +55,51 @@ export default function AdminCarsPage() {
     "Listed On": fmtDate(c.createdAt),
   }));
 
-  const handleExport = async (format: "excel") => {
+  // Fetches EVERY car matching the current search/status filter (not
+  // just whatever page happens to be on screen), so "export Toyota"
+  // after searching genuinely covers every matching Toyota, not just
+  // the visible 20.
+  const fetchAllMatching = async (): Promise<any[]> => {
+    const params: any = { skip: 0, limit: 2000 };
+    if (statusFilter !== "all") params.status = statusFilter;
+    if (search) params.search = search;
+    const res = await api.get("/api/v1/admin/cars", { params });
+    return res.data.cars || [];
+  };
+
+  const handleExport = async (format: "excel" | "pdf") => {
+    setShowExportPicker(false);
     setExportBusy(format);
     try {
-      const blob = rowsToExcelBlob(exportRows(), "Cars");
-      await downloadBlob(blob, `carstrims-all-cars-${Date.now()}.xlsx`);
+      const matching = await fetchAllMatching();
+      if (!matching.length) { showToast("No cars match this search/filter", "error"); return; }
+      const scopeLabel = search ? `search-${search}` : statusFilter !== "all" ? statusFilter : "all";
+      const filename = `carstrims-cars-${scopeLabel.replace(/[^a-z0-9]/gi,"-")}-${Date.now()}`;
+      if (format === "excel") {
+        const blob = rowsToExcelBlob(rowsFor(matching), "Cars");
+        await downloadBlob(blob, `${filename}.xlsx`);
+      } else {
+        const now = new Date().toLocaleString("en-NG");
+        const title = search ? `Cars matching "${search}"` : statusFilter !== "all" ? `${statusFilter} Cars` : "All Cars";
+        const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+          *{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:28px 32px;color:#1A1A1A;font-size:12px}
+          h1{font-size:18px;margin:0 0 4px} .sub{color:#737373;font-size:11px;margin-bottom:16px}
+          table{width:100%;border-collapse:collapse}
+          th{background:#1A1A1A;color:#fff;text-align:left;padding:8px 10px;font-size:10px;letter-spacing:0.05em;text-transform:uppercase}
+          td{padding:7px 10px;border-bottom:1px solid #E5E5E5;font-size:11px}
+          tr:nth-child(even) td{background:#FAFAFA}
+          .footer{margin-top:16px;font-size:9px;color:#A3A3A3;text-align:center}
+          </style></head><body>
+          <h1>${title}</h1>
+          <div class="sub">${matching.length} vehicle${matching.length!==1?"s":""} &bull; Generated ${now}</div>
+          <table><thead><tr><th>Car ID</th><th>Vehicle</th><th>Dealer</th><th>Status</th><th>Price (NGN)</th><th>Listed</th></tr></thead>
+          <tbody>${matching.map((c:any)=>`<tr><td>${c.carId}</td><td>${c.brand} ${c.model} ${c.year}</td><td>${c.dealerName||""}</td><td>${c.status}</td><td>${Number(c.sellingPrice||0).toLocaleString()}</td><td>${fmtDate(c.createdAt)}</td></tr>`).join("")}</tbody>
+          </table>
+          <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
+          </body></html>`;
+        const blob = await renderHtmlStringToPdfBlob(html, title);
+        await downloadBlob(blob, `${filename}.pdf`);
+      }
       showToast("Downloaded", "success");
     } catch (e: any) { showToast(e?.message || "Export failed", "error"); }
     finally { setExportBusy(""); }
@@ -71,9 +112,17 @@ export default function AdminCarsPage() {
           <h1 className="page-heading">Cars Listed</h1>
           <p className="page-sub">{total} car{total !== 1 ? "s" : ""} across every dealer on the platform</p>
         </div>
-        <button className="btn-red" onClick={() => handleExport("excel")} disabled={exportBusy !== ""}>
-          {exportBusy ? "Exporting…" : "Export as Excel"}
-        </button>
+        <div style={{position:"relative"}}>
+          <button className="btn-red" onClick={() => setShowExportPicker(v=>!v)} disabled={exportBusy !== ""}>
+            {exportBusy ? "Exporting…" : search ? `Export "${search}" results` : "Export"}
+          </button>
+          {showExportPicker && (
+            <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid var(--border)",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.18)",overflow:"hidden",minWidth:"140px"}}>
+              <button onClick={()=>handleExport("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.8rem",fontWeight:600,color:"var(--text)"}}>as PDF</button>
+              <button onClick={()=>handleExport("excel")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid var(--border)",cursor:"pointer",fontSize:"0.8rem",fontWeight:600,color:"var(--text)"}}>as Excel</button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="filters">
@@ -101,7 +150,7 @@ export default function AdminCarsPage() {
             </thead>
             <tbody>
               {cars.map((c) => (
-                <tr key={c._id}>
+                <tr key={c._id} className="clickable-row" onClick={() => window.open(`/cars/${c.carId}`, "_blank")}>
                   <td>
                     <div className="co-name">{c.brand} {c.model} {c.year}</div>
                     <div className="co-id">{c.carId}</div>
@@ -115,7 +164,7 @@ export default function AdminCarsPage() {
                   </td>
                   <td className="date-cell">{fmtDate(c.createdAt)}</td>
                   <td>
-                    <Link href={`/cars/${c.carId}`} target="_blank" className="act-btn">View</Link>
+                    <Link href={`/cars/${c.carId}`} target="_blank" className="act-btn" onClick={(e)=>e.stopPropagation()}>View</Link>
                   </td>
                 </tr>
               ))}
@@ -156,6 +205,7 @@ export default function AdminCarsPage() {
         .dealers-table td{padding:0.875rem 1rem;border-bottom:1px solid var(--border);font-size:0.825rem;color:var(--text);vertical-align:top}
         .dealers-table tr:last-child td{border-bottom:none}
         .dealers-table tr:hover td{background:var(--surface-2)}
+        .clickable-row{cursor:pointer}
         .co-name{font-weight:600;font-size:0.875rem}
         .co-id{font-family:var(--font-mono);font-size:0.68rem;color:var(--text-dim)}
         .num-cell{text-align:left;font-family:var(--font-mono)}

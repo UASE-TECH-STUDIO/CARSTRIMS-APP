@@ -4,6 +4,7 @@ import SWRegistrar from "@/components/shared/SWRegistrar";
 import CapacitorPush from "@/components/shared/CapacitorPush";
 import ToastContainer from "@/components/ui/ToastContainer";
 import BackButtonHandler from "@/components/shared/BackButtonHandler";
+import EdgeSwipeNavigation from "@/components/shared/EdgeSwipeNavigation";
 
 // viewport-fit=cover tells iOS to draw the page edge-to-edge behind the
 // notch / Dynamic Island / home indicator, and is what makes
@@ -163,7 +164,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <CapacitorPush />
         <ToastContainer />
         <BackButtonHandler />
-        {children}
+        <EdgeSwipeNavigation>
+          {children}
+        </EdgeSwipeNavigation>
       </body>
     </html>
   );
