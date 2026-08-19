@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { renderHtmlStringToPdfBlob, downloadBlob } from "@/lib/documentExport";
 import api from "@/lib/api";
 
 export default function AdminAnalyticsPage() {
@@ -58,11 +59,44 @@ export default function AdminAnalyticsPage() {
     {label:"New Dealers (Month)",value:stats?.dealers?.thisMonth||0,sub:"Registered this month",color:"#1D9E75",icon:""},
   ];
 
+  const [exportBusy, setExportBusy] = useState(false);
+  const handleExport = async () => {
+    setExportBusy(true);
+    try {
+      const now = new Date().toLocaleString("en-NG");
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+        *{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:28px 32px;color:#1A1A1A;font-size:12px}
+        h1{font-size:18px;margin:0 0 4px} h2{font-size:13px;margin:20px 0 8px}
+        .sub{color:#737373;font-size:11px;margin-bottom:16px}
+        table{width:100%;border-collapse:collapse}
+        th{background:#1A1A1A;color:#fff;text-align:left;padding:8px 10px;font-size:10px;letter-spacing:0.05em;text-transform:uppercase}
+        td{padding:7px 10px;border-bottom:1px solid #E5E5E5;font-size:11px}
+        tr:nth-child(even) td{background:#FAFAFA}
+        .footer{margin-top:16px;font-size:9px;color:#A3A3A3;text-align:center}
+        </style></head><body>
+        <h1>Platform Analytics</h1>
+        <div class="sub">Generated ${now}</div>
+        <table><tbody>${statCards.map(s=>`<tr><td style="font-weight:700">${s.label}</td><td>${s.value}</td><td style="color:#888">${s.sub}</td></tr>`).join("")}</tbody></table>
+        <h2>Top Dealers</h2>
+        <table><thead><tr><th>Dealer</th><th>Cars Sold</th><th>Revenue</th></tr></thead>
+        <tbody>${topDealers.map((d:any)=>`<tr><td>${d.companyName||d.name||""}</td><td>${d.carsSold||d.totalSold||0}</td><td>NGN ${Number(d.revenue||d.totalRevenue||0).toLocaleString()}</td></tr>`).join("")}</tbody></table>
+        <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
+        </body></html>`;
+      const blob = await renderHtmlStringToPdfBlob(html, "Platform Analytics");
+      await downloadBlob(blob, `carstrims-analytics-${Date.now()}.pdf`);
+    } catch { } finally { setExportBusy(false); }
+  };
+
   return (
     <div style={{display:"flex",flexDirection:"column",gap:"1.75rem",fontFamily:"var(--font-body)"}}>
-      <div>
-        <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.6rem",letterSpacing:"0.05em",color:"#1A1A1A",lineHeight:1}}>Platform Analytics</h2>
-        <p style={{fontSize:"0.8rem",color:"#737373",marginTop:"0.3rem"}}>Live platform performance overview</p>
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"1rem",flexWrap:"wrap" as const}}>
+        <div>
+          <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.6rem",letterSpacing:"0.05em",color:"#1A1A1A",lineHeight:1}}>Platform Analytics</h2>
+          <p style={{fontSize:"0.8rem",color:"#737373",marginTop:"0.3rem"}}>Live platform performance overview</p>
+        </div>
+        <button onClick={handleExport} disabled={exportBusy || loading} style={{background:"#1A1A1A",color:"#fff",border:"none",borderRadius:"8px",padding:"0.7rem 1.25rem",fontSize:"0.85rem",fontWeight:600,cursor:"pointer"}}>
+          {exportBusy?"Exporting…":"Export PDF"}
+        </button>
       </div>
 
       {/* Stat cards */}

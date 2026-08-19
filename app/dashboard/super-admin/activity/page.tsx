@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
+import { rowsToExcelBlob, downloadBlob } from "@/lib/documentExport";
 
 const TYPE_ICONS: Record<string, string> = {
   dealer_approved:"", dealer_suspended:"", general:"",
@@ -30,6 +31,18 @@ export default function ActivityPage() {
 
   const loadMore = () => { const ns = skip + LIMIT; setSkip(ns); load(ns, true); };
 
+  const [exportBusy, setExportBusy] = useState(false);
+  const handleExport = async () => {
+    setExportBusy(true);
+    try {
+      const blob = rowsToExcelBlob(activities.map((a: any) => ({
+        Type: TYPE_LABELS[a.type] || a.type, Title: a.title, Message: a.message,
+        "Receiver ID": a.receiverId || "", Date: fmtTime(a.createdAt),
+      })), "Activity Log");
+      await downloadBlob(blob, `carstrims-activity-log-${Date.now()}.xlsx`);
+    } catch { } finally { setExportBusy(false); }
+  };
+
   const fmtTime = (iso: string) => {
     if (!iso) return "";
     return new Date(iso).toLocaleString("en-NG", { day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" });
@@ -48,7 +61,10 @@ export default function ActivityPage() {
           <h2 className="page-title">Activity Log</h2>
           <p className="page-sub">All platform events and notifications in real-time</p>
         </div>
-        <button className="refresh-btn" onClick={() => { setSkip(0); load(0); }}> Refresh</button>
+        <div style={{display:"flex",gap:"0.5rem"}}>
+          <button className="refresh-btn" onClick={handleExport} disabled={exportBusy || !activities.length}>{exportBusy?"Exporting…":"Export"}</button>
+          <button className="refresh-btn" onClick={() => { setSkip(0); load(0); }}>Refresh</button>
+        </div>
       </div>
 
       {loading && activities.length === 0 ? (

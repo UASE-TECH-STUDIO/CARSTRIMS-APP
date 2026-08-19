@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
+import { rowsToExcelBlob, downloadBlob } from "@/lib/documentExport";
 
 const ROLE_OPTIONS = [
   { value:"all",          label:"All Users",       icon:"" },
@@ -97,6 +98,19 @@ export default function BroadcastPage() {
   };
 
   const fmtDate = (iso: string) => { try { return new Date(iso).toLocaleString("en-NG"); } catch { return "-"; } };
+
+  const [exportBusy, setExportBusy] = useState(false);
+  const handleExport = async () => {
+    setExportBusy(true);
+    try {
+      const blob = rowsToExcelBlob(history.map((h: any) => ({
+        Title: h.title, Type: h.type || "announcement",
+        "Sent To": h.selectedUsers?.length > 0 ? `${h.selectedUsers.length} users` : (ROLE_OPTIONS.find(r=>r.value===h.targetRole)?.label||h.targetRole),
+        "Recipients": h.sentTo || 0, Message: h.message || "", Date: fmtDate(h.sentAt),
+      })), "Broadcasts");
+      await downloadBlob(blob, `carstrims-broadcasts-${Date.now()}.xlsx`);
+    } catch { } finally { setExportBusy(false); }
+  };
   const fi: React.CSSProperties = { background:"#F5F5F5", border:"1.5px solid #E5E5E5", borderRadius:"8px", padding:"0.75rem 1rem", color:"#1A1A1A", fontSize:"0.875rem", fontFamily:"var(--font-body)", outline:"none", width:"100%", boxSizing:"border-box" as const };
   const lbl: React.CSSProperties = { fontSize:"0.68rem", fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase" as const, color:"#525252", display:"block", marginBottom:"0.35rem" };
 
@@ -254,7 +268,14 @@ export default function BroadcastPage() {
 
         {/* History sidebar */}
         <div style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px",padding:"1.5rem",display:"flex",flexDirection:"column",gap:"1rem"}}>
-          <div style={{fontFamily:"var(--font-display)",fontSize:"0.78rem",letterSpacing:"0.15em",color:"#737373"}}>SENT BROADCASTS</div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"0.5rem"}}>
+            <div style={{fontFamily:"var(--font-display)",fontSize:"0.78rem",letterSpacing:"0.15em",color:"#737373"}}>SENT BROADCASTS</div>
+            {history.length > 0 && (
+              <button onClick={handleExport} disabled={exportBusy} style={{background:"#F5F5F5",border:"1px solid #E5E5E5",borderRadius:"6px",padding:"0.3rem 0.6rem",fontSize:"0.68rem",fontWeight:600,color:"#525252",cursor:"pointer"}}>
+                {exportBusy?"…":"Export"}
+              </button>
+            )}
+          </div>
           {history.length===0 ? (
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.5rem",padding:"2rem",textAlign:"center",color:"#737373",fontSize:"0.875rem"}}>
               <span style={{fontSize:"2rem"}}></span><p>No broadcasts sent yet</p>
