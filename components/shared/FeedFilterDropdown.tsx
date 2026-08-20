@@ -17,7 +17,7 @@ interface Props {
 }
 
 const BRANDS = ["Toyota","Honda","Mercedes","BMW","Lexus","Ford","Hyundai","Kia","Chevrolet","Audi","Land Rover","Jeep","Volkswagen","Nissan","Mazda","Peugeot","Mitsubishi","Subaru","Volvo","Porsche"];
-const CONDITIONS = [{v:"brand_new",l:"Brand New"},{v:"foreign_used",l:"Foreign Used"},{v:"locally_used",l:"Locally Used"}];
+const CONDITIONS = [{v:"brand new",l:"Brand New"},{v:"foreign used",l:"Foreign Used"},{v:"locally used",l:"Locally Used"},{v:"salvage",l:"Salvage"}];
 const TRANSMISSIONS = ["automatic","manual","semi-automatic"];
 const FUEL_TYPES = ["petrol","diesel","electric","hybrid","gas"];
 const COLORS = ["Black","White","Silver","Grey","Red","Blue","Green","Gold","Brown","Wine"];
