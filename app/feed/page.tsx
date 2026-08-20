@@ -7,6 +7,9 @@ import api from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import GlobalSearchModal from "@/components/shared/GlobalSearchModal";
 import { useToast } from "@/store/toastStore";
+import { useVoiceInput } from "@/lib/useVoiceInput";
+import { correctVoiceTranscript } from "@/lib/voiceCarCorrection";
+import FeedFilterDropdown from "@/components/shared/FeedFilterDropdown";
 
 const BRANDS = ["Toyota","Honda","Mercedes","BMW","Lexus","Ford","Hyundai","Kia","Chevrolet","Audi","Land Rover","Jeep","Volkswagen","Nissan","Mazda","Peugeot","Mitsubishi","Subaru","Volvo","Porsche"];
 const CONDITIONS = ["brand_new","foreign_used","locally_used"];
@@ -48,6 +51,21 @@ export default function FeedPage() {
   const feedSeedRef = useRef<string>(Math.random().toString(36).slice(2) + Date.now().toString(36));
 
   const [searchInput, setSearchInput] = useState("");
+  const [searchExpanded, setSearchExpanded] = useState(false);
+  const [understoodFilters, setUnderstoodFilters] = useState<{type:string; label:string; matchedText:string}[]>([]);
+  const [showSearchHint, setShowSearchHint] = useState(false);
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem("carstrims:search-hint-seen")) setShowSearchHint(true);
+    } catch {}
+  }, []);
+  const dismissSearchHint = () => {
+    setShowSearchHint(false);
+    try { localStorage.setItem("carstrims:search-hint-seen", "1"); } catch {}
+  };
+  const { listening, supported: voiceSupported, start: startVoice, stop: stopVoice } = useVoiceInput((transcript) => {
+    setSearchInput(correctVoiceTranscript(transcript));
+  });
   const [search, setSearch] = useState("");
   const [selectedBrand, setSelectedBrand] = useState("");
   const [showFilter, setShowFilter] = useState(false);
@@ -121,6 +139,7 @@ export default function FeedPage() {
       const res = await api.get("/api/v1/public/cars", { params: buildParams(reset ? 0 : skipRef.current) });
       const newCars = res.data.cars || [];
       setTotal(res.data.total || 0);
+      if (reset) setUnderstoodFilters(res.data.understoodFilters || []);
       // For a silent background refresh, only swap the list once the new
       // data has actually arrived — the old cars stay on screen the whole
       // time, so there's no flash/reset and scroll position isn't disturbed.
@@ -282,6 +301,22 @@ export default function FeedPage() {
     setFMinPrice(""); setFMaxPrice(""); setFColor("");
   };
 
+  // Removes just ONE understood filter chip. For regex-matched chips
+  // (which include the exact original text span via matchedText),
+  // strips just that piece out of the search box and lets it re-search.
+  // AI-derived chips don't have a literal text span to strip (the AI
+  // understood the INTENT, not a copy-pasteable substring), so those
+  // clear the whole search box instead — an honest, simple fallback
+  // rather than guessing at partial removal.
+  const removeUnderstoodFilter = (chip: { matchedText: string }) => {
+    if (!chip.matchedText) { setSearchInput(""); setSearch(""); return; }
+    setSearchInput((prev) => {
+      const idx = prev.toLowerCase().indexOf(chip.matchedText.toLowerCase());
+      if (idx === -1) return prev;
+      return (prev.slice(0, idx) + prev.slice(idx + chip.matchedText.length)).replace(/\s+/g, " ").trim();
+    });
+  };
+
   const handleScan = () => {
     if (!scanInput.trim()) return;
     const input = scanInput.trim().toUpperCase();
@@ -341,13 +376,56 @@ export default function FeedPage() {
         <Link href="/feed" className="feed-brand">CARSTRIMS</Link>
 
         <form ref={searchWrapRef} className="search-form" style={{position:"relative"}} onSubmit={(e) => { e.preventDefault(); setSearch(searchInput); setShowPeopleDropdown(false); }}>
-          <div className="search-box">
-            <span className="s-icon">S</span>
-            <input className="search-input" placeholder="Search anything: camry 2019 used, a dealer, a person..."
-              value={searchInput} onChange={(e) => setSearchInput(e.target.value)}
-              onFocus={() => { if ((peopleResults.dealers?.length||0)+(peopleResults.users?.length||0) > 0) setShowPeopleDropdown(true); }} />
-            {searchInput && <button type="button" className="s-clear" onClick={() => { setSearchInput(""); setSearch(""); setShowPeopleDropdown(false); }}>X</button>}
+          <div className={`search-box ${searchExpanded ? "search-box-expanded" : ""}`}>
+            <button type="button" className="s-filter-btn" title="Filters" aria-label="Open filters"
+              onClick={(e) => { e.stopPropagation(); setShowFilter((v) => !v); }}>F</button>
+            <input
+              className="search-input"
+              placeholder="Type or say what you want: camry 2019 used black 3m to 5m..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onFocus={() => {
+                setSearchExpanded(true);
+                if (showSearchHint) dismissSearchHint();
+                if ((peopleResults.dealers?.length||0)+(peopleResults.users?.length||0) > 0) setShowPeopleDropdown(true);
+              }}
+              onBlur={() => setSearchExpanded(false)}
+            />
+            {searchInput && <button type="button" className="s-clear" onClick={() => { setSearchInput(""); setSearch(""); setShowPeopleDropdown(false); }}>✕</button>}
+            <button
+              type="button"
+              className={`s-mic ${listening ? "s-mic-active" : ""}`}
+              title={listening ? "Listening… tap to stop" : "Search by voice"}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (listening) { stopVoice(); return; }
+                if (voiceSupported === false) { showToast("Voice search isn't supported on this browser/device", "error"); return; }
+                startVoice();
+              }}
+            >
+              {listening ? "●" : "🎤"}
+            </button>
           </div>
+
+          {showFilter && (
+            <div ref={filterRef}>
+              <FeedFilterDropdown
+                selectedBrand={selectedBrand} setSelectedBrand={setSelectedBrand}
+                fCondition={fCondition} setFCondition={setFCondition}
+                fTransmission={fTransmission} setFTransmission={setFTransmission}
+                fFuel={fFuel} setFFuel={setFFuel}
+                fState={fState} setFState={setFState}
+                fColor={fColor} setFColor={setFColor}
+                fYearFrom={fYearFrom} setFYearFrom={setFYearFrom}
+                fYearTo={fYearTo} setFYearTo={setFYearTo}
+                fMinPrice={fMinPrice} setFMinPrice={setFMinPrice}
+                fMaxPrice={fMaxPrice} setFMaxPrice={setFMaxPrice}
+                fStatus={fStatus} setFStatus={setFStatus}
+                onClose={() => setShowFilter(false)}
+                onClear={clearAll}
+              />
+            </div>
+          )}
 
           {/* Inline dealers/people matches — same box now covers cars
               (filtered live in the grid below) AND people/dealers,
@@ -381,6 +459,16 @@ export default function FeedPage() {
               )}
             </div>
           )}
+
+          {showSearchHint && (
+            <div className="search-hint" onClick={dismissSearchHint}>
+              <div className="search-hint-arrow">↑</div>
+              <div className="search-hint-bubble">
+                Type, say, or explain what you want — we'll find it
+                <button type="button" className="search-hint-x" onClick={dismissSearchHint} aria-label="Dismiss">✕</button>
+              </div>
+            </div>
+          )}
         </form>
 
         <div className="topbar-right">
@@ -408,6 +496,16 @@ export default function FeedPage() {
           {fFuel && <span className="af-tag">{fFuel} <button onClick={() => setFFuel("")}>x</button></span>}
           {fColor && <span className="af-tag">{fColor} <button onClick={() => setFColor("")}>x</button></span>}
           <button className="ab-clear" onClick={clearAll}>Clear all</button>
+        </div>
+      )}
+
+      {/* WHAT THE SEARCH/VOICE UNDERSTOOD — itemized, adjustable, like Jiji */}
+      {understoodFilters.length > 0 && (
+        <div className="active-bar">
+          <span className="ab-label">Understood:</span>
+          {understoodFilters.map((f, i) => (
+            <span key={i} className="af-tag">{f.label} <button onClick={() => removeUnderstoodFilter(f)}>x</button></span>
+          ))}
         </div>
       )}
 
@@ -552,6 +650,23 @@ export default function FeedPage() {
           font-family:var(--font-display); font-size:1.2rem; letter-spacing:0.2em;
           color:#F47B20; text-decoration:none; flex-shrink:0;
         }
+        .search-hint {
+          position:absolute; top:calc(100% + 6px); left:50%; transform:translateX(-50%);
+          z-index:60; display:flex; flex-direction:column; align-items:center; cursor:pointer;
+        }
+        .search-hint-arrow {
+          font-size:1.3rem; color:#F47B20; line-height:1; animation:search-hint-bounce 1.1s ease-in-out infinite;
+        }
+        .search-hint-bubble {
+          background:#1A1A1A; color:#fff; font-size:0.78rem; font-weight:600; padding:0.55rem 2.2rem 0.55rem 0.9rem;
+          border-radius:8px; white-space:nowrap; position:relative; box-shadow:0 8px 20px rgba(0,0,0,0.25); margin-top:2px;
+        }
+        .search-hint-x {
+          position:absolute; right:0.4rem; top:50%; transform:translateY(-50%);
+          background:none; border:none; color:#fff; opacity:0.6; cursor:pointer; font-size:0.7rem; padding:0.3rem;
+        }
+        @keyframes search-hint-bounce { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-5px);} }
+        @media(max-width:640px) { .search-hint-bubble { white-space:normal; max-width:78vw; text-align:center; } }
         .search-form { display:flex; align-items:center; gap:0.5rem; flex:1; min-width:0; position:relative; }
         .people-dropdown {
           position:absolute; top:calc(100% + 8px); left:0; right:0; z-index:60;
@@ -573,14 +688,21 @@ export default function FeedPage() {
         @media(max-width:640px) { .people-dropdown { max-width:calc(100vw - 1.5rem); left:-0.5rem; right:auto; } }
         .search-box {
           flex:1; display:flex; align-items:center; background:#F5F5F5;
-          border:1.5px solid #E5E5E5; border-radius:8px; overflow:hidden; transition:border-color 0.2s;
+          border:1.5px solid #E5E5E5; border-radius:10px; overflow:hidden; transition:border-color 0.2s, box-shadow 0.2s;
         }
-        .search-box:focus-within { border-color:#F47B20; background:#fff; }
-        .s-icon { padding:0 0.75rem; font-size:0.75rem; font-weight:700; color:#A3A3A3; flex-shrink:0; letter-spacing:0.05em; }
-        .search-input { flex:1; background:transparent; border:none; padding:0.625rem 0.5rem; color:#171717; font-size:0.875rem; font-family:var(--font-body); outline:none; min-width:0; }
+        .search-box:focus-within { border-color:#F47B20; background:#fff; box-shadow:0 0 0 3px rgba(244,123,32,0.12); }
+        .search-box-expanded { position:relative; z-index:65; }
+        .s-filter-btn {
+          background:#1A1A1A; color:#fff; border:none; font-family:var(--font-display); font-weight:700;
+          font-size:0.85rem; letter-spacing:0.02em; padding:0.7rem 0.9rem; cursor:pointer; flex-shrink:0; align-self:stretch;
+        }
+        .s-filter-btn:hover { background:#F47B20; }
+        .search-input { flex:1; background:transparent; border:none; padding:0.75rem 0.65rem; color:#171717; font-size:0.95rem; font-family:var(--font-body); outline:none; min-width:0; }
         .search-input::placeholder { color:#A3A3A3; }
-        .s-clear { background:none; border:none; color:#A3A3A3; cursor:pointer; padding:0 0.5rem; font-size:0.75rem; font-weight:700; }
-        .everything-search-btn { background:none; border:none; font-size:1.05rem; cursor:pointer; padding:0.5rem; line-height:1; color:#737373; flex-shrink:0; }
+        .s-clear { background:none; border:none; color:#A3A3A3; cursor:pointer; padding:0 0.5rem; font-size:0.85rem; font-weight:700; flex-shrink:0; }
+        .s-mic { background:none; border:none; cursor:pointer; padding:0 0.75rem; font-size:1.05rem; line-height:1; flex-shrink:0; color:#737373; }
+        .s-mic-active { color:#DC2626; animation:s-mic-pulse 1.1s ease-in-out infinite; }
+        @keyframes s-mic-pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.55;transform:scale(1.15);} }
 
         /* Filter dropdown */
         .filter-wrap { position:relative; flex-shrink:0; }
@@ -675,16 +797,16 @@ export default function FeedPage() {
         /* ACTIVE FILTER BAR */
         .active-bar {
           display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;
-          padding:0.625rem 1.25rem; background:#FFF7ED; border-bottom:1px solid rgba(244,123,32,0.2);
+          padding:0.75rem 1.25rem; background:#FFF7ED; border-bottom:1px solid rgba(244,123,32,0.2);
         }
-        .ab-label { font-size:0.7rem; color:#C4621A; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; flex-shrink:0; }
+        .ab-label { font-size:0.78rem; color:#C4621A; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; flex-shrink:0; }
         .af-tag {
-          display:flex; align-items:center; gap:0.3rem;
-          background:#fff; border:1px solid #F47B20; color:#F47B20;
-          border-radius:20px; padding:0.18rem 0.6rem; font-size:0.72rem;
+          display:flex; align-items:center; gap:0.35rem;
+          background:#fff; border:1.5px solid #F47B20; color:#F47B20;
+          border-radius:20px; padding:0.3rem 0.75rem; font-size:0.85rem; font-weight:500;
         }
-        .af-tag button { background:none; border:none; cursor:pointer; color:#F47B20; font-size:0.65rem; line-height:1; padding:0; }
-        .ab-clear { background:transparent; border:none; color:#DC2626; font-size:0.72rem; cursor:pointer; font-family:var(--font-body); margin-left:auto; white-space:nowrap; }
+        .af-tag button { background:none; border:none; cursor:pointer; color:#F47B20; font-size:0.78rem; line-height:1; padding:0; font-weight:700; }
+        .ab-clear { background:transparent; border:none; color:#DC2626; font-size:0.82rem; font-weight:600; cursor:pointer; font-family:var(--font-body); margin-left:auto; white-space:nowrap; }
 
         /* BRAND TABS */
         .brand-scroll { overflow-x:auto; border-bottom:1.5px solid #E5E5E5; background:#fff; }
