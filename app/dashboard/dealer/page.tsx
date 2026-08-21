@@ -113,7 +113,7 @@ export default function DealerOverviewPage() {
   const pendingRequestCount = requests.filter((r:any)=>r.status==="pending").length;
 
   const STATS = [
-    {label:"Total Cars",  value:stats?.totalCars??0,     icon:"",sub:"All listed vehicles",   href:"/dashboard/dealer/cars",               color:"#F47B20"},
+    {label:"Total Vehicles",  value:stats?.totalCars??0,     icon:"",sub:"All listed vehicles",   href:"/dashboard/dealer/cars",               color:"#F47B20"},
     {label:"Available",   value:stats?.availableCars??0,  icon:"",sub:"Ready for sale",        href:"/dashboard/dealer/cars?status=available",color:"#16A34A"},
     {label:"Sold",        value:stats?.soldCars??0,       icon:"",sub:"Completed sales",      href:"/dashboard/dealer/sales",              color:"#3B8BD4"},
     {label:"Staff",       value:stats?.totalStaff??0,     icon:"",sub:"Team members",          href:"/dashboard/dealer/staff",              color:"#7B68EE"},
@@ -122,7 +122,7 @@ export default function DealerOverviewPage() {
   ];
 
   const ACTIONS = [
-    {label:"Add New Car",  icon:"",href:"/dashboard/dealer/cars"},
+    {label:"Add New Vehicle",  icon:"",href:"/dashboard/dealer/cars"},
     {label:"Record Sale",  icon:"",href:"/dashboard/dealer/sales"},
     {label:"Log Expense",  icon:"",href:"/dashboard/dealer/expenses"},
     {label:"Add Staff",    icon:"",href:"/dashboard/dealer/staff"},
@@ -163,7 +163,7 @@ export default function DealerOverviewPage() {
             <strong>Welcome to CARSTRIMS, {dealer?.companyName || "there"}!</strong>
             <span>You're all set up — list your first car to start showing up in the feed and reaching buyers.</span>
           </div>
-          <Link href="/dashboard/dealer/cars" className="wb-cta">+ List Your First Car</Link>
+          <Link href="/dashboard/dealer/cars" className="wb-cta">+ List Your First Vehicle</Link>
         </div>
       )}
 

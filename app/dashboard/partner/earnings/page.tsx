@@ -56,7 +56,7 @@ export default function PartnerEarningsPage() {
           <div className="sales-title">RECENT SALES</div>
           <div className="sales-table-wrap">
             <table className="sales-table">
-              <thead><tr><th>Car ID</th><th>Selling Price</th><th>Profit</th><th>Date</th></tr></thead>
+              <thead><tr><th>Vehicle ID</th><th>Selling Price</th><th>Profit</th><th>Date</th></tr></thead>
               <tbody>
                 {data.recentSales.map((s: any) => (
                   <tr key={s._id}>

@@ -50,8 +50,8 @@ export default function SuperAdminOverview() {
     { label:"Buyers",         value:buyersOnly,     sub:"PUBLIC_USER role only",                               href:"/dashboard/super-admin/users?role=PUBLIC_USER",  color:"#F47B20" },
     { label:"Partners",       value:partnersOnly,   sub:"PARTNER_USER role only",                              href:"/dashboard/super-admin/users?role=PARTNER_USER", color:"#7B68EE" },
     { label:"Staff Members",  value:staffOnly,      sub:"DEALER_STAFF across all dealers",                     href:"/dashboard/super-admin/users?role=DEALER_STAFF", color:"#1D9E75" },
-    { label:"Cars Listed",    value:totalCars,      sub:"Total inventory platform-wide",                       href:"/dashboard/super-admin/cars",   color:"#F47B20" },
-    { label:"Cars Sold",      value:totalSales,     sub:"Completed transactions",                              href:"/dashboard/super-admin/cars?status=sold", color:"#16A34A" },
+    { label:"Vehicles Listed",    value:totalCars,      sub:"Total inventory platform-wide",                       href:"/dashboard/super-admin/cars",   color:"#F47B20" },
+    { label:"Vehicles Sold",      value:totalSales,     sub:"Completed transactions",                              href:"/dashboard/super-admin/cars?status=sold", color:"#16A34A" },
   ];
 
   const QUICK_LINKS = [

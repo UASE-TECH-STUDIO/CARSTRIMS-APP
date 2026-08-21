@@ -46,7 +46,7 @@ export default function CarFinancialReport({ carId, onClose }: Props) {
         await downloadBlob(blob, `${reportFilename()}.xlsx`);
       } else {
         if (!printRef.current) throw new Error("Report isn't ready yet");
-        const blob = await renderElementToPdfBlob(printRef.current, `Car Financial Report - ${carId}`);
+        const blob = await renderElementToPdfBlob(printRef.current, `Vehicle Financial Report - ${carId}`);
         await downloadBlob(blob, `${reportFilename()}.pdf`);
       }
       showToast("Downloaded", "success");
@@ -61,8 +61,8 @@ export default function CarFinancialReport({ carId, onClose }: Props) {
     setBusy("share");
     try {
       if (!printRef.current) throw new Error("Report isn't ready yet");
-      const blob = await renderElementToPdfBlob(printRef.current, `Car Financial Report - ${carId}`);
-      await shareBlob(blob, `${reportFilename()}.pdf`, `Car Financial Report - ${carId}`);
+      const blob = await renderElementToPdfBlob(printRef.current, `Vehicle Financial Report - ${carId}`);
+      await shareBlob(blob, `${reportFilename()}.pdf`, `Vehicle Financial Report - ${carId}`);
     } catch (e: any) {
       showToast(e?.message || "Share failed", "error");
     } finally {
@@ -125,7 +125,7 @@ export default function CarFinancialReport({ carId, onClose }: Props) {
           <div style={{background:"#F5F5F5",borderRadius:"10px",padding:"1rem",marginBottom:"1.5rem"}}>
             <div style={{fontSize:"0.6rem",fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase" as const,color:"#A3A3A3",marginBottom:"0.75rem"}}>Vehicle</div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(120px,1fr))",gap:"0.75rem"}}>
-              {[["Brand",car?.brand],["Model",car?.model],["Year",car?.year],["Color",car?.color||""],["Condition",car?.condition||""],["VIN",car?.vin||""],["Car ID",car?.carId||carId],["Status",car?.status||""]].map(([l,v])=>(
+              {[["Brand",car?.brand],["Model",car?.model],["Year",car?.year],["Color",car?.color||""],["Condition",car?.condition||""],["VIN",car?.vin||""],["Vehicle ID",car?.carId||carId],["Status",car?.status||""]].map(([l,v])=>(
                 <div key={l}><div style={{fontSize:"0.6rem",color:"#A3A3A3",fontWeight:600,textTransform:"uppercase" as const,letterSpacing:"0.06em"}}>{l}</div><div style={{fontSize:"0.82rem",fontWeight:600,color:"#1A1A1A",textTransform:"capitalize" as const}}>{String(v)||""}</div></div>
               ))}
             </div>

@@ -157,7 +157,7 @@ tr:nth-child(even) td{background:#FFFBEB}
     <div class="vn">${carBrand} ${carModel} ${carYear}</div>
     <div class="vs">${[carColor, d?.car?.condition, d?.car?.transmission, d?.car?.fuelType].filter(Boolean).join("  ")}</div>
     ${carVin ? `<div class="vv">Chassis/VIN: ${carVin}</div>` : ""}
-    <div class="vv">Car ID: ${d?.car?.carId || ""}</div>
+    <div class="vv">Vehicle ID: ${d?.car?.carId || ""}</div>
   </div>
 </div>
 

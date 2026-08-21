@@ -122,7 +122,7 @@ export default function MarkSoldModal({ car: initialCar, onClose, onSold }: Prop
           {/* Car search (only shown when not pre-filled from inventory) */}
           {!initialCar && (
             <div style={{display:"flex",flexDirection:"column",gap:"0.4rem",position:"relative"}}>
-              <label style={lbl}>Search Car by ID, Brand or Model *</label>
+              <label style={lbl}>Search Vehicle by ID, Brand or Model *</label>
               <div style={{position:"relative"}}>
                 <input style={{...inp, paddingRight:"2.5rem"}}
                   placeholder="e.g. Toyota, CAR-XXXX, Camry..."

@@ -191,7 +191,7 @@ export default function PublicUserProfilePage() {
           <div style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"14px",overflow:"hidden"}}>
             <div style={{fontSize:"0.68rem",fontWeight:800,letterSpacing:"0.18em",textTransform:"uppercase" as const,color:"#A3A3A3",padding:"0.875rem 1.25rem",borderBottom:"1px solid #E5E5E5",background:"#FAFAFA"}}>Partner Activity</div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(120px,1fr))",gap:"1rem",padding:"1.25rem"}}>
-              {[["Cars Assigned",profile.stats.totalCars||0],["Dealers",profile.stats.totalDealers||0]].map(([l,v])=>(
+              {[["Vehicles Assigned",profile.stats.totalCars||0],["Dealers",profile.stats.totalDealers||0]].map(([l,v])=>(
                 <div key={String(l)} style={{background:"#F5F5F5",borderRadius:"10px",padding:"1rem",textAlign:"center"}}>
                   <div style={{fontFamily:"var(--font-display)",fontSize:"2rem",color:"#F47B20"}}>{String(v)}</div>
                   <div style={{fontSize:"0.72rem",color:"#737373",marginTop:"0.25rem"}}>{String(l)}</div>

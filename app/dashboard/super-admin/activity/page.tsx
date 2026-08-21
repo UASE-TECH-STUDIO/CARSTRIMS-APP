@@ -51,7 +51,7 @@ export default function ActivityPage() {
   const TYPE_LABELS: Record<string, string> = {
     dealer_approved:"Dealer Approved", dealer_suspended:"Account Suspended",
     general:"General", broadcast:"Broadcast", password_recovery:"Password Reset",
-    appointment:"Appointment", car_request:"Car Request", partner_request:"Partnership",
+    appointment:"Appointment", car_request:"Vehicle Request", partner_request:"Partnership",
   };
 
   return (

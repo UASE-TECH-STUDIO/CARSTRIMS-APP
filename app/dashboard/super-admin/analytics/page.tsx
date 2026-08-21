@@ -53,7 +53,7 @@ export default function AdminAnalyticsPage() {
     {label:"Pending Approval",value:stats?.dealers?.pending||0,sub:"Awaiting review",color:"#D97706",icon:""},
     {label:"Suspended",value:stats?.dealers?.suspended||0,sub:"Restricted accounts",color:"#DC2626",icon:""},
     {label:"Total Users",value:stats?.users?.total||0,sub:`${stats?.users?.staff||0} staff`,color:"#3B8BD4",icon:""},
-    {label:"Total Cars",value:stats?.inventory?.totalCars||0,sub:`${stats?.inventory?.totalSold||0} sold`,color:"#7C3AED",icon:""},
+    {label:"Total Vehicles",value:stats?.inventory?.totalCars||0,sub:`${stats?.inventory?.totalSold||0} sold`,color:"#7C3AED",icon:""},
     {label:"All-time Revenue",value:fmt(stats?.revenue?.allTime||0),sub:`${stats?.revenue?.totalTransactions||0} transactions`,color:"#16A34A",icon:""},
     {label:"This Month Revenue",value:fmt(stats?.revenue?.thisMonth||0),sub:`${stats?.revenue?.monthTransactions||0} sales this month`,color:"#F47B20",icon:""},
     {label:"New Dealers (Month)",value:stats?.dealers?.thisMonth||0,sub:"Registered this month",color:"#1D9E75",icon:""},
@@ -78,7 +78,7 @@ export default function AdminAnalyticsPage() {
         <div class="sub">Generated ${now}</div>
         <table><tbody>${statCards.map(s=>`<tr><td style="font-weight:700">${s.label}</td><td>${s.value}</td><td style="color:#888">${s.sub}</td></tr>`).join("")}</tbody></table>
         <h2>Top Dealers</h2>
-        <table><thead><tr><th>Dealer</th><th>Cars Sold</th><th>Revenue</th></tr></thead>
+        <table><thead><tr><th>Dealer</th><th>Vehicles Sold</th><th>Revenue</th></tr></thead>
         <tbody>${topDealers.map((d:any)=>`<tr><td>${d.companyName||d.name||""}</td><td>${d.carsSold||d.totalSold||0}</td><td>NGN ${Number(d.revenue||d.totalRevenue||0).toLocaleString()}</td></tr>`).join("")}</tbody></table>
         <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
         </body></html>`;
@@ -195,7 +195,7 @@ export default function AdminAnalyticsPage() {
             {label:"All-time Revenue",val:fmt(stats?.revenue?.allTime||0),color:"#16A34A"},
             {label:"This Month",val:fmt(stats?.revenue?.thisMonth||0),color:"#F47B20"},
             {label:"Total Transactions",val:(stats?.revenue?.totalTransactions||0).toString(),color:"#3B8BD4"},
-            {label:"Cars Sold",val:(stats?.inventory?.totalSold||0).toString(),color:"#7C3AED"},
+            {label:"Vehicles Sold",val:(stats?.inventory?.totalSold||0).toString(),color:"#7C3AED"},
           ].map(b=>(
             <div key={b.label} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0.625rem 0",borderBottom:"1px solid #F5F5F5"}}>
               <span style={{fontSize:"0.825rem",color:"#737373"}}>{b.label}</span>
@@ -213,7 +213,7 @@ export default function AdminAnalyticsPage() {
             <table style={{width:"100%",borderCollapse:"collapse",minWidth:"600px"}}>
               <thead>
                 <tr>
-                  {["#","Company","Location","Cars Sold","Revenue","Status"].map(h=>(
+                  {["#","Company","Location","Vehicles Sold","Revenue","Status"].map(h=>(
                     <th key={h} style={{padding:"0.65rem 0.875rem",textAlign:"left",fontSize:"0.68rem",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase" as const,color:"#737373",borderBottom:"1.5px solid #E5E5E5"}}>{h}</th>
                   ))}
                 </tr>

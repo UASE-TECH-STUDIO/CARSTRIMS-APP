@@ -14,7 +14,7 @@ import { useSidebar } from "@/hooks/useSidebar";
 
 const NAV = [
   { href:"/dashboard/partner", label:"Overview", icon:"home", exact:true },
-  { href:"/dashboard/partner/cars", label:"My Cars", icon:"car" },
+  { href:"/dashboard/partner/cars", label:"My Vehicles", icon:"car" },
   { href:"/dashboard/partner/dealers", label:"My Dealers", icon:"store" },
   { href:"/dashboard/partner/find-dealer", label:"Find Dealer", icon:"search" },
   { href:"/dashboard/partner/movements", label:"Movements", icon:"move" },

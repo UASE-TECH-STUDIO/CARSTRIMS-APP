@@ -45,7 +45,7 @@ export default function AdminCarsPage() {
   useEffect(() => { fetchCars(); }, [search, statusFilter, skip]);
 
   const rowsFor = (list: any[]) => list.map((c: any) => ({
-    "Car ID": c.carId,
+    "Vehicle ID": c.carId,
     Brand: c.brand,
     Model: c.model,
     Year: c.year,
@@ -76,11 +76,11 @@ export default function AdminCarsPage() {
       const scopeLabel = search ? `search-${search}` : statusFilter !== "all" ? statusFilter : "all";
       const filename = `carstrims-cars-${scopeLabel.replace(/[^a-z0-9]/gi,"-")}-${Date.now()}`;
       if (format === "excel") {
-        const blob = rowsToExcelBlob(rowsFor(matching), "Cars");
+        const blob = rowsToExcelBlob(rowsFor(matching), "Vehicles");
         await downloadBlob(blob, `${filename}.xlsx`);
       } else {
         const now = new Date().toLocaleString("en-NG");
-        const title = search ? `Cars matching "${search}"` : statusFilter !== "all" ? `${statusFilter} Cars` : "All Cars";
+        const title = search ? `Vehicles matching "${search}"` : statusFilter !== "all" ? `${statusFilter} Vehicles` : "All Vehicles";
         const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
           *{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:28px 32px;color:#1A1A1A;font-size:12px}
           h1{font-size:18px;margin:0 0 4px} .sub{color:#737373;font-size:11px;margin-bottom:16px}
@@ -92,7 +92,7 @@ export default function AdminCarsPage() {
           </style></head><body>
           <h1>${title}</h1>
           <div class="sub">${matching.length} vehicle${matching.length!==1?"s":""} &bull; Generated ${now}</div>
-          <table><thead><tr><th>Car ID</th><th>Vehicle</th><th>Dealer</th><th>Status</th><th>Price (NGN)</th><th>Listed</th></tr></thead>
+          <table><thead><tr><th>Vehicle ID</th><th>Vehicle</th><th>Dealer</th><th>Status</th><th>Price (NGN)</th><th>Listed</th></tr></thead>
           <tbody>${matching.map((c:any)=>`<tr><td>${c.carId}</td><td>${c.brand} ${c.model} ${c.year}</td><td>${c.dealerName||""}</td><td>${c.status}</td><td>${Number(c.sellingPrice||0).toLocaleString()}</td><td>${fmtDate(c.createdAt)}</td></tr>`).join("")}</tbody>
           </table>
           <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
@@ -109,7 +109,7 @@ export default function AdminCarsPage() {
     <div className="dealers-page">
       <div className="page-header">
         <div>
-          <h1 className="page-heading">Cars Listed</h1>
+          <h1 className="page-heading">Vehicles Listed</h1>
           <p className="page-sub">{total} car{total !== 1 ? "s" : ""} across every dealer on the platform</p>
         </div>
         <div style={{position:"relative"}}>
@@ -145,7 +145,7 @@ export default function AdminCarsPage() {
           <table className="dealers-table">
             <thead>
               <tr>
-                <th>Car</th><th>Dealer</th><th>Price</th><th>Status</th><th>Listed</th><th></th>
+                <th>Vehicle</th><th>Dealer</th><th>Price</th><th>Status</th><th>Listed</th><th></th>
               </tr>
             </thead>
             <tbody>

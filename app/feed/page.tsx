@@ -288,7 +288,7 @@ export default function FeedPage() {
     try {
       await api.delete(`/api/v1/cars/${car.carId}`);
       setCars((prev) => prev.filter((c) => c.carId !== car.carId));
-      showToast("Car removed", "success");
+      showToast("Vehicle removed", "success");
     } catch (err: any) {
       showToast(err?.response?.data?.detail || "Delete failed", "error");
     }
@@ -512,7 +512,7 @@ export default function FeedPage() {
       {/* BRAND TABS */}
       <div className="brand-scroll">
         <div className="brand-tabs">
-          <button className={`btab ${!selectedBrand?"active":""}`} onClick={() => setSelectedBrand("")}>All Cars</button>
+          <button className={`btab ${!selectedBrand?"active":""}`} onClick={() => setSelectedBrand("")}>All Vehicles</button>
           {BRANDS.map((b) => (
             <button key={b} className={`btab ${selectedBrand===b?"active":""}`} onClick={() => setSelectedBrand(selectedBrand===b?"":b)}>{b}</button>
           ))}
@@ -521,7 +521,7 @@ export default function FeedPage() {
 
       {/* FEED INFO */}
       <div className="feed-info">
-        <span className="feed-count">{total.toLocaleString()} cars found</span>
+        <span className="feed-count">{total.toLocaleString()} vehicles found</span>
         {!isAuthenticated && <span className="guest-note">Login to save favorites and post comments</span>}
       </div>
 
@@ -540,7 +540,7 @@ export default function FeedPage() {
       ) : cars.length === 0 ? (
         <div className="empty">
           <div className="empty-icon">[ ]</div>
-          <h3>No cars found</h3>
+          <h3>No vehicles found</h3>
           <p>Try adjusting your search or removing some filters</p>
           <button className="fd-clear" onClick={clearAll}>Clear All Filters</button>
         </div>

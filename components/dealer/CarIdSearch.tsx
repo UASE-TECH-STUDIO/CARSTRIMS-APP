@@ -37,7 +37,7 @@ export default function CarIdSearch({ value, onSelect, placeholder }: Props) {
   return (
     <div style={{position:"relative"}}>
       <input style={inp} value={q}
-        placeholder={placeholder || "Search by Car ID, brand or model..."}
+        placeholder={placeholder || "Search by Vehicle ID, brand or model..."}
         onChange={e => { setQ(e.target.value); setOpen(true); }}
         onFocus={ev => { ev.target.style.borderColor="#F47B20"; setOpen(results.length > 0); }}
         onBlur={ev  => { ev.target.style.borderColor="#E5E5E5"; setTimeout(()=>setOpen(false), 200); }}

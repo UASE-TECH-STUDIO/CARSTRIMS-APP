@@ -71,7 +71,7 @@ export default function GlobalSearchModal({ onClose }: Props) {
 
           {!!results.cars?.length && (
             <div className="gs-section">
-              <div className="gs-section-title">Cars</div>
+              <div className="gs-section-title">Vehicles</div>
               {results.cars.map((c: any) => (
                 <Link key={c.carId || c._id} href={`/cars/${c.carId}`} className="gs-row" onClick={onClose}>
                   <div className="gs-row-thumb">

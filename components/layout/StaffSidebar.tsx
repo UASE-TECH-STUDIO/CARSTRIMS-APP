@@ -8,7 +8,7 @@ import api from "@/lib/api";
 
 const ALL_NAV = [
   { href:"/dashboard/staff", label:"Overview", icon:"", exact:true, perm:null },
-  { href:"/dashboard/staff/inventory", label:"Cars & Inventory", icon:"", perm:"view_inventory" },
+  { href:"/dashboard/staff/inventory", label:"Vehicles & Inventory", icon:"", perm:"view_inventory" },
   { href:"/dashboard/staff/sales", label:"Sales", icon:"", perm:"view_sales" },
   { href:"/dashboard/staff/staff", label:"Staff", icon:"", perm:"view_staff" },
   { href:"/dashboard/staff/partners", label:"Partners", icon:"", perm:"view_partners" },

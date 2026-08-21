@@ -7,7 +7,7 @@ import api from "@/lib/api";
 
 const NAV_ITEMS = [
   { href:"/dashboard/dealer", label:"Overview", icon:"", exact:true },
-  { href:"/dashboard/dealer/cars", label:"Cars & Inventory", icon:"" },
+  { href:"/dashboard/dealer/cars", label:"Vehicles & Inventory", icon:"" },
   { href:"/dashboard/dealer/sales", label:"Sales", icon:"" },
   { href:"/dashboard/dealer/expenses", label:"Expenses", icon:"" },
   { href:"/dashboard/dealer/staff", label:"Staff", icon:"" },

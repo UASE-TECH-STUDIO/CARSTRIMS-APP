@@ -8,7 +8,7 @@ import api from "@/lib/api";
 
 const NAV = [
   { href:"/dashboard/partner", label:"Overview", icon:"", exact:true },
-  { href:"/dashboard/partner/cars", label:"My Cars", icon:"" },
+  { href:"/dashboard/partner/cars", label:"My Vehicles", icon:"" },
   { href:"/dashboard/partner/dealers", label:"My Dealers", icon:"" },
   { href:"/dashboard/partner/find-dealer", label:"Find Dealer", icon:"" },
   { href:"/dashboard/partner/movements", label:"Movements", icon:"" },

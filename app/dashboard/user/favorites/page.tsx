@@ -63,7 +63,7 @@ export default function UserFavoritesPage() {
     <div className="favs-page">
       <div className="favs-header">
         <div>
-          <h2 className="page-heading">Saved Cars</h2>
+          <h2 className="page-heading">Saved Vehicles</h2>
           <p className="page-sub">{loading?"Loading...": `${favs.length} saved vehicle${favs.length!==1?"s":""}`}</p>
         </div>
         {!loading && <button className="refresh-btn" onClick={load}> Refresh</button>}
@@ -78,7 +78,7 @@ export default function UserFavoritesPage() {
           <div className="empty-icon"></div>
           <h3>No saved cars yet</h3>
           <p>Tap the  Save button on any car in the feed to save it here</p>
-          <button className="browse-btn" onClick={()=>router.push("/feed")}>Browse Cars </button>
+          <button className="browse-btn" onClick={()=>router.push("/feed")}>Browse Vehicles </button>
         </div>
       ) : (
         <div className="favs-grid">
@@ -101,7 +101,7 @@ export default function UserFavoritesPage() {
                 <div className="fav-price">{fmt(car.sellingPrice)}</div>
               </div>
               <div className="fav-actions">
-                <button className="fav-btn view" onClick={()=>router.push(`/cars/${car.carId}`)}>View Car</button>
+                <button className="fav-btn view" onClick={()=>router.push(`/cars/${car.carId}`)}>View Vehicle</button>
                 {car.dealerWhatsapp&&(
                   <a href={`https://wa.me/${car.dealerWhatsapp}?text=Hi, interested in ${car.brand} ${car.model} ${car.year}`} target="_blank" rel="noreferrer" className="fav-btn wa">WhatsApp</a>
                 )}

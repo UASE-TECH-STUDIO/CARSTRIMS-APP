@@ -21,7 +21,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.carstrims.com"),
   title: {
-    default: "CARSTRIMS — Nigeria's Premier Car Dealer Platform",
+    default: "CARSTRIMS — Nigeria's Premier Vehicle Marketplace",
     template: "%s | CARSTRIMS",
   },
   description: "Buy and sell premium vehicles in Nigeria. CARSTRIMS connects you with trusted car dealers across Abuja, Lagos, and beyond. Browse thousands of cars — brand new, foreign used, and locally used.",
@@ -51,20 +51,20 @@ export const metadata: Metadata = {
     locale: "en_NG",
     url: "https://www.carstrims.com",
     siteName: "CARSTRIMS",
-    title: "CARSTRIMS — Nigeria's Premier Car Dealer Platform",
+    title: "CARSTRIMS — Nigeria's Premier Vehicle Marketplace",
     description: "Buy and sell premium vehicles in Nigeria. Browse thousands of cars from trusted dealers across Abuja, Lagos and beyond.",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "CARSTRIMS — Nigeria's Premier Car Dealer Platform",
+        alt: "CARSTRIMS — Nigeria's Premier Vehicle Marketplace",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "CARSTRIMS — Nigeria's Premier Car Dealer Platform",
+    title: "CARSTRIMS — Nigeria's Premier Vehicle Marketplace",
     description: "Buy and sell premium vehicles in Nigeria. Browse thousands of cars from trusted dealers.",
     images: ["/og-image.png"],
     creator: "@carstrims",
@@ -121,7 +121,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "name": "CARSTRIMS",
               "url": "https://www.carstrims.com",
               "logo": "https://www.carstrims.com/logo.png",
-              "description": "Nigeria's Premier Car Dealer Platform — Buy and sell premium vehicles across Nigeria.",
+              "description": "Nigeria's Premier Vehicle Marketplace — Buy and sell cars, motorcycles, and more across Nigeria.",
               "address": {
                 "@type": "PostalAddress",
                 "addressCountry": "NG",

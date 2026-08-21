@@ -37,12 +37,12 @@ export default function PartnerCarsPage() {
       const filename = `carstrims-my-assigned-cars-${Date.now()}`;
       if (format === "excel") {
         const blob = rowsToExcelBlob(filtered.map((c:any) => ({
-          "Car ID": c.carId, Vehicle: `${c.brand} ${c.model} ${c.year}`,
+          "Vehicle ID": c.carId, Vehicle: `${c.brand} ${c.model} ${c.year}`,
           Dealer: c.dealerName || "", Status: c.status,
           "Selling Price (NGN)": c.sellingPrice || 0,
           "Total Expenses (NGN)": c.totalExpenses || 0,
           "Profit (NGN)": c.status==="sold" ? (c.actualProfit||c.estimatedProfit||0) : "",
-        })), "My Assigned Cars");
+        })), "My Assigned Vehicles");
         await downloadBlob(blob, `${filename}.xlsx`);
       } else {
         const now = new Date().toLocaleString("en-NG");
@@ -55,14 +55,14 @@ export default function PartnerCarsPage() {
           tr:nth-child(even) td{background:#FAFAFA}
           .footer{margin-top:16px;font-size:9px;color:#A3A3A3;text-align:center}
           </style></head><body>
-          <h1>My Assigned Cars</h1>
+          <h1>My Assigned Vehicles</h1>
           <div class="sub">${filtered.length} vehicle${filtered.length!==1?"s":""} &bull; Generated ${now}</div>
-          <table><thead><tr><th>Car</th><th>Dealer</th><th>Status</th><th>Price</th><th>Expenses</th><th>Profit</th></tr></thead>
+          <table><thead><tr><th>Vehicle</th><th>Dealer</th><th>Status</th><th>Price</th><th>Expenses</th><th>Profit</th></tr></thead>
           <tbody>${filtered.map((c:any)=>`<tr><td>${c.brand} ${c.model} ${c.year}<br/><span style="color:#A3A3A3;font-size:9px">${c.carId}</span></td><td>${c.dealerName||""}</td><td>${c.status}</td><td>${fmt(c.sellingPrice)}</td><td>${fmt(c.totalExpenses)}</td><td>${c.status==="sold"?fmt(c.actualProfit||c.estimatedProfit||0):"-"}</td></tr>`).join("")}</tbody>
           </table>
           <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
           </body></html>`;
-        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "My Assigned Cars");
+        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "My Assigned Vehicles");
         await downloadBlob(blob, `${filename}.${format}`);
       }
       showToast("Downloaded", "success");
@@ -77,7 +77,7 @@ export default function PartnerCarsPage() {
     <div className="cars-page">
       <div className="page-header">
         <div>
-          <h2 className="page-heading">My Cars</h2>
+          <h2 className="page-heading">My Vehicles</h2>
           <p className="page-sub">{cars.length} vehicle{cars.length!==1?"s":""} assigned</p>
         </div>
         <div style={{position:"relative"}}>
@@ -104,7 +104,7 @@ export default function PartnerCarsPage() {
 
       {loading ? <div className="loading"><div className="spinner" /></div>
       : filtered.length === 0 ? (
-        <div className="empty"><div className="ei"></div><h3>No cars found</h3><p>Cars assigned by dealers will appear here</p></div>
+        <div className="empty"><div className="ei"></div><h3>No vehicles found</h3><p>Vehicles assigned by dealers will appear here</p></div>
       ) : (
         <div className="cars-grid">
           {filtered.map((c) => (

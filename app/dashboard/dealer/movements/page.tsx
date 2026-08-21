@@ -184,7 +184,7 @@ export default function MovementsPage() {
       </style></head><body>
       <h1>Vehicle Movements</h1>
       <div class="sub">${movements.length} record${movements.length!==1?"s":""} &bull; Generated ${now}</div>
-      <table><thead><tr><th>Car</th><th>Taken By</th><th>Purpose</th><th>Status</th><th>Out</th><th>Returned</th></tr></thead>
+      <table><thead><tr><th>Vehicle</th><th>Taken By</th><th>Purpose</th><th>Status</th><th>Out</th><th>Returned</th></tr></thead>
       <tbody>${movements.map((m:any)=>`<tr><td>${m.carBrand||""} ${m.carModel||""}<br/><span style="color:#A3A3A3;font-size:9px">${m.carId}</span></td><td>${m.takenByName||""}</td><td>${(m.purpose||"").replace(/_/g," ")}</td><td>${m.status}</td><td>${fmtDate(m.timeOut||m.createdAt)}</td><td>${m.timeIn?fmtDate(m.timeIn):"—"}</td></tr>`).join("")}</tbody>
       </table>
       <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
@@ -198,7 +198,7 @@ export default function MovementsPage() {
       const filename = `carstrims-movements-${Date.now()}`;
       if (format === "excel") {
         const blob = rowsToExcelBlob(movements.map((m:any) => ({
-          Car: `${m.carBrand||""} ${m.carModel||""}`, "Car ID": m.carId,
+          Vehicle: `${m.carBrand||""} ${m.carModel||""}`, "Vehicle ID": m.carId,
           "Taken By": m.takenByName || "", Purpose: (m.purpose||"").replace(/_/g," "),
           Status: m.status, "Time Out": fmtDate(m.timeOut||m.createdAt),
           "Time In": m.timeIn ? fmtDate(m.timeIn) : "",

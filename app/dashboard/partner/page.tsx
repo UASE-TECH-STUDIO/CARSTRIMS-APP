@@ -55,9 +55,9 @@ export default function PartnerOverviewPage() {
       <div className="stats-grid">
         {[
           { label:"Linked Dealers", val:data?.totalLinkedDealers||0, icon:"", href:"/dashboard/partner/dealers", color:"#3B8BD4" },
-          { label:"Cars Assigned", val:data?.totalCarsAssigned||0, icon:"", href:"/dashboard/partner/cars", color:"#F47B20" },
-          { label:"Cars Sold", val:data?.totalCarsSold||0, icon:"", href:"/dashboard/partner/earnings", color:"#16A34A" },
-          { label:"Available Cars", val:data?.totalCarsAvailable||0, icon:"", href:"/dashboard/partner/cars", color:"#1D9E75" },
+          { label:"Vehicles Assigned", val:data?.totalCarsAssigned||0, icon:"", href:"/dashboard/partner/cars", color:"#F47B20" },
+          { label:"Vehicles Sold", val:data?.totalCarsSold||0, icon:"", href:"/dashboard/partner/earnings", color:"#16A34A" },
+          { label:"Available Vehicles", val:data?.totalCarsAvailable||0, icon:"", href:"/dashboard/partner/cars", color:"#1D9E75" },
           { label:"Total Revenue", val:fmt(data?.totalRevenue||0), icon:"", href:"/dashboard/partner/earnings", color:"#3B8BD4", wide:true },
         ].map((s) => (
           <Link key={s.label} href={s.href} className={`stat-card ${(s as any).wide?"wide":""}`}>
@@ -76,7 +76,7 @@ export default function PartnerOverviewPage() {
         <div className="qa-grid">
           {[
             { label:"Find Dealer", icon:"", href:"/dashboard/partner/find-dealer" },
-            { label:"My Cars", icon:"", href:"/dashboard/partner/cars" },
+            { label:"My Vehicles", icon:"", href:"/dashboard/partner/cars" },
             { label:"My Dealers", icon:"", href:"/dashboard/partner/dealers" },
             { label:"Earnings", icon:"", href:"/dashboard/partner/earnings" },
             { label:"Movements", icon:"", href:"/dashboard/partner/movements" },

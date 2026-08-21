@@ -8,7 +8,7 @@ import { useToast } from "@/store/toastStore";
 const STEPS = [
   { num:1, label:"Company Info" },
   { num:2, label:"Documents" },
-  { num:3, label:"First Car" },
+  { num:3, label:"First Vehicle" },
   { num:4, label:"First Staff" },
   { num:5, label:"CCTV" },
 ];
@@ -139,7 +139,7 @@ export default function DealerSetupPage() {
 
   const handleStep3 = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!car.model.trim()) { showErr("Car model is required"); return; }
+    if (!car.model.trim()) { showErr("Vehicle model is required"); return; }
     if (!car.sellingPrice) { showErr("Selling price is required"); return; }
     setLoading(true); setError("");
     try {
@@ -359,7 +359,7 @@ export default function DealerSetupPage() {
         {/*  STEP 3  */}
         {step===3&&(
           <div style={{background:"#fff",borderRadius:"16px",padding:"2rem",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
-            <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.4rem",letterSpacing:"0.04em",color:"#1A1A1A",marginBottom:"0.25rem"}}>Add Your First Car</h2>
+            <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.4rem",letterSpacing:"0.04em",color:"#1A1A1A",marginBottom:"0.25rem"}}>Add Your First Vehicle</h2>
             <p style={{fontSize:"0.85rem",color:"#737373",marginBottom:"1.5rem",lineHeight:1.6}}>List your first vehicle. You can add photos and more cars from your dashboard.</p>
             <form onSubmit={handleStep3} style={{display:"flex",flexDirection:"column",gap:"1.25rem"}}>
               <div style={row}>

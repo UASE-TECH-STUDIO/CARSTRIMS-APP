@@ -10,7 +10,7 @@ import api from "@/lib/api";
 
 const PAGE_TITLES: Record<string,string> = {
   "/dashboard/staff":          "Overview",
-  "/dashboard/staff/inventory":"Cars & Inventory",
+  "/dashboard/staff/inventory":"Vehicles & Inventory",
   "/dashboard/staff/sales":    "Sales",
   "/dashboard/staff/staff":    "Staff",
   "/dashboard/staff/partners": "Partners",
@@ -23,7 +23,7 @@ const PAGE_TITLES: Record<string,string> = {
 
 const ALL_NAV = [
   { href:"/dashboard/staff",                label:"Overview",         icon:"", exact:true, perm:null },
-  { href:"/dashboard/staff/inventory",      label:"Cars & Inventory", icon:"", perm:"view_inventory" },
+  { href:"/dashboard/staff/inventory",      label:"Vehicles & Inventory", icon:"", perm:"view_inventory" },
   { href:"/dashboard/staff/sales",          label:"Sales",            icon:"", perm:"view_sales" },
   { href:"/dashboard/staff/appointments",   label:"Appointments",     icon:"", perm:"view_appointments" },
   { href:"/dashboard/staff/requests",       label:"Requests",         icon:"", perm:"view_requests" },

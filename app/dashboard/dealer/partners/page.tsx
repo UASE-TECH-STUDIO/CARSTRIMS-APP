@@ -137,8 +137,8 @@ export default function PartnersPage() {
   const [exportPicker, setExportPicker] = useState<"download" | "share" | "">("");
 
   const partnerExportRows = () => (detailData?.cars || []).map((c: any) => ({
-    Car: `${c.brand} ${c.model} ${c.year}`,
-    "Car ID": c.carId,
+    Vehicle: `${c.brand} ${c.model} ${c.year}`,
+    "Vehicle ID": c.carId,
     Status: c.status,
     "Selling Price (NGN)": c.sellingPrice || 0,
     "Total Expenses (NGN)": c.totalExpenses || 0,
@@ -152,7 +152,7 @@ export default function PartnersPage() {
     setExportPicker(""); setExportBusy("download");
     try {
       if (format === "excel") {
-        const blob = rowsToExcelBlob(partnerExportRows(), "Assigned Cars");
+        const blob = rowsToExcelBlob(partnerExportRows(), "Assigned Vehicles");
         await downloadBlob(blob, `${exportFilename()}.xlsx`);
       } else {
         if (!exportRef.current) throw new Error("Nothing to export yet");

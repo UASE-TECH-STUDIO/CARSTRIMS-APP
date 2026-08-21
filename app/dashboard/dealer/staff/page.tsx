@@ -62,7 +62,7 @@ const ALL_PERMS = PERM_GROUPS.flatMap(g => g.perms.map(p => p.id));
 
 const PRESETS = [
   { label:"Sales Agent",  color:"#16A34A", perms:["view_inventory","view_sales","record_sales","view_invoices","generate_invoices","view_appointments","manage_appointments","view_requests","view_messages","send_messages"] },
-  { label:"Car Manager",  color:"#F47B20", perms:["view_inventory","add_cars","edit_cars","delete_cars","view_sales","view_reports","generate_reports","view_movements","manage_movements"] },
+  { label:"Vehicle Manager",  color:"#F47B20", perms:["view_inventory","add_cars","edit_cars","delete_cars","view_sales","view_reports","generate_reports","view_movements","manage_movements"] },
   { label:"Receptionist", color:"#D97706", perms:["view_inventory","view_appointments","manage_appointments","view_requests","manage_requests","view_invoices","generate_invoices","view_messages","send_messages"] },
   { label:"Finance",      color:"#7B68EE", perms:["view_sales","view_reports","generate_reports","view_expenses","manage_expenses","view_invoices","generate_invoices","edit_documents"] },
   { label:"Full Access",  color:"#1A1A1A", perms:ALL_PERMS },

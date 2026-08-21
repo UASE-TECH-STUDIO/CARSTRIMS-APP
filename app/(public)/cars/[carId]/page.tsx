@@ -210,7 +210,7 @@ export default function CarDetailPage() {
 
   const handleAdminDeleteCar = async () => {
     if (!confirm("Remove this car from the platform?")) return;
-    try { await api.delete(`/api/v1/cars/${carId}`); showToast("Car removed", "success"); router.push("/feed"); }
+    try { await api.delete(`/api/v1/cars/${carId}`); showToast("Vehicle removed", "success"); router.push("/feed"); }
     catch(e:any) { showToast(e.response?.data?.detail || "Delete failed", "error"); }
   };
 
@@ -237,7 +237,7 @@ export default function CarDetailPage() {
   if (!car) return (
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"1rem",padding:"5rem 1rem",textAlign:"center",minHeight:"100vh",background:"#F5F5F5",justifyContent:"center"}}>
       <div style={{fontSize:"3rem"}}></div>
-      <h2 style={{fontFamily:"var(--font-display)",color:"#1A1A1A"}}>Car not found</h2>
+      <h2 style={{fontFamily:"var(--font-display)",color:"#1A1A1A"}}>Vehicle not found</h2>
       <Link href="/feed" style={{color:"#F47B20",fontWeight:600}}>Back to feed</Link>
     </div>
   );

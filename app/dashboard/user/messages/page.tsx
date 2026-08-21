@@ -216,7 +216,7 @@ export default function UserMessagesPage() {
                   <a href={`/cars/${carContext.carId}`} style={{display:"flex",alignItems:"center",gap:"0.75rem",background:"#FFF7ED",border:"1.5px solid rgba(244,123,32,0.25)",borderRadius:"10px",padding:"0.75rem",textDecoration:"none",transition:"background 0.15s"}} onMouseOver={e=>e.currentTarget.style.background="#FFE8CC"} onMouseOut={e=>e.currentTarget.style.background="#FFF7ED"}>
                     {carContext.images?.[0]&&<img src={carContext.images[0]} alt="" style={{width:"52px",height:"40px",objectFit:"cover",borderRadius:"6px",flexShrink:0,border:"1px solid rgba(244,123,32,0.2)"}}/>}
                     <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:"0.68rem",fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase" as const,color:"#F47B20"}}>Car Enquiry</div>
+                      <div style={{fontSize:"0.68rem",fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase" as const,color:"#F47B20"}}>Vehicle Enquiry</div>
                       <div style={{fontSize:"0.9rem",fontWeight:700,color:"#1A1A1A",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{carContext.brand} {carContext.model} {carContext.year}</div>
                       {carContext.sellingPrice&&<div style={{fontFamily:"var(--font-display)",fontSize:"0.875rem",color:"#F47B20"}}>{carContext.sellingPrice.toLocaleString()}</div>}
                     </div>

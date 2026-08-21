@@ -12,7 +12,7 @@ import api from "@/lib/api";
 
 const PAGE_TITLES: Record<string,string> = {
   "/dashboard/dealer":"Overview",
-  "/dashboard/dealer/cars":"Cars & Inventory",
+  "/dashboard/dealer/cars":"Vehicles & Inventory",
   "/dashboard/dealer/sales":"Sales",
   "/dashboard/dealer/expenses":"Expenses",
   "/dashboard/dealer/staff":"Staff Management",

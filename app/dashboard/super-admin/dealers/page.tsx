@@ -96,7 +96,7 @@ export default function AdminDealersPage() {
             <thead>
               <tr>
                 <th>Company</th><th>Owner</th><th>Contact</th>
-                <th>Cars</th><th>Sold</th><th>Staff</th>
+                <th>Vehicles</th><th>Sold</th><th>Staff</th>
                 <th>Status</th><th>Joined</th><th>Actions</th>
               </tr>
             </thead>

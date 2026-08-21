@@ -5,8 +5,8 @@ import api from "@/lib/api";
 import Link from "next/link";
 
 const PERM_LABELS: Record<string,string> = {
-  view_inventory:"View Inventory",   add_cars:"Add Cars",           edit_cars:"Edit Cars",
-  delete_cars:"Delete Cars",         view_sales:"View Sales",       record_sales:"Record Sales",
+  view_inventory:"View Inventory",   add_cars:"Add Vehicles",           edit_cars:"Edit Vehicles",
+  delete_cars:"Delete Vehicles",         view_sales:"View Sales",       record_sales:"Record Sales",
   view_invoices:"View Invoices",     generate_invoices:"Generate Invoices", edit_documents:"Edit Documents",
   view_reports:"View Reports",       generate_reports:"Generate Reports",
   view_appointments:"Appointments",  manage_appointments:"Manage Appointments",
@@ -157,8 +157,8 @@ export default function StaffOverviewPage() {
           {/* Dealer stats */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"0.75rem",marginTop:"1rem"}}>
             {[
-              {l:"Cars Listed", v:dealer.totalCarsListed||0},
-              {l:"Cars Sold",   v:dealer.totalCarsSold||0},
+              {l:"Vehicles Listed", v:dealer.totalCarsListed||0},
+              {l:"Vehicles Sold",   v:dealer.totalCarsSold||0},
               {l:"Revenue",     v:fmt(dealer.totalRevenue||0)},
             ].map(s => (
               <div key={s.l} style={{background:"#F5F5F5",borderRadius:"8px",padding:"0.75rem",textAlign:"center"}}>

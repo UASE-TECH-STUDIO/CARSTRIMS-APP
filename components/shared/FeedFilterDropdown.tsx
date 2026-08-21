@@ -48,7 +48,7 @@ export default function FeedFilterDropdown(props: Props) {
   return (
     <div className="ffd-panel" onClick={(e) => e.stopPropagation()}>
       <div className="ffd-header">
-        <span>Filter Cars</span>
+        <span>Filter Vehicles</span>
         <button type="button" className="ffd-close" onClick={onClose} aria-label="Close filters">✕</button>
       </div>
 

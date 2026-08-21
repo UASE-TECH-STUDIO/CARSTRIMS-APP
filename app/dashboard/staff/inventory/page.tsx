@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 
 const Page = dynamic(
   () => import("@/app/dashboard/dealer/cars/page"),
-  { ssr: false, loading: () => <div style={{padding:"2rem",color:"#737373"}}>Loading Cars & Inventory...</div> }
+  { ssr: false, loading: () => <div style={{padding:"2rem",color:"#737373"}}>Loading Vehicles & Inventory...</div> }
 );
 
 export default function StaffInventoryPage() {
@@ -21,7 +21,7 @@ export default function StaffInventoryPage() {
     <div style={{padding:"3rem",textAlign:"center",background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px"}}>
       <div style={{fontSize:"2rem",marginBottom:"0.75rem"}}>&#x1F512;</div>
       <div style={{fontFamily:"var(--font-display)",fontSize:"1.1rem",color:"#DC2626",fontWeight:700}}>Access Restricted</div>
-      <p style={{color:"#737373",marginTop:"0.5rem",fontSize:"0.875rem"}}>You need permission to access Cars & Inventory. Contact your dealer admin.</p>
+      <p style={{color:"#737373",marginTop:"0.5rem",fontSize:"0.875rem"}}>You need permission to access Vehicles & Inventory. Contact your dealer admin.</p>
     </div>
   );
   return <Page />;

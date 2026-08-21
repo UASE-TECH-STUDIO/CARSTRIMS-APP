@@ -98,7 +98,7 @@ export default function DealerCarsPage() {
   // sold cars" or "export everything" genuinely covers all of them,
   // respecting whatever filter is already applied on screen.
   const buildInventoryHtml = (rows: Car[]) => {
-    const title = statusFilter === "all" ? "Full Car Inventory" : `Inventory — ${statusFilter.replace(/_/g," ")} Cars`;
+    const title = statusFilter === "all" ? "Full Vehicle Inventory" : `Inventory — ${statusFilter.replace(/_/g," ")} Vehicles`;
     const now = new Date().toLocaleString("en-NG");
     return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
       *{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:28px 32px;color:#1A1A1A;font-size:12px}
@@ -112,7 +112,7 @@ export default function DealerCarsPage() {
       </style></head><body>
       <h1>${title}</h1>
       <div class="sub">${rows.length} vehicle${rows.length!==1?"s":""} &bull; Generated ${now}</div>
-      <table><thead><tr><th>Car ID</th><th>Vehicle</th><th>Color</th><th>Condition</th><th>Status</th><th>Price (NGN)</th></tr></thead>
+      <table><thead><tr><th>Vehicle ID</th><th>Vehicle</th><th>Color</th><th>Condition</th><th>Status</th><th>Price (NGN)</th></tr></thead>
       <tbody>${rows.map(c=>`<tr><td>${c.carId}</td><td>${c.brand} ${c.model} ${c.year}</td><td>${c.color||""}</td><td>${c.condition||""}</td><td>${c.status}</td><td>${Number(c.sellingPrice||0).toLocaleString()}</td></tr>`).join("")}</tbody>
       </table>
       <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
@@ -136,14 +136,14 @@ export default function DealerCarsPage() {
       const filename = `carstrims-inventory-${statusFilter}-${Date.now()}`;
       if (format === "excel") {
         const blob = rowsToExcelBlob(rows.map(c => ({
-          "Car ID": c.carId, Brand: c.brand, Model: c.model, Year: c.year,
+          "Vehicle ID": c.carId, Brand: c.brand, Model: c.model, Year: c.year,
           Color: c.color, Condition: c.condition, Status: c.status,
           "Selling Price (NGN)": c.sellingPrice || 0,
         })), "Inventory");
         await downloadBlob(blob, `${filename}.xlsx`);
       } else {
         const html = buildInventoryHtml(rows);
-        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Car Inventory");
+        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Vehicle Inventory");
         await downloadBlob(blob, `${filename}.${format}`);
       }
       showToast("Downloaded", "success");
@@ -212,7 +212,7 @@ export default function DealerCarsPage() {
   };
 
   const handleSave = async()=>{
-    if(!form.model.trim()){showErr("Car model is required");return;}
+    if(!form.model.trim()){showErr("Vehicle model is required");return;}
     if(!form.sellingPrice){showErr("Selling price is required");return;}
     setSaving(true);setErr("");
     try {
@@ -255,7 +255,7 @@ export default function DealerCarsPage() {
 
         <div className="cp-header">
           <div>
-            <h2 className="cp-heading">Cars & Inventory</h2>
+            <h2 className="cp-heading">Vehicles & Inventory</h2>
             <p className="cp-sub">{total} total vehicles</p>
           </div>
           <div className="cp-btns">
@@ -272,7 +272,7 @@ export default function DealerCarsPage() {
               )}
             </div>
             <button className="btn-outline" onClick={()=>setMarkSoldCar({} as Car)}>Record Sale</button>
-            <button className="btn-primary" onClick={openAdd}>+ Add Car</button>
+            <button className="btn-primary" onClick={openAdd}>+ Add Vehicle</button>
           </div>
         </div>
 
@@ -291,7 +291,7 @@ export default function DealerCarsPage() {
           <div style={{fontSize:"2.5rem"}}></div>
           <div className="cp-empty-title">No cars yet</div>
           <p className="cp-empty-sub">Add your first vehicle to start building your inventory</p>
-          <button className="btn-primary" onClick={openAdd}>+ Add First Car</button>
+          <button className="btn-primary" onClick={openAdd}>+ Add First Vehicle</button>
         </div>
         :<div className="cp-grid">
           {cars.map(car=>(

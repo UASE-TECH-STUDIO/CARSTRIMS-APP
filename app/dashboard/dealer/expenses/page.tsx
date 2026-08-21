@@ -109,7 +109,7 @@ export default function ExpensesPage() {
 
   const exportCSV = () => {
     const rows = [
-      ["Date","Car ID","Category","Amount","Description"],
+      ["Date","Vehicle ID","Category","Amount","Description"],
       ...expenses.map(e => [
         e.createdAt ? new Date(e.createdAt).toLocaleDateString() : "",
         e.carId || "", e.category, e.amount, e.description || "",
@@ -141,7 +141,7 @@ export default function ExpensesPage() {
       </style></head><body>
       <h1>Expenses${catFilter!=="all"?` &mdash; ${catFilter.replace(/_/g," ")}`:""}</h1>
       <div class="sub">${expenses.length} entr${expenses.length!==1?"ies":"y"} &bull; Generated ${now}</div>
-      <table><thead><tr><th>Date</th><th>Car ID</th><th>Category</th><th>Description</th><th>Amount (NGN)</th></tr></thead>
+      <table><thead><tr><th>Date</th><th>Vehicle ID</th><th>Category</th><th>Description</th><th>Amount (NGN)</th></tr></thead>
       <tbody>${expenses.map(e=>`<tr><td>${fmtDate(e.createdAt)}</td><td>${e.carId||"-"}</td><td>${(e.category||"").replace(/_/g," ")}</td><td>${e.description||""}</td><td>${Number(e.amount||0).toLocaleString()}</td></tr>`).join("")}
       <tr class="total-row"><td colspan="4">TOTAL</td><td>${Number(total).toLocaleString()}</td></tr></tbody>
       </table>
@@ -156,7 +156,7 @@ export default function ExpensesPage() {
       const filename = `carstrims-expenses-${catFilter}-${Date.now()}`;
       if (format === "excel") {
         const blob = rowsToExcelBlob(expenses.map(e => ({
-          Date: fmtDate(e.createdAt), "Car ID": e.carId || "", Category: e.category,
+          Date: fmtDate(e.createdAt), "Vehicle ID": e.carId || "", Category: e.category,
           Description: e.description || "", "Amount (NGN)": e.amount || 0,
         })), "Expenses");
         await downloadBlob(blob, `${filename}.xlsx`);
@@ -253,7 +253,7 @@ export default function ExpensesPage() {
         <div className="exp-table-wrap">
           <table className="exp-table">
             <thead>
-              <tr><th>Date</th><th>Car ID</th><th>Category</th><th>Amount</th><th>Description</th><th>Actions</th></tr>
+              <tr><th>Date</th><th>Vehicle ID</th><th>Category</th><th>Amount</th><th>Description</th><th>Actions</th></tr>
             </thead>
             <tbody>
               {expenses.map(e=>(
@@ -284,7 +284,7 @@ export default function ExpensesPage() {
             {error&&<div className="modal-err">{error}</div>}
             <form onSubmit={handleAdd} className="modal-form">
               <div className="field">
-                <label className="fl">Link to Car (optional  search by brand, model or ID)</label>
+                <label className="fl">Link to Vehicle (optional  search by brand, model or ID)</label>
                 <CarSearch value={carSearch} onChange={v=>{setCarSearch(v);if(!v)setForm(f=>({...f,carId:""}));}} onSelect={c=>selectCar(c)} />
                 {form.carId&&<div style={{fontSize:"0.7rem",color:"#16A34A",marginTop:"0.2rem",fontWeight:600}}>Linked: {form.carId}</div>}
               </div>
@@ -312,7 +312,7 @@ export default function ExpensesPage() {
             {error&&<div className="modal-err">{error}</div>}
             <form onSubmit={handleEdit} className="modal-form">
               <div className="field">
-                <label className="fl">Car (change link or leave)</label>
+                <label className="fl">Vehicle (change link or leave)</label>
                 <CarSearch value={editCarSearch} onChange={v=>{setEditCarSearch(v);if(!v)setEditForm(f=>({...f,carId:""}));}} onSelect={c=>selectCar(c,true)} />
                 {editForm.carId&&<div style={{fontSize:"0.7rem",color:"#16A34A",marginTop:"0.2rem",fontWeight:600}}>Linked: {editForm.carId}</div>}
               </div>

@@ -89,7 +89,7 @@ export default function SalesPage() {
   /*  Exports  */
   const exportCSV=()=>{
     const rows=[
-      ["TXN ID","Car","Brand","Model","Selling Price","Purchase Price","Profit","Buyer","Buyer Phone","Payment","Date","Edited","Manual"],
+      ["TXN ID","Vehicle","Brand","Model","Selling Price","Purchase Price","Profit","Buyer","Buyer Phone","Payment","Date","Edited","Manual"],
       ...sales.map(s=>[s.transactionId,s.carId,s.carBrand||"",s.carModel||"",s.sellingPrice,s.purchasePrice||0,s.profit,s.buyerName||"",s.buyerPhone||"",s.paymentMethod,s.soldAt?new Date(s.soldAt).toLocaleDateString():"",s.isEdited?"Yes":"No",s.isManual?"Yes":"No"]),
     ];
     const csv=rows.map(r=>r.map(c=>`"${String(c||"").replace(/"/g,'""')}"`).join(",")).join("\n");
@@ -126,7 +126,7 @@ export default function SalesPage() {
         <div class="card"><div class="cv">${fmt(summary.totalNetProfit||0)}</div><div class="cl">Net Profit</div></div>
       </div>
       <h2>All Transactions (${total})</h2>
-      <table><thead><tr><th>TXN ID</th><th>Car</th><th>Buyer</th><th>Price</th><th>Profit</th><th>Payment</th><th>Date</th></tr></thead>
+      <table><thead><tr><th>TXN ID</th><th>Vehicle</th><th>Buyer</th><th>Price</th><th>Profit</th><th>Payment</th><th>Date</th></tr></thead>
       <tbody>${sales.map(s=>`<tr><td style="font-family:monospace;font-size:0.7rem">${s.transactionId}</td><td>${s.carBrand||""} ${s.carModel||""}<br><span style="font-size:0.68rem;color:#AAA">${s.carId}</span></td><td>${s.buyerName||""}</td><td style="font-weight:600">${fmt(s.sellingPrice)}</td><td style="color:#16A34A;font-weight:600">+${fmt(s.profit)}</td><td style="text-transform:capitalize">${s.paymentMethod?.replace(/_/g," ")}</td><td style="color:#888">${fmtD(s.soldAt)}</td></tr>`).join("")}</tbody>
       </table>
       <div class="footer">CARSTRIMS Sales Report  Powered by UASE TECH STUDIO</div>
@@ -179,7 +179,7 @@ export default function SalesPage() {
         <>
           <div className="table-wrap">
             <table className="sales-table">
-              <thead><tr><th>Transaction</th><th>Car</th><th>Buyer</th><th>Price</th><th>Profit</th><th>Payment</th><th>Date</th><th>Actions</th></tr></thead>
+              <thead><tr><th>Transaction</th><th>Vehicle</th><th>Buyer</th><th>Price</th><th>Profit</th><th>Payment</th><th>Date</th><th>Actions</th></tr></thead>
               <tbody>
                 {sales.map(s=>(
                   <tr key={s._id}>
@@ -197,7 +197,7 @@ export default function SalesPage() {
                     <td>
                       <div className="row-actions">
                         <button className="act-btn receipt-btn" onClick={()=>setInvoiceTxn(s.transactionId)} title="Receipt / Invoice / Proforma"> Receipt</button>
-                        {s.carId&&<button className="act-btn report-btn" onClick={()=>setReportCarId(s.carId)} title="Car Financial Report"> Report</button>}
+                        {s.carId&&<button className="act-btn report-btn" onClick={()=>setReportCarId(s.carId)} title="Vehicle Financial Report"> Report</button>}
                         <button className="act-btn" onClick={()=>{setShowEdit(s);setEditForm({sellingPrice:String(s.sellingPrice),buyerName:s.buyerName||"",buyerPhone:s.buyerPhone||"",paymentMethod:s.paymentMethod||"cash",notes:s.notes||"",editReason:""});setError("");}}>Edit</button>
                         {s.isEdited&&<button className="act-btn revert" onClick={()=>handleRevert(s.transactionId)}>Revert</button>}
                         {s.editHistory&&s.editHistory.length>0&&<button className="act-btn history" onClick={()=>setShowHistory(s)}>History</button>}
@@ -225,13 +225,13 @@ export default function SalesPage() {
             <form onSubmit={handleManualSale} className="modal-form">
               {/* Car ID search  auto-fills details */}
               <div className="field" style={{gridColumn:"1/-1"}}>
-                <label className="fl">Search Car from Inventory (auto-fills details)</label>
+                <label className="fl">Search Vehicle from Inventory (auto-fills details)</label>
                 <CarIdSearch
                   value={manualForm.carId?`${manualForm.carBrand} ${manualForm.carModel}  ${manualForm.carId}`:""}
-                  placeholder="Type Car ID, brand or model to pick from listed cars"
+                  placeholder="Type Vehicle ID, brand or model to pick from listed vehicles"
                   onSelect={(car:any)=>setManualForm(f=>({...f,carId:car.carId,carBrand:car.brand||f.carBrand,carModel:car.model||f.carModel,carYear:car.year||f.carYear,sellingPrice:car.sellingPrice?.toString()||f.sellingPrice,purchasePrice:car.purchasePrice?.toString()||f.purchasePrice}))}
                 />
-                {manualForm.carId&&<div style={{fontSize:"0.72rem",color:"#16A34A",marginTop:"0.3rem",fontWeight:600}}> Car ID: {manualForm.carId}</div>}
+                {manualForm.carId&&<div style={{fontSize:"0.72rem",color:"#16A34A",marginTop:"0.3rem",fontWeight:600}}> Vehicle ID: {manualForm.carId}</div>}
               </div>
               <div className="form-row">
                 <div className="field"><label className="fl">Brand *</label><input className="fi" placeholder="Toyota" value={manualForm.carBrand} onChange={e=>setManualForm({...manualForm,carBrand:e.target.value})} required/></div>
