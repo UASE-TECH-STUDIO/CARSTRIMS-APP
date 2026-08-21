@@ -12,7 +12,7 @@
  *    edit-distance alone often misses.
  */
 
-const CAR_VOCABULARY = [
+export const CAR_VOCABULARY = [
   "Toyota","Honda","Mercedes","Mercedes-Benz","Benz","BMW","Lexus","Ford",
   "Hyundai","Kia","Chevrolet","Audi","Land Rover","Landrover","Jeep",
   "Volkswagen","Nissan","Mazda","Peugeot","Mitsubishi","Subaru","Isuzu",

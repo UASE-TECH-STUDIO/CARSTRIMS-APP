@@ -51,8 +51,11 @@ export default function FeedPage() {
   const feedSeedRef = useRef<string>(Math.random().toString(36).slice(2) + Date.now().toString(36));
 
   const [searchInput, setSearchInput] = useState("");
-  const [searchExpanded, setSearchExpanded] = useState(false);
   const [searchBoxHeight, setSearchBoxHeight] = useState(44);
+  const filterBtnRef = useRef<HTMLButtonElement>(null);
+  const micBtnRef = useRef<HTMLButtonElement>(null);
+  const resizeHandleRef = useRef<HTMLDivElement>(null);
+  const [hintPositions, setHintPositions] = useState<{filter:number; mic:number; resize:number} | null>(null);
   const [isResizingSearch, setIsResizingSearch] = useState(false);
   const resizeStartRef = useRef<{ y: number; startHeight: number } | null>(null);
 
@@ -63,7 +66,8 @@ export default function FeedPage() {
   const handleResizeMove = (clientY: number) => {
     if (!resizeStartRef.current) return;
     const delta = clientY - resizeStartRef.current.y;
-    setSearchBoxHeight(Math.max(44, Math.min(220, resizeStartRef.current.startHeight + delta)));
+    const maxHeight = Math.min(280, window.innerHeight * 0.45);
+    setSearchBoxHeight(Math.max(44, Math.min(maxHeight, resizeStartRef.current.startHeight + delta)));
   };
   const handleResizeEnd = () => { resizeStartRef.current = null; setIsResizingSearch(false); };
 
@@ -90,6 +94,28 @@ export default function FeedPage() {
   // reminder each time, not just once ever.
   const [showSearchHint, setShowSearchHint] = useState(true);
   const dismissSearchHint = () => setShowSearchHint(false);
+
+  useEffect(() => {
+    if (!showSearchHint) return;
+    const measure = () => {
+      const formRect = searchWrapRef.current?.getBoundingClientRect();
+      const filterRect = filterBtnRef.current?.getBoundingClientRect();
+      const micRect = micBtnRef.current?.getBoundingClientRect();
+      const resizeRect = resizeHandleRef.current?.getBoundingClientRect();
+      if (!formRect || !filterRect || !micRect || !resizeRect) return;
+      setHintPositions({
+        filter: filterRect.left + filterRect.width / 2 - formRect.left,
+        mic: micRect.left + micRect.width / 2 - formRect.left,
+        resize: resizeRect.left + resizeRect.width / 2 - formRect.left,
+      });
+    };
+    // A short delay ensures the buttons have actually painted with
+    // their real widths before measuring — measuring on the very same
+    // tick as mount can catch elements still at their pre-layout size.
+    const t = setTimeout(measure, 50);
+    window.addEventListener("resize", measure);
+    return () => { clearTimeout(t); window.removeEventListener("resize", measure); };
+  }, [showSearchHint]);
   const { listening, supported: voiceSupported, start: startVoice, stop: stopVoice } = useVoiceInput((transcript) => {
     setSearchInput(correctVoiceTranscript(transcript));
   });
@@ -453,8 +479,19 @@ export default function FeedPage() {
         <Link href="/feed" className="feed-brand">CARSTRIMS</Link>
 
         <form ref={searchWrapRef} className="search-form" style={{position:"relative"}} onSubmit={(e) => { e.preventDefault(); setSearch(searchInput); setShowPeopleDropdown(false); }}>
-          <div className={`search-box ${searchExpanded ? "search-box-expanded" : ""}`} style={{alignItems: searchBoxHeight > 44 ? "flex-start" : "center"}}>
-            <button type="button" className="s-filter-btn" title="Filters" aria-label="Open filters"
+          <div
+            className="search-box"
+            style={{
+              alignItems: searchBoxHeight > 44 ? "flex-start" : "center",
+              position: searchBoxHeight > 44 ? "absolute" : "static",
+              top: searchBoxHeight > 44 ? 0 : undefined,
+              left: searchBoxHeight > 44 ? 0 : undefined,
+              right: searchBoxHeight > 44 ? 0 : undefined,
+              zIndex: searchBoxHeight > 44 ? 80 : undefined,
+              boxShadow: searchBoxHeight > 44 ? "0 12px 28px rgba(0,0,0,0.18)" : undefined,
+            }}
+          >
+            <button ref={filterBtnRef} type="button" className="s-filter-btn" title="Filters" aria-label="Open filters"
               onClick={(e) => { e.stopPropagation(); setShowFilter((v) => !v); }}>F</button>
             <textarea
               className="search-input"
@@ -471,14 +508,13 @@ export default function FeedPage() {
                 }
               }}
               onFocus={() => {
-                setSearchExpanded(true);
                 if (showSearchHint) dismissSearchHint();
                 if ((peopleResults.dealers?.length||0)+(peopleResults.users?.length||0) > 0) setShowPeopleDropdown(true);
               }}
-              onBlur={() => setSearchExpanded(false)}
             />
             {searchInput && <button type="button" className="s-clear" onClick={() => { setSearchInput(""); setSearch(""); setShowPeopleDropdown(false); }}>✕</button>}
             <button
+              ref={micBtnRef}
               type="button"
               className={`s-mic ${listening ? "s-mic-active" : ""}`}
               title={listening ? "Listening… tap to stop" : "Search by voice"}
@@ -492,10 +528,12 @@ export default function FeedPage() {
               {listening ? "●" : "🎤"}
             </button>
             <div
+              ref={resizeHandleRef}
               className="search-resize-handle"
-              title="Drag to enlarge"
+              title="Drag to enlarge, double-tap to reset"
               onMouseDown={(e) => { e.preventDefault(); handleResizeStart(e.clientY); }}
               onTouchStart={(e) => handleResizeStart(e.touches[0].clientY)}
+              onDoubleClick={() => setSearchBoxHeight(44)}
             >⋮⋮</div>
           </div>
 
@@ -555,11 +593,11 @@ export default function FeedPage() {
             </div>
           )}
 
-          {showSearchHint && (
+          {showSearchHint && hintPositions && (
             <div className="search-hint-group">
               <button type="button" className="search-hint-dismiss" onClick={dismissSearchHint} aria-label="Dismiss">✕</button>
 
-              <div className="hint-item hint-item-filter">
+              <div className="hint-item" style={{left: hintPositions.filter, transform: "translateX(-50%)"}}>
                 <div className="hint-arrow">↑</div>
                 <div className="hint-bubble">Filter</div>
               </div>
@@ -569,12 +607,12 @@ export default function FeedPage() {
                 <div className="hint-bubble">Type or explain what you want — we'll find it</div>
               </div>
 
-              <div className="hint-item hint-item-mic">
+              <div className="hint-item" style={{left: hintPositions.mic, transform: "translateX(-50%)"}}>
                 <div className="hint-arrow">↑</div>
                 <div className="hint-bubble">Or speak</div>
               </div>
 
-              <div className="hint-item hint-item-resize">
+              <div className="hint-item" style={{left: hintPositions.resize, transform: "translateX(-50%)", top: "-2.1rem", alignItems: "center" as const}}>
                 <div className="hint-bubble">Drag to enlarge</div>
                 <div className="hint-arrow hint-arrow-down">↓</div>
               </div>
@@ -786,10 +824,7 @@ export default function FeedPage() {
           width:20px; height:20px; font-size:0.6rem; cursor:pointer; pointer-events:auto; z-index:61;
         }
         .hint-item { position:absolute; display:flex; flex-direction:column; align-items:center; pointer-events:none; }
-        .hint-item-filter { left:8%; }
         .hint-item-type { left:50%; transform:translateX(-50%); }
-        .hint-item-mic { right:4%; }
-        .hint-item-resize { right:1%; top:-2.1rem; align-items:flex-end; }
         .hint-arrow-down { animation:search-hint-bounce-down 1.1s ease-in-out infinite; }
         @keyframes search-hint-bounce-down { 0%,100%{transform:translateY(0);} 50%{transform:translateY(5px);} }
         .hint-arrow { font-size:1.15rem; color:#F47B20; line-height:1; animation:search-hint-bounce 1.1s ease-in-out infinite; }
@@ -826,7 +861,6 @@ export default function FeedPage() {
           border:1.5px solid #E5E5E5; border-radius:10px; overflow:hidden; transition:border-color 0.2s, box-shadow 0.2s;
         }
         .search-box:focus-within { border-color:#F47B20; background:#fff; box-shadow:0 0 0 3px rgba(244,123,32,0.12); }
-        .search-box-expanded { position:relative; z-index:65; }
         .search-resize-handle {
           position:absolute; bottom:1px; right:1px; width:18px; height:16px; cursor:ns-resize;
           display:flex; align-items:center; justify-content:center; font-size:0.6rem; color:#A3A3A3;
