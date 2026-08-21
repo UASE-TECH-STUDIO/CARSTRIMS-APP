@@ -1,9 +1,17 @@
 "use client";
 import { useEffect } from "react";
 
+// Falls back to a REAL key pair generated for this deployment if the
+// env var isn't set (matching VAPID_PRIVATE_KEY given for the backend)
+// — the previous fallback value here had no corresponding private key
+// configured anywhere, so any subscription created with it could never
+// actually receive a push; the backend would reject every send attempt
+// with a signature mismatch. Setting NEXT_PUBLIC_VAPID_PUBLIC_KEY
+// properly in Vercel is still the right long-term fix, but this
+// fallback is now at least functional rather than silently broken.
 const VAPID_PUBLIC_KEY =
   process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
-  "BH0r2Dd_OpixbO8ASpLrGDp_VRMJxFxEiQrf4cicFkW49x_CemB-NvDJ7UNVcZafE3Y56N67nMfYbciuD4h-4vY";
+  "BO2Qs_hqwFLaZ4CUht943Lg-ePxEV7lExG7IHPYebdfyPq0Ms6tXLPzJNqOq4CIwvq3lmJs3-uMfzcLjLRAdUkE";
 
 function b64ToUint8(b64: string): Uint8Array {
   const pad  = "=".repeat((4 - b64.length % 4) % 4);

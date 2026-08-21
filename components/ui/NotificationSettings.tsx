@@ -2,9 +2,12 @@
 import { useState, useEffect } from "react";
 import api from "@/lib/api";
 
+// Falls back to a REAL key pair generated for this deployment (see
+// SWRegistrar.tsx for the full explanation of why the old hardcoded
+// value here was silently non-functional).
 const VAPID_KEY =
   process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
-  "BH0r2Dd_OpixbO8ASpLrGDp_VRMJxFxEiQrf4cicFkW49x_CemB-NvDJ7UNVcZafE3Y56N67nMfYbciuD4h-4vY";
+  "BO2Qs_hqwFLaZ4CUht943Lg-ePxEV7lExG7IHPYebdfyPq0Ms6tXLPzJNqOq4CIwvq3lmJs3-uMfzcLjLRAdUkE";
 
 function b64ToUint8(b64: string): Uint8Array {
   const pad  = "=".repeat((4 - b64.length % 4) % 4);
@@ -307,7 +310,7 @@ export default function NotificationSettings() {
         <div style={{...row,borderBottom:"none"}}>
           <div>
             <div style={rowLabel}>Do Not Disturb</div>
-            <div style={rowDesc}>Mute sounds temporarily. Push alerts still arrive silently.</div>
+            <div style={rowDesc}>Mute sounds temporarily. Push alerts still arrive silently. You can also just put your phone on silent/vibrate from your device's own settings — CARSTRIMS will respect that too.</div>
           </div>
           <button style={Tog(dnd,"#1A1A1A").btn} onClick={toggleDnd}>
             <div style={Tog(dnd,"#1A1A1A").dot}/>
