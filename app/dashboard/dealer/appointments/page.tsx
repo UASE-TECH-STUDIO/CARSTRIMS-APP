@@ -255,7 +255,7 @@ export default function DealerAppointmentsPage() {
                       </a>
                     )}
                     {selected.buyerUserId && (
-                      <Link href={`/users/${selected.buyerUserId}`} target="_blank"
+                      <Link href={`/users/${selected.buyerUserId}`}
                         style={{background:"#F5F5F5",border:"1px solid #E5E5E5",color:"#525252",borderRadius:"6px",padding:"0.25rem 0.625rem",fontSize:"0.72rem",textDecoration:"none",fontWeight:600}}>
                         View Profile
                       </Link>

@@ -6,6 +6,7 @@ import CarFinancialReport from "@/components/dealer/CarFinancialReport";
 import CarIdSearch from "@/components/dealer/CarIdSearch";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 import { useToast } from "@/store/toastStore";
+import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 
 const PAYMENT_COLORS:Record<string,string>={cash:"#16A34A",bank_transfer:"#F47B20",card:"#3B8BD4",installment:"#DC2626"};
 
@@ -98,11 +99,11 @@ export default function SalesPage() {
     a.download=`sales-${Date.now()}.csv`;a.click();URL.revokeObjectURL(a.href);
   };
 
-  const exportPDF=()=>{
-    if(!summary)return;
+  const buildSalesHtml=():string=>{
+    if(!summary)return "";
     const fmt=(n:number)=>`${(n||0).toLocaleString()}`;
     const fmtD=(iso:string)=>iso?new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}):"";
-    const html=`<!DOCTYPE html><html><head><title>Sales Report</title><style>
+    return `<!DOCTYPE html><html><head><title>Sales Report</title><style>
       *{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;padding:24px;color:#1A1A1A;max-width:960px;margin:0 auto}
       h1{font-size:1.5rem;color:#F47B20;margin:0 0 4px}
       .meta{color:#888;font-size:0.8rem;margin-bottom:24px}
@@ -129,11 +130,32 @@ export default function SalesPage() {
       <table><thead><tr><th>TXN ID</th><th>Vehicle</th><th>Buyer</th><th>Price</th><th>Profit</th><th>Payment</th><th>Date</th></tr></thead>
       <tbody>${sales.map(s=>`<tr><td style="font-family:monospace;font-size:0.7rem">${s.transactionId}</td><td>${s.carBrand||""} ${s.carModel||""}<br><span style="font-size:0.68rem;color:#AAA">${s.carId}</span></td><td>${s.buyerName||""}</td><td style="font-weight:600">${fmt(s.sellingPrice)}</td><td style="color:#16A34A;font-weight:600">+${fmt(s.profit)}</td><td style="text-transform:capitalize">${s.paymentMethod?.replace(/_/g," ")}</td><td style="color:#888">${fmtD(s.soldAt)}</td></tr>`).join("")}</tbody>
       </table>
-      <div class="footer">CARSTRIMS Sales Report  Powered by UASE TECH STUDIO</div>
-      <script>window.onload=()=>window.print()<\/script>
+      <div class="footer">CARSTRIMS Sales Report — Powered by UASE TECH STUDIO</div>
     </body></html>`;
-    const win=window.open("","_blank");
-    if(win){win.document.write(html);win.document.close();}
+  };
+
+  const [salesExportBusy, setSalesExportBusy] = useState<""|"pdf"|"jpg"|"share">("");
+  const [showSalesPicker, setShowSalesPicker] = useState<"download"|"share"|"">("");
+
+  const handleSalesDownload = async (format: "pdf" | "jpg") => {
+    setShowSalesPicker(""); setSalesExportBusy(format);
+    try {
+      const html = buildSalesHtml();
+      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Sales Report");
+      await downloadBlob(blob, `sales-report-${Date.now()}.${format}`);
+      showToast("Downloaded", "success");
+    } catch (e: any) { showToast(e?.message || "Download failed", "error"); }
+    finally { setSalesExportBusy(""); }
+  };
+
+  const handleSalesShare = async (format: "pdf" | "jpg") => {
+    setShowSalesPicker(""); setSalesExportBusy("share");
+    try {
+      const html = buildSalesHtml();
+      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Sales Report");
+      await shareBlob(blob, `sales-report-${Date.now()}.${format}`, "Sales Report");
+    } catch (e: any) { showToast(e?.message || "Share failed", "error"); }
+    finally { setSalesExportBusy(""); }
   };
 
   const fmt=(n:number)=>`${(n||0).toLocaleString()}`;
@@ -152,7 +174,28 @@ export default function SalesPage() {
         </div>
         <div className="header-btns">
           <button className="btn-outline" onClick={exportCSV}> CSV / Excel</button>
-          <button className="btn-outline" onClick={exportPDF} style={{borderColor:"#F47B20",color:"#F47B20"}}> PDF</button>
+          <div style={{position:"relative",display:"inline-block"}}>
+            <button className="btn-outline" onClick={()=>setShowSalesPicker(showSalesPicker==="download"?"":"download")} disabled={salesExportBusy!==""} style={{borderColor:"#F47B20",color:"#F47B20"}}>
+              {salesExportBusy==="pdf"||salesExportBusy==="jpg"?"Exporting…":"Download PDF/JPG"}
+            </button>
+            {showSalesPicker==="download" && (
+              <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,zIndex:30,background:"#fff",border:"1px solid #E5E5E5",borderRadius:"8px",boxShadow:"0 6px 18px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"110px"}}>
+                <button onClick={()=>handleSalesDownload("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.5rem 0.75rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>as PDF</button>
+                <button onClick={()=>handleSalesDownload("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.5rem 0.75rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>as JPG</button>
+              </div>
+            )}
+          </div>
+          <div style={{position:"relative",display:"inline-block"}}>
+            <button className="btn-outline" onClick={()=>setShowSalesPicker(showSalesPicker==="share"?"":"share")} disabled={salesExportBusy!==""}>
+              {salesExportBusy==="share"?"Sharing…":"Share"}
+            </button>
+            {showSalesPicker==="share" && (
+              <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,zIndex:30,background:"#fff",border:"1px solid #E5E5E5",borderRadius:"8px",boxShadow:"0 6px 18px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"110px"}}>
+                <button onClick={()=>handleSalesShare("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.5rem 0.75rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>as PDF</button>
+                <button onClick={()=>handleSalesShare("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.5rem 0.75rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>as JPG</button>
+              </div>
+            )}
+          </div>
           <button className="btn-primary" onClick={()=>{setShowManual(true);setError("");}}>+ Add Sale</button>
         </div>
       </div>

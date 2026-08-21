@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { rowsToExcelBlob, renderHtmlStringToPdfBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
@@ -19,6 +19,7 @@ function fmtDate(iso: string) {
 
 export default function AdminCarsPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [cars, setCars] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -150,7 +151,7 @@ export default function AdminCarsPage() {
             </thead>
             <tbody>
               {cars.map((c) => (
-                <tr key={c._id} className="clickable-row" onClick={() => window.open(`/cars/${c.carId}`, "_blank")}>
+                <tr key={c._id} className="clickable-row" onClick={() => router.push(`/cars/${c.carId}`)}>
                   <td>
                     <div className="co-name">{c.brand} {c.model} {c.year}</div>
                     <div className="co-id">{c.carId}</div>
@@ -164,7 +165,7 @@ export default function AdminCarsPage() {
                   </td>
                   <td className="date-cell">{fmtDate(c.createdAt)}</td>
                   <td>
-                    <Link href={`/cars/${c.carId}`} target="_blank" className="act-btn" onClick={(e)=>e.stopPropagation()}>View</Link>
+                    <Link href={`/cars/${c.carId}`} className="act-btn" onClick={(e)=>e.stopPropagation()}>View</Link>
                   </td>
                 </tr>
               ))}

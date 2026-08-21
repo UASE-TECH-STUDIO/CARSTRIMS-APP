@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
+import Link from "next/link";
 import api from "@/lib/api";
 import { renderElementToPdfBlob, renderElementToJpgBlob, rowsToExcelBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
@@ -396,7 +397,7 @@ export default function PartnersPage() {
                       </div>
                       <div style={{display:"flex",flexDirection:"column",gap:0}}>
                         {detailData.cars.map((c:any,i:number)=>(
-                          <a key={c._id||c.carId} href={`/cars/${c.carId}`} target="_blank" rel="noopener noreferrer"
+                          <Link key={c._id||c.carId} href={`/cars/${c.carId}`}
                             style={{display:"flex",alignItems:"center",gap:"0.75rem",padding:"0.75rem 1rem",borderBottom:i<detailData.cars.length-1?"1px solid #F5F5F5":"none",textDecoration:"none",color:"inherit",cursor:"pointer"}}
                             onMouseOver={e=>(e.currentTarget.style.background="#FAFAFA")}
                             onMouseOut={e=>(e.currentTarget.style.background="transparent")}>
@@ -416,7 +417,7 @@ export default function PartnersPage() {
                                 {c.status}
                               </span>
                             </div>
-                          </a>
+                          </Link>
                         ))}
                       </div>
                     </div>

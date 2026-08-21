@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import Link from "next/link";
+import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 
 const ROLE_C: Record<string,string> = {DEALER_ADMIN:"#F47B20",DEALER_STAFF:"#D97706",PARTNER_USER:"#7B68EE",SYSTEM_ADMIN:"#DC2626",PUBLIC_USER:"#16A34A"};
 const STATUS_C: Record<string,string> = {active:"#16A34A",approved:"#16A34A",suspended:"#DC2626",awaiting_approval:"#D97706",pending:"#D97706",rejected:"#DC2626"};
@@ -133,14 +134,13 @@ export default function SuperAdminUserDetail() {
     a.download = `${d?.fullName?.replace(/\s+/g,"_")||userId}_CARSTRIMS.csv`; a.click();
   };
 
-  const exportPDF = () => {
-    if (!profile) return;
+  const buildDocHtml = (): string => {
+    if (!profile) return "";
     const d = profile; const dealer = d?.dealer||{};
     const doc = (url:string|null|undefined, label:string) => url
       ? `<div class="dblock"><b>${label}</b><br/><img src="${url}" style="max-width:200px;max-height:150px;border:1px solid #eee;border-radius:4px;margin:4px 0;"/><br/><a href="${url}">Download</a></div>`
       : `<div class="dblock"><b>${label}</b><br/><i style="color:#aaa">Not uploaded</i></div>`;
-    const win = window.open("","_blank"); if (!win) return;
-    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${d?.fullName} - CARSTRIMS</title>
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${d?.fullName} - CARSTRIMS</title>
     <style>body{font-family:Arial,sans-serif;padding:20px;color:#1A1A1A;max-width:750px;margin:0 auto}
     h1{color:#F47B20;font-size:1.4rem}h2{font-size:0.95rem;margin:18px 0 8px;padding:5px 10px;background:#f5f5f5;border-left:4px solid #F47B20}
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
@@ -182,8 +182,30 @@ export default function SuperAdminUserDetail() {
     <div class="f"><div class="fl">Approved</div>${fmtDate(dealer.approvedAt)}</div>
     </div>`:""}
     <div style="margin-top:20px;padding-top:10px;border-top:1px solid #eee;font-size:0.7rem;color:#aaa;text-align:center">CARSTRIMS Platform - UASE TECH STUDIO - Confidential</div>
-    </body></html>`);
-    win.document.close(); setTimeout(()=>win.print(),500);
+    </body></html>`;
+  };
+
+  const [docExportBusy, setDocExportBusy] = useState<""|"pdf"|"jpg"|"share">("");
+  const [showDocPicker, setShowDocPicker] = useState<"download"|"share"|"">("");
+
+  const handleDocDownload = async (format: "pdf" | "jpg") => {
+    setShowDocPicker(""); setDocExportBusy(format);
+    try {
+      const html = buildDocHtml();
+      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, profile?.fullName || "User Summary");
+      await downloadBlob(blob, `${(profile?.fullName || userId).replace(/\s+/g, "_")}_CARSTRIMS.${format}`);
+    } catch (e: any) { setBanner(e?.message || "Download failed"); }
+    finally { setDocExportBusy(""); }
+  };
+
+  const handleDocShare = async (format: "pdf" | "jpg") => {
+    setShowDocPicker(""); setDocExportBusy("share");
+    try {
+      const html = buildDocHtml();
+      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, profile?.fullName || "User Summary");
+      await shareBlob(blob, `${(profile?.fullName || userId).replace(/\s+/g, "_")}_CARSTRIMS.${format}`, profile?.fullName || "User Summary");
+    } catch (e: any) { setBanner(e?.message || "Share failed"); }
+    finally { setDocExportBusy(""); }
   };
 
   // Editable field component
@@ -305,7 +327,28 @@ export default function SuperAdminUserDetail() {
         <button onClick={()=>router.back()} style={{background:"none",border:"none",color:"#525252",cursor:"pointer",fontWeight:600,fontSize:"0.875rem",fontFamily:"var(--font-body)"}}>Back</button>
         <div style={{display:"flex",gap:"0.375rem",flexWrap:"wrap"}}>
           <button onClick={exportCSV} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"7px",padding:"0.375rem 0.75rem",fontSize:"0.72rem",cursor:"pointer",fontWeight:600}}>CSV</button>
-          <button onClick={exportPDF} style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"7px",padding:"0.375rem 0.75rem",fontSize:"0.72rem",cursor:"pointer",fontWeight:700}}>PDF / Print</button>
+          <div style={{position:"relative",display:"inline-block"}}>
+            <button onClick={()=>setShowDocPicker(showDocPicker==="download"?"":"download")} disabled={docExportBusy!==""} style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"7px",padding:"0.375rem 0.75rem",fontSize:"0.72rem",cursor:"pointer",fontWeight:700}}>
+              {docExportBusy==="pdf"||docExportBusy==="jpg"?"Exporting…":"Download"}
+            </button>
+            {showDocPicker==="download" && (
+              <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,zIndex:30,background:"#fff",border:"1px solid #E5E5E5",borderRadius:"8px",boxShadow:"0 6px 18px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"110px"}}>
+                <button onClick={()=>handleDocDownload("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.5rem 0.75rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.72rem",fontWeight:600}}>as PDF</button>
+                <button onClick={()=>handleDocDownload("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.5rem 0.75rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.72rem",fontWeight:600}}>as JPG</button>
+              </div>
+            )}
+          </div>
+          <div style={{position:"relative",display:"inline-block"}}>
+            <button onClick={()=>setShowDocPicker(showDocPicker==="share"?"":"share")} disabled={docExportBusy!==""} style={{background:"#F5F5F5",color:"#525252",border:"1px solid #E5E5E5",borderRadius:"7px",padding:"0.375rem 0.75rem",fontSize:"0.72rem",cursor:"pointer",fontWeight:700}}>
+              {docExportBusy==="share"?"Sharing…":"Share"}
+            </button>
+            {showDocPicker==="share" && (
+              <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,zIndex:30,background:"#fff",border:"1px solid #E5E5E5",borderRadius:"8px",boxShadow:"0 6px 18px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"110px"}}>
+                <button onClick={()=>handleDocShare("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.5rem 0.75rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.72rem",fontWeight:600}}>as PDF</button>
+                <button onClick={()=>handleDocShare("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.5rem 0.75rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.72rem",fontWeight:600}}>as JPG</button>
+              </div>
+            )}
+          </div>
           <button onClick={()=>setShowResetPw(!showResetPw)} style={{background:"#EFF6FF",color:"#1D4ED8",border:"1.5px solid #BFDBFE",borderRadius:"7px",padding:"0.375rem 0.75rem",fontSize:"0.72rem",cursor:"pointer",fontWeight:600}}>Reset Password</button>
           {profile.status==="suspended"
             ? <button onClick={unsuspend} disabled={actioning} style={{background:"#16A34A",color:"#fff",border:"none",borderRadius:"7px",padding:"0.375rem 0.75rem",fontSize:"0.72rem",cursor:"pointer",fontWeight:700}}>Reactivate</button>
@@ -353,8 +396,8 @@ export default function SuperAdminUserDetail() {
           <div style={{fontSize:"0.8rem",color:"#737373"}}>{profile.email}</div>
           <div style={{fontSize:"0.72rem",color:"#A3A3A3",marginTop:"0.1rem"}}>Joined {fmtDate(profile.createdAt)} &nbsp;|&nbsp; Last login {fmtDate(profile.lastLogin)}</div>
           <div style={{display:"flex",gap:"0.375rem",marginTop:"0.625rem",flexWrap:"wrap"}}>
-            <Link href={`/users/${userId}`} target="_blank" style={{fontSize:"0.7rem",color:"#F47B20",textDecoration:"none",fontWeight:600,background:"#FFF7ED",border:"1px solid rgba(244,123,32,0.3)",borderRadius:"5px",padding:"0.18rem 0.5rem"}}>Public Profile</Link>
-            {isDealer && dealer.dealerId && <Link href={`/dealers/${dealer.dealerId}`} target="_blank" style={{fontSize:"0.7rem",color:"#525252",textDecoration:"none",fontWeight:600,background:"#F5F5F5",border:"1px solid #E5E5E5",borderRadius:"5px",padding:"0.18rem 0.5rem"}}>Dealer Profile</Link>}
+            <Link href={`/users/${userId}`} style={{fontSize:"0.7rem",color:"#F47B20",textDecoration:"none",fontWeight:600,background:"#FFF7ED",border:"1px solid rgba(244,123,32,0.3)",borderRadius:"5px",padding:"0.18rem 0.5rem"}}>Public Profile</Link>
+            {isDealer && dealer.dealerId && <Link href={`/dealers/${dealer.dealerId}`} style={{fontSize:"0.7rem",color:"#525252",textDecoration:"none",fontWeight:600,background:"#F5F5F5",border:"1px solid #E5E5E5",borderRadius:"5px",padding:"0.18rem 0.5rem"}}>Dealer Profile</Link>}
           </div>
         </div>
       </div>
@@ -451,7 +494,7 @@ export default function SuperAdminUserDetail() {
                 <div style={{fontSize:"0.65rem",fontWeight:800,letterSpacing:"0.18em",color:"#A3A3A3",textTransform:"uppercase" as const,marginBottom:"0.875rem"}}>Listed Vehicles ({profile.recentCars.length})</div>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(170px,1fr))",gap:"0.75rem"}}>
                   {profile.recentCars.map((c:any)=>(
-                    <Link key={c._id} href={`/cars/${c.carId}`} target="_blank"
+                    <Link key={c._id} href={`/cars/${c.carId}`}
                       style={{textDecoration:"none",border:"1.5px solid #E5E5E5",borderRadius:"9px",overflow:"hidden",background:"#FAFAFA",display:"flex",flexDirection:"column"}}>
                       <div style={{height:"88px",background:"#F5F5F5",overflow:"hidden"}}>
                         {c.images?.[0]&&<img src={c.images[0]} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>}

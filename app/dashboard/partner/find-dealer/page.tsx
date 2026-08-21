@@ -189,7 +189,7 @@ export default function FindDealerPage() {
                   <div className="dc-title">AVAILABLE CARS ({dealerCars.length})</div>
                   <div className="cars-mini">
                     {dealerCars.slice(0, 6).map((c: any) => (
-                      <a key={c._id} href={`/cars/${c.carId}`} target="_blank" rel="noreferrer" className="car-mini-card">
+                      <div key={c._id} onClick={() => router.push(`/cars/${c.carId}`)} className="car-mini-card" style={{cursor:"pointer"}}>
                         <div className="cm-img">
                           {c.images?.[0] ? <img src={c.images[0]} alt="" /> : ""}
                         </div>
@@ -197,7 +197,7 @@ export default function FindDealerPage() {
                           <div className="cm-name">{c.brand} {c.model}</div>
                           <div className="cm-price">{fmt(c.sellingPrice)}</div>
                         </div>
-                      </a>
+                      </div>
                     ))}
                   </div>
                 </div>
