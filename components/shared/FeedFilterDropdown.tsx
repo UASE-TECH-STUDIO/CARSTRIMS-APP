@@ -1,4 +1,5 @@
 "use client";
+import { useState, useRef, useEffect } from "react";
 
 interface Props {
   selectedBrand: string; setSelectedBrand: (v: string) => void;
@@ -12,6 +13,8 @@ interface Props {
   fMinPrice: string; setFMinPrice: (v: string) => void;
   fMaxPrice: string; setFMaxPrice: (v: string) => void;
   fStatus: string; setFStatus: (v: string) => void;
+  fMaxMileage: string; setFMaxMileage: (v: string) => void;
+  fPromoOnly: boolean; setFPromoOnly: (v: boolean) => void;
   onClose: () => void;
   onClear: () => void;
 }
@@ -43,16 +46,58 @@ export default function FeedFilterDropdown(props: Props) {
     fFuel, setFFuel, fState, setFState, fColor, setFColor, fYearFrom, setFYearFrom,
     fYearTo, setFYearTo, fMinPrice, setFMinPrice, fMaxPrice, setFMaxPrice,
     fStatus, setFStatus, onClose, onClear,
+    fMaxMileage, setFMaxMileage, fPromoOnly, setFPromoOnly,
   } = props;
 
+  // Panel is draggable-resizable from its bottom-right corner (same
+  // pattern as the search box) — useful on small phone screens where
+  // the default compact size can feel cramped, without forcing every
+  // user into a larger panel by default.
+  const [panelSize, setPanelSize] = useState<{ w: number | null; h: number | null }>({ w: null, h: null });
+  const [isResizingPanel, setIsResizingPanel] = useState(false);
+  const resizeStartRef = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  const startResize = (clientX: number, clientY: number) => {
+    const rect = panelRef.current?.getBoundingClientRect();
+    resizeStartRef.current = { x: clientX, y: clientY, w: rect?.width || 380, h: rect?.height || 480 };
+    setIsResizingPanel(true);
+  };
+  const moveResize = (clientX: number, clientY: number) => {
+    if (!resizeStartRef.current) return;
+    const { x, y, w, h } = resizeStartRef.current;
+    setPanelSize({
+      w: Math.max(280, Math.min(window.innerWidth - 16, w + (clientX - x))),
+      h: Math.max(300, Math.min(window.innerHeight - 100, h + (clientY - y))),
+    });
+  };
+  const endResize = () => { resizeStartRef.current = null; setIsResizingPanel(false); };
+
+  useEffect(() => {
+    if (!isResizingPanel) return;
+    const onMouseMove = (e: MouseEvent) => moveResize(e.clientX, e.clientY);
+    const onTouchMove = (e: TouchEvent) => moveResize(e.touches[0].clientX, e.touches[0].clientY);
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", endResize);
+    document.addEventListener("touchmove", onTouchMove);
+    document.addEventListener("touchend", endResize);
+    return () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", endResize);
+      document.removeEventListener("touchmove", onTouchMove);
+      document.removeEventListener("touchend", endResize);
+    };
+  }, [isResizingPanel]);
+
   return (
-    <div className="ffd-panel" onClick={(e) => e.stopPropagation()}>
+    <div ref={panelRef} className="ffd-panel" onClick={(e) => e.stopPropagation()}
+      style={panelSize.w ? { width: panelSize.w, maxWidth: "96vw" } : undefined}>
       <div className="ffd-header">
         <span>Filter Vehicles</span>
         <button type="button" className="ffd-close" onClick={onClose} aria-label="Close filters">✕</button>
       </div>
 
-      <div className="ffd-body">
+      <div className="ffd-body" style={panelSize.h ? { maxHeight: panelSize.h - 130 } : undefined}>
         <div className="ffd-group">
           <label className="ffd-label">Brand</label>
           <select className="ffd-select" value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)}>
@@ -142,6 +187,18 @@ export default function FeedFilterDropdown(props: Props) {
             ))}
           </div>
         </div>
+
+        <div className="ffd-group">
+          <label className="ffd-label">Max Mileage (km)</label>
+          <input className="ffd-input" type="number" placeholder="e.g. 80000" value={fMaxMileage} onChange={(e) => setFMaxMileage(e.target.value)} />
+        </div>
+
+        <div className="ffd-group">
+          <button type="button" className={`ffd-promo-toggle ${fPromoOnly ? "active" : ""}`} onClick={() => setFPromoOnly(!fPromoOnly)}>
+            <span className="ffd-promo-check">{fPromoOnly ? "✓" : ""}</span>
+            Promo cars only
+          </button>
+        </div>
       </div>
 
       <div className="ffd-footer">
@@ -149,12 +206,24 @@ export default function FeedFilterDropdown(props: Props) {
         <button type="button" className="ffd-apply" onClick={onClose}>Show Results</button>
       </div>
 
+      <div
+        className="ffd-resize-handle"
+        title="Drag to enlarge or reduce"
+        onMouseDown={(e) => { e.preventDefault(); startResize(e.clientX, e.clientY); }}
+        onTouchStart={(e) => startResize(e.touches[0].clientX, e.touches[0].clientY)}
+      >⤡</div>
+
       <style jsx>{`
         .ffd-panel {
           position: absolute; top: calc(100% + 8px); left: 0;
           width: 100%; max-width: min(420px, 94vw);
           background: #fff; border: 1.5px solid #E5E5E5; border-radius: 14px;
           box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden; z-index: 70;
+        }
+        .ffd-resize-handle {
+          position: absolute; bottom: 4px; right: 4px; width: 22px; height: 22px;
+          display: flex; align-items: center; justify-content: center; font-size: 0.85rem;
+          color: #A3A3A3; cursor: nwse-resize; touch-action: none; z-index: 5;
         }
         .ffd-header { display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1.1rem; border-bottom: 1px solid #F0F0F0; font-family: var(--font-display, inherit); font-size: 0.95rem; font-weight: 700; color: #1A1A1A; }
         .ffd-close { background: none; border: none; font-size: 1rem; color: #A3A3A3; cursor: pointer; padding: 0.25rem; }
@@ -168,6 +237,16 @@ export default function FeedFilterDropdown(props: Props) {
         .ffd-pills { display: flex; flex-wrap: wrap; gap: 0.4rem; }
         .ffd-pill { background: #F5F5F5; border: 1.5px solid #E5E5E5; border-radius: 20px; padding: 0.4rem 0.8rem; font-size: 0.8rem; color: #525252; cursor: pointer; text-transform: capitalize; }
         .ffd-pill.active { background: #F47B20; border-color: #F47B20; color: #fff; font-weight: 600; }
+        .ffd-promo-toggle {
+          display: flex; align-items: center; gap: 0.6rem; background: #F5F5F5; border: 1.5px solid #E5E5E5;
+          border-radius: 8px; padding: 0.6rem 0.8rem; font-size: 0.85rem; color: #525252; cursor: pointer; width: 100%; text-align: left;
+        }
+        .ffd-promo-toggle.active { background: #FFF7ED; border-color: #F47B20; color: #F47B20; font-weight: 600; }
+        .ffd-promo-check {
+          width: 18px; height: 18px; border: 1.5px solid #E5E5E5; border-radius: 4px; flex-shrink: 0;
+          display: flex; align-items: center; justify-content: center; font-size: 0.7rem; background: #fff;
+        }
+        .ffd-promo-toggle.active .ffd-promo-check { background: #F47B20; border-color: #F47B20; color: #fff; }
         .ffd-footer { display: flex; gap: 0.6rem; padding: 0.9rem 1.1rem; border-top: 1px solid #F0F0F0; }
         .ffd-clear { flex: 1; background: #F5F5F5; border: 1.5px solid #E5E5E5; border-radius: 8px; padding: 0.7rem; font-size: 0.85rem; font-weight: 600; color: #525252; cursor: pointer; }
         .ffd-apply { flex: 1; background: #F47B20; border: none; border-radius: 8px; padding: 0.7rem; font-size: 0.85rem; font-weight: 700; color: #fff; cursor: pointer; }

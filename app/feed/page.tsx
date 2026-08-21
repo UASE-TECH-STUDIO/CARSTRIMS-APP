@@ -52,17 +52,44 @@ export default function FeedPage() {
 
   const [searchInput, setSearchInput] = useState("");
   const [searchExpanded, setSearchExpanded] = useState(false);
-  const [understoodFilters, setUnderstoodFilters] = useState<{type:string; label:string; matchedText:string}[]>([]);
-  const [showSearchHint, setShowSearchHint] = useState(false);
-  useEffect(() => {
-    try {
-      if (!localStorage.getItem("carstrims:search-hint-seen")) setShowSearchHint(true);
-    } catch {}
-  }, []);
-  const dismissSearchHint = () => {
-    setShowSearchHint(false);
-    try { localStorage.setItem("carstrims:search-hint-seen", "1"); } catch {}
+  const [searchBoxHeight, setSearchBoxHeight] = useState(44);
+  const [isResizingSearch, setIsResizingSearch] = useState(false);
+  const resizeStartRef = useRef<{ y: number; startHeight: number } | null>(null);
+
+  const handleResizeStart = (clientY: number) => {
+    resizeStartRef.current = { y: clientY, startHeight: searchBoxHeight };
+    setIsResizingSearch(true);
   };
+  const handleResizeMove = (clientY: number) => {
+    if (!resizeStartRef.current) return;
+    const delta = clientY - resizeStartRef.current.y;
+    setSearchBoxHeight(Math.max(44, Math.min(220, resizeStartRef.current.startHeight + delta)));
+  };
+  const handleResizeEnd = () => { resizeStartRef.current = null; setIsResizingSearch(false); };
+
+  useEffect(() => {
+    if (!isResizingSearch) return;
+    const onMouseMove = (e: MouseEvent) => handleResizeMove(e.clientY);
+    const onTouchMove = (e: TouchEvent) => handleResizeMove(e.touches[0].clientY);
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", handleResizeEnd);
+    document.addEventListener("touchmove", onTouchMove);
+    document.addEventListener("touchend", handleResizeEnd);
+    return () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", handleResizeEnd);
+      document.removeEventListener("touchmove", onTouchMove);
+      document.removeEventListener("touchend", handleResizeEnd);
+    };
+  }, [isResizingSearch]);
+  const [understoodFilters, setUnderstoodFilters] = useState<{type:string; label:string; matchedText:string}[]>([]);
+  // Shows fresh every time the feed is genuinely opened/returned to
+  // (component remount), and dismisses only for the current viewing
+  // session when the person actually starts using the search — never
+  // permanently hidden, since a returning/new user benefits from the
+  // reminder each time, not just once ever.
+  const [showSearchHint, setShowSearchHint] = useState(true);
+  const dismissSearchHint = () => setShowSearchHint(false);
   const { listening, supported: voiceSupported, start: startVoice, stop: stopVoice } = useVoiceInput((transcript) => {
     setSearchInput(correctVoiceTranscript(transcript));
   });
@@ -93,6 +120,8 @@ export default function FeedPage() {
   const [fMinPrice, setFMinPrice] = useState("");
   const [fMaxPrice, setFMaxPrice] = useState("");
   const [fColor, setFColor] = useState("");
+  const [fMaxMileage, setFMaxMileage] = useState("");
+  const [fPromoOnly, setFPromoOnly] = useState(false);
 
   const [userLikes, setUserLikes] = useState<string[]>([]);
   const [userFavs, setUserFavs] = useState<string[]>([]);
@@ -121,6 +150,8 @@ export default function FeedPage() {
     if (fYearFrom) p.year_from = fYearFrom;
     if (fYearTo) p.year_to = fYearTo;
     if (fColor) p.color = fColor;
+    if (fMaxMileage) p.max_mileage = Number(fMaxMileage);
+    if (fPromoOnly) p.promo_only = true;
     if (fPrice) {
       const range = PRICE_RANGES.find((r) => r.label === fPrice);
       if (range) { if (range.min) p.min_price = range.min; if (range.max) p.max_price = range.max; }
@@ -129,7 +160,7 @@ export default function FeedPage() {
       if (fMaxPrice) p.max_price = Number(fMaxPrice);
     }
     return p;
-  }, [search, selectedBrand, fStatus, fCondition, fTransmission, fFuel, fState, fYearFrom, fYearTo, fColor, fPrice, fMinPrice, fMaxPrice]);
+  }, [search, selectedBrand, fStatus, fCondition, fTransmission, fFuel, fState, fYearFrom, fYearTo, fColor, fPrice, fMinPrice, fMaxPrice, fMaxMileage, fPromoOnly]);
 
   const fetchCars = useCallback(async (reset = false, silent = false) => {
     if (reset && !silent) { setLoading(true); }
@@ -148,6 +179,44 @@ export default function FeedPage() {
     } catch { } finally { setLoading(false); setLoadingMore(false); }
   }, [buildParams]);
 
+  // Pull-to-refresh: only activates when scrolled to the very top,
+  // pulling down gives a damped/resistant drag feel, and releasing
+  // past the threshold generates a fresh feed seed (new order, same
+  // as opening the app fresh) and re-fetches — also brings the search
+  // hint back, matching "let that notice box come back after each
+  // refresh."
+  const [pullDistance, setPullDistance] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const pullStartY = useRef<number | null>(null);
+  const PULL_THRESHOLD = 64;
+
+  const handlePullTouchStart = (e: React.TouchEvent) => {
+    if (window.scrollY <= 0) pullStartY.current = e.touches[0].clientY;
+  };
+  const handlePullTouchMove = (e: React.TouchEvent) => {
+    if (pullStartY.current === null || refreshing) return;
+    const delta = e.touches[0].clientY - pullStartY.current;
+    if (delta > 0 && window.scrollY <= 0) {
+      setPullDistance(Math.min(90, delta * 0.5));
+    } else {
+      pullStartY.current = null;
+      setPullDistance(0);
+    }
+  };
+  const handlePullTouchEnd = async () => {
+    if (pullStartY.current === null) return;
+    const shouldRefresh = pullDistance >= PULL_THRESHOLD;
+    pullStartY.current = null;
+    setPullDistance(0);
+    if (shouldRefresh) {
+      setRefreshing(true);
+      feedSeedRef.current = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      setShowSearchHint(true);
+      await fetchCars(true);
+      setRefreshing(false);
+    }
+  };
+
   // Live search-as-you-type for the car feed (debounced), in addition
   // to the existing on-submit behavior — so typing "camry 2019 used"
   // filters the grid without needing to press Enter.
@@ -158,7 +227,7 @@ export default function FeedPage() {
     return () => { if (carSearchDebounceRef.current) clearTimeout(carSearchDebounceRef.current); };
   }, [searchInput]);
 
-  useEffect(() => { fetchCars(true); }, [search, selectedBrand, fStatus, fCondition, fTransmission, fFuel, fState, fYearFrom, fYearTo, fColor, fPrice, fMinPrice, fMaxPrice]);
+  useEffect(() => { fetchCars(true); }, [search, selectedBrand, fStatus, fCondition, fTransmission, fFuel, fState, fYearFrom, fYearTo, fColor, fPrice, fMinPrice, fMaxPrice, fMaxMileage, fPromoOnly]);
 
   // Debounced dealer/people lookup for the unified search box — shows
   // as a small dropdown under the search input, alongside the car
@@ -299,6 +368,7 @@ export default function FeedPage() {
     setFStatus("available"); setFPrice(""); setFCondition(""); setFTransmission("");
     setFFuel(""); setFState(""); setFYearFrom(""); setFYearTo("");
     setFMinPrice(""); setFMaxPrice(""); setFColor("");
+    setFMaxMileage(""); setFPromoOnly(false);
   };
 
   // Removes just ONE understood filter chip. For regex-matched chips
@@ -370,20 +440,34 @@ export default function FeedPage() {
   const myDash = user?.role === "SYSTEM_ADMIN" ? "/dashboard/super-admin" : user?.role === "DEALER_ADMIN" ? "/dashboard/dealer" : user?.role === "PARTNER_USER" ? "/dashboard/partner" : user?.role === "DEALER_STAFF" ? "/dashboard/staff" : "/dashboard/user";
 
   return (
-    <div className="feed">
+    <div className="feed" onTouchStart={handlePullTouchStart} onTouchMove={handlePullTouchMove} onTouchEnd={handlePullTouchEnd}>
+      {(pullDistance > 0 || refreshing) && (
+        <div className="pull-indicator" style={{ height: refreshing ? 48 : pullDistance }}>
+          <div className={`pull-spinner ${refreshing || pullDistance >= 64 ? "pull-spinner-ready" : ""}`} />
+        </div>
+      )}
       {/* TOPBAR */}
       <header className="feed-topbar">
         <Link href="/feed" className="feed-brand">CARSTRIMS</Link>
 
         <form ref={searchWrapRef} className="search-form" style={{position:"relative"}} onSubmit={(e) => { e.preventDefault(); setSearch(searchInput); setShowPeopleDropdown(false); }}>
-          <div className={`search-box ${searchExpanded ? "search-box-expanded" : ""}`}>
+          <div className={`search-box ${searchExpanded ? "search-box-expanded" : ""}`} style={{alignItems: searchBoxHeight > 44 ? "flex-start" : "center"}}>
             <button type="button" className="s-filter-btn" title="Filters" aria-label="Open filters"
               onClick={(e) => { e.stopPropagation(); setShowFilter((v) => !v); }}>F</button>
-            <input
+            <textarea
               className="search-input"
               placeholder="Type or say what you want: camry 2019 used black 3m to 5m..."
               value={searchInput}
+              rows={1}
+              style={{height: searchBoxHeight}}
               onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  setSearch(searchInput);
+                  setShowPeopleDropdown(false);
+                }
+              }}
               onFocus={() => {
                 setSearchExpanded(true);
                 if (showSearchHint) dismissSearchHint();
@@ -405,6 +489,12 @@ export default function FeedPage() {
             >
               {listening ? "●" : "🎤"}
             </button>
+            <div
+              className="search-resize-handle"
+              title="Drag to enlarge"
+              onMouseDown={(e) => { e.preventDefault(); handleResizeStart(e.clientY); }}
+              onTouchStart={(e) => handleResizeStart(e.touches[0].clientY)}
+            >⋮⋮</div>
           </div>
 
           {showFilter && (
@@ -421,6 +511,8 @@ export default function FeedPage() {
                 fMinPrice={fMinPrice} setFMinPrice={setFMinPrice}
                 fMaxPrice={fMaxPrice} setFMaxPrice={setFMaxPrice}
                 fStatus={fStatus} setFStatus={setFStatus}
+                fMaxMileage={fMaxMileage} setFMaxMileage={setFMaxMileage}
+                fPromoOnly={fPromoOnly} setFPromoOnly={setFPromoOnly}
                 onClose={() => setShowFilter(false)}
                 onClear={clearAll}
               />
@@ -461,11 +553,27 @@ export default function FeedPage() {
           )}
 
           {showSearchHint && (
-            <div className="search-hint" onClick={dismissSearchHint}>
-              <div className="search-hint-arrow">↑</div>
-              <div className="search-hint-bubble">
-                Type, say, or explain what you want — we'll find it
-                <button type="button" className="search-hint-x" onClick={dismissSearchHint} aria-label="Dismiss">✕</button>
+            <div className="search-hint-group">
+              <button type="button" className="search-hint-dismiss" onClick={dismissSearchHint} aria-label="Dismiss">✕</button>
+
+              <div className="hint-item hint-item-filter">
+                <div className="hint-arrow">↑</div>
+                <div className="hint-bubble">Filter</div>
+              </div>
+
+              <div className="hint-item hint-item-type">
+                <div className="hint-arrow">↑</div>
+                <div className="hint-bubble">Type or explain what you want — we'll find it</div>
+              </div>
+
+              <div className="hint-item hint-item-mic">
+                <div className="hint-arrow">↑</div>
+                <div className="hint-bubble">Or speak</div>
+              </div>
+
+              <div className="hint-item hint-item-resize">
+                <div className="hint-bubble">Drag to enlarge</div>
+                <div className="hint-arrow hint-arrow-down">↓</div>
               </div>
             </div>
           )}
@@ -499,13 +607,19 @@ export default function FeedPage() {
         </div>
       )}
 
-      {/* WHAT THE SEARCH/VOICE UNDERSTOOD — itemized, adjustable, like Jiji */}
+      {/* WHAT THE SEARCH/VOICE UNDERSTOOD — itemized, adjustable, like Jiji.
+          Clicking a chip's label opens the manual filter dropdown so it
+          can be fine-tuned there; the x removes it directly. */}
       {understoodFilters.length > 0 && (
         <div className="active-bar">
           <span className="ab-label">Understood:</span>
           {understoodFilters.map((f, i) => (
-            <span key={i} className="af-tag">{f.label} <button onClick={() => removeUnderstoodFilter(f)}>x</button></span>
+            <span key={i} className="af-tag">
+              <span onClick={() => setShowFilter(true)} style={{cursor:"pointer"}}>{f.label}</span>
+              <button onClick={() => removeUnderstoodFilter(f)}>x</button>
+            </span>
           ))}
+          <button className="ab-clear" onClick={() => setShowFilter(true)} style={{marginLeft:"0.25rem"}}>Adjust in Filters</button>
         </div>
       )}
 
@@ -641,6 +755,17 @@ export default function FeedPage() {
         .feed { min-height:100vh; min-height:100dvh; background:#F5F5F5; display:flex; flex-direction:column; font-family:var(--font-body); padding-bottom:calc(60px + var(--sab, env(safe-area-inset-bottom,0px))); }
 
         /* -- TOPBAR --------------------------- */
+        .pull-indicator {
+          display: flex; align-items: center; justify-content: center; overflow: hidden;
+          transition: height 0.2s ease; background: #FAFAFA;
+        }
+        .pull-spinner {
+          width: 24px; height: 24px; border: 2.5px solid #E5E5E5; border-top-color: #A3A3A3;
+          border-radius: 50%; animation: pull-spin 0.8s linear infinite; transition: border-top-color 0.2s;
+        }
+        .pull-spinner-ready { border-top-color: #F47B20; }
+        @keyframes pull-spin { to { transform: rotate(360deg); } }
+
         .feed-topbar {
           height:60px; background:#fff; border-bottom:1.5px solid #E5E5E5;
           display:flex; align-items:center; gap:0.875rem; padding:0 1.25rem;
@@ -650,23 +775,30 @@ export default function FeedPage() {
           font-family:var(--font-display); font-size:1.2rem; letter-spacing:0.2em;
           color:#F47B20; text-decoration:none; flex-shrink:0;
         }
-        .search-hint {
-          position:absolute; top:calc(100% + 6px); left:50%; transform:translateX(-50%);
-          z-index:60; display:flex; flex-direction:column; align-items:center; cursor:pointer;
+        .search-hint-group {
+          position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:60; pointer-events:none;
         }
-        .search-hint-arrow {
-          font-size:1.3rem; color:#F47B20; line-height:1; animation:search-hint-bounce 1.1s ease-in-out infinite;
+        .search-hint-dismiss {
+          position:absolute; top:-2px; right:0; background:#1A1A1A; color:#fff; border:none; border-radius:50%;
+          width:20px; height:20px; font-size:0.6rem; cursor:pointer; pointer-events:auto; z-index:61;
         }
-        .search-hint-bubble {
-          background:#1A1A1A; color:#fff; font-size:0.78rem; font-weight:600; padding:0.55rem 2.2rem 0.55rem 0.9rem;
-          border-radius:8px; white-space:nowrap; position:relative; box-shadow:0 8px 20px rgba(0,0,0,0.25); margin-top:2px;
-        }
-        .search-hint-x {
-          position:absolute; right:0.4rem; top:50%; transform:translateY(-50%);
-          background:none; border:none; color:#fff; opacity:0.6; cursor:pointer; font-size:0.7rem; padding:0.3rem;
+        .hint-item { position:absolute; display:flex; flex-direction:column; align-items:center; pointer-events:none; }
+        .hint-item-filter { left:8%; }
+        .hint-item-type { left:50%; transform:translateX(-50%); }
+        .hint-item-mic { right:4%; }
+        .hint-item-resize { right:1%; top:-2.1rem; align-items:flex-end; }
+        .hint-arrow-down { animation:search-hint-bounce-down 1.1s ease-in-out infinite; }
+        @keyframes search-hint-bounce-down { 0%,100%{transform:translateY(0);} 50%{transform:translateY(5px);} }
+        .hint-arrow { font-size:1.15rem; color:#F47B20; line-height:1; animation:search-hint-bounce 1.1s ease-in-out infinite; }
+        .hint-bubble {
+          background:#1A1A1A; color:#fff; font-size:0.68rem; font-weight:600; padding:0.4rem 0.65rem;
+          border-radius:7px; white-space:nowrap; box-shadow:0 6px 16px rgba(0,0,0,0.25); margin-top:2px;
         }
         @keyframes search-hint-bounce { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-5px);} }
-        @media(max-width:640px) { .search-hint-bubble { white-space:normal; max-width:78vw; text-align:center; } }
+        @media(max-width:640px) {
+          .hint-item-type .hint-bubble { white-space:normal; max-width:44vw; text-align:center; }
+          .hint-bubble { font-size:0.62rem; padding:0.32rem 0.5rem; }
+        }
         .search-form { display:flex; align-items:center; gap:0.5rem; flex:1; min-width:0; position:relative; }
         .people-dropdown {
           position:absolute; top:calc(100% + 8px); left:0; right:0; z-index:60;
@@ -687,17 +819,22 @@ export default function FeedPage() {
         .pd-sub { font-size:0.72rem; color:#888; }
         @media(max-width:640px) { .people-dropdown { max-width:calc(100vw - 1.5rem); left:-0.5rem; right:auto; } }
         .search-box {
-          flex:1; display:flex; align-items:center; background:#F5F5F5;
+          flex:1; display:flex; align-items:center; background:#F5F5F5; position:relative;
           border:1.5px solid #E5E5E5; border-radius:10px; overflow:hidden; transition:border-color 0.2s, box-shadow 0.2s;
         }
         .search-box:focus-within { border-color:#F47B20; background:#fff; box-shadow:0 0 0 3px rgba(244,123,32,0.12); }
         .search-box-expanded { position:relative; z-index:65; }
+        .search-resize-handle {
+          position:absolute; bottom:1px; right:1px; width:18px; height:16px; cursor:ns-resize;
+          display:flex; align-items:center; justify-content:center; font-size:0.6rem; color:#A3A3A3;
+          background:#F5F5F5; line-height:1; transform:rotate(90deg); touch-action:none; z-index:2;
+        }
         .s-filter-btn {
           background:#1A1A1A; color:#fff; border:none; font-family:var(--font-display); font-weight:700;
           font-size:0.85rem; letter-spacing:0.02em; padding:0.7rem 0.9rem; cursor:pointer; flex-shrink:0; align-self:stretch;
         }
         .s-filter-btn:hover { background:#F47B20; }
-        .search-input { flex:1; background:transparent; border:none; padding:0.75rem 0.65rem; color:#171717; font-size:0.95rem; font-family:var(--font-body); outline:none; min-width:0; }
+        .search-input { flex:1; background:transparent; border:none; padding:0.75rem 1.4rem 0.75rem 0.65rem; color:#171717; font-size:0.95rem; font-family:var(--font-body); outline:none; min-width:0; resize:none; overflow-y:auto; line-height:1.4; }
         .search-input::placeholder { color:#A3A3A3; }
         .s-clear { background:none; border:none; color:#A3A3A3; cursor:pointer; padding:0 0.5rem; font-size:0.85rem; font-weight:700; flex-shrink:0; }
         .s-mic { background:none; border:none; cursor:pointer; padding:0 0.75rem; font-size:1.05rem; line-height:1; flex-shrink:0; color:#737373; }
