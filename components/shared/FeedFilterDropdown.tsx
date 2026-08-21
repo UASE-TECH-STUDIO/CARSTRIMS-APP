@@ -15,10 +15,12 @@ interface Props {
   fStatus: string; setFStatus: (v: string) => void;
   fMaxMileage: string; setFMaxMileage: (v: string) => void;
   fPromoOnly: boolean; setFPromoOnly: (v: boolean) => void;
+  fVehicleType: string; setFVehicleType: (v: string) => void;
   onClose: () => void;
   onClear: () => void;
 }
 
+const VEHICLE_TYPES = [{v:"car",l:"Car"},{v:"motorcycle",l:"Motorcycle"},{v:"tricycle",l:"Tricycle"},{v:"truck",l:"Truck"},{v:"bus",l:"Bus"},{v:"van",l:"Van"}];
 const BRANDS = ["Toyota","Honda","Mercedes","BMW","Lexus","Ford","Hyundai","Kia","Chevrolet","Audi","Land Rover","Jeep","Volkswagen","Nissan","Mazda","Peugeot","Mitsubishi","Subaru","Volvo","Porsche"];
 const CONDITIONS = [{v:"brand new",l:"Brand New"},{v:"foreign used",l:"Foreign Used"},{v:"locally used",l:"Locally Used"},{v:"salvage",l:"Salvage"}];
 const TRANSMISSIONS = ["automatic","manual","semi-automatic"];
@@ -47,6 +49,7 @@ export default function FeedFilterDropdown(props: Props) {
     fYearTo, setFYearTo, fMinPrice, setFMinPrice, fMaxPrice, setFMaxPrice,
     fStatus, setFStatus, onClose, onClear,
     fMaxMileage, setFMaxMileage, fPromoOnly, setFPromoOnly,
+    fVehicleType, setFVehicleType,
   } = props;
 
   // Panel is draggable-resizable from its bottom-right corner (same
@@ -98,6 +101,16 @@ export default function FeedFilterDropdown(props: Props) {
       </div>
 
       <div className="ffd-body" style={panelSize.h ? { maxHeight: panelSize.h - 130 } : undefined}>
+        <div className="ffd-group">
+          <label className="ffd-label">Vehicle Type</label>
+          <div className="ffd-pills">
+            {VEHICLE_TYPES.map((t) => (
+              <button key={t.v} type="button" className={`ffd-pill ${fVehicleType === t.v ? "active" : ""}`}
+                onClick={() => setFVehicleType(fVehicleType === t.v ? "" : t.v)}>{t.l}</button>
+            ))}
+          </div>
+        </div>
+
         <div className="ffd-group">
           <label className="ffd-label">Brand</label>
           <select className="ffd-select" value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)}>

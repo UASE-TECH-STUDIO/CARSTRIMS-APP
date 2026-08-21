@@ -122,6 +122,7 @@ export default function FeedPage() {
   const [fColor, setFColor] = useState("");
   const [fMaxMileage, setFMaxMileage] = useState("");
   const [fPromoOnly, setFPromoOnly] = useState(false);
+  const [fVehicleType, setFVehicleType] = useState("");
 
   const [userLikes, setUserLikes] = useState<string[]>([]);
   const [userFavs, setUserFavs] = useState<string[]>([]);
@@ -152,6 +153,7 @@ export default function FeedPage() {
     if (fColor) p.color = fColor;
     if (fMaxMileage) p.max_mileage = Number(fMaxMileage);
     if (fPromoOnly) p.promo_only = true;
+    if (fVehicleType) p.vehicle_type = fVehicleType;
     if (fPrice) {
       const range = PRICE_RANGES.find((r) => r.label === fPrice);
       if (range) { if (range.min) p.min_price = range.min; if (range.max) p.max_price = range.max; }
@@ -160,7 +162,7 @@ export default function FeedPage() {
       if (fMaxPrice) p.max_price = Number(fMaxPrice);
     }
     return p;
-  }, [search, selectedBrand, fStatus, fCondition, fTransmission, fFuel, fState, fYearFrom, fYearTo, fColor, fPrice, fMinPrice, fMaxPrice, fMaxMileage, fPromoOnly]);
+  }, [search, selectedBrand, fStatus, fCondition, fTransmission, fFuel, fState, fYearFrom, fYearTo, fColor, fPrice, fMinPrice, fMaxPrice, fMaxMileage, fPromoOnly, fVehicleType]);
 
   const fetchCars = useCallback(async (reset = false, silent = false) => {
     if (reset && !silent) { setLoading(true); }
@@ -227,7 +229,7 @@ export default function FeedPage() {
     return () => { if (carSearchDebounceRef.current) clearTimeout(carSearchDebounceRef.current); };
   }, [searchInput]);
 
-  useEffect(() => { fetchCars(true); }, [search, selectedBrand, fStatus, fCondition, fTransmission, fFuel, fState, fYearFrom, fYearTo, fColor, fPrice, fMinPrice, fMaxPrice, fMaxMileage, fPromoOnly]);
+  useEffect(() => { fetchCars(true); }, [search, selectedBrand, fStatus, fCondition, fTransmission, fFuel, fState, fYearFrom, fYearTo, fColor, fPrice, fMinPrice, fMaxPrice, fMaxMileage, fPromoOnly, fVehicleType]);
 
   // Debounced dealer/people lookup for the unified search box — shows
   // as a small dropdown under the search input, alongside the car
@@ -368,7 +370,7 @@ export default function FeedPage() {
     setFStatus("available"); setFPrice(""); setFCondition(""); setFTransmission("");
     setFFuel(""); setFState(""); setFYearFrom(""); setFYearTo("");
     setFMinPrice(""); setFMaxPrice(""); setFColor("");
-    setFMaxMileage(""); setFPromoOnly(false);
+    setFMaxMileage(""); setFPromoOnly(false); setFVehicleType("");
   };
 
   // Removes just ONE understood filter chip. For regex-matched chips
@@ -513,6 +515,7 @@ export default function FeedPage() {
                 fStatus={fStatus} setFStatus={setFStatus}
                 fMaxMileage={fMaxMileage} setFMaxMileage={setFMaxMileage}
                 fPromoOnly={fPromoOnly} setFPromoOnly={setFPromoOnly}
+                fVehicleType={fVehicleType} setFVehicleType={setFVehicleType}
                 onClose={() => setShowFilter(false)}
                 onClear={clearAll}
               />

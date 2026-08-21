@@ -10,6 +10,7 @@ import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, 
 import Link from "next/link";
 
 const BRANDS = ["Toyota","Honda","Mercedes","BMW","Lexus","Ford","Hyundai","Kia","Chevrolet","Audi","Land Rover","Jeep","Volkswagen","Nissan","Mazda","Peugeot","Mitsubishi","Subaru","Isuzu","Other"];
+const VEHICLE_TYPES = ["car","motorcycle","tricycle","truck","bus","van"];
 const CONDITIONS = ["brand new","foreign used","locally used","salvage"];
 const STATUSES   = ["available","reserved","sold","out_for_inspection","in_repair","on_promotion"];
 const FUEL_TYPES = ["petrol","diesel","electric","hybrid","gas","other"];
@@ -34,7 +35,7 @@ async function uploadViaBackend(file:File, endpoint:string): Promise<string> {
 }
 
 const emptyForm = () => ({
-  brand:"Toyota",model:"",year:new Date().getFullYear(),color:"",
+  vehicleType:"car",brand:"Toyota",model:"",year:new Date().getFullYear(),color:"",
   condition:"foreign used",status:"available",sellingPrice:"",
   purchasePrice:"",promoPrice:"",mileage:"",fuelType:"petrol",
   transmission:"automatic",engineType:"",vin:"",description:"",city:"",state:"",
@@ -158,7 +159,7 @@ export default function DealerCarsPage() {
 
   const openAdd = ()=>{setForm(emptyForm());setImages([]);setVideo("");setErr("");setSavedCarId(null);setModal("add");setEditCar(null);};
   const openEdit = (car:Car)=>{
-    setForm({brand:car.brand||"Toyota",model:car.model||"",year:car.year||2024,color:car.color||"",condition:car.condition||"foreign used",status:car.status||"available",sellingPrice:String(car.sellingPrice||""),purchasePrice:String(car.purchasePrice||""),promoPrice:String(car.promoPrice||""),mileage:String(car.mileage||""),fuelType:car.fuelType||"petrol",transmission:car.transmission||"automatic",engineType:car.engineType||"",vin:car.vin||"",description:car.description||"",city:car.city||"",state:car.state||""});
+    setForm({vehicleType:car.vehicleType||"car",brand:car.brand||"Toyota",model:car.model||"",year:car.year||2024,color:car.color||"",condition:car.condition||"foreign used",status:car.status||"available",sellingPrice:String(car.sellingPrice||""),purchasePrice:String(car.purchasePrice||""),promoPrice:String(car.promoPrice||""),mileage:String(car.mileage||""),fuelType:car.fuelType||"petrol",transmission:car.transmission||"automatic",engineType:car.engineType||"",vin:car.vin||"",description:car.description||"",city:car.city||"",state:car.state||""});
     setImages(car.images||[]);setVideo(car.video||"");setErr("");setSavedCarId(car.carId);setEditCar(car);setModal("edit");
   };
   const closeModal = ()=>{setModal(null);setEditCar(null);setErr("");setSavedCarId(null);};
@@ -386,6 +387,7 @@ export default function DealerCarsPage() {
                 </div>
 
                 {([
+                  {label:"Vehicle Type *",key:"vehicleType",type:"select",opts:VEHICLE_TYPES},
                   {label:"Brand *",key:"brand",type:"select",opts:BRANDS},
                   {label:"Model *",key:"model",placeholder:"e.g. Camry, Accord..."},
                   {label:"Year *",key:"year",type:"number"},
