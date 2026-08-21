@@ -45,6 +45,10 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>CARSTRIMS uses speech recognition so you can search for cars by speaking instead of typing.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>CARSTRIMS needs microphone access for voice search.</string>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 </dict>
