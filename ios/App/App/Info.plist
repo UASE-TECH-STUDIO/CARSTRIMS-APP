@@ -45,6 +45,12 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>CARSTRIMS needs camera access so you can take photos of vehicles, your logo, or your signature to upload.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>CARSTRIMS needs access to your photo library so you can select images to upload.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>CARSTRIMS needs permission to save exported documents and images to your photo library.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>CARSTRIMS uses speech recognition so you can search for cars by speaking instead of typing.</string>
 	<key>NSMicrophoneUsageDescription</key>
