@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 
 interface Props {
   selectedBrand: string; setSelectedBrand: (v: string) => void;
@@ -122,9 +123,9 @@ export default function FeedFilterDropdown(props: Props) {
         <div className="ffd-group">
           <label className="ffd-label">Price Range (NGN)</label>
           <div className="ffd-row">
-            <input className="ffd-input" type="number" placeholder="Min" value={fMinPrice} onChange={(e) => setFMinPrice(e.target.value)} />
+            <FormattedNumberInput className="ffd-input" placeholder="Min" value={fMinPrice} onChange={setFMinPrice} />
             <span className="ffd-sep">–</span>
-            <input className="ffd-input" type="number" placeholder="Max" value={fMaxPrice} onChange={(e) => setFMaxPrice(e.target.value)} />
+            <FormattedNumberInput className="ffd-input" placeholder="Max" value={fMaxPrice} onChange={setFMaxPrice} />
           </div>
         </div>
 
@@ -203,7 +204,7 @@ export default function FeedFilterDropdown(props: Props) {
 
         <div className="ffd-group">
           <label className="ffd-label">Max Mileage (km)</label>
-          <input className="ffd-input" type="number" placeholder="e.g. 80000" value={fMaxMileage} onChange={(e) => setFMaxMileage(e.target.value)} />
+          <FormattedNumberInput className="ffd-input" placeholder="e.g. 80,000" value={fMaxMileage} onChange={setFMaxMileage} />
         </div>
 
         <div className="ffd-group">
@@ -243,9 +244,10 @@ export default function FeedFilterDropdown(props: Props) {
         .ffd-body { max-height: min(60vh, 480px); overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 1.1rem; }
         .ffd-group { display: flex; flex-direction: column; gap: 0.45rem; }
         .ffd-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #737373; }
-        .ffd-select { border: 1.5px solid #E5E5E5; border-radius: 8px; padding: 0.55rem 0.7rem; font-size: 0.88rem; background: #fff; color: #1A1A1A; width: 100%; }
-        .ffd-input { border: 1.5px solid #E5E5E5; border-radius: 8px; padding: 0.55rem 0.7rem; font-size: 0.88rem; width: 100%; min-width: 0; }
+        .ffd-select { border: 1.5px solid #E5E5E5; border-radius: 8px; padding: 0.75rem 0.85rem; font-size: 0.95rem; background: #fff; color: #1A1A1A; width: 100%; min-height: 46px; }
+        .ffd-input { border: 1.5px solid #E5E5E5; border-radius: 8px; padding: 0.75rem 0.85rem; font-size: 0.95rem; width: 100%; min-width: 0; min-height: 46px; }
         .ffd-row { display: flex; align-items: center; gap: 0.5rem; }
+        .ffd-row .ffd-input, .ffd-row .ffd-select { min-width: 90px; }
         .ffd-sep { color: #A3A3A3; flex-shrink: 0; }
         .ffd-pills { display: flex; flex-wrap: wrap; gap: 0.4rem; }
         .ffd-pill { background: #F5F5F5; border: 1.5px solid #E5E5E5; border-radius: 20px; padding: 0.4rem 0.8rem; font-size: 0.8rem; color: #525252; cursor: pointer; text-transform: capitalize; }
@@ -265,7 +267,13 @@ export default function FeedFilterDropdown(props: Props) {
         .ffd-apply { flex: 1; background: #F47B20; border: none; border-radius: 8px; padding: 0.7rem; font-size: 0.85rem; font-weight: 700; color: #fff; cursor: pointer; }
 
         @media (max-width: 640px) {
-          .ffd-panel { max-width: calc(100vw - 1.5rem); left: 50%; transform: translateX(-50%); }
+          .ffd-panel { max-width: calc(100vw - 1rem); left: 50%; transform: translateX(-50%); }
+          .ffd-body { padding: 1.1rem 1.2rem; gap: 1.3rem; }
+          .ffd-label { font-size: 0.76rem; }
+          .ffd-select, .ffd-input { font-size: 1rem; padding: 0.8rem 0.9rem; min-height: 48px; }
+          .ffd-pill { padding: 0.55rem 1rem; font-size: 0.85rem; }
+          .ffd-row { gap: 0.6rem; }
+          .ffd-clear, .ffd-apply { padding: 0.85rem; font-size: 0.9rem; }
         }
       `}</style>
     </div>
