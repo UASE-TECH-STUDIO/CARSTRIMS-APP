@@ -116,7 +116,7 @@ export default function FeedPage() {
     window.addEventListener("resize", measure);
     return () => { clearTimeout(t); window.removeEventListener("resize", measure); };
   }, [showSearchHint]);
-  const { listening, supported: voiceSupported, start: startVoice, stop: stopVoice } = useVoiceInput((transcript) => {
+  const { listening, supported: voiceSupported, lastError: voiceError, start: startVoice, stop: stopVoice } = useVoiceInput((transcript) => {
     setSearchInput(correctVoiceTranscript(transcript));
   });
   const [search, setSearch] = useState("");
@@ -521,7 +521,16 @@ export default function FeedPage() {
               onClick={(e) => {
                 e.stopPropagation();
                 if (listening) { stopVoice(); return; }
-                if (voiceSupported === false) { showToast("Voice search isn't supported on this browser/device", "error"); return; }
+                if (voiceSupported === false) {
+                  const messages: Record<string, string> = {
+                    "plugin-not-bundled": "Voice search needs a fresh app build to work — this version is missing a required update.",
+                    "device-unavailable": "This device doesn't have a speech recognition service available (check that the Google app is installed and up to date).",
+                    "permission-denied": "Microphone permission was denied — enable it in your device's app settings.",
+                    "runtime-error": "Voice search hit an unexpected error — please try again.",
+                  };
+                  showToast(messages[voiceError || ""] || "Voice search isn't supported on this browser/device", "error");
+                  return;
+                }
                 startVoice();
               }}
             >

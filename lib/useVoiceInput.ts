@@ -38,6 +38,7 @@ function scoreTranscript(text: string): number {
 export function useVoiceInput(onResult: (text: string) => void) {
   const [listening, setListening] = useState(false);
   const [supported, setSupported] = useState<boolean | null>(null);
+  const [lastError, setLastError] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
 
   const isNative = () =>
@@ -45,17 +46,41 @@ export function useVoiceInput(onResult: (text: string) => void) {
     (window as any).Capacitor?.isNativePlatform?.();
 
   const startNative = useCallback(async () => {
+    let SpeechRecognition: any;
     try {
-      const { SpeechRecognition } = await import("@capacitor-community/speech-recognition");
+      ({ SpeechRecognition } = await import("@capacitor-community/speech-recognition"));
+    } catch (importErr: any) {
+      // This specific failure means the plugin's JS bridge never got
+      // bundled into the app at all — almost always because `npm
+      // install` and/or `npx cap sync` weren't run after the plugin
+      // was added to package.json, so the native build never actually
+      // included it. This is DIFFERENT from "device has no speech
+      // engine" and needs a different fix (rebuild pipeline, not the
+      // device), so it gets its own distinct error rather than being
+      // lumped in with "not supported".
+      console.error("[useVoiceInput] Speech recognition plugin failed to import - likely missing npm install / npx cap sync after adding it:", importErr);
+      setLastError("plugin-not-bundled");
+      setSupported(false);
+      return;
+    }
 
+    try {
       const { available } = await SpeechRecognition.available();
       if (!available) {
+        // The plugin loaded fine, but the DEVICE itself reports no
+        // usable speech recognition engine — on Android this usually
+        // means the Google app (which provides the actual recognition
+        // service) is missing, disabled, or badly out of date on this
+        // specific device, not a bug in the app itself.
+        console.warn("[useVoiceInput] Plugin loaded but device reports no available speech recognition engine.");
+        setLastError("device-unavailable");
         setSupported(false);
         return;
       }
 
       const perm = await SpeechRecognition.requestPermissions();
       if (perm.speechRecognition !== "granted") {
+        setLastError("permission-denied");
         setSupported(false);
         return;
       }
@@ -104,7 +129,9 @@ export function useVoiceInput(onResult: (text: string) => void) {
         if (score > bestScore) { bestScore = score; best = candidate; }
       }
       onResult(best);
-    } catch {
+    } catch (runErr: any) {
+      console.error("[useVoiceInput] Speech recognition failed while listening:", runErr);
+      setLastError("runtime-error");
       setListening(false);
       setSupported(false);
     }
@@ -164,5 +191,5 @@ export function useVoiceInput(onResult: (text: string) => void) {
     else stopWeb();
   }, [stopNative, stopWeb]);
 
-  return { listening, supported, start, stop };
+  return { listening, supported, lastError, start, stop };
 }
