@@ -2,6 +2,7 @@ package com.uasetechstudio.carstrims;
 
 import android.os.Bundle;
 import android.webkit.WebView;
+import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import com.getcapacitor.BridgeActivity;
 
@@ -21,6 +22,20 @@ public class MainActivity extends BridgeActivity {
         // navigation bar, matching what the app's Capacitor config already
         // expects.
         WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
+
+        // Setting setDecorFitsSystemWindows alone can take an extra
+        // layout pass to fully propagate — meaning the WebView's very
+        // first render can happen with the OLD (edge-to-edge) inset
+        // values still in effect, showing content overlapping the
+        // status bar briefly, before self-correcting a moment later
+        // once Android naturally re-lays-out the window (e.g. on the
+        // next scroll or resize event). Forcing a fresh insets
+        // application immediately, on the very next frame, means the
+        // WebView gets the CORRECT inset values from its first paint
+        // instead of needing something else to trigger the correction.
+        getWindow().getDecorView().post(() -> {
+            ViewCompat.requestApplyInsets(getWindow().getDecorView());
+        });
 
         if (this.bridge != null && this.bridge.getWebView() != null) {
             this.bridge.getWebView().setBackgroundColor(android.graphics.Color.parseColor("#1A1A1A"));
