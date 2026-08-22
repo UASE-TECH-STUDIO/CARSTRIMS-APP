@@ -387,7 +387,11 @@ export default function PartnersPage() {
                   </div>
 
                   {/* Assign vehicles section - only for approved partners */}
-                  {effectiveStatus==="approved" && (
+                  {effectiveStatus==="approved" ? (
+                    <div style={{border:"3px solid #16A34A"}}>
+                      <div style={{background:"#DCFCE7",padding:"0.4rem 0.75rem",fontSize:"0.7rem",fontFamily:"monospace",color:"#166534"}}>
+                        DEBUG: condition was TRUE, rendering assign section now →
+                      </div>
                     <div style={{border:"1.5px solid #E5E5E5",borderRadius:"12px",overflow:"hidden"}}>
                       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0.875rem 1rem",background:"#F5F5F5",borderBottom:"1px solid #E5E5E5"}}>
                         <div style={{fontFamily:"var(--font-display)",fontSize:"0.72rem",letterSpacing:"0.1em",color:"#525252"}}>
@@ -460,6 +464,11 @@ export default function PartnersPage() {
                           )}
                         </div>
                       )}
+                    </div>
+                    </div>
+                  ) : (
+                    <div style={{background:"#FEE2E2",border:"3px solid #DC2626",padding:"0.75rem",fontSize:"0.72rem",fontFamily:"monospace",color:"#991B1B"}}>
+                      DEBUG: condition was FALSE. effectiveStatus = {JSON.stringify(effectiveStatus)} (type: {typeof effectiveStatus})
                     </div>
                   )}
 
