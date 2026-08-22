@@ -88,12 +88,18 @@ export function useVoiceInput(onResult: (text: string) => void) {
       setSupported(true);
       setListening(true);
 
-      // en-GB rather than en-US: Nigeria's spoken English follows
-      // British pronunciation patterns much more closely than
-      // American ones (education system, media, etc.), and this was
-      // a real, confirmed mismatch — this file previously hardcoded
-      // en-US here while the web version already correctly tried
-      // en-NG first.
+      // No language specified — lets the device use its own
+      // configured default, which is ALWAYS guaranteed to be valid
+      // and installed, unlike a hardcoded locale. An earlier version
+      // hardcoded "en-GB" here (reasoning: closer to Nigerian spoken
+      // English than "en-US") but that's very likely the actual cause
+      // of the native-only "unexpected error" — if a given device
+      // doesn't have that specific locale installed for recognition,
+      // start() rejects outright rather than falling back gracefully.
+      // The device's own default is a safer bet: most Nigerian Android
+      // phones (Samsung/Tecno/Infinix etc.) are commonly already
+      // configured close to what was being targeted anyway, without
+      // the risk of hardcoding something unsupported.
       //
       // maxResults raised from 1 to 3: native speech engines often
       // rank alternative interpretations, and the single top pick
@@ -107,10 +113,22 @@ export function useVoiceInput(onResult: (text: string) => void) {
       // of the app's own search box (the mic icon pulses) rather than
       // a jarring native overlay taking over the screen.
       const result = await SpeechRecognition.start({
-        language: "en-GB",
         maxResults: 3,
         partialResults: false,
         popup: false,
+      }).catch(async (deviceDefaultErr: any) => {
+        // Defensive fallback: if the device's own default language
+        // somehow still fails to start recognition, retry once with
+        // en-US explicitly - the single most universally-supported
+        // locale on Android, present on virtually every device
+        // regardless of region settings.
+        console.warn("[useVoiceInput] Device-default language failed, retrying with en-US:", deviceDefaultErr);
+        return SpeechRecognition.start({
+          language: "en-US",
+          maxResults: 3,
+          partialResults: false,
+          popup: false,
+        });
       });
 
       setListening(false);
