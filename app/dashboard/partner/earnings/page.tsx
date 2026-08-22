@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
+import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob } from "@/lib/documentExport";
+import { useToast } from "@/store/toastStore";
 
 export default function PartnerEarningsPage() {
   const [data, setData] = useState<any>(null);
@@ -15,6 +17,62 @@ export default function PartnerEarningsPage() {
 
   const fmt = (n: number) => `${(n || 0).toLocaleString()}`;
   const fmtDate = (iso: string) => iso ? new Date(iso).toLocaleDateString("en-NG") : "";
+  const showToast = useToast();
+  const [exportBusy, setExportBusy] = useState("");
+  const [showExportPicker, setShowExportPicker] = useState(false);
+
+  const buildEarningsHtml = () => {
+    const now = new Date().toLocaleString("en-NG");
+    const sales = data?.recentSales || [];
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      *{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:28px 32px;color:#1A1A1A;font-size:12px}
+      h1{font-size:18px;margin:0 0 4px} .sub{color:#737373;font-size:11px;margin-bottom:16px}
+      .stats{display:flex;gap:16px;margin-bottom:16px}
+      .stat{background:#FAFAFA;border-radius:8px;padding:10px 16px}
+      .stat .l{font-size:9px;color:#A3A3A3;text-transform:uppercase;letter-spacing:0.05em}
+      .stat .v{font-size:16px;font-weight:700;color:#3B8BD4}
+      table{width:100%;border-collapse:collapse}
+      th{background:#1A1A1A;color:#fff;text-align:left;padding:8px 10px;font-size:10px;letter-spacing:0.05em;text-transform:uppercase}
+      td{padding:7px 10px;border-bottom:1px solid #E5E5E5;font-size:11px}
+      tr:nth-child(even) td{background:#FAFAFA}
+      .footer{margin-top:16px;font-size:9px;color:#A3A3A3;text-align:center}
+      </style></head><body>
+      <h1>My Earnings</h1>
+      <div class="sub">Generated ${now}</div>
+      <div class="stats">
+        <div class="stat"><div class="l">Total Revenue</div><div class="v">NGN ${fmt(data?.totalRevenue||0)}</div></div>
+        <div class="stat"><div class="l">Total Sales</div><div class="v">${data?.totalSales||0}</div></div>
+      </div>
+      <table><thead><tr><th>Vehicle ID</th><th>Selling Price</th><th>Profit</th><th>Date</th></tr></thead>
+      <tbody>${sales.map((s:any) => `<tr><td>${s.carId||""}</td><td>NGN ${fmt(s.sellingPrice)}</td><td>+NGN ${fmt(s.profit)}</td><td>${fmtDate(s.soldAt)}</td></tr>`).join("")}</tbody>
+      </table>
+      <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
+      </body></html>`;
+  };
+
+  const handleExport = async (format: "pdf"|"jpg"|"excel") => {
+    setShowExportPicker(false);
+    setExportBusy(format);
+    try {
+      const filename = `carstrims-my-earnings-${Date.now()}`;
+      if (format === "excel") {
+        const blob = rowsToExcelBlob((data?.recentSales||[]).map((s:any) => ({
+          "Vehicle ID": s.carId || "", "Selling Price": s.sellingPrice || 0,
+          Profit: s.profit || 0, Date: fmtDate(s.soldAt),
+        })), "Earnings");
+        await downloadBlob(blob, `${filename}.xlsx`);
+      } else {
+        const html = buildEarningsHtml();
+        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "My Earnings");
+        await downloadBlob(blob, `${filename}.${format}`);
+      }
+      showToast("Downloaded", "success");
+    } catch (e: any) {
+      showToast(e?.message || "Export failed", "error");
+    } finally {
+      setExportBusy("");
+    }
+  };
 
   if (loading) return <div className="loading"><div className="spinner" /><style>{`.loading{display:flex;align-items:center;justify-content:center;min-height:50vh}.spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:#3B8BD4;border-radius:50%;animation:spin 0.8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}`}</style></div>;
 
@@ -22,8 +80,25 @@ export default function PartnerEarningsPage() {
 
   return (
     <div className="page">
-      <h2 className="page-heading">Earnings</h2>
-      <p className="page-sub">Revenue from your vehicles sold through dealers</p>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap" as const,gap:"0.75rem"}}>
+        <div>
+          <h2 className="page-heading">Earnings</h2>
+          <p className="page-sub">Revenue from your vehicles sold through dealers</p>
+        </div>
+        <div style={{position:"relative"}}>
+          <button onClick={()=>setShowExportPicker(v=>!v)} disabled={exportBusy!==""}
+            style={{background:"#F5F5F5",color:"#525252",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.5rem 0.9rem",fontSize:"0.8rem",cursor:"pointer",fontWeight:600}}>
+            {exportBusy?"Exporting…":"Export"}
+          </button>
+          {showExportPicker && (
+            <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"120px",maxWidth:"calc(100vw - 2rem)"}}>
+              <button onClick={()=>handleExport("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as PDF</button>
+              <button onClick={()=>handleExport("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as JPG Image</button>
+              <button onClick={()=>handleExport("excel")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as Excel</button>
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="summary-row">
         <div className="sum-card accent">
