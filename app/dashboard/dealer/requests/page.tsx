@@ -3,6 +3,13 @@ import { useEffect, useState, useRef } from "react";
 import api from "@/lib/api";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 import { useToast } from "@/store/toastStore";
+import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob } from "@/lib/documentExport";
+
+// "Still attending to" = awaiting further action from either side.
+// "Attended to" = resolved one way or another. Matches an explicit
+// request for this exact categorization on exports.
+const STILL_ATTENDING = ["pending", "countered"];
+const isStillAttending = (status: string) => STILL_ATTENDING.includes(status);
 
 const STATUS_C: Record<string,string> = {
   pending:"#D97706", accepted_by_dealer:"#16A34A", countered:"#7B68EE",
@@ -165,6 +172,64 @@ export default function DealerRequestsPage() {
 
   const filtered     = filter === "all" ? requests : requests.filter(r => r.status === filter);
   const pending      = requests.filter(r => r.status === "pending").length;
+
+  // Categorized export: still attending to / attended to / all,
+  // as explicitly requested - separate from the more granular
+  // filter tabs above, which stay unaffected by this.
+  const [showExportCategory, setShowExportCategory] = useState(false);
+  const [exportCategory, setExportCategory] = useState<"still"|"attended"|"all"|"">("");
+  const [reqExportBusy, setReqExportBusy] = useState("");
+
+  const rowsForCategory = (cat: "still"|"attended"|"all") =>
+    requests.filter(r => cat === "all" ? true : cat === "still" ? isStillAttending(r.status) : !isStillAttending(r.status));
+
+  const buildRequestsHtml = (cat: "still"|"attended"|"all") => {
+    const rows = rowsForCategory(cat);
+    const now = new Date().toLocaleString("en-NG");
+    const label = cat === "still" ? "Still Attending To" : cat === "attended" ? "Attended To" : "All";
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      *{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:28px 32px;color:#1A1A1A;font-size:12px}
+      h1{font-size:18px;margin:0 0 4px} .sub{color:#737373;font-size:11px;margin-bottom:16px}
+      table{width:100%;border-collapse:collapse}
+      th{background:#1A1A1A;color:#fff;text-align:left;padding:8px 10px;font-size:10px;letter-spacing:0.05em;text-transform:uppercase}
+      td{padding:7px 10px;border-bottom:1px solid #E5E5E5;font-size:11px}
+      tr:nth-child(even) td{background:#FAFAFA}
+      .footer{margin-top:16px;font-size:9px;color:#A3A3A3;text-align:center}
+      </style></head><body>
+      <h1>Customer Requests — ${label}</h1>
+      <div class="sub">${rows.length} request${rows.length!==1?"s":""} &bull; Generated ${now}</div>
+      <table><thead><tr><th>Buyer</th><th>Vehicle Interest</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody>${rows.map((r: any) => `<tr><td>${r.buyerName||r.userName||""}</td><td>${r.brand||""} ${r.model||""}</td><td>${STATUS_L[r.status]||r.status}</td><td>${r.createdAt?new Date(r.createdAt).toLocaleDateString("en-NG"):""}</td></tr>`).join("")}</tbody>
+      </table>
+      <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
+      </body></html>`;
+  };
+
+  const handleRequestsExport = async (cat: "still"|"attended"|"all", format: "pdf"|"jpg"|"excel") => {
+    setShowExportCategory(false); setExportCategory("");
+    setReqExportBusy(`${cat}-${format}`);
+    try {
+      const rows = rowsForCategory(cat);
+      const filename = `carstrims-requests-${cat}-${Date.now()}`;
+      if (format === "excel") {
+        const blob = rowsToExcelBlob(rows.map((r: any) => ({
+          Buyer: r.buyerName || r.userName || "", "Vehicle Interest": `${r.brand||""} ${r.model||""}`.trim(),
+          Status: STATUS_L[r.status] || r.status, Date: r.createdAt ? new Date(r.createdAt).toLocaleDateString("en-NG") : "",
+        })), "Requests");
+        await downloadBlob(blob, `${filename}.xlsx`);
+      } else {
+        const html = buildRequestsHtml(cat);
+        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Customer Requests");
+        await downloadBlob(blob, `${filename}.${format}`);
+      }
+      showToast("Downloaded", "success");
+    } catch (e: any) {
+      showToast(e?.message || "Export failed", "error");
+    } finally {
+      setReqExportBusy("");
+    }
+  };
+
   const canRespond   = selected?.status === "pending";
   const journeyActive= selected && ["accepted_by_dealer","accepted","completed"].includes(selected.status);
   const paymentActive= selected && ["accepted_by_dealer","accepted"].includes(selected.status);
@@ -200,7 +265,30 @@ export default function DealerRequestsPage() {
             {pending > 0 && <span style={{color:"#D97706",fontWeight:700}}> &bull; {pending} need response</span>}
           </p>
         </div>
-        <button onClick={load} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"7px",padding:"0.4rem 0.875rem",fontSize:"0.75rem",cursor:"pointer",fontWeight:600}}>Refresh</button>
+        <div style={{display:"flex",gap:"0.5rem",alignItems:"center"}}>
+          <div style={{position:"relative"}}>
+            <button onClick={()=>setShowExportCategory(v=>!v)} disabled={reqExportBusy!==""}
+              style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"7px",padding:"0.4rem 0.875rem",fontSize:"0.75rem",cursor:"pointer",fontWeight:600}}>
+              {reqExportBusy?"Exporting…":"Export"}
+            </button>
+            {showExportCategory && !exportCategory && (
+              <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"170px"}}>
+                <button onClick={()=>setExportCategory("still")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>Still Attending To</button>
+                <button onClick={()=>setExportCategory("attended")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>Attended To</button>
+                <button onClick={()=>setExportCategory("all")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>All Requests</button>
+              </div>
+            )}
+            {showExportCategory && exportCategory && (
+              <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"140px"}}>
+                <button onClick={()=>setExportCategory("")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.5rem 0.9rem",background:"#FAFAFA",border:"none",borderBottom:"1px solid #E5E5E5",cursor:"pointer",fontSize:"0.7rem",color:"#888",fontWeight:600}}>&larr; Back</button>
+                <button onClick={()=>handleRequestsExport(exportCategory,"pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>as PDF</button>
+                <button onClick={()=>handleRequestsExport(exportCategory,"jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>as JPG Image</button>
+                <button onClick={()=>handleRequestsExport(exportCategory,"excel")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>as Excel</button>
+              </div>
+            )}
+          </div>
+          <button onClick={load} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"7px",padding:"0.4rem 0.875rem",fontSize:"0.75rem",cursor:"pointer",fontWeight:600}}>Refresh</button>
+        </div>
       </div>
 
       {/* Filter tabs */}
