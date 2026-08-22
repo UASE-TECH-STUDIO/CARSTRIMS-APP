@@ -86,16 +86,28 @@ const ENTRIES: NavEntry[] = [
 
   { path: "public-profile", label: "My Public Profile", description: "See how your dealership looks to customers browsing the app", keywords: ["public profile", "my profile", "how customers see me", "my page", "storefront", "my listing page"], roles: ["dealer"] },
 
-  // ── Staff ───────────────────────────────────────────────────────
-  { path: "/dashboard/staff", label: "Staff Dashboard", description: "Your staff dashboard overview", keywords: ["dashboard", "overview", "home page"], roles: ["staff"] },
-  { path: "/dashboard/staff/inventory", label: "Vehicle Inventory", description: "Add or manage the dealership's vehicles", keywords: ["add car", "add vehicle", "inventory", "list a car", "cars"], roles: ["staff"] },
-  { path: "/dashboard/staff/sales", label: "Sales", description: "Record a sale, view sales history", keywords: ["sales", "sold", "record a sale", "receipt"], roles: ["staff"] },
-  { path: "/dashboard/staff/expenses", label: "Expenses", description: "Track expenses on vehicles", keywords: ["expenses", "cost", "spending"], roles: ["staff"] },
-  { path: "/dashboard/staff/partners", label: "Partners", description: "Manage consignors/partners, assign vehicles", keywords: ["partner", "consignor", "assign car"], roles: ["staff"] },
-  { path: "/dashboard/staff/requests", label: "Customer Requests", description: "Vehicle requests from buyers", keywords: ["request", "customer request", "buyer request"], roles: ["staff"] },
-  { path: "/dashboard/staff/movements", label: "Vehicle Movements", description: "Track vehicles taken out", keywords: ["movement", "car taken out", "test drive log"], roles: ["staff"] },
-  { path: "/dashboard/staff/reports", label: "Reports", description: "Financial reports", keywords: ["report", "revenue", "profit"], roles: ["staff"] },
-  { path: "/dashboard/staff/cctv", label: "CCTV", description: "View showroom camera feeds", keywords: ["cctv", "camera", "security"], roles: ["staff"] },
+  // ── Staff (thoroughly audited: every page, all permission-gated
+  // wrappers around the matching dealer page component) ───────────
+  { path: "/dashboard/staff", label: "Staff Dashboard", description: "Your staff dashboard overview", keywords: ["dashboard", "overview", "home page", "main page"], roles: ["staff"] },
+
+  { path: "/dashboard/staff/inventory/add?action=add", label: "Add a Vehicle", description: "Add a new car, motorcycle, tricycle (keke), or other vehicle to inventory (needs add_cars permission)", keywords: ["add car", "add vehicle", "add a car", "i want to add a car", "list a car", "new car", "upload car", "add keke", "add okada", "add motor"], roles: ["staff"] },
+  { path: "/dashboard/staff/inventory", label: "Vehicle Inventory", description: "See and manage the dealership's vehicles", keywords: ["inventory", "my cars", "cars", "car list", "vehicle list", "stock"], roles: ["staff"] },
+
+  { path: "/dashboard/staff/sales", label: "Sales", description: "Record a sale, view sales history, receipts", keywords: ["sales", "sold", "record a sale", "make a sale", "sell a car", "receipt", "who bought"], roles: ["staff"] },
+  { path: "/dashboard/staff/expenses", label: "Expenses", description: "Track expenses on vehicles", keywords: ["expenses", "cost", "spending", "money spent", "repair cost"], roles: ["staff"] },
+  { path: "/dashboard/staff/partners", label: "Partners", description: "Manage consignors/partners, assign vehicles", keywords: ["partner", "consignor", "assign car", "assign vehicle"], roles: ["staff"] },
+  { path: "/dashboard/staff/requests", label: "Customer Requests", description: "Vehicle requests from buyers", keywords: ["request", "customer request", "buyer request", "someone wants a car"], roles: ["staff"] },
+  { path: "/dashboard/staff/appointments", label: "Appointments", description: "Showroom visits and test drive bookings", keywords: ["appointment", "test drive", "showroom visit", "booking"], roles: ["staff"] },
+  { path: "/dashboard/staff/movements", label: "Vehicle Movements", description: "Track vehicles taken out for test drives or inspection", keywords: ["movement", "car taken out", "test drive log", "who has the car"], roles: ["staff"] },
+  { path: "/dashboard/staff/reports", label: "Reports", description: "Financial reports, revenue, profit", keywords: ["report", "revenue", "profit", "financial report", "how much did we make"], roles: ["staff"] },
+  { path: "/dashboard/staff/cctv", label: "CCTV", description: "View the showroom's security camera feeds", keywords: ["cctv", "camera", "security camera", "watch showroom"], roles: ["staff"] },
+  { path: "/dashboard/staff/messages", label: "Messages", description: "Chat with buyers, partners, and your dealer", keywords: ["message", "chat", "talk to buyer", "contact", "inbox"], roles: ["staff"] },
+
+  { path: "/dashboard/staff/staff", label: "Staff Management", description: "See or manage other staff accounts (needs view_staff or create_staff permission)", keywords: ["staff", "employee", "manage staff", "other staff", "team", "workers", "add staff", "staff accounts"], roles: ["staff"] },
+
+  { path: "/dashboard/staff/settings#password", label: "Change Password", description: "Update your account password", keywords: ["change password", "change my password", "reset password", "new password", "update password", "forgot password"], roles: ["staff"] },
+  { path: "/dashboard/staff/settings#profile", label: "Profile Picture & Signature", description: "Update your profile picture or digital signature", keywords: ["profile picture", "change photo", "signature", "my photo"], roles: ["staff"] },
+  { path: "/dashboard/staff/settings", label: "Account Settings", description: "Your account and profile settings", keywords: ["settings", "account", "update my details"], roles: ["staff"] },
 
   // ── Partner / consignor (thoroughly audited: every page) ────────
   { path: "/dashboard/partner", label: "Partner Dashboard", description: "Your partner dashboard overview", keywords: ["dashboard", "overview", "home page", "main page"], roles: ["partner"] },
