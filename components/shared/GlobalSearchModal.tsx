@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
-import { matchNavigation, Role } from "@/lib/navigationRegistry";
+import { matchNavigation, getResolvedEntriesForRole, Role, NavEntry } from "@/lib/navigationRegistry";
 import { useVoiceInput } from "@/lib/useVoiceInput";
 import { correctNavigationTranscript } from "@/lib/voiceNavCorrection";
 import { useAuthStore } from "@/store/authStore";
@@ -43,7 +43,62 @@ export default function GlobalSearchModal({ onClose, role }: Props) {
   });
 
   const { user } = useAuthStore();
-  const navMatches = matchNavigation(q, { role, dealerId: user?.dealerId || undefined }, 4);
+  const navContext = { role, dealerId: user?.dealerId || undefined };
+  const localNavMatches = matchNavigation(q, navContext, 4);
+  const [aiNavMatches, setAiNavMatches] = useState<(NavEntry & { resolvedPath: string })[] | null>(null);
+  const [aiUnderstood, setAiUnderstood] = useState("");
+  const navDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // AI-backed navigation matching — understands genuinely open-ended
+  // phrasing, dialects, Pidgin, or mixed language, not just the
+  // phrases in the local keyword list. Runs alongside the always-
+  // available local matcher (shown above via localNavMatches) and,
+  // when it succeeds, its results are shown instead since they're
+  // more broadly capable — but the local matcher is what's shown
+  // immediately and what's still there if the AI call is slow,
+  // fails, or isn't configured, so navigation search never breaks.
+  useEffect(() => {
+    if (navDebounceRef.current) clearTimeout(navDebounceRef.current);
+    if (!q.trim()) { setAiNavMatches(null); setAiUnderstood(""); return; }
+
+    navDebounceRef.current = setTimeout(async () => {
+      try {
+        const entries = getResolvedEntriesForRole(navContext);
+        const res = await api.post("/api/v1/public/navigation-match", {
+          text: q.trim(),
+          entries: entries.map((e) => ({ path: e.resolvedPath, label: e.label, description: e.description })),
+        });
+        if (!res.data?.available || !res.data?.matches?.length) {
+          setAiNavMatches(null);
+          setAiUnderstood("");
+          return;
+        }
+        const byPath = new Map(entries.map((e) => [e.resolvedPath, e]));
+        const resolved = res.data.matches
+          .map((m: any) => byPath.get(m.path))
+          .filter((e: any): e is NavEntry & { resolvedPath: string } => !!e);
+        if (resolved.length) {
+          setAiNavMatches(resolved);
+          setAiUnderstood(res.data.understood || "");
+        } else {
+          setAiNavMatches(null);
+          setAiUnderstood("");
+        }
+      } catch {
+        // AI call failed for any reason — local matcher (already
+        // showing) remains the answer, nothing more to do here.
+        setAiNavMatches(null);
+        setAiUnderstood("");
+      }
+    }, 450);
+    return () => { if (navDebounceRef.current) clearTimeout(navDebounceRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, role, user?.dealerId]);
+
+  // Prefer the AI's results when it has a confident answer; the local
+  // keyword/fuzzy matcher is the fallback, not a lesser second choice
+  // shown alongside it — showing both at once would be confusing.
+  const navMatches = aiNavMatches && aiNavMatches.length ? aiNavMatches : localNavMatches;
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -116,6 +171,7 @@ export default function GlobalSearchModal({ onClose, role }: Props) {
           {!!navMatches.length && (
             <div className="gs-section">
               <div className="gs-section-title">Take Me There</div>
+              {aiUnderstood && <div className="gs-understood">Understood: {aiUnderstood}</div>}
               {navMatches.map((n) => (
                 <Link key={n.path} href={n.resolvedPath} className="gs-row gs-nav-row" onClick={onClose}>
                   <div className="gs-row-thumb gs-row-nav-icon">→</div>
@@ -211,6 +267,7 @@ export default function GlobalSearchModal({ onClose, role }: Props) {
         .gs-hint { padding: 2rem 1.25rem; text-align: center; color: #A3A3A3; font-size: 0.88rem; }
         .gs-section { padding: 0.5rem 0; }
         .gs-section-title { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #A3A3A3; padding: 0.5rem 1.25rem; }
+        .gs-understood { font-size: 0.76rem; color: #A3745C; padding: 0 1.25rem 0.5rem; font-style: italic; }
         .gs-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.625rem 1.25rem; text-decoration: none; color: inherit; }
         .gs-row:hover { background: #FAFAFA; }
         .gs-row-thumb { width: 44px; height: 44px; border-radius: 8px; overflow: hidden; flex-shrink: 0; background: #F5F5F5; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
