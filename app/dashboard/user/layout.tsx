@@ -9,6 +9,7 @@ import NotificationBell from "@/components/ui/NotificationBell";
 import MessagesWidget from "@/components/shared/MessagesWidget";
 import GlobalSearchModal from "@/components/shared/GlobalSearchModal";
 import SearchHint from "@/components/shared/SearchHint";
+import FeedHomeButton from "@/components/shared/FeedHomeButton";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -105,6 +106,7 @@ export default function UserLayout({ children }: { children: ReactNode }) {
           <Link href="/feed" className="topbar-brand">CARSTRIMS</Link>
           <div className="topbar-right">
             <span className="greeting">{getGreeting()}, <strong>{me?.fullName?.split(" ")[0]||"User"}</strong></span>
+            <FeedHomeButton />
             <div style={{position:"relative"}}>
               <button className="search-topbar-btn" onClick={() => setShowSearch(true)} title="Search" aria-label="Search">🔍</button>
               <SearchHint onUseSearch={() => setShowSearch(true)} />

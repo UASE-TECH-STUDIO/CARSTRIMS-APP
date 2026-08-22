@@ -8,6 +8,7 @@ import NotificationBell from "@/components/ui/NotificationBell";
 import MessagesWidget from "@/components/shared/MessagesWidget";
 import GlobalSearchModal from "@/components/shared/GlobalSearchModal";
 import SearchHint from "@/components/shared/SearchHint";
+import FeedHomeButton from "@/components/shared/FeedHomeButton";
 import { useSidebar } from "@/hooks/useSidebar";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter, usePathname } from "next/navigation";
@@ -41,6 +42,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             </div>
             <div className="tb-right">
               <span className="greeting">Good {getGreeting()}, <strong>{user?.fullName?.split(" ")[0]}</strong></span>
+              <FeedHomeButton />
               <div style={{position:"relative"}}>
                 <button className="search-topbar-btn" onClick={() => setShowSearch(true)} title="Search" aria-label="Search">🔍</button>
                 <SearchHint onUseSearch={() => setShowSearch(true)} />

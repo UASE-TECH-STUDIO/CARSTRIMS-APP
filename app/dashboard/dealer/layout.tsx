@@ -5,6 +5,7 @@ import DealerSidebar from "@/components/layout/DealerSidebar";
 import MessagesWidget from "@/components/shared/MessagesWidget";
 import GlobalSearchModal from "@/components/shared/GlobalSearchModal";
 import SearchHint from "@/components/shared/SearchHint";
+import FeedHomeButton from "@/components/shared/FeedHomeButton";
 import { useRouter, usePathname } from "next/navigation";
 import { useSidebar } from "@/hooks/useSidebar";
 import NotificationBell from "@/components/ui/NotificationBell";
@@ -92,6 +93,7 @@ function DealerShell({ children }: { children: ReactNode }) {
             <span className="greeting-text">
               {getGreeting()}, <strong className="greeting-name">{user?.fullName?.split(" ")[0]||"Dealer"}</strong>
             </span>
+            <FeedHomeButton />
             <div style={{position:"relative"}}>
               <button className="search-topbar-btn" onClick={()=>setShowSearch(true)} title="Search" aria-label="Search">🔍</button>
               <SearchHint onUseSearch={() => setShowSearch(true)} />

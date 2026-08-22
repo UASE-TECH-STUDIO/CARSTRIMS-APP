@@ -7,6 +7,7 @@ import { useMessagesStore } from "@/store/messagesStore";
 import Link from "next/link";
 import { useToast } from "@/store/toastStore";
 import ZoomableImage from "@/components/ui/ZoomableImage";
+import FeedHomeButton from "@/components/shared/FeedHomeButton";
 
 export default function CarDetailPage() {
   const params = useParams();
@@ -261,7 +262,10 @@ export default function CarDetailPage() {
 
       {/* Topbar */}
       <header className="cd-topbar">
-        <button className="cd-back" onClick={()=>router.back()}>Back</button>
+        <div style={{display:"flex", alignItems:"center", gap:"0.5rem"}}>
+          <button className="cd-back" onClick={()=>router.back()}>Back</button>
+          <FeedHomeButton />
+        </div>
         <div className="cd-topbar-right">
           <button className={`cd-action ${liked?"liked":""}`} onClick={handleLike} title={liked?"Unlike":"Like"}>
             {liked ? "Liked" : "Like"} {likeCount > 0 ? `(${likeCount})` : ""}
