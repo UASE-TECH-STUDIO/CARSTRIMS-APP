@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import SWRegistrar from "@/components/shared/SWRegistrar";
 import CapacitorPush from "@/components/shared/CapacitorPush";
+import DailyGreeting from "@/components/shared/DailyGreeting";
 import ToastContainer from "@/components/ui/ToastContainer";
 import BackButtonHandler from "@/components/shared/BackButtonHandler";
 import EdgeSwipeNavigation from "@/components/shared/EdgeSwipeNavigation";
@@ -162,6 +163,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <SWRegistrar />
         <CapacitorPush />
+        <DailyGreeting />
         <ToastContainer />
         <BackButtonHandler />
         <EdgeSwipeNavigation>
