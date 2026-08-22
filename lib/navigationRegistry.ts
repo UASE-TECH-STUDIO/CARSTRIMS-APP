@@ -32,7 +32,7 @@ const ENTRIES: NavEntry[] = [
   // ── Buyer / user (thoroughly audited: every page + sub-states) ──
   { path: "/dashboard/user", label: "My Dashboard", description: "Your buyer dashboard overview", keywords: ["dashboard", "my account", "overview", "home page", "main page"], roles: ["user"] },
 
-  { path: "/dashboard/user/favorites", label: "Saved Vehicles", description: "Cars and vehicles you've saved to look at later", keywords: ["saved", "favorites", "favourite", "wishlist", "bookmarked", "cars i liked", "vehicles i saved"], roles: ["user"] },
+  { path: "/dashboard/user/favorites", label: "Saved Vehicles", description: "Cars and vehicles you've saved to look at later", keywords: ["saved", "save", "save for later", "save this car", "keep this car", "favorites", "favourite", "wishlist", "bookmarked", "cars i liked", "vehicles i saved"], roles: ["user"] },
 
   { path: "/dashboard/user/requests?action=new", label: "Make a Request", description: "Ask for a specific vehicle you're looking for — dealers respond with matches", keywords: ["make a request", "send a request", "new request", "ask for a car", "custom request", "find me a car", "i want a specific car", "cant find what i want", "request a vehicle"], roles: ["user"] },
   { path: "/dashboard/user/requests", label: "My Requests", description: "Vehicle requests you've sent to dealers and their responses", keywords: ["request", "my requests", "requests i sent", "dealer response", "request status"], roles: ["user"] },
