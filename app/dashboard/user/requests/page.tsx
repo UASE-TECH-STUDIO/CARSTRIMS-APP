@@ -1,5 +1,6 @@
 ﻿"use client";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 import { rowsToExcelBlob, renderHtmlStringToPdfBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
@@ -88,6 +89,18 @@ export default function UserRequestsPage() {
   const openNew = () => {
     setForm({...blank}); setDealerSearch(""); setError(""); setMode("new"); setActive(null);
   };
+
+  // Deep link support for the navigation search ("make a request" ->
+  // takes them here and opens the new-request form directly).
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get("action") === "new") {
+      openNew();
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const openView = (r:any) => {
     setActive(r); setMode("view"); setError(""); setShowAbort(false); setAbortReason("");
   };
