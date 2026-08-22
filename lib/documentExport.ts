@@ -136,6 +136,71 @@ export async function renderHtmlStringToPdfBlob(htmlString: string, title = "Doc
     document.body.removeChild(iframe);
   }
 }
+
+/**
+ * Renders a DOM element to a JPG Blob. These two JPG functions were
+ * called throughout the app (dealer cars/sales/movements/expenses/
+ * reports, partner cars, admin user detail) but never actually
+ * implemented here - every "Export as JPG" button in the app has been
+ * silently broken since it was first wired up, throwing
+ * "renderElementToJpgBlob is not a function" the moment it's clicked.
+ */
+export async function renderElementToJpgBlob(element: HTMLElement, quality = 0.92): Promise<Blob> {
+  const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error("Could not generate image"))),
+      "image/jpeg",
+      quality
+    );
+  });
+}
+
+/**
+ * Same idea as renderHtmlStringToPdfBlob, but for JPG - renders a full
+ * standalone HTML document string via a hidden offscreen iframe, then
+ * captures it as a single JPG image instead of assembling a PDF.
+ */
+export async function renderHtmlStringToJpgBlob(htmlString: string): Promise<Blob> {
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.left = "-99999px";
+  iframe.style.top = "0";
+  iframe.style.width = "800px";
+  iframe.style.height = "1131px";
+  iframe.style.border = "none";
+  document.body.appendChild(iframe);
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const doc = iframe.contentDocument;
+      if (!doc) { reject(new Error("Could not prepare document for image export")); return; }
+      doc.open();
+      doc.write(htmlString.replace(/<script>window\.onload=\(\)=>window\.print\(\)<\\\/script>/, ""));
+      doc.close();
+
+      const settle = () => {
+        const imgs = Array.from(doc.images || []);
+        const pending = imgs.filter((img) => !img.complete);
+        if (pending.length === 0) { resolve(); return; }
+        let remaining = pending.length;
+        const done = () => { remaining -= 1; if (remaining <= 0) resolve(); };
+        pending.forEach((img) => { img.onload = done; img.onerror = done; });
+        setTimeout(resolve, 3000);
+      };
+
+      if (doc.readyState === "complete") settle();
+      else iframe.onload = () => settle();
+    });
+
+    const target = iframe.contentDocument?.body;
+    if (!target) throw new Error("Nothing to export yet");
+    return await renderElementToJpgBlob(target);
+  } finally {
+    document.body.removeChild(iframe);
+  }
+}
+
 export function rowsToExcelBlob(rows: Record<string, any>[], sheetName = "Sheet1"): Blob {
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
