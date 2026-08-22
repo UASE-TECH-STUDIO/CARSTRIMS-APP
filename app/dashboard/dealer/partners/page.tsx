@@ -360,7 +360,7 @@ export default function PartnersPage() {
               ) : detailData ? (
                 <>
                   {/* Partner info */}
-                  <div style={{background:"#FAFAFA",borderRadius:"10px",padding:"1rem",display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:"0.625rem"}}>
+                  <div style={{background:"#FAFAFA",borderRadius:"10px",padding:"1rem",display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:"0.625rem",flexShrink:0}}>
                     {[
                       ["Name",detailData.partner?.fullName||showDetail.partnerName],
                       ["Email",detailData.partner?.email||showDetail.partnerEmail],
@@ -386,7 +386,7 @@ export default function PartnersPage() {
 
                   {/* Assign vehicles section - only for approved partners */}
                   {effectiveStatus==="approved" && (
-                    <div style={{border:"1.5px solid #E5E5E5",borderRadius:"12px",overflow:"hidden"}}>
+                    <div style={{border:"1.5px solid #E5E5E5",borderRadius:"12px",overflow:"hidden",flexShrink:0}}>
                       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0.875rem 1rem",background:"#F5F5F5",borderBottom:"1px solid #E5E5E5"}}>
                         <div style={{fontFamily:"var(--font-display)",fontSize:"0.72rem",letterSpacing:"0.1em",color:"#525252"}}>
                           ASSIGN VEHICLES TO PARTNER
@@ -463,7 +463,7 @@ export default function PartnersPage() {
 
                   {/* Assigned vehicles list */}
                   {detailData.cars?.length > 0 && (
-                    <div ref={assignedVehiclesRef} style={{border:"1.5px solid #E5E5E5",borderRadius:"12px",overflow:"hidden"}}>
+                    <div ref={assignedVehiclesRef} style={{border:"1.5px solid #E5E5E5",borderRadius:"12px",overflow:"hidden",flexShrink:0}}>
                       <div style={{padding:"0.875rem 1rem",background:"#F5F5F5",borderBottom:"1px solid #E5E5E5",fontFamily:"var(--font-display)",fontSize:"0.72rem",letterSpacing:"0.1em",color:"#525252"}}>
                         ASSIGNED VEHICLES ({detailData.cars.length})
                       </div>
@@ -497,7 +497,7 @@ export default function PartnersPage() {
 
                   {/* Recent movements for this partner's assigned vehicles */}
                   {detailData.recentMovements?.length > 0 && (
-                    <div style={{border:"1.5px solid #E5E5E5",borderRadius:"12px",overflow:"hidden"}}>
+                    <div style={{border:"1.5px solid #E5E5E5",borderRadius:"12px",overflow:"hidden",flexShrink:0}}>
                       <div style={{padding:"0.875rem 1rem",background:"#F5F5F5",borderBottom:"1px solid #E5E5E5",fontFamily:"var(--font-display)",fontSize:"0.72rem",letterSpacing:"0.1em",color:"#525252"}}>
                         RECENT MOVEMENTS ({detailData.recentMovements.length})
                       </div>
@@ -516,7 +516,7 @@ export default function PartnersPage() {
                   )}
 
                   {/* Revenue summary */}
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:"0.75rem"}}>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:"0.75rem",flexShrink:0}}>
                     {[
                       {label:"Total Revenue",val:fmt(detailData.totalRevenue)},
                       {label:"Total Profit",val:fmt(detailData.totalProfit)},
