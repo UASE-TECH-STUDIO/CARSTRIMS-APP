@@ -97,13 +97,25 @@ const ENTRIES: NavEntry[] = [
   { path: "/dashboard/staff/reports", label: "Reports", description: "Financial reports", keywords: ["report", "revenue", "profit"], roles: ["staff"] },
   { path: "/dashboard/staff/cctv", label: "CCTV", description: "View showroom camera feeds", keywords: ["cctv", "camera", "security"], roles: ["staff"] },
 
-  // ── Partner / consignor ────────────────────────────────────────
-  { path: "/dashboard/partner", label: "Partner Dashboard", description: "Your partner dashboard overview", keywords: ["dashboard", "overview", "home page"], roles: ["partner"] },
-  { path: "/dashboard/partner/cars", label: "My Assigned Vehicles", description: "Vehicles assigned to you by dealers", keywords: ["my cars", "assigned cars", "assigned vehicles", "vehicles i sell"], roles: ["partner"] },
-  { path: "/dashboard/partner/dealers", label: "My Dealers", description: "Dealers you're linked with", keywords: ["my dealers", "linked dealers", "who i work with"], roles: ["partner"] },
-  { path: "/dashboard/partner/find-dealer", label: "Find a Dealer", description: "Find and request to partner with a new dealer", keywords: ["find dealer", "new dealer", "link with dealer", "partner with dealer", "send request", "join a dealer"], roles: ["partner"] },
-  { path: "/dashboard/partner/earnings", label: "My Earnings", description: "Commission and earnings from sales", keywords: ["earnings", "commission", "how much did i earn", "money", "income"], roles: ["partner"] },
-  { path: "/dashboard/partner/movements", label: "Vehicle Movements", description: "Track vehicle movements", keywords: ["movement", "car taken out"], roles: ["partner"] },
+  // ── Partner / consignor (thoroughly audited: every page) ────────
+  { path: "/dashboard/partner", label: "Partner Dashboard", description: "Your partner dashboard overview", keywords: ["dashboard", "overview", "home page", "main page"], roles: ["partner"] },
+
+  { path: "/dashboard/partner/cars", label: "My Assigned Vehicles", description: "Vehicles assigned to you by dealers, their status, price, and profit", keywords: ["my cars", "my vehicles", "assigned cars", "assigned vehicles", "vehicles i sell", "vehicles assigned to me", "view details"], roles: ["partner"] },
+
+  { path: "/dashboard/partner/dealers", label: "My Dealers", description: "Dealers you're currently linked and working with", keywords: ["my dealers", "linked dealers", "who i work with", "dealer connections"], roles: ["partner"] },
+
+  { path: "/dashboard/partner/find-dealer", label: "Find a Dealer", description: "Search for a dealer and send a request to link up with them", keywords: ["find dealer", "new dealer", "link with dealer", "partner with dealer", "send request", "join a dealer", "search for dealer", "connect with dealer"], roles: ["partner"] },
+
+  { path: "/dashboard/partner/earnings", label: "My Earnings", description: "Commission, revenue, profit, and recent sales from your assigned vehicles", keywords: ["earnings", "commission", "how much did i earn", "money", "income", "my revenue", "my profit", "how much have i made", "recent sales"], roles: ["partner"] },
+
+  { path: "/dashboard/partner/movements", label: "Vehicle Movements", description: "Track your assigned vehicles taken out for test drives or delivery", keywords: ["movement", "car taken out", "test drive log", "track vehicle"], roles: ["partner"] },
+
+  { path: "/dashboard/partner/messages", label: "Messages", description: "Chat with your dealers", keywords: ["message", "chat", "talk to dealer", "contact dealer", "inbox"], roles: ["partner"] },
+
+  { path: "/dashboard/partner/settings#password", label: "Change Password", description: "Update your account password", keywords: ["change password", "change my password", "reset password", "new password", "update password", "forgot password"], roles: ["partner"] },
+  { path: "/dashboard/partner/settings#personal", label: "Personal Information", description: "Update your name, phone, address, city, state", keywords: ["personal info", "my name", "my phone number", "my address", "update my details", "change my phone"], roles: ["partner"] },
+  { path: "/dashboard/partner/settings#photo", label: "Profile Photo", description: "Update your profile picture", keywords: ["profile photo", "profile picture", "change my photo", "my picture"], roles: ["partner"] },
+  { path: "/dashboard/partner/settings", label: "Partner Account Settings", description: "Your account info, role, and settings", keywords: ["settings", "my account", "account settings", "user id"], roles: ["partner"] },
 
   // ── Super admin ─────────────────────────────────────────────────
   { path: "/dashboard/super-admin", label: "Admin Dashboard", description: "Platform overview", keywords: ["dashboard", "overview", "home page"], roles: ["super-admin"] },
