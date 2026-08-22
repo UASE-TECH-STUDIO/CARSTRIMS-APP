@@ -129,16 +129,30 @@ const ENTRIES: NavEntry[] = [
   { path: "/dashboard/partner/settings#photo", label: "Profile Photo", description: "Update your profile picture", keywords: ["profile photo", "profile picture", "change my photo", "my picture"], roles: ["partner"] },
   { path: "/dashboard/partner/settings", label: "Partner Account Settings", description: "Your account info, role, and settings", keywords: ["settings", "my account", "account settings", "user id"], roles: ["partner"] },
 
-  // ── Super admin ─────────────────────────────────────────────────
-  { path: "/dashboard/super-admin", label: "Admin Dashboard", description: "Platform overview", keywords: ["dashboard", "overview", "home page"], roles: ["super-admin"] },
+  // ── Super admin (thoroughly audited: every page) ────────────────
+  { path: "/dashboard/super-admin", label: "Admin Dashboard", description: "Platform overview", keywords: ["dashboard", "overview", "home page", "main page"], roles: ["super-admin"] },
+
   { path: "/dashboard/super-admin/dealers", label: "Dealers", description: "Manage all dealers on the platform", keywords: ["dealers", "manage dealers", "all dealers"], roles: ["super-admin"] },
-  { path: "/dashboard/super-admin/create-dealer", label: "Create Dealer Account", description: "Set up a new dealer account", keywords: ["create dealer", "new dealer", "add dealer", "onboard dealer"], roles: ["super-admin"] },
+  { path: "/dashboard/super-admin/create-dealer", label: "Create Dealer Account", description: "Set up a new dealer's company details and account", keywords: ["create dealer", "new dealer", "add dealer", "onboard dealer", "register a dealer", "company details"], roles: ["super-admin"] },
+
   { path: "/dashboard/super-admin/users", label: "Users", description: "Manage all platform users", keywords: ["users", "manage users", "all users"], roles: ["super-admin"] },
-  { path: "/dashboard/super-admin/approvals", label: "Approvals", description: "Pending dealer or account approvals", keywords: ["approvals", "pending approval", "approve dealer"], roles: ["super-admin"] },
-  { path: "/dashboard/super-admin/cars", label: "All Vehicles", description: "Every vehicle listed on the platform", keywords: ["all cars", "all vehicles", "every car"], roles: ["super-admin"] },
-  { path: "/dashboard/super-admin/analytics", label: "Analytics", description: "Platform-wide analytics and stats", keywords: ["analytics", "stats", "numbers", "platform performance"], roles: ["super-admin"] },
-  { path: "/dashboard/super-admin/broadcast", label: "Broadcast", description: "Send an announcement to all users", keywords: ["broadcast", "announcement", "send message to everyone", "notify all users"], roles: ["super-admin"] },
-  { path: "/dashboard/super-admin/activity", label: "Activity Log", description: "Recent platform activity", keywords: ["activity", "activity log", "recent actions", "audit"], roles: ["super-admin"] },
+
+  { path: "/dashboard/super-admin/approvals", label: "Approvals", description: "Pending dealer registration approvals — approve or cancel", keywords: ["approvals", "pending approval", "approve dealer", "pending registration", "cancel registration"], roles: ["super-admin"] },
+
+  { path: "/dashboard/super-admin/cars", label: "All Vehicles", description: "Every vehicle listed on the platform", keywords: ["all cars", "all vehicles", "every car", "every vehicle"], roles: ["super-admin"] },
+
+  { path: "/dashboard/super-admin/analytics", label: "Analytics", description: "Platform-wide performance — revenue, new dealer and user registrations", keywords: ["analytics", "stats", "numbers", "platform performance", "revenue summary", "new registrations", "how is the platform doing"], roles: ["super-admin"] },
+
+  { path: "/dashboard/super-admin/broadcast", label: "Broadcast", description: "Compose and send an announcement to selected users or everyone", keywords: ["broadcast", "announcement", "send message to everyone", "notify all users", "compose announcement", "message everyone"], roles: ["super-admin"] },
+
+  { path: "/dashboard/super-admin/activity", label: "Activity Log", description: "Recent platform-wide activity", keywords: ["activity", "activity log", "recent actions", "audit", "what happened recently"], roles: ["super-admin"] },
+
+  { path: "/dashboard/super-admin/messages", label: "Messages", description: "Chat with dealers and users", keywords: ["message", "chat", "talk to dealer", "contact", "inbox"], roles: ["super-admin"] },
+
+  { path: "/dashboard/super-admin/settings#password", label: "Change Password", description: "Update your admin account password", keywords: ["change password", "change my password", "reset password", "new password", "update password", "forgot password"], roles: ["super-admin"] },
+  { path: "/dashboard/super-admin/settings#app", label: "Application Info", description: "App name, office address, social links shown platform-wide", keywords: ["app name", "office address", "application info", "facebook url", "instagram url", "platform settings"], roles: ["super-admin"] },
+  { path: "/dashboard/super-admin/settings", label: "Admin Settings", description: "Your admin account and platform application settings", keywords: ["settings", "admin settings", "my account", "account settings"], roles: ["super-admin"] },
+
 ];
 
 export interface NavContext {
