@@ -14,6 +14,7 @@ export default function PartnersPage() {
   const [filter, setFilter]         = useState("all");
   // Assign car state
   const [showAssign, setShowAssign] = useState(false);
+  const assignedVehiclesRef = useRef<HTMLDivElement>(null);
   const [availCars, setAvailCars]   = useState<any[]>([]);
   const [carsLoading, setCarsLoading] = useState(false);
   const [carSearch, setCarSearch]   = useState("");
@@ -358,17 +359,6 @@ export default function PartnersPage() {
                 </div>
               ) : detailData ? (
                 <>
-                  {/* TEMPORARY DEBUG - remove once we've diagnosed the assign-button issue */}
-                  <div style={{background:"#FEF3C7",border:"2px solid #F59E0B",borderRadius:"8px",padding:"0.75rem",fontSize:"0.72rem",fontFamily:"monospace",color:"#78350F"}}>
-                    <div style={{fontWeight:700,marginBottom:"0.3rem"}}>DEBUG (screenshot this and send back):</div>
-                    <div>detailData?.link?.status = {JSON.stringify(detailData?.link?.status)}</div>
-                    <div>showDetail?.status = {JSON.stringify(showDetail?.status)}</div>
-                    <div>effectiveStatus = {JSON.stringify(effectiveStatus)}</div>
-                    <div>effectiveStatus === "approved" → {String(effectiveStatus === "approved")}</div>
-                    <div>detailData?.cars = {JSON.stringify(detailData?.cars)}</div>
-                    <div>detailData?.totalCars = {JSON.stringify(detailData?.totalCars)}</div>
-                  </div>
-
                   {/* Partner info */}
                   <div style={{background:"#FAFAFA",borderRadius:"10px",padding:"1rem",display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:"0.625rem"}}>
                     {[
@@ -376,22 +366,26 @@ export default function PartnersPage() {
                       ["Email",detailData.partner?.email||showDetail.partnerEmail],
                       ["Phone",detailData.partner?.phone||showDetail.partnerPhone],
                       ["Status",effectiveStatus],
-                      ["Vehicles Assigned",detailData.totalCars||0],
-                      ["Vehicles Sold",detailData.carsSold||0],
-                    ].map(([l,v])=>(
-                      <div key={String(l)} style={{background:"#fff",border:"1px solid #F0F0F0",borderRadius:"7px",padding:"0.625rem"}}>
-                        <div style={{fontSize:"0.62rem",textTransform:"uppercase" as const,letterSpacing:"0.06em",color:"#AAA",marginBottom:"0.2rem"}}>{l}</div>
-                        <div style={{fontSize:"0.875rem",color:"#1A1A1A",fontWeight:600}}>{String(v||"")}</div>
-                      </div>
-                    ))}
+                      ["Vehicles Assigned",detailData.totalCars ?? 0],
+                      ["Vehicles Sold",detailData.carsSold ?? 0],
+                    ].map(([l,v])=>{
+                      const clickable = l === "Vehicles Assigned" && Number(v) > 0;
+                      return (
+                        <div key={String(l)} onClick={clickable ? () => assignedVehiclesRef.current?.scrollIntoView({behavior:"smooth", block:"center"}) : undefined}
+                          style={{background:"#fff",border:`1px solid ${clickable?"#F47B20":"#F0F0F0"}`,borderRadius:"7px",padding:"0.625rem",cursor:clickable?"pointer":"default"}}
+                          onMouseOver={clickable?(e)=>(e.currentTarget.style.background="#FFF7ED"):undefined}
+                          onMouseOut={clickable?(e)=>(e.currentTarget.style.background="#fff"):undefined}>
+                          <div style={{fontSize:"0.62rem",textTransform:"uppercase" as const,letterSpacing:"0.06em",color:"#AAA",marginBottom:"0.2rem"}}>{l}</div>
+                          <div style={{fontSize:"0.875rem",color:clickable?"#F47B20":"#1A1A1A",fontWeight:600}}>
+                            {String(v ?? "")}{clickable ? " — view below ↓" : ""}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
 
                   {/* Assign vehicles section - only for approved partners */}
-                  {effectiveStatus==="approved" ? (
-                    <div style={{border:"3px solid #16A34A"}}>
-                      <div style={{background:"#DCFCE7",padding:"0.4rem 0.75rem",fontSize:"0.7rem",fontFamily:"monospace",color:"#166534"}}>
-                        DEBUG: condition was TRUE, rendering assign section now →
-                      </div>
+                  {effectiveStatus==="approved" && (
                     <div style={{border:"1.5px solid #E5E5E5",borderRadius:"12px",overflow:"hidden"}}>
                       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0.875rem 1rem",background:"#F5F5F5",borderBottom:"1px solid #E5E5E5"}}>
                         <div style={{fontFamily:"var(--font-display)",fontSize:"0.72rem",letterSpacing:"0.1em",color:"#525252"}}>
@@ -465,16 +459,11 @@ export default function PartnersPage() {
                         </div>
                       )}
                     </div>
-                    </div>
-                  ) : (
-                    <div style={{background:"#FEE2E2",border:"3px solid #DC2626",padding:"0.75rem",fontSize:"0.72rem",fontFamily:"monospace",color:"#991B1B"}}>
-                      DEBUG: condition was FALSE. effectiveStatus = {JSON.stringify(effectiveStatus)} (type: {typeof effectiveStatus})
-                    </div>
                   )}
 
                   {/* Assigned vehicles list */}
                   {detailData.cars?.length > 0 && (
-                    <div style={{border:"1.5px solid #E5E5E5",borderRadius:"12px",overflow:"hidden"}}>
+                    <div ref={assignedVehiclesRef} style={{border:"1.5px solid #E5E5E5",borderRadius:"12px",overflow:"hidden"}}>
                       <div style={{padding:"0.875rem 1rem",background:"#F5F5F5",borderBottom:"1px solid #E5E5E5",fontFamily:"var(--font-display)",fontSize:"0.72rem",letterSpacing:"0.1em",color:"#525252"}}>
                         ASSIGNED VEHICLES ({detailData.cars.length})
                       </div>
