@@ -42,13 +42,16 @@ export async function renderElementToPdfBlob(element: HTMLElement, title = "Docu
   const naturalImgHeight = (canvas.height * usableWidth) / canvas.width;
   const imgData = canvas.toDataURL("image/png");
 
-  if (naturalImgHeight <= usableHeight * 1.15) {
-    // Content is one page's worth, or only slightly over (the common
+  if (naturalImgHeight <= usableHeight * 1.4) {
+    // Content is one page's worth, or reasonably close (the common
     // case for receipts/invoices/proformas — usually just a little
     // taller than A4 at full width because of a signature block or
-    // footer). Rather than spilling that small overflow onto an
-    // almost-entirely-blank second page, shrink the whole document
-    // slightly so it fits cleanly on exactly one page.
+    // footer). Rather than spilling that overflow onto an almost-
+    // entirely-blank second page, shrink the whole document so it
+    // fits cleanly on exactly one page. 1.4x (rather than a stricter
+    // 1.15x) was chosen after seeing a real invoice sample spill into
+    // an awkward split at the old threshold — the shrink is a much
+    // better trade-off than a near-empty trailing page.
     const scale = Math.min(1, usableHeight / naturalImgHeight);
     const drawWidth = usableWidth * scale;
     const drawHeight = naturalImgHeight * scale;
@@ -62,11 +65,21 @@ export async function renderElementToPdfBlob(element: HTMLElement, title = "Docu
     pdf.addImage(imgData, "PNG", margin, position, usableWidth, naturalImgHeight);
     heightLeft -= usableHeight;
 
-    while (heightLeft > 0) {
+    // Minimum meaningful remainder before spawning another page - a
+    // real bug this fixes: the previous "> 0" check meant even a
+    // fraction-of-a-point floating-point remainder (nowhere near a
+    // single visible line of text) would trigger a whole extra page,
+    // which then rendered as a totally blank trailing page in every
+    // PDF export in the app. 12pt is roughly one line of body text -
+    // genuinely not worth a whole page below that.
+    const MIN_MEANINGFUL_REMAINDER = 12;
+    let safetyPages = 0;
+    while (heightLeft > MIN_MEANINGFUL_REMAINDER && safetyPages < 50) {
       position = margin - (naturalImgHeight - heightLeft);
       pdf.addPage();
       pdf.addImage(imgData, "PNG", margin, position, usableWidth, naturalImgHeight);
       heightLeft -= usableHeight;
+      safetyPages += 1;
     }
   }
 
