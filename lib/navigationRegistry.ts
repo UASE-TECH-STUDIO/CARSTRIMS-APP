@@ -137,7 +137,7 @@ const ENTRIES: NavEntry[] = [
 
   { path: "/dashboard/super-admin/users", label: "Users", description: "Manage all platform users", keywords: ["users", "manage users", "all users"], roles: ["super-admin"] },
 
-  { path: "/dashboard/super-admin/approvals", label: "Approvals", description: "Pending dealer registration approvals — approve or cancel", keywords: ["approvals", "pending approval", "approve dealer", "pending registration", "cancel registration"], roles: ["super-admin"] },
+  { path: "/dashboard/super-admin/approvals", label: "Approvals", description: "Pending dealer registration approvals — approve or cancel", keywords: ["approvals", "pending approval", "approve dealer", "pending registration", "cancel registration", "wants to be approved", "needs approval", "new dealer waiting"], roles: ["super-admin"] },
 
   { path: "/dashboard/super-admin/cars", label: "All Vehicles", description: "Every vehicle listed on the platform", keywords: ["all cars", "all vehicles", "every car", "every vehicle"], roles: ["super-admin"] },
 
@@ -145,7 +145,7 @@ const ENTRIES: NavEntry[] = [
 
   { path: "/dashboard/super-admin/broadcast", label: "Broadcast", description: "Compose and send an announcement to selected users or everyone", keywords: ["broadcast", "announcement", "send message to everyone", "notify all users", "compose announcement", "message everyone"], roles: ["super-admin"] },
 
-  { path: "/dashboard/super-admin/activity", label: "Activity Log", description: "Recent platform-wide activity", keywords: ["activity", "activity log", "recent actions", "audit", "what happened recently"], roles: ["super-admin"] },
+  { path: "/dashboard/super-admin/activity", label: "Activity Log", description: "Recent platform-wide activity", keywords: ["activity", "activity log", "recent actions", "audit", "what happened recently", "what happened today", "today"], roles: ["super-admin"] },
 
   { path: "/dashboard/super-admin/messages", label: "Messages", description: "Chat with dealers and users", keywords: ["message", "chat", "talk to dealer", "contact", "inbox"], roles: ["super-admin"] },
 
