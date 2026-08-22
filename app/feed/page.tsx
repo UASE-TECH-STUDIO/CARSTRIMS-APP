@@ -149,6 +149,7 @@ export default function FeedPage() {
   const [fMaxMileage, setFMaxMileage] = useState("");
   const [fPromoOnly, setFPromoOnly] = useState(false);
   const [fVehicleType, setFVehicleType] = useState("");
+  const [fSort, setFSort] = useState("score");
 
   const [userLikes, setUserLikes] = useState<string[]>([]);
   const [userFavs, setUserFavs] = useState<string[]>([]);
@@ -166,7 +167,7 @@ export default function FeedPage() {
   ].filter(Boolean);
 
   const buildParams = useCallback((skip = 0) => {
-    const p: any = { skip, limit: LIMIT, sort: "score", seed: feedSeedRef.current };
+    const p: any = { skip, limit: LIMIT, sort: fSort, seed: feedSeedRef.current };
     if (search) p.search = search;
     if (selectedBrand) p.brand = selectedBrand;
     if (fState) p.city = fState;
@@ -188,7 +189,7 @@ export default function FeedPage() {
       if (fMaxPrice) p.max_price = Number(fMaxPrice);
     }
     return p;
-  }, [search, selectedBrand, fStatus, fCondition, fTransmission, fFuel, fState, fYearFrom, fYearTo, fColor, fPrice, fMinPrice, fMaxPrice, fMaxMileage, fPromoOnly, fVehicleType]);
+  }, [search, selectedBrand, fStatus, fCondition, fTransmission, fFuel, fState, fYearFrom, fYearTo, fColor, fPrice, fMinPrice, fMaxPrice, fMaxMileage, fPromoOnly, fVehicleType, fSort]);
 
   const fetchCars = useCallback(async (reset = false, silent = false) => {
     if (reset && !silent) { setLoading(true); }
@@ -255,7 +256,7 @@ export default function FeedPage() {
     return () => { if (carSearchDebounceRef.current) clearTimeout(carSearchDebounceRef.current); };
   }, [searchInput]);
 
-  useEffect(() => { fetchCars(true); }, [search, selectedBrand, fStatus, fCondition, fTransmission, fFuel, fState, fYearFrom, fYearTo, fColor, fPrice, fMinPrice, fMaxPrice, fMaxMileage, fPromoOnly, fVehicleType]);
+  useEffect(() => { fetchCars(true); }, [search, selectedBrand, fStatus, fCondition, fTransmission, fFuel, fState, fYearFrom, fYearTo, fColor, fPrice, fMinPrice, fMaxPrice, fMaxMileage, fPromoOnly, fVehicleType, fSort]);
 
   // Debounced dealer/people lookup for the unified search box — shows
   // as a small dropdown under the search input, alongside the car
@@ -396,7 +397,7 @@ export default function FeedPage() {
     setFStatus("available"); setFPrice(""); setFCondition(""); setFTransmission("");
     setFFuel(""); setFState(""); setFYearFrom(""); setFYearTo("");
     setFMinPrice(""); setFMaxPrice(""); setFColor("");
-    setFMaxMileage(""); setFPromoOnly(false); setFVehicleType("");
+    setFMaxMileage(""); setFPromoOnly(false); setFVehicleType(""); setFSort("score");
   };
 
   // Removes just ONE understood filter chip. For regex-matched chips
@@ -563,6 +564,7 @@ export default function FeedPage() {
                 fMaxMileage={fMaxMileage} setFMaxMileage={setFMaxMileage}
                 fPromoOnly={fPromoOnly} setFPromoOnly={setFPromoOnly}
                 fVehicleType={fVehicleType} setFVehicleType={setFVehicleType}
+                fSort={fSort} setFSort={setFSort}
                 onClose={() => setShowFilter(false)}
                 onClear={clearAll}
               />

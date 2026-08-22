@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 
 interface Props {
@@ -17,6 +17,7 @@ interface Props {
   fMaxMileage: string; setFMaxMileage: (v: string) => void;
   fPromoOnly: boolean; setFPromoOnly: (v: boolean) => void;
   fVehicleType: string; setFVehicleType: (v: string) => void;
+  fSort: string; setFSort: (v: string) => void;
   onClose: () => void;
   onClear: () => void;
 }
@@ -29,6 +30,12 @@ const FUEL_TYPES = ["petrol","diesel","electric","hybrid","gas"];
 const COLORS = ["Black","White","Silver","Grey","Red","Blue","Green","Gold","Brown","Wine"];
 const STATES_NG = ["Abuja","Lagos","Kano","Rivers","Oyo","Kaduna","Anambra","Enugu","Delta","Ogun","Imo","Ondo","Kwara","Benue","Edo","Ekiti","Cross River"];
 const YEARS = Array.from({ length: 20 }, (_, i) => String(new Date().getFullYear() - i));
+const SORT_OPTIONS = [
+  {v:"score",l:"Recommended first"},
+  {v:"newest",l:"Newest first"},
+  {v:"price_asc",l:"Lowest price first"},
+  {v:"price_desc",l:"Highest price first"},
+];
 
 /**
  * The manual/structured filter picker — matches everything a Jiji-
@@ -50,58 +57,17 @@ export default function FeedFilterDropdown(props: Props) {
     fYearTo, setFYearTo, fMinPrice, setFMinPrice, fMaxPrice, setFMaxPrice,
     fStatus, setFStatus, onClose, onClear,
     fMaxMileage, setFMaxMileage, fPromoOnly, setFPromoOnly,
-    fVehicleType, setFVehicleType,
+    fVehicleType, setFVehicleType, fSort, setFSort,
   } = props;
 
-  // Panel is draggable-resizable from its bottom-right corner (same
-  // pattern as the search box) — useful on small phone screens where
-  // the default compact size can feel cramped, without forcing every
-  // user into a larger panel by default.
-  const [panelSize, setPanelSize] = useState<{ w: number | null; h: number | null }>({ w: null, h: null });
-  const [isResizingPanel, setIsResizingPanel] = useState(false);
-  const resizeStartRef = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  const startResize = (clientX: number, clientY: number) => {
-    const rect = panelRef.current?.getBoundingClientRect();
-    resizeStartRef.current = { x: clientX, y: clientY, w: rect?.width || 380, h: rect?.height || 480 };
-    setIsResizingPanel(true);
-  };
-  const moveResize = (clientX: number, clientY: number) => {
-    if (!resizeStartRef.current) return;
-    const { x, y, w, h } = resizeStartRef.current;
-    setPanelSize({
-      w: Math.max(280, Math.min(window.innerWidth - 16, w + (clientX - x))),
-      h: Math.max(300, Math.min(window.innerHeight - 100, h + (clientY - y))),
-    });
-  };
-  const endResize = () => { resizeStartRef.current = null; setIsResizingPanel(false); };
-
-  useEffect(() => {
-    if (!isResizingPanel) return;
-    const onMouseMove = (e: MouseEvent) => moveResize(e.clientX, e.clientY);
-    const onTouchMove = (e: TouchEvent) => moveResize(e.touches[0].clientX, e.touches[0].clientY);
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", endResize);
-    document.addEventListener("touchmove", onTouchMove);
-    document.addEventListener("touchend", endResize);
-    return () => {
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", endResize);
-      document.removeEventListener("touchmove", onTouchMove);
-      document.removeEventListener("touchend", endResize);
-    };
-  }, [isResizingPanel]);
-
   return (
-    <div ref={panelRef} className="ffd-panel" onClick={(e) => e.stopPropagation()}
-      style={panelSize.w ? { width: panelSize.w, maxWidth: "96vw" } : undefined}>
+    <div className="ffd-panel" onClick={(e) => e.stopPropagation()}>
       <div className="ffd-header">
         <span>Filter Vehicles</span>
         <button type="button" className="ffd-close" onClick={onClose} aria-label="Close filters">✕</button>
       </div>
 
-      <div className="ffd-body" style={panelSize.h ? { maxHeight: panelSize.h - 130 } : undefined}>
+      <div className="ffd-body">
         <div className="ffd-group">
           <label className="ffd-label">Vehicle Type</label>
           <div className="ffd-pills">
@@ -110,6 +76,13 @@ export default function FeedFilterDropdown(props: Props) {
                 onClick={() => setFVehicleType(fVehicleType === t.v ? "" : t.v)}>{t.l}</button>
             ))}
           </div>
+        </div>
+
+        <div className="ffd-group">
+          <label className="ffd-label">Sort By</label>
+          <select className="ffd-select" value={fSort} onChange={(e) => setFSort(e.target.value)}>
+            {SORT_OPTIONS.map((s) => <option key={s.v} value={s.v}>{s.l}</option>)}
+          </select>
         </div>
 
         <div className="ffd-group">
@@ -220,24 +193,12 @@ export default function FeedFilterDropdown(props: Props) {
         <button type="button" className="ffd-apply" onClick={onClose}>Show Results</button>
       </div>
 
-      <div
-        className="ffd-resize-handle"
-        title="Drag to enlarge or reduce"
-        onMouseDown={(e) => { e.preventDefault(); startResize(e.clientX, e.clientY); }}
-        onTouchStart={(e) => startResize(e.touches[0].clientX, e.touches[0].clientY)}
-      >⤡</div>
-
       <style jsx>{`
         .ffd-panel {
           position: absolute; top: calc(100% + 8px); left: 0;
-          width: 100%; max-width: min(420px, 94vw);
+          width: 100%; max-width: min(480px, 96vw);
           background: #fff; border: 1.5px solid #E5E5E5; border-radius: 14px;
           box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden; z-index: 70;
-        }
-        .ffd-resize-handle {
-          position: absolute; bottom: 4px; right: 4px; width: 22px; height: 22px;
-          display: flex; align-items: center; justify-content: center; font-size: 0.85rem;
-          color: #A3A3A3; cursor: nwse-resize; touch-action: none; z-index: 5;
         }
         .ffd-header { display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1.1rem; border-bottom: 1px solid #F0F0F0; font-family: var(--font-display, inherit); font-size: 0.95rem; font-weight: 700; color: #1A1A1A; }
         .ffd-close { background: none; border: none; font-size: 1rem; color: #A3A3A3; cursor: pointer; padding: 0.25rem; }
