@@ -500,14 +500,24 @@ export default function FeedPage() {
                 e.stopPropagation();
                 if (listening) { stopVoice(); return; }
                 if (voiceSupported === false) {
-                  const messages: Record<string, string> = {
-                    "plugin-not-bundled": "Voice search needs a fresh app build to work — this version is missing a required update.",
-                    "device-unavailable": "This device doesn't have a speech recognition service available (check that the Google app is installed and up to date).",
-                    "permission-denied": "Microphone permission was denied — enable it in your device's app settings.",
-                    "runtime-error": "Voice search hit an unexpected error — please try again.",
-                  };
-                  showToast(messages[voiceError || ""] || "Voice search isn't supported on this browser/device", "error");
+                  // Only plugin-not-bundled is a genuinely permanent
+                  // block (nothing fixes this except a fresh app
+                  // build) - everything else is retry-able, so this
+                  // only ever blocks for that one specific case now.
+                  showToast("Voice search needs a fresh app build to work — this version is missing a required update.", "error");
                   return;
+                }
+                if (voiceError) {
+                  // A previous attempt hit a retry-able issue -
+                  // briefly explain what happened, then still let
+                  // this tap proceed as the retry rather than
+                  // blocking it outright.
+                  const messages: Record<string, string> = {
+                    "device-unavailable": "Couldn't reach the speech service just now, trying again…",
+                    "permission-denied": "Microphone permission was denied — enable it in your device's app settings, then try again.",
+                    "runtime-error": "That attempt hit a hiccup, trying again…",
+                  };
+                  showToast(messages[voiceError] || "Trying voice search again…", "error");
                 }
                 startVoice();
               }}

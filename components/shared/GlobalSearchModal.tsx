@@ -149,11 +149,12 @@ export default function GlobalSearchModal({ onClose, role }: Props) {
           <button className="gs-cancel" onClick={onClose}>Cancel</button>
         </div>
 
-        {voiceSupported === false && voiceError && (
+        {voiceError && (
           <div className="gs-voice-err">
-            {voiceError === "permission-denied" ? "Microphone permission denied — enable it in your device settings."
-              : voiceError === "device-unavailable" ? "Voice search isn't available on this device."
-              : "Voice search hit an error — please type instead."}
+            {voiceError === "plugin-not-bundled" ? "Voice search needs a fresh app update to work."
+              : voiceError === "permission-denied" ? "Microphone permission denied — enable it in your device settings, then tap the mic again."
+              : voiceError === "device-unavailable" ? "Couldn't reach the speech service just now — tap the mic to try again."
+              : "Voice search hit a hiccup — tap the mic to try again."}
           </div>
         )}
 

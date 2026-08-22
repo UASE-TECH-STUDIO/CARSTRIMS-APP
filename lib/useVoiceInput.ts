@@ -46,6 +46,7 @@ export function useVoiceInput(onResult: (text: string) => void) {
     (window as any).Capacitor?.isNativePlatform?.();
 
   const startNative = useCallback(async () => {
+    setLastError(null);
     let SpeechRecognition: any;
     try {
       ({ SpeechRecognition } = await import("@capacitor-community/speech-recognition"));
@@ -65,23 +66,36 @@ export function useVoiceInput(onResult: (text: string) => void) {
     }
 
     try {
-      const { available } = await SpeechRecognition.available();
-      if (!available) {
-        // The plugin loaded fine, but the DEVICE itself reports no
-        // usable speech recognition engine — on Android this usually
-        // means the Google app (which provides the actual recognition
-        // service) is missing, disabled, or badly out of date on this
-        // specific device, not a bug in the app itself.
-        console.warn("[useVoiceInput] Plugin loaded but device reports no available speech recognition engine.");
+      // Retry the availability check once with a short delay before
+      // giving up - a "device reports no speech engine" result is
+      // sometimes just the OS speech service being momentarily busy
+      // (another app just released the mic, a brief system hiccup),
+      // not a genuine permanent limitation, and immediately trusting
+      // a single check was causing the mic to report unavailable more
+      // often than it actually was.
+      let availableResult = await SpeechRecognition.available();
+      if (!availableResult.available) {
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        availableResult = await SpeechRecognition.available();
+      }
+      if (!availableResult.available) {
+        // Still unavailable after a retry - genuinely report it, but
+        // do NOT set supported=false here. This can still be
+        // transient (network came back, another app released the
+        // mic a moment later) and permanently disabling the button
+        // for the rest of the session over what might be a one-off
+        // hiccup was the actual bug behind "mic sometimes fails and
+        // then never works again until I reopen search."
+        console.warn("[useVoiceInput] Plugin loaded but device reports no available speech recognition engine (after retry).");
         setLastError("device-unavailable");
-        setSupported(false);
+        setListening(false);
         return;
       }
 
       const perm = await SpeechRecognition.requestPermissions();
       if (perm.speechRecognition !== "granted") {
         setLastError("permission-denied");
-        setSupported(false);
+        setListening(false);
         return;
       }
 
@@ -151,7 +165,12 @@ export function useVoiceInput(onResult: (text: string) => void) {
       console.error("[useVoiceInput] Speech recognition failed while listening:", runErr);
       setLastError("runtime-error");
       setListening(false);
-      setSupported(false);
+      // Deliberately NOT setSupported(false) here - a failure mid-
+      // listening (network dropped during recognition, OS hiccup)
+      // doesn't mean the mic is permanently broken, and locking the
+      // button out for the rest of the session over what's often a
+      // one-off issue was the actual bug behind "mic sometimes fails
+      // and then never works again until I reopen search."
     }
   }, [onResult]);
 
@@ -164,6 +183,7 @@ export function useVoiceInput(onResult: (text: string) => void) {
   }, []);
 
   const startWeb = useCallback(() => {
+    setLastError(null);
     const SpeechRecognitionCtor =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
