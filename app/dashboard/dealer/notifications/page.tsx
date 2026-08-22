@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
+import { timeAgoLong } from "@/lib/timeUtils";
 
 const TYPE_ICON: Record<string,string> = {
   car_sold:"", dealer_approved:"", dealer_suspended:"",
