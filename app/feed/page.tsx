@@ -51,41 +51,18 @@ export default function FeedPage() {
   const feedSeedRef = useRef<string>(Math.random().toString(36).slice(2) + Date.now().toString(36));
 
   const [searchInput, setSearchInput] = useState("");
-  const [searchBoxHeight, setSearchBoxHeight] = useState(44);
+  // Search box enlarge: a simple click-to-toggle between compact
+  // (44px, single line) and enlarged (a fixed, generous height so
+  // long typed/spoken text is fully visible) - explicitly NOT a drag
+  // gesture, since dragging could push the box off-screen and was
+  // fiddly to use precisely. Content inside is completely unaffected
+  // by the toggle either way - only the box's own height changes.
+  const [searchEnlarged, setSearchEnlarged] = useState(false);
+  const searchBoxHeight = searchEnlarged ? 140 : 44;
   const filterBtnRef = useRef<HTMLButtonElement>(null);
   const micBtnRef = useRef<HTMLButtonElement>(null);
   const resizeHandleRef = useRef<HTMLDivElement>(null);
   const [hintPositions, setHintPositions] = useState<{filter:number; mic:number; resize:number} | null>(null);
-  const [isResizingSearch, setIsResizingSearch] = useState(false);
-  const resizeStartRef = useRef<{ y: number; startHeight: number } | null>(null);
-
-  const handleResizeStart = (clientY: number) => {
-    resizeStartRef.current = { y: clientY, startHeight: searchBoxHeight };
-    setIsResizingSearch(true);
-  };
-  const handleResizeMove = (clientY: number) => {
-    if (!resizeStartRef.current) return;
-    const delta = clientY - resizeStartRef.current.y;
-    const maxHeight = Math.min(280, window.innerHeight * 0.45);
-    setSearchBoxHeight(Math.max(44, Math.min(maxHeight, resizeStartRef.current.startHeight + delta)));
-  };
-  const handleResizeEnd = () => { resizeStartRef.current = null; setIsResizingSearch(false); };
-
-  useEffect(() => {
-    if (!isResizingSearch) return;
-    const onMouseMove = (e: MouseEvent) => handleResizeMove(e.clientY);
-    const onTouchMove = (e: TouchEvent) => handleResizeMove(e.touches[0].clientY);
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", handleResizeEnd);
-    document.addEventListener("touchmove", onTouchMove);
-    document.addEventListener("touchend", handleResizeEnd);
-    return () => {
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", handleResizeEnd);
-      document.removeEventListener("touchmove", onTouchMove);
-      document.removeEventListener("touchend", handleResizeEnd);
-    };
-  }, [isResizingSearch]);
   const [understoodFilters, setUnderstoodFilters] = useState<{type:string; label:string; matchedText:string}[]>([]);
   // Shows fresh every time the feed is genuinely opened/returned to
   // (component remount), and dismisses only for the current viewing
@@ -537,14 +514,13 @@ export default function FeedPage() {
             >
               {listening ? "●" : "🎤"}
             </button>
-            <div
+            <button
               ref={resizeHandleRef}
+              type="button"
               className="search-resize-handle"
-              title="Drag to enlarge, double-tap to reset"
-              onMouseDown={(e) => { e.preventDefault(); handleResizeStart(e.clientY); }}
-              onTouchStart={(e) => handleResizeStart(e.touches[0].clientY)}
-              onDoubleClick={() => setSearchBoxHeight(44)}
-            >⋮⋮</div>
+              title={searchEnlarged ? "Click to shrink back" : "Click to enlarge"}
+              onClick={(e) => { e.stopPropagation(); setSearchEnlarged((v) => !v); }}
+            >{searchEnlarged ? "⌃" : "⌄"}</button>
           </div>
 
           {showFilter && (
@@ -623,9 +599,9 @@ export default function FeedPage() {
                 <div className="hint-bubble">Or speak</div>
               </div>
 
-              <div className="hint-item" style={{left: hintPositions.resize, transform: "translateX(-50%)", top: "-2.1rem", alignItems: "center" as const}}>
-                <div className="hint-bubble">Drag to enlarge</div>
-                <div className="hint-arrow hint-arrow-down">↓</div>
+              <div className="hint-item hint-item-enlarge">
+                <div className="hint-bubble">Click here to enlarge</div>
+                <div className="hint-arrow hint-arrow-down">↘</div>
               </div>
             </div>
           )}
@@ -655,13 +631,16 @@ export default function FeedPage() {
           {fTransmission && <span className="af-tag">{fTransmission} <button onClick={() => setFTransmission("")}>x</button></span>}
           {fFuel && <span className="af-tag">{fFuel} <button onClick={() => setFFuel("")}>x</button></span>}
           {fColor && <span className="af-tag">{fColor} <button onClick={() => setFColor("")}>x</button></span>}
+          <button className="ab-add" onClick={() => setShowFilter(true)}>+ Add More Filter</button>
           <button className="ab-clear" onClick={clearAll}>Clear all</button>
         </div>
       )}
 
       {/* WHAT THE SEARCH/VOICE UNDERSTOOD — itemized, adjustable, like Jiji.
           Clicking a chip's label opens the manual filter dropdown so it
-          can be fine-tuned there; the x removes it directly. */}
+          can be fine-tuned there; the x removes it directly. Same
+          Clear all / Add More Filter pair as the structured filter bar,
+          for consistency between the two. */}
       {understoodFilters.length > 0 && (
         <div className="active-bar">
           <span className="ab-label">Understood:</span>
@@ -671,7 +650,8 @@ export default function FeedPage() {
               <button onClick={() => removeUnderstoodFilter(f)}>x</button>
             </span>
           ))}
-          <button className="ab-clear" onClick={() => setShowFilter(true)} style={{marginLeft:"0.25rem"}}>Adjust in Filters</button>
+          <button className="ab-add" onClick={() => setShowFilter(true)}>+ Add More Filter</button>
+          <button className="ab-clear" onClick={clearAll}>Clear all</button>
         </div>
       )}
 
@@ -836,6 +816,9 @@ export default function FeedPage() {
         }
         .hint-item { position:absolute; display:flex; flex-direction:column; align-items:center; pointer-events:none; }
         .hint-item-type { left:50%; transform:translateX(-50%); }
+        .hint-item-enlarge {
+          top:-3.6rem; right:2%; left:auto; align-items:flex-end;
+        }
         .hint-arrow-down { animation:search-hint-bounce-down 1.1s ease-in-out infinite; }
         @keyframes search-hint-bounce-down { 0%,100%{transform:translateY(0);} 50%{transform:translateY(5px);} }
         .hint-arrow { font-size:1.15rem; color:#F47B20; line-height:1; animation:search-hint-bounce 1.1s ease-in-out infinite; }
@@ -873,10 +856,11 @@ export default function FeedPage() {
         }
         .search-box:focus-within { border-color:#F47B20; background:#fff; box-shadow:0 0 0 3px rgba(244,123,32,0.12); }
         .search-resize-handle {
-          position:absolute; bottom:1px; right:1px; width:18px; height:16px; cursor:ns-resize;
-          display:flex; align-items:center; justify-content:center; font-size:0.6rem; color:#A3A3A3;
-          background:#F5F5F5; line-height:1; transform:rotate(90deg); touch-action:none; z-index:2;
+          position:absolute; bottom:1px; right:1px; width:22px; height:20px; cursor:pointer;
+          display:flex; align-items:center; justify-content:center; font-size:0.85rem; color:#737373;
+          background:#F5F5F5; line-height:1; border:none; padding:0; border-radius:4px; z-index:2;
         }
+        .search-resize-handle:hover { color:#F47B20; }
         .s-filter-btn {
           background:#1A1A1A; color:#fff; border:none; font-family:var(--font-display); font-weight:700;
           font-size:0.85rem; letter-spacing:0.02em; padding:0.7rem 0.9rem; cursor:pointer; flex-shrink:0; align-self:stretch;
@@ -991,7 +975,8 @@ export default function FeedPage() {
           border-radius:20px; padding:0.3rem 0.75rem; font-size:0.85rem; font-weight:500;
         }
         .af-tag button { background:none; border:none; cursor:pointer; color:#F47B20; font-size:0.78rem; line-height:1; padding:0; font-weight:700; }
-        .ab-clear { background:transparent; border:none; color:#DC2626; font-size:0.82rem; font-weight:600; cursor:pointer; font-family:var(--font-body); margin-left:auto; white-space:nowrap; }
+        .ab-add { background:#fff; border:1.5px solid #F47B20; color:#F47B20; font-size:0.8rem; font-weight:600; cursor:pointer; font-family:var(--font-body); white-space:nowrap; border-radius:20px; padding:0.3rem 0.75rem; margin-left:auto; }
+        .ab-clear { background:transparent; border:none; color:#DC2626; font-size:0.82rem; font-weight:600; cursor:pointer; font-family:var(--font-body); white-space:nowrap; }
 
         /* BRAND TABS */
         .brand-scroll { overflow-x:auto; border-bottom:1.5px solid #E5E5E5; background:#fff; }
