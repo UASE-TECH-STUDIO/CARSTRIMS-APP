@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
-import { renderElementToPdfBlob, renderElementToJpgBlob, rowsToExcelBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+import { renderElementToPdfBlob, renderElementToJpgBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
 
 export default function PartnersPage() {
@@ -136,6 +136,8 @@ export default function PartnersPage() {
   const showToast = useToast();
   const [exportBusy, setExportBusy] = useState<"" | "download" | "share">("");
   const [exportPicker, setExportPicker] = useState<"download" | "share" | "">("");
+  const [listExportBusy, setListExportBusy] = useState<"" | "pdf" | "jpg" | "excel">("");
+  const [showListExportPicker, setShowListExportPicker] = useState(false);
 
   const partnerExportRows = () => (detailData?.cars || []).map((c: any) => ({
     Vehicle: `${c.brand} ${c.model} ${c.year}`,
@@ -175,6 +177,53 @@ export default function PartnersPage() {
     finally { setExportBusy(""); }
   };
 
+  // Full partners LIST export (all partners, respecting the current
+  // filter tab) - distinct from the per-partner detail export above,
+  // which only exports one partner's assigned vehicle history.
+  const buildPartnersListHtml = () => {
+    const now = new Date().toLocaleString("en-NG");
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      *{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:28px 32px;color:#1A1A1A;font-size:12px}
+      h1{font-size:18px;margin:0 0 4px} .sub{color:#737373;font-size:11px;margin-bottom:16px}
+      table{width:100%;border-collapse:collapse}
+      th{background:#1A1A1A;color:#fff;text-align:left;padding:8px 10px;font-size:10px;letter-spacing:0.05em;text-transform:uppercase}
+      td{padding:7px 10px;border-bottom:1px solid #E5E5E5;font-size:11px}
+      tr:nth-child(even) td{background:#FAFAFA}
+      .footer{margin-top:16px;font-size:9px;color:#A3A3A3;text-align:center}
+      </style></head><body>
+      <h1>Partners${filter!=="all"?` — ${filter}`:""}</h1>
+      <div class="sub">${partners.length} partner${partners.length!==1?"s":""} &bull; Generated ${now}</div>
+      <table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Status</th><th>Vehicles Assigned</th></tr></thead>
+      <tbody>${partners.map((p: any) => `<tr><td>${p.partnerName||""}</td><td>${p.partnerEmail||""}</td><td>${p.partnerPhone||""}</td><td>${p.status||""}</td><td>${p.carIds?.length||0}</td></tr>`).join("")}</tbody>
+      </table>
+      <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
+      </body></html>`;
+  };
+
+  const handleListExport = async (format: "pdf" | "jpg" | "excel") => {
+    setShowListExportPicker(false);
+    setListExportBusy(format);
+    try {
+      const filename = `carstrims-partners-${filter}-${Date.now()}`;
+      if (format === "excel") {
+        const blob = rowsToExcelBlob(partners.map((p: any) => ({
+          Name: p.partnerName || "", Email: p.partnerEmail || "", Phone: p.partnerPhone || "",
+          Status: p.status || "", "Vehicles Assigned": p.carIds?.length || 0,
+        })), "Partners");
+        await downloadBlob(blob, `${filename}.xlsx`);
+      } else {
+        const html = buildPartnersListHtml();
+        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Partners");
+        await downloadBlob(blob, `${filename}.${format}`);
+      }
+      showToast("Downloaded", "success");
+    } catch (e: any) {
+      showToast(e?.message || "Export failed", "error");
+    } finally {
+      setListExportBusy("");
+    }
+  };
+
   return (
     <div style={{display:"flex",flexDirection:"column",gap:"1.5rem"}}>
       {/* Header */}
@@ -182,6 +231,20 @@ export default function PartnersPage() {
         <div>
           <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.5rem",letterSpacing:"0.05em",color:"#1A1A1A",lineHeight:1}}>Partners</h2>
           <p style={{fontSize:"0.8rem",color:"#888",marginTop:"0.3rem"}}>{partners.length} partner{partners.length!==1?"s":""}</p>
+        </div>
+        <div style={{position:"relative"}}>
+          <button onClick={()=>setShowListExportPicker(v=>!v)} disabled={listExportBusy!==""}
+            style={{background:"#F5F5F5",color:"#525252",border:"1.5px solid #E5E5E5",borderRadius:"8px",
+              padding:"0.55rem 0.9rem",fontSize:"0.8rem",cursor:"pointer",fontWeight:600}}>
+            {listExportBusy?"Exporting…":"Export"}
+          </button>
+          {showListExportPicker && (
+            <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"120px"}}>
+              <button onClick={()=>handleListExport("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as PDF</button>
+              <button onClick={()=>handleListExport("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as JPG Image</button>
+              <button onClick={()=>handleListExport("excel")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as Excel</button>
+            </div>
+          )}
         </div>
       </div>
 
