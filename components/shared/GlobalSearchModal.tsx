@@ -43,7 +43,7 @@ export default function GlobalSearchModal({ onClose, role }: Props) {
   });
 
   const { user } = useAuthStore();
-  const navContext = { role, dealerId: user?.dealerId || undefined };
+  const navContext = { role, dealerId: user?.dealerId || undefined, userId: user?.userId || undefined };
   const localNavMatches = matchNavigation(q, navContext, 4);
   const [aiNavMatches, setAiNavMatches] = useState<(NavEntry & { resolvedPath: string })[] | null>(null);
   const [aiUnderstood, setAiUnderstood] = useState("");

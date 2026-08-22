@@ -29,11 +29,23 @@ const ENTRIES: NavEntry[] = [
   { path: "/dashboard/{role}/settings", label: "Settings", description: "Change your password, profile picture, or account details", keywords: ["settings", "change password", "change my password", "reset password", "profile picture", "edit profile", "account", "update my details", "change email", "change phone"], roles: ["user","dealer","staff","partner","super-admin"] },
   { path: "/dashboard/{role}/appointments", label: "Appointments", description: "Book or manage a showroom visit or test drive", keywords: ["appointment", "test drive", "visit", "showroom", "book a visit", "schedule"], roles: ["user","dealer","staff"] },
 
-  // ── Buyer / user ────────────────────────────────────────────────
-  { path: "/dashboard/user", label: "My Dashboard", description: "Your buyer dashboard overview", keywords: ["dashboard", "my account", "overview", "home page"], roles: ["user"] },
-  { path: "/dashboard/user/favorites", label: "Saved Vehicles", description: "Cars and vehicles you've saved to look at later", keywords: ["saved", "favorites", "favourite", "wishlist", "bookmarked", "cars i liked"], roles: ["user"] },
-  { path: "/dashboard/user/requests", label: "My Requests", description: "Vehicle requests you've sent to dealers, make a request", keywords: ["request", "make a request", "send a request", "ask for a car", "custom request", "find me a car"], roles: ["user"] },
-  { path: "/dashboard/user/profile", label: "My Profile", description: "View and edit your public profile", keywords: ["profile", "my info", "about me"], roles: ["user"] },
+  // ── Buyer / user (thoroughly audited: every page + sub-states) ──
+  { path: "/dashboard/user", label: "My Dashboard", description: "Your buyer dashboard overview", keywords: ["dashboard", "my account", "overview", "home page", "main page"], roles: ["user"] },
+
+  { path: "/dashboard/user/favorites", label: "Saved Vehicles", description: "Cars and vehicles you've saved to look at later", keywords: ["saved", "favorites", "favourite", "wishlist", "bookmarked", "cars i liked", "vehicles i saved"], roles: ["user"] },
+
+  { path: "/dashboard/user/requests?action=new", label: "Make a Request", description: "Ask for a specific vehicle you're looking for — dealers respond with matches", keywords: ["make a request", "send a request", "new request", "ask for a car", "custom request", "find me a car", "i want a specific car", "cant find what i want", "request a vehicle"], roles: ["user"] },
+  { path: "/dashboard/user/requests", label: "My Requests", description: "Vehicle requests you've sent to dealers and their responses", keywords: ["request", "my requests", "requests i sent", "dealer response", "request status"], roles: ["user"] },
+
+  { path: "/dashboard/user/appointments", label: "My Appointments", description: "Test drives and showroom visits you've booked", keywords: ["appointment", "test drive", "showroom visit", "my bookings", "booked visit"], roles: ["user"] },
+
+  { path: "/dashboard/user/profile#password", label: "Change Password", description: "Update your account password", keywords: ["change password", "change my password", "reset password", "new password", "update password", "forgot password"], roles: ["user"] },
+  { path: "/dashboard/user/profile#personal", label: "Personal Information", description: "Update your name, phone number, address, city, state", keywords: ["personal info", "my name", "my phone number", "my address", "update my details", "change my phone", "change my name"], roles: ["user"] },
+  { path: "/dashboard/user/profile#social", label: "Social Media Links", description: "Add your Facebook, Instagram, TikTok, WhatsApp, or website", keywords: ["social media", "facebook", "instagram", "tiktok", "whatsapp link", "my website", "social links"], roles: ["user"] },
+  { path: "/dashboard/user/profile", label: "My Profile & Account", description: "View and edit your account information", keywords: ["profile", "my info", "about me", "account", "settings", "my account"], roles: ["user"] },
+
+  { path: "public-user-profile", label: "My Public Profile", description: "See how your profile looks to dealers and other users", keywords: ["public profile", "how others see me", "my page", "my public info"], roles: ["user"] },
+
   { path: "/dashboard/partner/find-dealer", label: "Become a Partner", description: "Apply to become a consignor/partner and work with a dealer to sell vehicles", keywords: ["become a partner", "new partner", "consignor", "partner with a dealer", "i am a new partner", "what should i do as partner", "sell for a dealer", "work with dealer", "assign car to me", "link with dealer"], roles: ["user"] },
 
   // ── Dealer (thoroughly audited: every page + sub-states/modals) ──
@@ -108,9 +120,13 @@ const ENTRIES: NavEntry[] = [
 export interface NavContext {
   role: Role;
   dealerId?: string;   // needed to resolve the dealer's own public profile link
+  userId?: string;     // needed to resolve a buyer's own public profile link
 }
 
 function resolvePath(path: string, ctx: NavContext): string | null {
+  if (path === "public-user-profile") {
+    return ctx.userId ? `/users/${ctx.userId}` : null;
+  }
   if (path === "public-profile") {
     // Needs the dealer's own ID, which isn't known statically - if
     // it's not available in this context, the caller should drop
