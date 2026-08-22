@@ -203,3 +203,28 @@ export function matchNavigation(query: string, ctx: NavContext, limit = 5): (Nav
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
 }
+
+/**
+ * The distinct, meaningful words used across every entry's keywords
+ * and label, for the given role (or every role if none given) -
+ * extracted directly from the registry itself rather than maintained
+ * as a separate list, so it can never drift out of sync as entries
+ * are added or changed. This is what voice correction checks a
+ * mis-heard word against.
+ */
+export function getNavigationVocabulary(role?: Role): string[] {
+  const relevant = role ? ENTRIES.filter((e) => e.roles.includes(role)) : ENTRIES;
+  const words = new Set<string>();
+  for (const entry of relevant) {
+    for (const source of [entry.label, ...entry.keywords]) {
+      for (const w of source.split(/\s+/)) {
+        const clean = w.replace(/[^a-zA-Z]/g, "");
+        // Skip tiny filler words ("a", "to", "i") - too short and too
+        // common to be meaningful correction targets, and short words
+        // are exactly where fuzzy matching produces false positives.
+        if (clean.length >= 4) words.add(clean);
+      }
+    }
+  }
+  return Array.from(words);
+}

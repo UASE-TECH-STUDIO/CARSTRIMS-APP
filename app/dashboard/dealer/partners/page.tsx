@@ -240,7 +240,7 @@ export default function PartnersPage() {
             {listExportBusy?"Exporting…":"Export"}
           </button>
           {showListExportPicker && (
-            <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"120px"}}>
+            <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"120px",maxWidth:"calc(100vw - 2rem)"}}>
               <button onClick={()=>handleListExport("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as PDF</button>
               <button onClick={()=>handleListExport("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as JPG Image</button>
               <button onClick={()=>handleListExport("excel")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as Excel</button>
@@ -321,7 +321,7 @@ export default function PartnersPage() {
                         {exportBusy==="download"?"Exporting…":"Export"}
                       </button>
                       {exportPicker==="download" && (
-                        <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.18)",overflow:"hidden",minWidth:"120px"}}>
+                        <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.18)",overflow:"hidden",minWidth:"120px",maxWidth:"calc(100vw - 2rem)"}}>
                           <button onClick={()=>handleExportDownload("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.55rem 0.8rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.75rem",fontWeight:600}}>as PDF</button>
                           <button onClick={()=>handleExportDownload("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.55rem 0.8rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.75rem",fontWeight:600}}>as JPG Image</button>
                           <button onClick={()=>handleExportDownload("excel")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.55rem 0.8rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.75rem",fontWeight:600}}>as Excel</button>
@@ -334,7 +334,7 @@ export default function PartnersPage() {
                         {exportBusy==="share"?"Sharing…":"Share"}
                       </button>
                       {exportPicker==="share" && (
-                        <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.18)",overflow:"hidden",minWidth:"120px"}}>
+                        <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.18)",overflow:"hidden",minWidth:"120px",maxWidth:"calc(100vw - 2rem)"}}>
                           <button onClick={()=>handleExportShare("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.55rem 0.8rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.75rem",fontWeight:600}}>as PDF</button>
                           <button onClick={()=>handleExportShare("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.55rem 0.8rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.75rem",fontWeight:600}}>as JPG Image</button>
                         </div>

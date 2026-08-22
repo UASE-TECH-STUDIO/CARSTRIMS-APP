@@ -4,6 +4,7 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { matchNavigation, Role } from "@/lib/navigationRegistry";
 import { useVoiceInput } from "@/lib/useVoiceInput";
+import { correctNavigationTranscript } from "@/lib/voiceNavCorrection";
 import { useAuthStore } from "@/store/authStore";
 
 interface Props {
@@ -38,7 +39,7 @@ export default function GlobalSearchModal({ onClose, role }: Props) {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { listening, supported: voiceSupported, lastError: voiceError, start: startVoice, stop: stopVoice } = useVoiceInput((transcript) => {
-    setQ(transcript);
+    setQ(correctNavigationTranscript(transcript, role));
   });
 
   const { user } = useAuthStore();

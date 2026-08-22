@@ -118,7 +118,7 @@ export default function AdminCarsPage() {
             {exportBusy ? "Exporting…" : search ? `Export "${search}" results` : "Export"}
           </button>
           {showExportPicker && (
-            <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid var(--border)",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.18)",overflow:"hidden",minWidth:"140px"}}>
+            <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid var(--border)",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.18)",overflow:"hidden",minWidth:"140px",maxWidth:"calc(100vw - 2rem)"}}>
               <button onClick={()=>handleExport("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.8rem",fontWeight:600,color:"var(--text)"}}>as PDF</button>
               <button onClick={()=>handleExport("excel")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid var(--border)",cursor:"pointer",fontSize:"0.8rem",fontWeight:600,color:"var(--text)"}}>as Excel</button>
             </div>

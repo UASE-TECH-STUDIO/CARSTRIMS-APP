@@ -357,7 +357,7 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
                 {busy === "pdf" || busy === "jpg" ? "Downloading…" : "Download"}
               </button>
               {showFormatPicker === "download" && (
-                <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 40, background: "#fff", border: "1.5px solid #E5E5E5", borderRadius: "8px", boxShadow: "0 8px 24px rgba(0,0,0,0.2)", overflow: "hidden", minWidth: "120px" }}>
+                <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 40, background: "#fff", border: "1.5px solid #E5E5E5", borderRadius: "8px", boxShadow: "0 8px 24px rgba(0,0,0,0.2)", overflow: "hidden", minWidth: "120px", maxWidth: "calc(100vw - 2rem)" }}>
                   <button onClick={() => handleDownload("pdf")} style={{ display: "block", width: "100%", textAlign: "left" as const, padding: "0.6rem 0.9rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, color: "#1A1A1A" }}>as PDF</button>
                   <button onClick={() => handleDownload("jpg")} style={{ display: "block", width: "100%", textAlign: "left" as const, padding: "0.6rem 0.9rem", background: "none", border: "none", borderTop: "1px solid #F5F5F5", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, color: "#1A1A1A" }}>as JPG Image</button>
                 </div>
@@ -369,7 +369,7 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
                 {busy === "share" ? "Sharing…" : "Share"}
               </button>
               {showFormatPicker === "share" && (
-                <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 40, background: "#fff", border: "1.5px solid #E5E5E5", borderRadius: "8px", boxShadow: "0 8px 24px rgba(0,0,0,0.2)", overflow: "hidden", minWidth: "120px" }}>
+                <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 40, background: "#fff", border: "1.5px solid #E5E5E5", borderRadius: "8px", boxShadow: "0 8px 24px rgba(0,0,0,0.2)", overflow: "hidden", minWidth: "120px", maxWidth: "calc(100vw - 2rem)" }}>
                   <button onClick={() => handleShare("pdf")} style={{ display: "block", width: "100%", textAlign: "left" as const, padding: "0.6rem 0.9rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, color: "#1A1A1A" }}>as PDF</button>
                   <button onClick={() => handleShare("jpg")} style={{ display: "block", width: "100%", textAlign: "left" as const, padding: "0.6rem 0.9rem", background: "none", border: "none", borderTop: "1px solid #F5F5F5", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, color: "#1A1A1A" }}>as JPG Image</button>
                 </div>
