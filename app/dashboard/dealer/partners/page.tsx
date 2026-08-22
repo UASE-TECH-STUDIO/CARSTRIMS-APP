@@ -358,6 +358,17 @@ export default function PartnersPage() {
                 </div>
               ) : detailData ? (
                 <>
+                  {/* TEMPORARY DEBUG - remove once we've diagnosed the assign-button issue */}
+                  <div style={{background:"#FEF3C7",border:"2px solid #F59E0B",borderRadius:"8px",padding:"0.75rem",fontSize:"0.72rem",fontFamily:"monospace",color:"#78350F"}}>
+                    <div style={{fontWeight:700,marginBottom:"0.3rem"}}>DEBUG (screenshot this and send back):</div>
+                    <div>detailData?.link?.status = {JSON.stringify(detailData?.link?.status)}</div>
+                    <div>showDetail?.status = {JSON.stringify(showDetail?.status)}</div>
+                    <div>effectiveStatus = {JSON.stringify(effectiveStatus)}</div>
+                    <div>effectiveStatus === "approved" → {String(effectiveStatus === "approved")}</div>
+                    <div>detailData?.cars = {JSON.stringify(detailData?.cars)}</div>
+                    <div>detailData?.totalCars = {JSON.stringify(detailData?.totalCars)}</div>
+                  </div>
+
                   {/* Partner info */}
                   <div style={{background:"#FAFAFA",borderRadius:"10px",padding:"1rem",display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:"0.625rem"}}>
                     {[
