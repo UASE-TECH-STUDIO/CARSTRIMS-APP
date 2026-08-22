@@ -229,3 +229,20 @@ export function getNavigationVocabulary(role?: Role): string[] {
   }
   return Array.from(words);
 }
+
+/**
+ * Every entry available to a role, with paths resolved (dropping any
+ * that can't resolve, e.g. the dealer profile link without a
+ * dealerId) - this is the candidate list sent to the AI-backed
+ * matcher, which needs to see everything available, not just what
+ * the local scorer already ranked highest for a given query.
+ */
+export function getResolvedEntriesForRole(ctx: NavContext): (NavEntry & { resolvedPath: string })[] {
+  return ENTRIES
+    .filter((e) => e.roles.includes(ctx.role))
+    .map((entry) => {
+      const resolvedPath = resolvePath(entry.path, ctx);
+      return resolvedPath ? { ...entry, resolvedPath } : null;
+    })
+    .filter((e): e is NavEntry & { resolvedPath: string } => e !== null);
+}
