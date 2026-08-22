@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
-import { renderHtmlStringToPdfBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
 
 interface Props { doc: any; onClose: () => void; }
@@ -247,14 +247,16 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
   const docFilename = () =>
     `carstrims-${(docTitle || "doc").toLowerCase().replace(/[^a-z0-9]/g, "-")}-${Date.now()}`;
 
-  const [busy, setBusy] = useState<"" | "download" | "share">("");
+  const [busy, setBusy] = useState<"" | "pdf" | "jpg" | "share">("");
+  const [showFormatPicker, setShowFormatPicker] = useState<"download" | "share" | "">("");
   const showToast = useToast();
 
-  const handleDownload = async () => {
-    setBusy("download");
+  const handleDownload = async (format: "pdf" | "jpg") => {
+    setShowFormatPicker("");
+    setBusy(format);
     try {
-      const blob = await renderHtmlStringToPdfBlob(buildHtml(), docTitle);
-      await downloadBlob(blob, `${docFilename()}.pdf`);
+      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(buildHtml()) : await renderHtmlStringToPdfBlob(buildHtml(), docTitle);
+      await downloadBlob(blob, `${docFilename()}.${format}`);
       showToast("Downloaded", "success");
     } catch (e: any) {
       showToast(e?.message || "Download failed — please try again", "error");
@@ -263,11 +265,12 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
     }
   };
 
-  const handleShare = async () => {
+  const handleShare = async (format: "pdf" | "jpg") => {
+    setShowFormatPicker("");
     setBusy("share");
     try {
-      const blob = await renderHtmlStringToPdfBlob(buildHtml(), docTitle);
-      await shareBlob(blob, `${docFilename()}.pdf`, docTitle);
+      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(buildHtml()) : await renderHtmlStringToPdfBlob(buildHtml(), docTitle);
+      await shareBlob(blob, `${docFilename()}.${format}`, docTitle);
     } catch (e: any) {
       showToast(e?.message || "Share failed — please try again", "error");
     } finally {
@@ -348,14 +351,30 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
                 Edit Fields
               </button>
             </div>
-            <button onClick={handleDownload} disabled={busy !== ""}
-              style={{ background: "#16A34A", border: "none", color: "#fff", borderRadius: "8px", padding: "8px 14px", fontSize: "13px", cursor: "pointer", fontWeight: 700, opacity: busy ? 0.7 : 1 }}>
-              {busy === "download" ? "Downloading…" : "Download"}
-            </button>
-            <button onClick={handleShare} disabled={busy !== ""}
-              style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", borderRadius: "8px", padding: "8px 14px", fontSize: "13px", cursor: "pointer", fontWeight: 700, opacity: busy ? 0.7 : 1 }}>
-              {busy === "share" ? "Sharing…" : "Share"}
-            </button>
+            <div style={{ position: "relative" }}>
+              <button onClick={() => setShowFormatPicker(showFormatPicker === "download" ? "" : "download")} disabled={busy !== ""}
+                style={{ background: "#16A34A", border: "none", color: "#fff", borderRadius: "8px", padding: "8px 14px", fontSize: "13px", cursor: "pointer", fontWeight: 700, opacity: busy ? 0.7 : 1 }}>
+                {busy === "pdf" || busy === "jpg" ? "Downloading…" : "Download"}
+              </button>
+              {showFormatPicker === "download" && (
+                <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 40, background: "#fff", border: "1.5px solid #E5E5E5", borderRadius: "8px", boxShadow: "0 8px 24px rgba(0,0,0,0.2)", overflow: "hidden", minWidth: "120px" }}>
+                  <button onClick={() => handleDownload("pdf")} style={{ display: "block", width: "100%", textAlign: "left" as const, padding: "0.6rem 0.9rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, color: "#1A1A1A" }}>as PDF</button>
+                  <button onClick={() => handleDownload("jpg")} style={{ display: "block", width: "100%", textAlign: "left" as const, padding: "0.6rem 0.9rem", background: "none", border: "none", borderTop: "1px solid #F5F5F5", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, color: "#1A1A1A" }}>as JPG Image</button>
+                </div>
+              )}
+            </div>
+            <div style={{ position: "relative" }}>
+              <button onClick={() => setShowFormatPicker(showFormatPicker === "share" ? "" : "share")} disabled={busy !== ""}
+                style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", borderRadius: "8px", padding: "8px 14px", fontSize: "13px", cursor: "pointer", fontWeight: 700, opacity: busy ? 0.7 : 1 }}>
+                {busy === "share" ? "Sharing…" : "Share"}
+              </button>
+              {showFormatPicker === "share" && (
+                <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 40, background: "#fff", border: "1.5px solid #E5E5E5", borderRadius: "8px", boxShadow: "0 8px 24px rgba(0,0,0,0.2)", overflow: "hidden", minWidth: "120px" }}>
+                  <button onClick={() => handleShare("pdf")} style={{ display: "block", width: "100%", textAlign: "left" as const, padding: "0.6rem 0.9rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, color: "#1A1A1A" }}>as PDF</button>
+                  <button onClick={() => handleShare("jpg")} style={{ display: "block", width: "100%", textAlign: "left" as const, padding: "0.6rem 0.9rem", background: "none", border: "none", borderTop: "1px solid #F5F5F5", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, color: "#1A1A1A" }}>as JPG Image</button>
+                </div>
+              )}
+            </div>
             <button onClick={onClose}
               style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", borderRadius: "8px", padding: "8px 12px", fontSize: "16px", cursor: "pointer", lineHeight: 1 }}>
               X
@@ -577,14 +596,30 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
 
             {/* Download / Share / Cancel */}
             <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
-              <button onClick={handleDownload} disabled={busy !== ""}
-                style={{ flex: 1, background: "#F47B20", color: "#fff", border: "none", borderRadius: "12px", padding: "16px", fontFamily: "var(--font-display)", fontSize: "15px", letterSpacing: "0.08em", cursor: "pointer", fontWeight: 700, opacity: busy ? 0.7 : 1 }}>
-                {busy === "download" ? "DOWNLOADING…" : "DOWNLOAD DOCUMENT"}
-              </button>
-              <button onClick={handleShare} disabled={busy !== ""}
-                style={{ flex: 1, background: "#1A1A1A", color: "#fff", border: "none", borderRadius: "12px", padding: "16px", fontFamily: "var(--font-display)", fontSize: "15px", letterSpacing: "0.08em", cursor: "pointer", fontWeight: 700, opacity: busy ? 0.7 : 1 }}>
-                {busy === "share" ? "SHARING…" : "SHARE"}
-              </button>
+              <div style={{ position: "relative", flex: 1 }}>
+                <button onClick={() => setShowFormatPicker(showFormatPicker === "download" ? "" : "download")} disabled={busy !== ""}
+                  style={{ width: "100%", background: "#F47B20", color: "#fff", border: "none", borderRadius: "12px", padding: "16px", fontFamily: "var(--font-display)", fontSize: "15px", letterSpacing: "0.08em", cursor: "pointer", fontWeight: 700, opacity: busy ? 0.7 : 1 }}>
+                  {busy === "pdf" || busy === "jpg" ? "DOWNLOADING…" : "DOWNLOAD DOCUMENT"}
+                </button>
+                {showFormatPicker === "download" && (
+                  <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: 0, right: 0, zIndex: 40, background: "#fff", border: "1.5px solid #E5E5E5", borderRadius: "10px", boxShadow: "0 -8px 24px rgba(0,0,0,0.2)", overflow: "hidden" }}>
+                    <button onClick={() => handleDownload("pdf")} style={{ display: "block", width: "100%", textAlign: "center" as const, padding: "0.8rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.9rem", fontWeight: 600, color: "#1A1A1A" }}>as PDF</button>
+                    <button onClick={() => handleDownload("jpg")} style={{ display: "block", width: "100%", textAlign: "center" as const, padding: "0.8rem", background: "none", border: "none", borderTop: "1px solid #F5F5F5", cursor: "pointer", fontSize: "0.9rem", fontWeight: 600, color: "#1A1A1A" }}>as JPG Image</button>
+                  </div>
+                )}
+              </div>
+              <div style={{ position: "relative", flex: 1 }}>
+                <button onClick={() => setShowFormatPicker(showFormatPicker === "share" ? "" : "share")} disabled={busy !== ""}
+                  style={{ width: "100%", background: "#1A1A1A", color: "#fff", border: "none", borderRadius: "12px", padding: "16px", fontFamily: "var(--font-display)", fontSize: "15px", letterSpacing: "0.08em", cursor: "pointer", fontWeight: 700, opacity: busy ? 0.7 : 1 }}>
+                  {busy === "share" ? "SHARING…" : "SHARE"}
+                </button>
+                {showFormatPicker === "share" && (
+                  <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: 0, right: 0, zIndex: 40, background: "#fff", border: "1.5px solid #E5E5E5", borderRadius: "10px", boxShadow: "0 -8px 24px rgba(0,0,0,0.2)", overflow: "hidden" }}>
+                    <button onClick={() => handleShare("pdf")} style={{ display: "block", width: "100%", textAlign: "center" as const, padding: "0.8rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.9rem", fontWeight: 600, color: "#1A1A1A" }}>as PDF</button>
+                    <button onClick={() => handleShare("jpg")} style={{ display: "block", width: "100%", textAlign: "center" as const, padding: "0.8rem", background: "none", border: "none", borderTop: "1px solid #F5F5F5", cursor: "pointer", fontSize: "0.9rem", fontWeight: 600, color: "#1A1A1A" }}>as JPG Image</button>
+                  </div>
+                )}
+              </div>
             </div>
             <button onClick={onClose}
               style={{ width: "100%", background: "#F5F5F5", color: "#525252", border: "1.5px solid #E5E5E5", borderRadius: "12px", padding: "12px", fontSize: "14px", cursor: "pointer", fontWeight: 600, marginBottom: "8px" }}>
