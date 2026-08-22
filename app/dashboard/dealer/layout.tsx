@@ -115,7 +115,7 @@ function DealerShell({ children }: { children: ReactNode }) {
         <main className="shell-content">{children}</main>
       </div>
 
-      <MessagesWidget accentColor="#F47B20"/>
+      {!pathname?.endsWith("/messages") && <MessagesWidget accentColor="#F47B20"/>}
 
       <style>{`
         .dealer-shell{display:flex;min-height:100vh;background:#F5F5F5;position:relative}

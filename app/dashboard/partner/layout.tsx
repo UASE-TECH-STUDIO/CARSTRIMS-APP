@@ -104,7 +104,7 @@ export default function PartnerLayout({ children }: { children: ReactNode }) {
           <main className="partner-content">{children}</main>
           <footer className="partner-footer">Powered by <strong>UASE TECH STUDIO</strong> for CARSTRIMS 2026</footer>
         </div>
-        <MessagesWidget accentColor="#F47B20" />
+        {!pathname?.endsWith("/messages") && <MessagesWidget accentColor="#F47B20" />}
       </div>
 
       <style>{`

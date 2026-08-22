@@ -184,7 +184,7 @@ export default function UserLayout({ children }: { children: ReactNode }) {
           </div>
         )}
 
-        <MessagesWidget accentColor="#F47B20"/>
+        {!pathname?.endsWith("/messages") && <MessagesWidget accentColor="#F47B20"/>}
       </div>
 
       <style>{`

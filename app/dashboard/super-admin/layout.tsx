@@ -9,7 +9,7 @@ import MessagesWidget from "@/components/shared/MessagesWidget";
 import GlobalSearchModal from "@/components/shared/GlobalSearchModal";
 import { useSidebar } from "@/hooks/useSidebar";
 import { useAuthStore } from "@/store/authStore";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -23,6 +23,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const { isOpen, toggle, close } = useSidebar();
   const { user } = useAuthStore();
   const router = useRouter();
+  const pathname = usePathname();
   const [showSearch, setShowSearch] = useState(false);
 
   return (
@@ -49,7 +50,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           {showSearch && <GlobalSearchModal onClose={() => setShowSearch(false)} />}
           <main className="admin-content">{children}</main>
         </div>
-        <MessagesWidget accentColor="#F47B20" />
+        {!pathname?.endsWith("/messages") && <MessagesWidget accentColor="#F47B20" />}
       </div>
       <style>{`
         .admin-shell{display:flex;min-height:100vh;background:#F5F5F5}

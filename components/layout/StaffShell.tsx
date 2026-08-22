@@ -193,7 +193,7 @@ export default function StaffShell({ children }: { children: ReactNode }) {
         <main className="staff-content">{children}</main>
       </div>
 
-      <MessagesWidget accentColor="#1D9E75"/>
+      {!pathname?.endsWith("/messages") && <MessagesWidget accentColor="#1D9E75"/>}
 
       <style>{`
         .staff-shell{display:flex;min-height:100vh;background:#F5F5F5;position:relative}
