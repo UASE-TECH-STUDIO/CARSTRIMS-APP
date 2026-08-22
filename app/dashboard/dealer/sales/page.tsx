@@ -173,15 +173,15 @@ export default function SalesPage() {
           <p className="page-sub">{total} transaction{total!==1?"s":""}</p>
         </div>
         <div className="header-btns">
-          <button className="btn-outline" onClick={exportCSV}> CSV / Excel</button>
           <div style={{position:"relative",display:"inline-block"}}>
             <button className="btn-outline" onClick={()=>setShowSalesPicker(showSalesPicker==="download"?"":"download")} disabled={salesExportBusy!==""} style={{borderColor:"#F47B20",color:"#F47B20"}}>
-              {salesExportBusy==="pdf"||salesExportBusy==="jpg"?"Exporting…":"Download PDF/JPG"}
+              {salesExportBusy==="pdf"||salesExportBusy==="jpg"?"Exporting…":"Download"}
             </button>
             {showSalesPicker==="download" && (
               <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,zIndex:30,background:"#fff",border:"1px solid #E5E5E5",borderRadius:"8px",boxShadow:"0 6px 18px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"110px"}}>
                 <button onClick={()=>handleSalesDownload("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.5rem 0.75rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>as PDF</button>
                 <button onClick={()=>handleSalesDownload("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.5rem 0.75rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>as JPG</button>
+                <button onClick={()=>{setShowSalesPicker("");exportCSV();}} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.5rem 0.75rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>as Excel / CSV</button>
               </div>
             )}
           </div>

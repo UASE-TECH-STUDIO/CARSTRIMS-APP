@@ -419,7 +419,6 @@ export default function ReportsPage() {
             </div>
           </div>
           <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap"}}>
-            <button className="btn-export" onClick={exportCSV} style={{background:"#F0FDF4",color:"#16A34A",border:"1.5px solid #86EFAC"}}>CSV</button>
             <div style={{position:"relative"}}>
               <button className="btn-export" onClick={()=>setShowExportPicker(showExportPicker==="download"?"":"download")} disabled={exportBusy!==""}>
                 {exportBusy==="pdf"||exportBusy==="jpg" ? "Exporting…" : "Download"}
@@ -428,6 +427,7 @@ export default function ReportsPage() {
                 <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"130px"}}>
                   <button onClick={()=>handleReportDownload("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as PDF</button>
                   <button onClick={()=>handleReportDownload("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as JPG Image</button>
+                  <button onClick={()=>{setShowExportPicker("");exportCSV();}} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as Excel / CSV</button>
                 </div>
               )}
             </div>
