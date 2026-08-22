@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
-import { rowsToExcelBlob, renderHtmlStringToPdfBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
 
 const SC: Record<string,{bg:string;color:string;label:string}> = {
@@ -186,25 +186,12 @@ export default function UserRequestsPage() {
 
   const fmtDate = (iso:any) => iso?new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}):"";
   const showToast = useToast();
-  const [exportBusy, setExportBusy] = useState<""|"pdf"|"excel">("");
+  const [exportBusy, setExportBusy] = useState<""|"pdf"|"jpg"|"excel">("");
   const [showExportPicker, setShowExportPicker] = useState(false);
 
-  const handleRequestsExport = async (format: "pdf" | "excel") => {
-    setShowExportPicker(false);
-    setExportBusy(format);
-    try {
-      const filename = `carstrims-my-requests-${Date.now()}`;
-      if (format === "excel") {
-        const blob = rowsToExcelBlob(requests.map((r:any) => ({
-          "Request ID": r.requestId, Vehicle: `${r.carBrand||""} ${r.carModel||""} ${r.carYear||""}`,
-          Condition: r.condition || "", Budget: r.budget || "",
-          "Sent To": r.dealerName || "All dealers", Status: (SC[r.status]||SC.pending).label,
-          Date: fmtDate(r.createdAt),
-        })), "My Requests");
-        await downloadBlob(blob, `${filename}.xlsx`);
-      } else {
-        const now = new Date().toLocaleString("en-NG");
-        const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+  const buildRequestsExportHtml = () => {
+    const now = new Date().toLocaleString("en-NG");
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
           *{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:28px 32px;color:#1A1A1A;font-size:12px}
           h1{font-size:18px;margin:0 0 4px} .sub{color:#737373;font-size:11px;margin-bottom:16px}
           table{width:100%;border-collapse:collapse}
@@ -220,8 +207,25 @@ export default function UserRequestsPage() {
           </table>
           <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
           </body></html>`;
-        const blob = await renderHtmlStringToPdfBlob(html, "My Vehicle Requests");
-        await downloadBlob(blob, `${filename}.pdf`);
+  };
+
+  const handleRequestsExport = async (format: "pdf" | "jpg" | "excel") => {
+    setShowExportPicker(false);
+    setExportBusy(format);
+    try {
+      const filename = `carstrims-my-requests-${Date.now()}`;
+      if (format === "excel") {
+        const blob = rowsToExcelBlob(requests.map((r:any) => ({
+          "Request ID": r.requestId, Vehicle: `${r.carBrand||""} ${r.carModel||""} ${r.carYear||""}`,
+          Condition: r.condition || "", Budget: r.budget || "",
+          "Sent To": r.dealerName || "All dealers", Status: (SC[r.status]||SC.pending).label,
+          Date: fmtDate(r.createdAt),
+        })), "My Requests");
+        await downloadBlob(blob, `${filename}.xlsx`);
+      } else {
+        const html = buildRequestsExportHtml();
+        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "My Vehicle Requests");
+        await downloadBlob(blob, `${filename}.${format}`);
       }
       showToast("Downloaded", "success");
     } catch (e: any) {
@@ -259,6 +263,7 @@ export default function UserRequestsPage() {
             {showExportPicker && (
               <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"120px",maxWidth:"calc(100vw - 2rem)"}}>
                 <button onClick={()=>handleRequestsExport("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as PDF</button>
+                <button onClick={()=>handleRequestsExport("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as JPG Image</button>
                 <button onClick={()=>handleRequestsExport("excel")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as Excel</button>
               </div>
             )}
