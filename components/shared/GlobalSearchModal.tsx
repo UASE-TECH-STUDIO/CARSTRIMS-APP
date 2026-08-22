@@ -2,23 +2,45 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
+import { matchNavigation, Role } from "@/lib/navigationRegistry";
+import { useVoiceInput } from "@/lib/useVoiceInput";
 
 interface Props {
   onClose: () => void;
+  role: Role;
 }
 
 /**
- * Universal search — one box that searches cars, dealers, and users
- * (which covers regular users, partners, and buyers, since they all
- * live in the same users collection) at once, with results grouped
- * by category and linking straight to each public profile/detail page.
+ * Universal search — one box that does two things at once:
+ *
+ * 1. Searches cars, dealers, and users (which covers regular users,
+ *    partners, and buyers, since they all live in the same users
+ *    collection), with results grouped by category and linking
+ *    straight to each public profile/detail page.
+ *
+ * 2. Understands navigation INTENT — "I want to add a car", "change
+ *    my password", "I'm a new partner what should I do" — and shows
+ *    the matching page(s) as a clickable option that goes straight
+ *    there. Built with less tech-confident users specifically in
+ *    mind: plain language, no need to know the app's menu structure,
+ *    works by typing OR speaking.
+ *
+ * Both run on every keystroke; whichever has results shows up,
+ * navigation matches are shown first since "what do I want to do" is
+ * usually the more common need than "who/what am I searching for".
  */
-export default function GlobalSearchModal({ onClose }: Props) {
+export default function GlobalSearchModal({ onClose, role }: Props) {
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<{ cars?: any[]; dealers?: any[]; users?: any[] }>({});
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const { listening, supported: voiceSupported, lastError: voiceError, start: startVoice, stop: stopVoice } = useVoiceInput((transcript) => {
+    setQ(transcript);
+  });
+
+  const navMatches = matchNavigation(q, role, 4);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -41,7 +63,7 @@ export default function GlobalSearchModal({ onClose }: Props) {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [q]);
 
-  const hasAnyResults = (results.cars?.length || 0) + (results.dealers?.length || 0) + (results.users?.length || 0) > 0;
+  const hasAnyResults = (results.cars?.length || 0) + (results.dealers?.length || 0) + (results.users?.length || 0) + navMatches.length > 0;
 
   return (
     <div className="gs-overlay" onClick={onClose}>
@@ -50,23 +72,57 @@ export default function GlobalSearchModal({ onClose }: Props) {
           <input
             ref={inputRef}
             className="gs-input"
-            placeholder="Search cars, dealers, users..."
+            placeholder="Search, or say what you want to do…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
+          <button
+            type="button"
+            className={`gs-mic ${listening ? "gs-mic-active" : ""}`}
+            title={listening ? "Listening… tap to stop" : "Search by voice"}
+            onClick={() => {
+              if (voiceSupported === false) return;
+              listening ? stopVoice() : startVoice();
+            }}
+          >
+            {listening ? "●" : "🎤"}
+          </button>
           {q && <button className="gs-clear" onClick={() => setQ("")}>×</button>}
           <button className="gs-cancel" onClick={onClose}>Cancel</button>
         </div>
 
+        {voiceSupported === false && voiceError && (
+          <div className="gs-voice-err">
+            {voiceError === "permission-denied" ? "Microphone permission denied — enable it in your device settings."
+              : voiceError === "device-unavailable" ? "Voice search isn't available on this device."
+              : "Voice search hit an error — please type instead."}
+          </div>
+        )}
+
         <div className="gs-body">
           {!q.trim() && (
-            <div className="gs-hint">Search for a car (brand, model, year, color), a dealer, or a person by name.</div>
+            <div className="gs-hint">Search for a car, a dealer, or a person — or tell me what you want to do, like "add a car" or "change my password".</div>
           )}
 
           {q.trim() && loading && <div className="gs-hint">Searching…</div>}
 
           {q.trim() && !loading && !hasAnyResults && (
             <div className="gs-hint">No results for "{q}"</div>
+          )}
+
+          {!!navMatches.length && (
+            <div className="gs-section">
+              <div className="gs-section-title">Take Me There</div>
+              {navMatches.map((n) => (
+                <Link key={n.path} href={n.resolvedPath} className="gs-row gs-nav-row" onClick={onClose}>
+                  <div className="gs-row-thumb gs-row-nav-icon">→</div>
+                  <div className="gs-row-text">
+                    <div className="gs-row-title">{n.label}</div>
+                    <div className="gs-row-sub">{n.description}</div>
+                  </div>
+                </Link>
+              ))}
+            </div>
           )}
 
           {!!results.cars?.length && (
@@ -142,8 +198,12 @@ export default function GlobalSearchModal({ onClose }: Props) {
           font-size: 0.95rem; outline: none; font-family: var(--font-body, inherit); min-width: 0;
         }
         .gs-input:focus { border-color: #F47B20; }
+        .gs-mic { background: none; border: none; font-size: 1.05rem; cursor: pointer; flex-shrink: 0; padding: 0.25rem; line-height: 1; color: #737373; }
+        .gs-mic-active { color: #F47B20; animation: gs-pulse 1s ease-in-out infinite; }
+        @keyframes gs-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
         .gs-clear { background: #F5F5F5; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-size: 1rem; flex-shrink: 0; }
         .gs-cancel { background: none; border: none; color: #F47B20; font-weight: 700; font-size: 0.85rem; cursor: pointer; flex-shrink: 0; white-space: nowrap; }
+        .gs-voice-err { padding: 0.5rem 1rem; background: #FEF2F2; color: #DC2626; font-size: 0.78rem; text-align: center; }
         .gs-body { overflow-y: auto; -webkit-overflow-scrolling: touch; min-height: 0; padding: 0.5rem 0 1rem; }
         .gs-hint { padding: 2rem 1.25rem; text-align: center; color: #A3A3A3; font-size: 0.88rem; }
         .gs-section { padding: 0.5rem 0; }
@@ -153,6 +213,9 @@ export default function GlobalSearchModal({ onClose }: Props) {
         .gs-row-thumb { width: 44px; height: 44px; border-radius: 8px; overflow: hidden; flex-shrink: 0; background: #F5F5F5; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
         .gs-row-thumb img { width: 100%; height: 100%; object-fit: cover; }
         .gs-row-avatar { border-radius: 50%; font-family: var(--font-display, inherit); color: #F47B20; background: #FFF7ED; font-weight: 700; }
+        .gs-nav-row { background: #FFFBF7; }
+        .gs-nav-row:hover { background: #FFF3E6; }
+        .gs-row-nav-icon { background: #F47B20; color: #fff; font-size: 1.1rem; font-weight: 700; border-radius: 8px; }
         .gs-row-text { min-width: 0; flex: 1; }
         .gs-row-title { font-size: 0.9rem; font-weight: 600; color: #1A1A1A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .gs-row-sub { font-size: 0.76rem; color: #737373; margin-top: 1px; }

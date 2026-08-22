@@ -101,7 +101,7 @@ function DealerShell({ children }: { children: ReactNode }) {
             </button>
           </div>
         </header>
-        {showSearch && <GlobalSearchModal onClose={() => setShowSearch(false)} />}
+        {showSearch && <GlobalSearchModal onClose={() => setShowSearch(false)} role="dealer" />}
 
         {isPending && (
           <div className="pending-notice">

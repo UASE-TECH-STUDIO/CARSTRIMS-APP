@@ -188,7 +188,7 @@ export default function StaffShell({ children }: { children: ReactNode }) {
             </div>
           </div>
         </header>
-        {showSearch && <GlobalSearchModal onClose={() => setShowSearch(false)} />}
+        {showSearch && <GlobalSearchModal onClose={() => setShowSearch(false)} role="staff" />}
 
         <main className="staff-content">{children}</main>
       </div>

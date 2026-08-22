@@ -47,7 +47,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               </button>
             </div>
           </header>
-          {showSearch && <GlobalSearchModal onClose={() => setShowSearch(false)} />}
+          {showSearch && <GlobalSearchModal onClose={() => setShowSearch(false)} role="super-admin" />}
           <main className="admin-content">{children}</main>
         </div>
         {!pathname?.endsWith("/messages") && <MessagesWidget accentColor="#F47B20" />}

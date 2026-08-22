@@ -100,7 +100,7 @@ export default function PartnerLayout({ children }: { children: ReactNode }) {
               </button>
             </div>
           </header>
-          {showSearch && <GlobalSearchModal onClose={() => setShowSearch(false)} />}
+          {showSearch && <GlobalSearchModal onClose={() => setShowSearch(false)} role="partner" />}
           <main className="partner-content">{children}</main>
           <footer className="partner-footer">Powered by <strong>UASE TECH STUDIO</strong> for CARSTRIMS 2026</footer>
         </div>
