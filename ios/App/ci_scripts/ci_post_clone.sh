@@ -14,30 +14,24 @@ npm install
 
 echo "==> Done. node_modules/@capacitor/* should now exist for SPM to resolve."
 
-# Xcode Cloud disables automatic package resolution for reproducible
-# builds, which means it REQUIRES a Package.resolved file to already
-# exist and be up to date — it won't just resolve fresh dependencies
-# on the fly. Since this repo has never had one committed, any time a
-# new Capacitor plugin gets added (like @capacitor/camera or
-# @capacitor-community/speech-recognition, both added recently), the
-# build fails outright with "a resolved file is required... Running
-# resolver because the following dependencies were added: ...".
+# PRIMARY FIX: a Package.resolved file is now committed directly to
+# the repo (ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/
+# swiftpm/Package.resolved), pinning the one actual remote dependency
+# this project has (capacitor-swift-pm@8.4.0 - everything else is a
+# local path dependency under node_modules, which doesn't need SPM
+# registry resolution). Two earlier attempts at generating this file
+# fresh during ci_post_clone.sh (once fatally, once non-fatally) both
+# failed to reliably produce a file Xcode's own archive step would
+# accept - committing a known-correct one directly sidesteps that
+# unreliability entirely.
 #
-# Rather than trying to hand-maintain a committed Package.resolved
-# (fragile — anyone forgetting to regenerate and commit it after
-# adding a plugin breaks the next build), this generates one fresh on
-# Xcode Cloud's own machine, which has real Xcode/xcodebuild and full
-# network access, right before the build needs it.
-#
-# IMPORTANT: this step is intentionally NOT fatal to the script. An
-# earlier version let a failure here (e.g. a network hiccup resolving
-# packages from GitHub) crash the whole ci_post_clone.sh script with
-# its own generic exit-code failure, which masked whatever the real
-# underlying build error actually was. If resolution fails here, log
-# it clearly and let the build proceed to Xcode's own archive step,
-# where the real, actionable error (if any) will surface directly
-# instead of being hidden behind a script failure.
-echo "==> Resolving Swift Package dependencies"
+# This resolution step below is now just a DEFENSIVE BACKUP for the
+# future: if a new Capacitor plugin gets added later without someone
+# remembering to regenerate and commit an updated Package.resolved,
+# this at least attempts to patch that gap at build time rather than
+# failing outright - but the committed file above is what actually
+# fixes today's build.
+echo "==> Resolving Swift Package dependencies (defensive backup only - see comment above)"
 cd "$CI_PRIMARY_REPOSITORY_PATH/ios/App"
 if xcodebuild -resolvePackageDependencies -workspace App.xcodeproj/project.xcworkspace -scheme App; then
   echo "==> Package resolution complete."
