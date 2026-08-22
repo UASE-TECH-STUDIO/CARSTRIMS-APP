@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import PasswordInput from "@/components/ui/PasswordInput";
+import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+import { useToast } from "@/store/toastStore";
 
 const PERM_GROUPS = [
   { group:"Inventory",        color:"#F47B20", perms:[
@@ -93,6 +95,13 @@ export default function DealerStaffPage() {
   const [msg,      setMsg]      = useState("");
   const [saving,   setSaving]   = useState(false);
   const [search,   setSearch]   = useState("");
+  const [dealer,   setDealer]   = useState<any>(null);
+  const showToast = useToast();
+  const [exportBusy, setExportBusy] = useState<""|"pdf"|"jpg"|"excel">("");
+  const [showExportPicker, setShowExportPicker] = useState(false);
+  const [idCardBusy, setIdCardBusy] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   //  Every form field is its own useState  no shared object 
   const [fName,    setFName]    = useState("");
@@ -112,7 +121,10 @@ export default function DealerStaffPage() {
     } catch {} finally { setLoading(false); }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    api.get("/api/v1/dealers/me").then(r => setDealer(r.data)).catch(() => {});
+  }, []);
 
   const clearForm = () => {
     setFName(""); setFEmail(""); setFPhone(""); setFWa("");
@@ -129,6 +141,121 @@ export default function DealerStaffPage() {
   };
 
   const back = () => { setMode("list"); setSelected(null); setMsg(""); };
+
+  // ── Export staff list (Excel/PDF/JPG) ──────────────────────────
+  const filteredStaff = () => staff.filter((s: any) =>
+    !search || [s.fullName, s.email, s.position].some(v => (v || "").toLowerCase().includes(search.toLowerCase()))
+  );
+
+  const buildStaffListHtml = () => {
+    const rows = filteredStaff();
+    const now = new Date().toLocaleString("en-NG");
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      *{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:28px 32px;color:#1A1A1A;font-size:12px}
+      h1{font-size:18px;margin:0 0 4px} .sub{color:#737373;font-size:11px;margin-bottom:16px}
+      table{width:100%;border-collapse:collapse}
+      th{background:#1A1A1A;color:#fff;text-align:left;padding:8px 10px;font-size:10px;letter-spacing:0.05em;text-transform:uppercase}
+      td{padding:7px 10px;border-bottom:1px solid #E5E5E5;font-size:11px}
+      tr:nth-child(even) td{background:#FAFAFA}
+      .footer{margin-top:16px;font-size:9px;color:#A3A3A3;text-align:center}
+      </style></head><body>
+      <h1>Staff — ${dealer?.companyName || "CARSTRIMS"}</h1>
+      <div class="sub">${rows.length} staff member${rows.length !== 1 ? "s" : ""} &bull; Generated ${now}</div>
+      <table><thead><tr><th>Name</th><th>Position</th><th>Email</th><th>Phone</th><th>Status</th><th>Staff ID</th></tr></thead>
+      <tbody>${rows.map((s: any) => `<tr><td>${s.fullName || ""}</td><td>${s.position || ""}</td><td>${s.email || ""}</td><td>${s.phone || ""}</td><td>${s.status || ""}</td><td>${s.staffId || ""}</td></tr>`).join("")}</tbody>
+      </table>
+      <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
+      </body></html>`;
+  };
+
+  const handleStaffExport = async (format: "pdf" | "jpg" | "excel") => {
+    setShowExportPicker(false);
+    setExportBusy(format);
+    try {
+      const filename = `carstrims-staff-${Date.now()}`;
+      if (format === "excel") {
+        const blob = rowsToExcelBlob(filteredStaff().map((s: any) => ({
+          Name: s.fullName || "", Position: s.position || "", Email: s.email || "",
+          Phone: s.phone || "", WhatsApp: s.whatsapp || "", Status: s.status || "",
+          "Staff ID": s.staffId || "", Joined: fmtDate(s.createdAt),
+        })), "Staff");
+        await downloadBlob(blob, `${filename}.xlsx`);
+      } else {
+        const html = buildStaffListHtml();
+        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Staff List");
+        await downloadBlob(blob, `${filename}.${format}`);
+      }
+      showToast("Downloaded", "success");
+    } catch (e: any) {
+      showToast(e?.message || "Export failed", "error");
+    } finally {
+      setExportBusy("");
+    }
+  };
+
+  // ── ID card generation ─────────────────────────────────────────
+  const buildIdCardHtml = (s: any) => {
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      *{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:40px;background:#F5F5F5;display:flex;justify-content:center}
+      .card{width:340px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.12);border:1px solid #E5E5E5}
+      .band{background:#F47B20;padding:14px 18px;color:#fff}
+      .brand{font-weight:900;font-size:14px;letter-spacing:0.08em}
+      .company{font-size:9px;opacity:0.9;margin-top:1px}
+      .body{padding:20px 18px;text-align:center}
+      .photo{width:96px;height:96px;border-radius:50%;background:#FFF7ED;border:3px solid #F47B20;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:36px;color:#F47B20;font-weight:700;overflow:hidden}
+      .photo img{width:100%;height:100%;object-fit:cover}
+      .name{font-size:17px;font-weight:800;color:#1A1A1A}
+      .pos{font-size:12px;color:#F47B20;font-weight:700;margin-top:2px;text-transform:uppercase;letter-spacing:0.04em}
+      .divider{height:1px;background:#E5E5E5;margin:14px 0}
+      .row{display:flex;justify-content:space-between;font-size:10.5px;padding:4px 0;text-align:left}
+      .rl{color:#A3A3A3;text-transform:uppercase;letter-spacing:0.05em;font-weight:700}
+      .rv{color:#1A1A1A;font-weight:600}
+      .footer{background:#1A1A1A;color:#fff;text-align:center;padding:7px;font-size:8px;letter-spacing:0.05em}
+      </style></head><body>
+      <div class="card">
+        <div class="band"><div class="brand">CARSTRIMS</div><div class="company">${dealer?.companyName || ""}</div></div>
+        <div class="body">
+          <div class="photo">${s.profilePicture ? `<img src="${s.profilePicture}"/>` : (s.fullName || "?").charAt(0).toUpperCase()}</div>
+          <div class="name">${s.fullName || ""}</div>
+          <div class="pos">${s.position || "Staff"}</div>
+          <div class="divider"></div>
+          <div class="row"><span class="rl">Staff ID</span><span class="rv">${s.staffId || ""}</span></div>
+          <div class="row"><span class="rl">Phone</span><span class="rv">${s.phone || ""}</span></div>
+          <div class="row"><span class="rl">Email</span><span class="rv">${s.email || ""}</span></div>
+        </div>
+        <div class="footer">${dealer?.address || ""} ${dealer?.city ? "&bull; " + dealer.city : ""}</div>
+      </div>
+      </body></html>`;
+  };
+
+  const handleGenerateIdCard = async (s: any) => {
+    setIdCardBusy(true);
+    try {
+      const blob = await renderHtmlStringToPdfBlob(buildIdCardHtml(s), `${s.fullName} - ID Card`);
+      await downloadBlob(blob, `carstrims-id-card-${(s.fullName || "staff").toLowerCase().replace(/\s+/g, "-")}.pdf`);
+      showToast("ID card downloaded", "success");
+    } catch (e: any) {
+      showToast(e?.message || "Could not generate ID card", "error");
+    } finally {
+      setIdCardBusy(false);
+    }
+  };
+
+  // ── Delete staff account ───────────────────────────────────────
+  const handleDeleteStaff = async (s: any) => {
+    setDeleting(true);
+    try {
+      await api.delete(`/api/v1/staff/${s._id || s.staffId}`);
+      showToast("Staff account removed", "success");
+      setShowDeleteConfirm(false);
+      back();
+      load();
+    } catch (e: any) {
+      showToast(e?.response?.data?.detail || "Could not remove staff", "error");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const togglePerm = (id: string) =>
     setFPerms(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
@@ -287,12 +414,28 @@ export default function DealerStaffPage() {
             {staff.length} team member{staff.length!==1?"s":""}  all actions are recorded under your dealership
           </p>
         </div>
-        <button onClick={openCreate}
-          style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",
-            padding:"11px 20px",fontFamily:"var(--font-display)",fontSize:"14px",
-            letterSpacing:"0.08em",cursor:"pointer",fontWeight:700}}>
-          + Add Staff Member
-        </button>
+        <div style={{display:"flex",gap:"0.5rem",alignItems:"center"}}>
+          <div style={{position:"relative"}}>
+            <button onClick={()=>setShowExportPicker(v=>!v)} disabled={exportBusy!==""}
+              style={{background:"#F5F5F5",color:"#525252",border:"1.5px solid #E5E5E5",borderRadius:"8px",
+                padding:"11px 16px",fontSize:"13px",cursor:"pointer",fontWeight:600}}>
+              {exportBusy?"Exporting…":"Export"}
+            </button>
+            {showExportPicker && (
+              <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"120px"}}>
+                <button onClick={()=>handleStaffExport("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as PDF</button>
+                <button onClick={()=>handleStaffExport("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as JPG Image</button>
+                <button onClick={()=>handleStaffExport("excel")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as Excel</button>
+              </div>
+            )}
+          </div>
+          <button onClick={openCreate}
+            style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",
+              padding:"11px 20px",fontFamily:"var(--font-display)",fontSize:"14px",
+              letterSpacing:"0.08em",cursor:"pointer",fontWeight:700}}>
+            + Add Staff Member
+          </button>
+        </div>
       </div>
 
       <Msg/>
@@ -562,7 +705,7 @@ export default function DealerStaffPage() {
               {selected.status}
             </span>
           </div>
-          <div style={{display:"flex",gap:"8px"}}>
+          <div style={{display:"flex",gap:"8px",flexWrap:"wrap" as const}}>
             <button onClick={()=>openEdit(selected)}
               style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",
                 padding:"8px 16px",fontFamily:"var(--font-display)",
@@ -576,8 +719,37 @@ export default function DealerStaffPage() {
                 borderRadius:"8px",padding:"8px 16px",fontSize:"13px",cursor:"pointer",fontWeight:600}}>
               {selected.status==="active"?"Suspend":"Reactivate"}
             </button>
+            <button onClick={()=>handleGenerateIdCard(selected)} disabled={idCardBusy}
+              style={{background:"#F5F5F5",border:"1px solid #E5E5E5",color:"#525252",
+                borderRadius:"8px",padding:"8px 16px",fontSize:"13px",cursor:"pointer",fontWeight:600}}>
+              {idCardBusy?"Generating…":"ID Card"}
+            </button>
+            <button onClick={()=>setShowDeleteConfirm(true)}
+              style={{background:"#FEF2F2",border:"1px solid #FECACA",color:"#DC2626",
+                borderRadius:"8px",padding:"8px 16px",fontSize:"13px",cursor:"pointer",fontWeight:600}}>
+              Delete
+            </button>
           </div>
         </div>
+
+        {showDeleteConfirm && (
+          <div style={{background:"#FEF2F2",border:"1.5px solid #FECACA",borderRadius:"10px",padding:"14px 16px",marginBottom:"20px"}}>
+            <div style={{fontSize:"14px",fontWeight:700,color:"#DC2626",marginBottom:"4px"}}>Remove {selected.fullName}?</div>
+            <p style={{fontSize:"12.5px",color:"#7F1D1D",lineHeight:1.5,margin:"0 0 12px"}}>
+              This removes their account, login access, and their own notifications. Cars, sales, expenses, and other records they logged for your dealership stay exactly as they are.
+            </p>
+            <div style={{display:"flex",gap:"8px"}}>
+              <button onClick={()=>handleDeleteStaff(selected)} disabled={deleting}
+                style={{background:"#DC2626",color:"#fff",border:"none",borderRadius:"7px",padding:"8px 16px",fontSize:"13px",cursor:"pointer",fontWeight:700}}>
+                {deleting?"Removing…":"Yes, Remove Staff"}
+              </button>
+              <button onClick={()=>setShowDeleteConfirm(false)}
+                style={{background:"#fff",border:"1px solid #E5E5E5",color:"#525252",borderRadius:"7px",padding:"8px 16px",fontSize:"13px",cursor:"pointer",fontWeight:600}}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
 
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px",marginBottom:"20px"}}>
           {[["Phone",selected.phone],["WhatsApp",selected.whatsapp],
