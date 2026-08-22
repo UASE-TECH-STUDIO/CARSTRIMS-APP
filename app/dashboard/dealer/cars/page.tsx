@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import MarkSoldModal from "@/components/shared/MarkSoldModal";
 import CarFinancialReport from "@/components/dealer/CarFinancialReport";
@@ -158,6 +159,20 @@ export default function DealerCarsPage() {
   useEffect(()=>{load();},[load]);
 
   const openAdd = ()=>{setForm(emptyForm());setImages([]);setVideo("");setErr("");setSavedCarId(null);setModal("add");setEditCar(null);};
+
+  // Deep link support for the navigation search ("I want to add a
+  // car" -> takes them here and opens the form directly, rather than
+  // just landing on the page and leaving them to find the button).
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get("action") === "add") {
+      openAdd();
+      // Clean the URL so refreshing the page doesn't reopen the form
+      // every time, and so it doesn't look like a permanent bookmark.
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const openEdit = (car:Car)=>{
     setForm({vehicleType:car.vehicleType||"car",brand:car.brand||"Toyota",model:car.model||"",year:car.year||2024,color:car.color||"",condition:car.condition||"foreign used",status:car.status||"available",sellingPrice:String(car.sellingPrice||""),purchasePrice:String(car.purchasePrice||""),promoPrice:String(car.promoPrice||""),mileage:String(car.mileage||""),fuelType:car.fuelType||"petrol",transmission:car.transmission||"automatic",engineType:car.engineType||"",vin:car.vin||"",description:car.description||"",city:car.city||"",state:car.state||""});
     setImages(car.images||[]);setVideo(car.video||"");setErr("");setSavedCarId(car.carId);setEditCar(car);setModal("edit");

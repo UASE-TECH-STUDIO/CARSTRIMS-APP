@@ -4,6 +4,7 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { matchNavigation, Role } from "@/lib/navigationRegistry";
 import { useVoiceInput } from "@/lib/useVoiceInput";
+import { useAuthStore } from "@/store/authStore";
 
 interface Props {
   onClose: () => void;
@@ -40,7 +41,8 @@ export default function GlobalSearchModal({ onClose, role }: Props) {
     setQ(transcript);
   });
 
-  const navMatches = matchNavigation(q, role, 4);
+  const { user } = useAuthStore();
+  const navMatches = matchNavigation(q, { role, dealerId: user?.dealerId || undefined }, 4);
 
   useEffect(() => {
     inputRef.current?.focus();

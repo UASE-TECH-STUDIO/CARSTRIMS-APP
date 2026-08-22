@@ -35,18 +35,43 @@ const ENTRIES: NavEntry[] = [
   { path: "/dashboard/user/profile", label: "My Profile", description: "View and edit your public profile", keywords: ["profile", "my info", "about me"], roles: ["user"] },
   { path: "/dashboard/partner/find-dealer", label: "Become a Partner", description: "Apply to become a consignor/partner and work with a dealer to sell vehicles", keywords: ["become a partner", "new partner", "consignor", "partner with a dealer", "i am a new partner", "what should i do as partner", "sell for a dealer", "work with dealer", "assign car to me", "link with dealer"], roles: ["user"] },
 
-  // ── Dealer ──────────────────────────────────────────────────────
-  { path: "/dashboard/dealer", label: "Dealer Dashboard", description: "Your dealer dashboard overview", keywords: ["dashboard", "overview", "home page"], roles: ["dealer"] },
-  { path: "/dashboard/dealer/cars", label: "Add a Vehicle", description: "Add a new car, motorcycle, tricycle (keke), or other vehicle to your inventory", keywords: ["add car", "add vehicle", "add a car", "i want to add a car", "list a car", "new car", "upload car", "add keke", "add okada", "add motor", "add motorcycle", "add tricycle", "inventory", "my cars", "my vehicles", "car list"], roles: ["dealer"] },
-  { path: "/dashboard/dealer/sales", label: "Sales", description: "Record a sale, view sales history, receipts", keywords: ["sales", "sold", "record a sale", "make a sale", "receipt", "sell a car", "who bought"], roles: ["dealer"] },
-  { path: "/dashboard/dealer/expenses", label: "Expenses", description: "Track expenses on your vehicles", keywords: ["expenses", "cost", "spending", "money spent", "repair cost"], roles: ["dealer"] },
-  { path: "/dashboard/dealer/staff", label: "Staff", description: "Add or manage staff accounts, staff ID cards", keywords: ["staff", "employee", "add staff", "manage staff", "workers", "team", "staff id card"], roles: ["dealer"] },
-  { path: "/dashboard/dealer/partners", label: "Partners", description: "Manage consignors/partners, assign vehicles to a partner, approve partner requests", keywords: ["partner", "consignor", "assign car", "assign vehicle", "approve partner", "partner request", "link partner"], roles: ["dealer"] },
-  { path: "/dashboard/dealer/requests", label: "Customer Requests", description: "Vehicle requests from buyers", keywords: ["request", "customer request", "buyer request", "someone wants a car"], roles: ["dealer"] },
-  { path: "/dashboard/dealer/movements", label: "Vehicle Movements", description: "Track vehicles taken out for test drives or inspection", keywords: ["movement", "car taken out", "test drive log", "who has the car", "track vehicle"], roles: ["dealer"] },
-  { path: "/dashboard/dealer/reports", label: "Financial Reports", description: "Full financial report, revenue, profit", keywords: ["report", "financial report", "revenue", "profit", "how much did i make", "business summary"], roles: ["dealer"] },
-  { path: "/dashboard/dealer/cctv", label: "CCTV", description: "View your showroom camera feeds", keywords: ["cctv", "camera", "security camera", "watch showroom"], roles: ["dealer"] },
-  { path: "/dashboard/dealer/setup", label: "Business Setup", description: "Set up your dealership profile, logo, address", keywords: ["setup", "business setup", "company info", "dealership profile", "logo", "address"], roles: ["dealer"] },
+  // ── Dealer (thoroughly audited: every page + sub-states/modals) ──
+  { path: "/dashboard/dealer", label: "Dealer Dashboard", description: "Your dealer dashboard overview and stats", keywords: ["dashboard", "overview", "home page", "main page", "summary"], roles: ["dealer"] },
+
+  { path: "/dashboard/dealer/cars?action=add", label: "Add a Vehicle", description: "Add a new car, motorcycle, tricycle (keke), or other vehicle to your inventory", keywords: ["add car", "add vehicle", "add a car", "i want to add a car", "list a car", "new car", "upload car", "add keke", "add okada", "add motor", "add motorcycle", "add tricycle", "add truck", "add bus", "add van", "post a car", "put up a car"], roles: ["dealer"] },
+  { path: "/dashboard/dealer/cars", label: "My Vehicles & Inventory", description: "See, search, and edit all vehicles in your inventory", keywords: ["inventory", "my cars", "my vehicles", "car list", "all my cars", "see my cars", "edit car", "vehicle list", "stock"], roles: ["dealer"] },
+
+  { path: "/dashboard/dealer/sales?action=add", label: "Record a Sale", description: "Record a new vehicle sale", keywords: ["record a sale", "make a sale", "sell a car", "add sale", "manual sale", "i sold a car", "just sold a car", "log a sale"], roles: ["dealer"] },
+  { path: "/dashboard/dealer/sales", label: "Sales History", description: "View past sales, receipts, and edit sale records", keywords: ["sales", "sold", "receipt", "who bought", "sales history", "past sales", "invoice"], roles: ["dealer"] },
+
+  { path: "/dashboard/dealer/expenses?action=add", label: "Add an Expense", description: "Log a new expense on a vehicle", keywords: ["add expense", "log expense", "new expense", "record spending", "repair cost", "maintenance cost"], roles: ["dealer"] },
+  { path: "/dashboard/dealer/expenses", label: "Expenses", description: "Track and review expenses on your vehicles", keywords: ["expenses", "cost", "spending", "money spent"], roles: ["dealer"] },
+
+  { path: "/dashboard/dealer/staff?action=add", label: "Add a Staff Member", description: "Create a new staff account with a role and permissions", keywords: ["add staff", "new staff", "add employee", "add worker", "create staff account", "hire", "add a staff member"], roles: ["dealer"] },
+  { path: "/dashboard/dealer/staff", label: "Staff", description: "Manage staff accounts, permissions, staff ID cards", keywords: ["staff", "employee", "manage staff", "workers", "team", "staff id card", "print id card", "staff permissions", "delete staff", "remove staff"], roles: ["dealer"] },
+
+  { path: "/dashboard/dealer/partners", label: "Partners & Consignors", description: "Manage consignors/partners, assign vehicles, approve partner requests", keywords: ["partner", "consignor", "assign car", "assign vehicle", "approve partner", "partner request", "link partner", "my partners"], roles: ["dealer"] },
+
+  { path: "/dashboard/dealer/requests", label: "Customer Requests", description: "Vehicle requests sent to you by buyers, respond or make a counter offer", keywords: ["request", "customer request", "buyer request", "someone wants a car", "respond to request", "counter offer"], roles: ["dealer"] },
+
+  { path: "/dashboard/dealer/appointments", label: "Appointments", description: "Showroom visits and test drive bookings from buyers", keywords: ["appointment", "test drive", "showroom visit", "booking", "confirm appointment"], roles: ["dealer"] },
+
+  { path: "/dashboard/dealer/movements", label: "Vehicle Movements", description: "Track vehicles taken out for test drives, inspection, or delivery", keywords: ["movement", "car taken out", "test drive log", "who has the car", "track vehicle", "car out"], roles: ["dealer"] },
+
+  { path: "/dashboard/dealer/reports", label: "Financial Reports", description: "Full financial report — revenue, profit, expenses, top brands, staff performance", keywords: ["report", "financial report", "revenue", "profit", "how much did i make", "business summary", "monthly breakdown"], roles: ["dealer"] },
+
+  { path: "/dashboard/dealer/cctv", label: "CCTV", description: "View your showroom security camera feeds", keywords: ["cctv", "camera", "security camera", "watch showroom", "surveillance"], roles: ["dealer"] },
+
+  { path: "/dashboard/dealer/settings#password", label: "Change Password", description: "Update your account password", keywords: ["change password", "change my password", "reset password", "new password", "update password", "forgot password"], roles: ["dealer"] },
+  { path: "/dashboard/dealer/settings#profile", label: "Profile Picture & Signature", description: "Update your profile picture or digital signature", keywords: ["profile picture", "change photo", "signature", "digital signature", "my photo"], roles: ["dealer"] },
+  { path: "/dashboard/dealer/settings#branding", label: "Branding & Identity", description: "Update your dealership logo and branding", keywords: ["logo", "branding", "change logo", "company logo", "brand identity"], roles: ["dealer"] },
+  { path: "/dashboard/dealer/settings", label: "Account Settings", description: "Account info, dealership info, address, socials", keywords: ["settings", "account", "update my details", "change email", "change phone", "dealership information", "address", "facebook", "instagram", "social media"], roles: ["dealer"] },
+
+  { path: "/dashboard/dealer/setup", label: "Business Setup", description: "Set up your dealership profile, CAC certificate, CCTV setup", keywords: ["setup", "business setup", "company info", "dealership profile", "cac certificate", "cctv setup", "getting started"], roles: ["dealer"] },
+
+  { path: "/dashboard/dealer/messages", label: "Messages", description: "Chat with buyers, partners, and staff", keywords: ["message", "chat", "talk to buyer", "contact", "inbox", "reply"], roles: ["dealer"] },
+
+  { path: "public-profile", label: "My Public Profile", description: "See how your dealership looks to customers browsing the app", keywords: ["public profile", "my profile", "how customers see me", "my page", "storefront", "my listing page"], roles: ["dealer"] },
 
   // ── Staff ───────────────────────────────────────────────────────
   { path: "/dashboard/staff", label: "Staff Dashboard", description: "Your staff dashboard overview", keywords: ["dashboard", "overview", "home page"], roles: ["staff"] },
@@ -79,45 +104,102 @@ const ENTRIES: NavEntry[] = [
   { path: "/dashboard/super-admin/activity", label: "Activity Log", description: "Recent platform activity", keywords: ["activity", "activity log", "recent actions", "audit"], roles: ["super-admin"] },
 ];
 
-function resolvePath(path: string, role: Role): string {
-  return path.replace("{role}", role);
+export interface NavContext {
+  role: Role;
+  dealerId?: string;   // needed to resolve the dealer's own public profile link
+}
+
+function resolvePath(path: string, ctx: NavContext): string | null {
+  if (path === "public-profile") {
+    // Needs the dealer's own ID, which isn't known statically - if
+    // it's not available in this context, the caller should drop
+    // this entry rather than link somewhere broken.
+    return ctx.dealerId ? `/dealers/${ctx.dealerId}` : null;
+  }
+  return path.replace("{role}", ctx.role);
+}
+
+// Very small stemmer, just enough for this app's own vocabulary -
+// not a general NLP tool, just strips the common endings that show up
+// in how people naturally phrase these requests ("cars" vs "car",
+// "vehicles" vs "vehicle", "selling" vs "sell").
+function stem(word: string): string {
+  return word
+    .replace(/(vehicles|cars|motors)$/, (m) => m.slice(0, -1))
+    .replace(/(ing|ed)$/, "")
+    .replace(/s$/, "");
+}
+
+// Cheap edit-distance check (bounded, not full Levenshtein) - catches
+// the kind of near-miss a voice engine produces on a noisy line
+// ("sale" heard as "sail", "expense" heard as "expence") without the
+// cost of comparing every word pair exhaustively.
+function isCloseMatch(a: string, b: string): boolean {
+  if (a === b) return true;
+  if (Math.abs(a.length - b.length) > 2) return false;
+  if (a.length < 4 || b.length < 4) return false; // too short to fuzzy-match reliably
+  let i = 0, j = 0, mismatches = 0;
+  while (i < a.length && j < b.length) {
+    if (a[i] === b[j]) { i++; j++; continue; }
+    mismatches++;
+    if (mismatches > 2) return false;
+    if (a.length > b.length) i++;
+    else if (b.length > a.length) j++;
+    else { i++; j++; }
+  }
+  mismatches += (a.length - i) + (b.length - j);
+  return mismatches <= 2;
 }
 
 /**
  * Scores every registry entry (filtered to the person's role) against
  * a free-text query, returning the best matches. Deliberately simple
- * and dependency-free (no AI call needed) — this only has to match
- * against a few dozen known entries, not open-ended car listings, so
- * keyword overlap scoring is fast, reliable, and works offline.
+ * and dependency-free as the fast, always-available path — this is
+ * the fallback used if the AI-backed match (see matchNavigationAI)
+ * isn't available, and runs instantly client-side either way.
  */
-export function matchNavigation(query: string, role: Role, limit = 5): (NavEntry & { resolvedPath: string; score: number })[] {
+export function matchNavigation(query: string, ctx: NavContext, limit = 5): (NavEntry & { resolvedPath: string; score: number })[] {
   const q = query.toLowerCase().trim();
   if (!q) return [];
 
   const words = q.split(/\s+/).filter((w) => w.length > 1);
-  const relevant = ENTRIES.filter((e) => e.roles.includes(role));
+  const stemmedWords = words.map(stem);
+  const relevant = ENTRIES.filter((e) => e.roles.includes(ctx.role));
 
   const scored = relevant.map((entry) => {
     let score = 0;
     const haystack = [entry.label, entry.description, ...entry.keywords].join(" ").toLowerCase();
+    const haystackWords = haystack.split(/\s+/).map(stem);
 
     // Direct substring match against any keyword is the strongest signal
     for (const kw of entry.keywords) {
       if (q.includes(kw) || kw.includes(q)) score += 10;
     }
-    // Otherwise, score by how many of the query's words appear anywhere
-    // in this entry's label/description/keywords
-    for (const w of words) {
-      if (haystack.includes(w)) score += 2;
+    // Stemmed word overlap - "cars"/"car", "selling"/"sell" etc. match
+    for (const w of stemmedWords) {
+      if (haystackWords.includes(w)) score += 2;
+    }
+    // Fuzzy fallback for words that didn't match exactly or by stem -
+    // catches voice-transcription near-misses
+    for (const w of stemmedWords) {
+      if (haystackWords.includes(w)) continue;
+      if (haystackWords.some((hw) => isCloseMatch(w, hw))) score += 1;
     }
     // Small bonus if the query appears in the label itself
     if (entry.label.toLowerCase().includes(q)) score += 5;
 
-    return { ...entry, resolvedPath: resolvePath(entry.path, role), score };
+    return { entry, score };
   });
 
   return scored
     .filter((e) => e.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit * 2) // resolve a few extra in case some drop out (e.g. missing dealerId)
+    .map(({ entry, score }) => {
+      const resolvedPath = resolvePath(entry.path, ctx);
+      return resolvedPath ? { ...entry, resolvedPath, score } : null;
+    })
+    .filter((e): e is NavEntry & { resolvedPath: string; score: number } => e !== null)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
 }
