@@ -1,10 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
+import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob } from "@/lib/documentExport";
+import { useToast } from "@/store/toastStore";
 
 export default function PartnerMovementsPage() {
   const [movements, setMovements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showExportPicker, setShowExportPicker] = useState(false);
+  const [exportBusy, setExportBusy] = useState("");
+  const showToast = useToast();
 
   useEffect(() => {
     api.get("/api/v1/partners/my-dashboard")
@@ -16,11 +21,71 @@ export default function PartnerMovementsPage() {
   const fmt = (iso: string) => iso ? new Date(iso).toLocaleString("en-NG") : "";
   const STATUS_COLORS: Record<string,string> = { out:"#C9A84C", returned:"#4CAF82", overdue:"#E05252" };
 
+  const buildMovementsHtml = () => {
+    const now = new Date().toLocaleString("en-NG");
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      *{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:28px 32px;color:#1A1A1A;font-size:12px}
+      h1{font-size:18px;margin:0 0 4px} .sub{color:#737373;font-size:11px;margin-bottom:16px}
+      table{width:100%;border-collapse:collapse}
+      th{background:#1A1A1A;color:#fff;text-align:left;padding:8px 10px;font-size:10px;letter-spacing:0.05em;text-transform:uppercase}
+      td{padding:7px 10px;border-bottom:1px solid #E5E5E5;font-size:11px}
+      tr:nth-child(even) td{background:#FAFAFA}
+      .footer{margin-top:16px;font-size:9px;color:#A3A3A3;text-align:center}
+      </style></head><body>
+      <h1>Vehicle Movements</h1>
+      <div class="sub">${movements.length} record${movements.length!==1?"s":""} &bull; Generated ${now}</div>
+      <table><thead><tr><th>Vehicle</th><th>Taken By</th><th>Purpose</th><th>Status</th><th>Out</th><th>Returned</th></tr></thead>
+      <tbody>${movements.map((m:any) => `<tr><td>${m.carBrand||""} ${m.carModel||""} ${m.carYear||""}</td><td>${m.takenByName||""}</td><td>${(m.purpose||"").replace(/_/g," ")}</td><td>${m.status||""}</td><td>${fmt(m.timeOut)}</td><td>${m.timeReturned?fmt(m.timeReturned):"—"}</td></tr>`).join("")}</tbody>
+      </table>
+      <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
+      </body></html>`;
+  };
+
+  const handleExport = async (format: "pdf"|"jpg"|"excel") => {
+    setShowExportPicker(false);
+    setExportBusy(format);
+    try {
+      const filename = `carstrims-partner-movements-${Date.now()}`;
+      if (format === "excel") {
+        const blob = rowsToExcelBlob(movements.map((m:any) => ({
+          Vehicle: `${m.carBrand||""} ${m.carModel||""} ${m.carYear||""}`.trim(),
+          "Taken By": m.takenByName || "", Purpose: (m.purpose||"").replace(/_/g," "),
+          Status: m.status || "", Out: fmt(m.timeOut), Returned: m.timeReturned ? fmt(m.timeReturned) : "",
+        })), "Movements");
+        await downloadBlob(blob, `${filename}.xlsx`);
+      } else {
+        const html = buildMovementsHtml();
+        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Vehicle Movements");
+        await downloadBlob(blob, `${filename}.${format}`);
+      }
+      showToast("Downloaded", "success");
+    } catch (e: any) {
+      showToast(e?.message || "Export failed", "error");
+    } finally {
+      setExportBusy("");
+    }
+  };
+
   return (
     <div className="page">
-      <div className="page-header">
-        <h2 className="page-heading">Vehicle Movements</h2>
-        <p className="page-sub">Track when your cars leave or return to the dealership</p>
+      <div className="page-header" style={{flexDirection:"row" as const, justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap" as const, gap:"0.75rem"}}>
+        <div>
+          <h2 className="page-heading">Vehicle Movements</h2>
+          <p className="page-sub">Track when your cars leave or return to the dealership</p>
+        </div>
+        <div style={{position:"relative"}}>
+          <button onClick={()=>setShowExportPicker(v=>!v)} disabled={exportBusy!==""}
+            style={{background:"#F5F5F5",color:"#525252",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"0.5rem 0.9rem",fontSize:"0.8rem",cursor:"pointer",fontWeight:600}}>
+            {exportBusy?"Exporting…":"Export"}
+          </button>
+          {showExportPicker && (
+            <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"120px",maxWidth:"calc(100vw - 2rem)"}}>
+              <button onClick={()=>handleExport("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as PDF</button>
+              <button onClick={()=>handleExport("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as JPG Image</button>
+              <button onClick={()=>handleExport("excel")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as Excel</button>
+            </div>
+          )}
+        </div>
       </div>
 
       {loading ? <div className="loading"><div className="spinner" /></div>
