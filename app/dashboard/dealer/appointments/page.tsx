@@ -2,6 +2,10 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import Link from "next/link";
+import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob } from "@/lib/documentExport";
+
+const STILL_ATTENDING_APT = ["pending", "pending_buyer"];
+const isStillAttendingApt = (status: string) => STILL_ATTENDING_APT.includes(status);
 
 const STATUS_C: Record<string,string> = {
   pending:"#D97706", confirmed:"#16A34A", cancelled:"#DC2626",
@@ -88,6 +92,61 @@ export default function DealerAppointmentsPage() {
     : appointments.filter(a => a.status === filter);
 
   const pending  = appointments.filter(a => a.status === "pending").length;
+
+  const [showAptExportCategory, setShowAptExportCategory] = useState(false);
+  const [aptExportCategory, setAptExportCategory] = useState<"still"|"attended"|"all"|"">("");
+  const [aptExportBusy, setAptExportBusy] = useState("");
+
+  const aptRowsForCategory = (cat: "still"|"attended"|"all") =>
+    appointments.filter(a => cat === "all" ? true : cat === "still" ? isStillAttendingApt(a.status) : !isStillAttendingApt(a.status));
+
+  const buildAppointmentsHtml = (cat: "still"|"attended"|"all") => {
+    const rows = aptRowsForCategory(cat);
+    const now = new Date().toLocaleString("en-NG");
+    const label = cat === "still" ? "Still Attending To" : cat === "attended" ? "Attended To" : "All";
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      *{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:28px 32px;color:#1A1A1A;font-size:12px}
+      h1{font-size:18px;margin:0 0 4px} .sub{color:#737373;font-size:11px;margin-bottom:16px}
+      table{width:100%;border-collapse:collapse}
+      th{background:#1A1A1A;color:#fff;text-align:left;padding:8px 10px;font-size:10px;letter-spacing:0.05em;text-transform:uppercase}
+      td{padding:7px 10px;border-bottom:1px solid #E5E5E5;font-size:11px}
+      tr:nth-child(even) td{background:#FAFAFA}
+      .footer{margin-top:16px;font-size:9px;color:#A3A3A3;text-align:center}
+      </style></head><body>
+      <h1>Appointments — ${label}</h1>
+      <div class="sub">${rows.length} appointment${rows.length!==1?"s":""} &bull; Generated ${now}</div>
+      <table><thead><tr><th>Buyer</th><th>Type</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody>${rows.map((a: any) => `<tr><td>${a.buyerName||a.userName||""}</td><td>${TYPE_LABEL[a.type]||a.type||""}</td><td>${STATUS_LABEL[a.status]||a.status}</td><td>${a.scheduledAt?new Date(a.scheduledAt).toLocaleString("en-NG"):""}</td></tr>`).join("")}</tbody>
+      </table>
+      <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
+      </body></html>`;
+  };
+
+  const handleAptExport = async (cat: "still"|"attended"|"all", format: "pdf"|"jpg"|"excel") => {
+    setShowAptExportCategory(false); setAptExportCategory("");
+    setAptExportBusy(`${cat}-${format}`);
+    try {
+      const rows = aptRowsForCategory(cat);
+      const filename = `carstrims-appointments-${cat}-${Date.now()}`;
+      if (format === "excel") {
+        const blob = rowsToExcelBlob(rows.map((a: any) => ({
+          Buyer: a.buyerName || a.userName || "", Type: TYPE_LABEL[a.type] || a.type || "",
+          Status: STATUS_LABEL[a.status] || a.status, Date: a.scheduledAt ? new Date(a.scheduledAt).toLocaleString("en-NG") : "",
+        })), "Appointments");
+        await downloadBlob(blob, `${filename}.xlsx`);
+      } else {
+        const html = buildAppointmentsHtml(cat);
+        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Appointments");
+        await downloadBlob(blob, `${filename}.${format}`);
+      }
+      setMsg("Downloaded");
+    } catch (e: any) {
+      setMsg("Export failed: " + (e?.message || "please try again"));
+    } finally {
+      setAptExportBusy("");
+    }
+  };
+
   const today    = appointments.filter(a => {
     const d = a.scheduledAt ? new Date(a.scheduledAt) : null;
     const n = new Date();
@@ -106,6 +165,27 @@ export default function DealerAppointmentsPage() {
             {pending > 0 && <span style={{color:"#D97706",fontWeight:700}}> &bull; {pending} pending action</span>}
             {today > 0 && <span style={{color:"#16A34A",fontWeight:700}}> &bull; {today} today</span>}
           </p>
+        </div>
+        <div style={{position:"relative"}}>
+          <button onClick={()=>setShowAptExportCategory(v=>!v)} disabled={aptExportBusy!==""}
+            style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"7px",padding:"0.4rem 0.875rem",fontSize:"0.75rem",cursor:"pointer",fontWeight:600}}>
+            {aptExportBusy?"Exporting…":"Export"}
+          </button>
+          {showAptExportCategory && !aptExportCategory && (
+            <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"170px"}}>
+              <button onClick={()=>setAptExportCategory("still")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>Still Attending To</button>
+              <button onClick={()=>setAptExportCategory("attended")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>Attended To</button>
+              <button onClick={()=>setAptExportCategory("all")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>All Appointments</button>
+            </div>
+          )}
+          {showAptExportCategory && aptExportCategory && (
+            <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"140px"}}>
+              <button onClick={()=>setAptExportCategory("")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.5rem 0.9rem",background:"#FAFAFA",border:"none",borderBottom:"1px solid #E5E5E5",cursor:"pointer",fontSize:"0.7rem",color:"#888",fontWeight:600}}>&larr; Back</button>
+              <button onClick={()=>handleAptExport(aptExportCategory,"pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>as PDF</button>
+              <button onClick={()=>handleAptExport(aptExportCategory,"jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>as JPG Image</button>
+              <button onClick={()=>handleAptExport(aptExportCategory,"excel")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>as Excel</button>
+            </div>
+          )}
         </div>
       </div>
 
