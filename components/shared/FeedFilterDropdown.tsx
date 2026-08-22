@@ -1,6 +1,7 @@
 "use client";
 
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
+import CustomSelect from "@/components/ui/CustomSelect";
 
 interface Props {
   selectedBrand: string; setSelectedBrand: (v: string) => void;
@@ -80,17 +81,12 @@ export default function FeedFilterDropdown(props: Props) {
 
         <div className="ffd-group">
           <label className="ffd-label">Sort By</label>
-          <select className="ffd-select" value={fSort} onChange={(e) => setFSort(e.target.value)}>
-            {SORT_OPTIONS.map((s) => <option key={s.v} value={s.v}>{s.l}</option>)}
-          </select>
+          <CustomSelect value={fSort} onChange={setFSort} options={SORT_OPTIONS.map((s) => ({value: s.v, label: s.l}))} />
         </div>
 
         <div className="ffd-group">
           <label className="ffd-label">Brand</label>
-          <select className="ffd-select" value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)}>
-            <option value="">Any brand</option>
-            {BRANDS.map((b) => <option key={b} value={b}>{b}</option>)}
-          </select>
+          <CustomSelect value={selectedBrand} onChange={setSelectedBrand} placeholder="Any brand" options={BRANDS.map((b) => ({value: b, label: b}))} />
         </div>
 
         <div className="ffd-group">
@@ -105,15 +101,9 @@ export default function FeedFilterDropdown(props: Props) {
         <div className="ffd-group">
           <label className="ffd-label">Year</label>
           <div className="ffd-row">
-            <select className="ffd-select" value={fYearFrom} onChange={(e) => setFYearFrom(e.target.value)}>
-              <option value="">From</option>
-              {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
-            </select>
+            <CustomSelect value={fYearFrom} onChange={setFYearFrom} placeholder="From" options={YEARS.map((y) => ({value: y, label: y}))} />
             <span className="ffd-sep">–</span>
-            <select className="ffd-select" value={fYearTo} onChange={(e) => setFYearTo(e.target.value)}>
-              <option value="">To</option>
-              {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
-            </select>
+            <CustomSelect value={fYearTo} onChange={setFYearTo} placeholder="To" options={YEARS.map((y) => ({value: y, label: y}))} />
           </div>
         </div>
 
@@ -159,10 +149,7 @@ export default function FeedFilterDropdown(props: Props) {
 
         <div className="ffd-group">
           <label className="ffd-label">Location</label>
-          <select className="ffd-select" value={fState} onChange={(e) => setFState(e.target.value)}>
-            <option value="">Any state</option>
-            {STATES_NG.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
+          <CustomSelect value={fState} onChange={setFState} placeholder="Any state" options={STATES_NG.map((s) => ({value: s, label: s}))} />
         </div>
 
         <div className="ffd-group">
