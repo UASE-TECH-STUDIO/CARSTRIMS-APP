@@ -62,10 +62,11 @@ export default function FeedFilterDropdown(props: Props) {
   } = props;
 
   return (
-    <div className="ffd-panel" onClick={(e) => e.stopPropagation()}>
-      <div className="ffd-header">
-        <span>Filter Vehicles</span>
-        <button type="button" className="ffd-close" onClick={onClose} aria-label="Close filters">✕</button>
+    <div className="ffd-backdrop" onClick={onClose}>
+      <div className="ffd-panel" onClick={(e) => e.stopPropagation()}>
+        <div className="ffd-header">
+          <span>Filter Vehicles</span>
+          <button type="button" className="ffd-close" onClick={onClose} aria-label="Close filters">✕</button>
       </div>
 
       <div className="ffd-body">
@@ -181,11 +182,18 @@ export default function FeedFilterDropdown(props: Props) {
       </div>
 
       <style jsx>{`
+        .ffd-backdrop {
+          position: fixed; inset: 0; z-index: 65;
+          background: rgba(0,0,0,0.35);
+          display: flex; align-items: flex-start; justify-content: center;
+          padding: 4.5rem 0.75rem 1rem;
+          overflow-y: auto; -webkit-overflow-scrolling: touch;
+        }
         .ffd-panel {
-          position: absolute; top: calc(100% + 8px); left: 0;
-          width: 100%; max-width: min(480px, 96vw);
+          width: 100%; max-width: 640px;
           background: #fff; border: 1.5px solid #E5E5E5; border-radius: 14px;
-          box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden; z-index: 70;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.25); overflow: hidden; z-index: 70;
+          margin: auto;
         }
         .ffd-header { display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1.1rem; border-bottom: 1px solid #F0F0F0; font-family: var(--font-display, inherit); font-size: 0.95rem; font-weight: 700; color: #1A1A1A; }
         .ffd-close { background: none; border: none; font-size: 1rem; color: #A3A3A3; cursor: pointer; padding: 0.25rem; }
@@ -215,7 +223,6 @@ export default function FeedFilterDropdown(props: Props) {
         .ffd-apply { flex: 1; background: #F47B20; border: none; border-radius: 8px; padding: 0.7rem; font-size: 0.85rem; font-weight: 700; color: #fff; cursor: pointer; }
 
         @media (max-width: 640px) {
-          .ffd-panel { max-width: calc(100vw - 1rem); left: 50%; transform: translateX(-50%); }
           .ffd-body { padding: 1.1rem 1.2rem; gap: 1.3rem; }
           .ffd-label { font-size: 0.76rem; }
           .ffd-select, .ffd-input { font-size: 1rem; padding: 0.8rem 0.9rem; min-height: 48px; }
@@ -224,6 +231,7 @@ export default function FeedFilterDropdown(props: Props) {
           .ffd-clear, .ffd-apply { padding: 0.85rem; font-size: 0.9rem; }
         }
       `}</style>
+      </div>
     </div>
   );
 }
