@@ -22,6 +22,7 @@ export type Role = "user" | "dealer" | "staff" | "partner" | "super-admin";
 
 const ENTRIES: NavEntry[] = [
   // ── Universal (all roles) ──────────────────────────────────────
+  { path: "/how-it-works", label: "How CARSTRIMS Works", description: "New here? Learn what this app is for and how to use it", keywords: ["how it works", "what is this app", "i am new", "i'm new", "new here", "i dont know", "i don't know", "confused", "help", "what can i do", "how do i use this", "teach me", "explain this app", "what is carstrims for", "how does this benefit me", "getting started", "learn", "guide", "tutorial", "i dont understand"], roles: ["user","dealer","staff","partner","super-admin"] },
   { path: "/feed", label: "Browse Vehicles", description: "See all cars, motorcycles, and other vehicles for sale", keywords: ["browse", "see cars", "look at cars", "feed", "home", "vehicles", "shop"], roles: ["user","dealer","staff","partner","super-admin"] },
   { path: "/dashboard/{role}/messages", label: "Messages", description: "Talk to a dealer, buyer, or send a message", keywords: ["message", "chat", "talk to dealer", "talk to buyer", "contact", "text someone", "reply", "inbox"], roles: ["user","dealer","staff","partner","super-admin"] },
   { path: "/dashboard/{role}/notifications", label: "Notifications", description: "See your alerts and updates", keywords: ["notification", "alert", "updates", "what happened"], roles: ["user","dealer","staff","partner","super-admin"] },
