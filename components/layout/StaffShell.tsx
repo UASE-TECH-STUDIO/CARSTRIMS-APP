@@ -5,6 +5,7 @@ import { useAuthStore } from "@/store/authStore";
 import NotificationBell from "@/components/ui/NotificationBell";
 import MessagesWidget from "@/components/shared/MessagesWidget";
 import GlobalSearchModal from "@/components/shared/GlobalSearchModal";
+import SearchHint from "@/components/shared/SearchHint";
 import Link from "next/link";
 import api from "@/lib/api";
 
@@ -181,7 +182,10 @@ export default function StaffShell({ children }: { children: ReactNode }) {
             <span className="greeting-text">
               {getGreeting()}, <strong className="greeting-name">{user?.fullName?.split(" ")[0] || "Staff"}</strong>
             </span>
-            <button className="search-topbar-btn" onClick={() => setShowSearch(true)} title="Search" aria-label="Search">🔍</button>
+            <div style={{position:"relative"}}>
+              <button className="search-topbar-btn" onClick={() => setShowSearch(true)} title="Search" aria-label="Search">🔍</button>
+              <SearchHint onUseSearch={() => setShowSearch(true)} />
+            </div>
             <NotificationBell role="DEALER_STAFF"/>
             <div className="avatar-circle" style={{background:"#1D9E75"}}>
               {user?.fullName?.charAt(0).toUpperCase() || "S"}

@@ -8,6 +8,7 @@ import api from "@/lib/api";
 import NotificationBell from "@/components/ui/NotificationBell";
 import MessagesWidget from "@/components/shared/MessagesWidget";
 import GlobalSearchModal from "@/components/shared/GlobalSearchModal";
+import SearchHint from "@/components/shared/SearchHint";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -104,7 +105,10 @@ export default function UserLayout({ children }: { children: ReactNode }) {
           <Link href="/feed" className="topbar-brand">CARSTRIMS</Link>
           <div className="topbar-right">
             <span className="greeting">{getGreeting()}, <strong>{me?.fullName?.split(" ")[0]||"User"}</strong></span>
-            <button className="search-topbar-btn" onClick={() => setShowSearch(true)} title="Search" aria-label="Search">🔍</button>
+            <div style={{position:"relative"}}>
+              <button className="search-topbar-btn" onClick={() => setShowSearch(true)} title="Search" aria-label="Search">🔍</button>
+              <SearchHint onUseSearch={() => setShowSearch(true)} />
+            </div>
             <NotificationBell />
             <button className="avatar-btn" onClick={() => router.push("/dashboard/user/profile")} title="My Profile">
               {me?.profilePicture
