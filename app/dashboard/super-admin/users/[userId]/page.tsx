@@ -4,12 +4,14 @@ import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import Link from "next/link";
 import CustomSelect from "@/components/ui/CustomSelect";
+import { useConfirm } from "@/store/confirmStore";
 import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 
 const ROLE_C: Record<string,string> = {DEALER_ADMIN:"#F47B20",DEALER_STAFF:"#D97706",PARTNER_USER:"#7B68EE",SYSTEM_ADMIN:"#DC2626",PUBLIC_USER:"#16A34A"};
 const STATUS_C: Record<string,string> = {active:"#16A34A",approved:"#16A34A",suspended:"#DC2626",awaiting_approval:"#D97706",pending:"#D97706",rejected:"#DC2626"};
 
 export default function SuperAdminUserDetail() {
+  const askConfirm = useConfirm();
   const params = useParams();
   const router = useRouter();
   const userId = params?.userId as string;
@@ -86,7 +88,7 @@ export default function SuperAdminUserDetail() {
   };
 
   const removeDoc = async (field: string) => {
-    if (!confirm(`Remove ${field}?`)) return;
+    if (!(await askConfirm({ message: `Remove ${field}?`, danger: true }))) return;
     try {
       await api.patch(`/api/v1/admin/users/${userId}/profile`, { [field]: null });
       setBanner(`${field} removed.`);
@@ -95,7 +97,7 @@ export default function SuperAdminUserDetail() {
   };
 
   const suspend = async () => {
-    if (!confirm("Suspend this user?")) return;
+    if (!(await askConfirm({ message: "Suspend this user?", danger: true }))) return;
     setActioning(true);
     try { await api.post(`/api/v1/admin/users/${userId}/suspend`,{reason:"Suspended by admin"}); setBanner("User suspended."); load(); }
     catch { setBanner("Failed to suspend."); } finally { setActioning(false); }

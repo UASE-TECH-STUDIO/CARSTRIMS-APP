@@ -7,6 +7,7 @@ import api from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import GlobalSearchModal from "@/components/shared/GlobalSearchModal";
 import { useToast } from "@/store/toastStore";
+import { useConfirm } from "@/store/confirmStore";
 import { useVoiceInput } from "@/lib/useVoiceInput";
 import { correctVoiceTranscript } from "@/lib/voiceCarCorrection";
 import FeedFilterDropdown from "@/components/shared/FeedFilterDropdown";
@@ -348,6 +349,7 @@ export default function FeedPage() {
   };
 
   const showToast = useToast();
+  const askConfirm = useConfirm();
   const isAdmin = user?.role === "SYSTEM_ADMIN";
 
   const handleShare = async (e: React.MouseEvent, car: Car) => {
@@ -369,7 +371,7 @@ export default function FeedPage() {
 
   const handleAdminDelete = async (e: React.MouseEvent, car: Car) => {
     e.preventDefault(); e.stopPropagation();
-    if (!confirm(`Remove "${car.brand} ${car.model}" from the platform?`)) return;
+    if (!(await askConfirm({ message: `Remove "${car.brand} ${car.model}" from the platform?`, danger: true }))) return;
     try {
       await api.delete(`/api/v1/cars/${car.carId}`);
       setCars((prev) => prev.filter((c) => c.carId !== car.carId));
