@@ -6,6 +6,7 @@ import CarFinancialReport from "@/components/dealer/CarFinancialReport";
 import CarIdSearch from "@/components/dealer/CarIdSearch";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 import { useToast } from "@/store/toastStore";
+import { useConfirm } from "@/store/confirmStore";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 
@@ -41,6 +42,7 @@ export default function SalesPage() {
   const [submitting,setSubmitting]   = useState(false);
   const [error,setError]   = useState("");
   const showToast = useToast();
+  const askConfirm = useConfirm();
   const showErr = (msg: string) => { setError(msg); if (msg) showToast(msg, "error"); };
   const [invoiceTxn,setInvoiceTxn]   = useState<string|null>(null);
   const [reportCarId,setReportCarId] = useState<string|null>(null);
@@ -83,7 +85,7 @@ export default function SalesPage() {
   };
 
   const handleRevert=async(txId:string)=>{
-    if(!confirm("Revert to previous values?"))return;
+    if(!(await askConfirm({message:"Revert to previous values?",danger:true})))return;
     try{await api.post(`/api/v1/inventory/sales/${txId}/revert`);fetchSales();}
     catch(err:any){showErr(err.response?.data?.detail||"Failed");}
   };

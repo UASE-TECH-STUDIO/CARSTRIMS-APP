@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { useToast } from "@/store/toastStore";
+import { useConfirm } from "@/store/confirmStore";
 
 const STREAM_TYPES = ["rtsp", "hls", "ip", "nvr", "cloud"];
 
@@ -25,6 +26,7 @@ const emptyForm = {
 
 export default function CCTVPage() {
   const showToast = useToast();
+  const askConfirm = useConfirm();
   const [cameras, setCameras] = useState<Camera[]>([]);
   const [stats, setStats] = useState({ total: 0, online: 0, offline: 0 });
   const [loading, setLoading] = useState(true);
@@ -63,7 +65,7 @@ export default function CCTVPage() {
   };
 
   const handleDelete = async (cameraId: string) => {
-    if (!confirm("Remove this camera?")) return;
+    if (!(await askConfirm({ message: "Remove this camera?", danger: true }))) return;
     try {
       await api.delete(`/api/v1/cctv/${cameraId}`);
       if (activeCamera?.cameraId === cameraId) setActiveCamera(null);
