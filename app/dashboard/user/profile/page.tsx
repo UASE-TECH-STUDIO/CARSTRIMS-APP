@@ -1,6 +1,7 @@
 "use client";
 
 import NotificationSettings from "@/components/ui/NotificationSettings";
+import CustomSelect from "@/components/ui/CustomSelect";
 import PasswordInput from "@/components/ui/PasswordInput";
 import { useEffect, useRef, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
@@ -190,10 +191,7 @@ export default function UserProfilePage() {
               <div><label style={fl}>City</label><input style={fi} value={form.city} onChange={e=>setForm({...form,city:e.target.value})}/></div>
               <div>
                 <label style={fl}>State</label>
-                <select style={{...fi,cursor:"pointer"}} value={form.state} onChange={e=>setForm({...form,state:e.target.value})}>
-                  <option value="">Select state...</option>
-                  {NIGERIAN_STATES.map(s=><option key={s} value={s}>{s}</option>)}
-                </select>
+                <CustomSelect value={form.state} onChange={(v)=>setForm({...form,state:v})} placeholder="Select state..." options={NIGERIAN_STATES.map(s=>({value:s,label:s}))} />
               </div>
             </div>
             <div><label style={fl}>Bio / About Me</label><textarea style={{...fi,minHeight:"90px",resize:"vertical" as const}} rows={3} value={form.bio} onChange={e=>setForm({...form,bio:e.target.value})} placeholder="Tell us a bit about yourself..."/></div>

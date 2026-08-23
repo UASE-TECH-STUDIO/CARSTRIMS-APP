@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import Link from "next/link";
+import CustomSelect from "@/components/ui/CustomSelect";
 import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 
 const ROLE_C: Record<string,string> = {DEALER_ADMIN:"#F47B20",DEALER_STAFF:"#D97706",PARTNER_USER:"#7B68EE",SYSTEM_ADMIN:"#DC2626",PUBLIC_USER:"#16A34A"};
@@ -214,10 +215,8 @@ export default function SuperAdminUserDetail() {
       <div style={{minWidth:"160px",fontSize:"0.72rem",color:"#A3A3A3",fontWeight:700,textTransform:"uppercase" as const,letterSpacing:"0.05em"}}>{label}</div>
       {editing ? (
         options ? (
-          <select value={editForm[field]||""} onChange={e=>setEditForm((f:any)=>({...f,[field]:e.target.value}))}
-            style={{flex:1,background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"6px",padding:"0.4rem 0.625rem",fontSize:"0.875rem",fontFamily:"var(--font-body)",outline:"none"}}>
-            {options.map(o=><option key={o} value={o}>{o.replace(/_/g," ")}</option>)}
-          </select>
+          <CustomSelect value={editForm[field]||""} onChange={(v)=>setEditForm((f:any)=>({...f,[field]:v}))}
+            options={options.map((o:string)=>({value:o,label:o.replace(/_/g," ")}))} />
         ) : (
           <input type={type} value={editForm[field]||""} onChange={e=>setEditForm((f:any)=>({...f,[field]:e.target.value}))}
             style={{flex:1,background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"6px",padding:"0.4rem 0.625rem",fontSize:"0.875rem",fontFamily:"var(--font-body)",outline:"none"}}
