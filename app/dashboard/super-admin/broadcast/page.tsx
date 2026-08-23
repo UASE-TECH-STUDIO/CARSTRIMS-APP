@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
 import { rowsToExcelBlob, downloadBlob } from "@/lib/documentExport";
+import { parseServerDate } from "@/lib/timeUtils";
 
 const ROLE_OPTIONS = [
   { value:"all",          label:"All Users",       icon:"" },
@@ -97,7 +98,7 @@ export default function BroadcastPage() {
     finally { setSending(false); }
   };
 
-  const fmtDate = (iso: string) => { try { return new Date(iso).toLocaleString("en-NG"); } catch { return "-"; } };
+  const fmtDate = (iso: string) => { try { return parseServerDate(iso)?.toLocaleString("en-NG")||"-"; } catch { return "-"; } };
 
   const [exportBusy, setExportBusy] = useState(false);
   const handleExport = async () => {

@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import api from "@/lib/api";
 import { useConfirm } from "@/store/confirmStore";
+import { parseServerDate } from "@/lib/timeUtils";
 
 function PreviewModal({ src, type, onClose }: { src:string; type:"image"|"pdf"; onClose:()=>void }) {
   return (
@@ -115,7 +116,7 @@ export default function ApprovalsPage() {
     finally { setUploading(null); }
   };
 
-  const fmtDate = (iso:string) => { try { return new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}); } catch { return "-"; } };
+  const fmtDate = (iso:string) => { try { return parseServerDate(iso)?.toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"})||"-"; } catch { return "-"; } };
 
   // Document display with upload-if-missing
   const DocSlot = ({ url, label, docType, dealerId, isPdf=false }: { url?:string; label:string; docType:string; dealerId:string; isPdf?:boolean }) => {
