@@ -7,6 +7,7 @@ import CustomSelect from "@/components/ui/CustomSelect";
 import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
 import { useConfirm } from "@/store/confirmStore";
+import { parseServerDate } from "@/lib/timeUtils";
 
 const SC: Record<string,{bg:string;color:string;label:string}> = {
   pending:           {bg:"#FFF7ED",  color:"#D97706", label:"Pending"},
@@ -186,7 +187,7 @@ export default function UserRequestsPage() {
     finally { setAborting(false); }
   };
 
-  const fmtDate = (iso:any) => iso?new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}):"";
+  const fmtDate = (iso:any) => iso?(parseServerDate(iso)?.toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"})||""):"";
   const showToast = useToast();
   const askConfirm = useConfirm();
   const [exportBusy, setExportBusy] = useState<""|"pdf"|"jpg"|"excel">("");
@@ -450,7 +451,7 @@ export default function UserRequestsPage() {
                             <div style={{width:"26px",height:"26px",borderRadius:"50%",background:i===0?"#F47B20":"#E5E5E5",color:i===0?"#fff":"#888",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.6rem",fontWeight:700,flexShrink:0}}>{i===0?"NEW":i+1}</div>
                             <div style={{flex:1}}>
                               <div style={{fontWeight:700,fontSize:"0.85rem",color:"#1A1A1A"}}>{m.title}</div>
-                              <div style={{fontSize:"0.7rem",color:"#A3A3A3",marginBottom:"0.25rem"}}>{m.addedAt?new Date(m.addedAt).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}):""}</div>
+                              <div style={{fontSize:"0.7rem",color:"#A3A3A3",marginBottom:"0.25rem"}}>{m.addedAt?(parseServerDate(m.addedAt)?.toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"})||""):""}</div>
                               {m.description&&<p style={{fontSize:"0.8rem",color:"#525252",margin:"0 0 0.375rem",lineHeight:1.5}}>{m.description}</p>}
                               {m.evidence?.length>0&&(
                                 <div style={{display:"flex",gap:"0.375rem",flexWrap:"wrap"}}>
