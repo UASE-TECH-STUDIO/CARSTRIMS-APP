@@ -5,6 +5,7 @@ import CapacitorPush from "@/components/shared/CapacitorPush";
 import DailyGreeting from "@/components/shared/DailyGreeting";
 import ToastContainer from "@/components/ui/ToastContainer";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import PromptDialog from "@/components/ui/PromptDialog";
 import BackButtonHandler from "@/components/shared/BackButtonHandler";
 import EdgeSwipeNavigation from "@/components/shared/EdgeSwipeNavigation";
 
@@ -167,6 +168,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <DailyGreeting />
         <ToastContainer />
         <ConfirmDialog />
+        <PromptDialog />
         <BackButtonHandler />
         <EdgeSwipeNavigation>
           {children}
