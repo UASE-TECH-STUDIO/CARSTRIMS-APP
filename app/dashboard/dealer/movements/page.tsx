@@ -4,6 +4,7 @@ import api from "@/lib/api";
 import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, downloadBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
 import CustomSelect from "@/components/ui/CustomSelect";
+import { parseServerDate } from "@/lib/timeUtils";
 
 const PURPOSES   = ["test_drive","inspection","repair","delivery","personal_use","showroom","other"];
 const ID_TYPES   = ["NIN","BVN","Driver's License","International Passport","Voter's Card","Other"];
@@ -165,7 +166,7 @@ export default function MovementsPage() {
   };
 
   const fmtDate = (iso: any) => iso
-    ? new Date(iso).toLocaleString("en-NG", { day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" })
+    ? (parseServerDate(iso)?.toLocaleString("en-NG", { day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" })||"")
     : "";
 
   const showToast = useToast();

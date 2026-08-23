@@ -5,6 +5,7 @@ import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { useToast } from "@/store/toastStore";
 import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob } from "@/lib/documentExport";
+import { parseServerDate } from "@/lib/timeUtils";
 
 // "Still attending to" = awaiting further action from either side.
 // "Attended to" = resolved one way or another. Matches an explicit
@@ -169,7 +170,7 @@ export default function DealerRequestsPage() {
   };
 
   const fmt     = (n:number)   => `NGN ${(n||0).toLocaleString()}`;
-  const fmtDate = (iso:any)    => !iso ? "" : new Date(iso).toLocaleString("en-NG",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
+  const fmtDate = (iso:any)    => !iso ? "" : (parseServerDate(iso)?.toLocaleString("en-NG",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})||"");
 
   const filtered     = filter === "all" ? requests : requests.filter(r => r.status === filter);
   const pending      = requests.filter(r => r.status === "pending").length;
