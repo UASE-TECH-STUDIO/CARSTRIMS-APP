@@ -5,6 +5,7 @@ import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, 
 import { useToast } from "@/store/toastStore";
 import { useConfirm } from "@/store/confirmStore";
 import CustomSelect from "@/components/ui/CustomSelect";
+import { parseServerDate } from "@/lib/timeUtils";
 
 const APT_TYPES = ["showroom_visit","test_drive","inspection","payment_meeting"];
 const STATUS_COLORS: Record<string,string> = {
@@ -95,9 +96,9 @@ export default function UserAppointmentsPage() {
     finally { setSubmitting(false); }
   };
 
-  const fmt = (iso: string) => iso ? new Date(iso).toLocaleString("en-NG", {
+  const fmt = (iso: string) => iso ? (parseServerDate(iso)?.toLocaleString("en-NG", {
     weekday:"short", year:"numeric", month:"short", day:"numeric", hour:"2-digit", minute:"2-digit"
-  }) : "";
+  })||"") : "";
 
   const showToast = useToast();
   const askConfirm = useConfirm();
