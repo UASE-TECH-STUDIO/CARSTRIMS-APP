@@ -5,6 +5,7 @@ import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { useToast } from "@/store/toastStore";
 import { useConfirm } from "@/store/confirmStore";
+import { parseServerDate } from "@/lib/timeUtils";
 import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, downloadBlob } from "@/lib/documentExport";
 
 const CATEGORIES = [
@@ -114,7 +115,7 @@ export default function ExpensesPage() {
     const rows = [
       ["Date","Vehicle ID","Category","Amount","Description"],
       ...expenses.map(e => [
-        e.createdAt ? new Date(e.createdAt).toLocaleDateString() : "",
+        e.createdAt ? (parseServerDate(e.createdAt)?.toLocaleDateString()||"") : "",
         e.carId || "", e.category, e.amount, e.description || "",
       ]),
     ];
@@ -178,7 +179,7 @@ export default function ExpensesPage() {
 
 
   const fmt = (n: number) => `NGN ${(n || 0).toLocaleString()}`;
-  const fmtDate = (iso: string) => iso ? new Date(iso).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" }) : "-";
+  const fmtDate = (iso: string) => iso ? (parseServerDate(iso)?.toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })||"-") : "-";
 
   const CarSearch = ({ value, onChange, onSelect, placeholder }: { value:string; onChange:(v:string)=>void; onSelect:(c:any)=>void; placeholder?:string }) => (
     <div style={{position:"relative"}}>
