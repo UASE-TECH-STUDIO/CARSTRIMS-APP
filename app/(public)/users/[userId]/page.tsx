@@ -5,8 +5,10 @@ import api from "@/lib/api";
 import Link from "next/link";
 import { useAuthStore, getRoleRedirect } from "@/store/authStore";
 import { useMessagesStore } from "@/store/messagesStore";
+import { useToast } from "@/store/toastStore";
 
 export default function PublicUserProfilePage() {
+  const showToast = useToast();
   const params  = useParams();
   const router  = useRouter();
   const { user: me, isAuthenticated } = useAuthStore();
@@ -40,7 +42,7 @@ export default function PublicUserProfilePage() {
         const base = getRoleRedirect(me?.role||"");
         router.push(`${base}/messages?conv=${convId}`);
       }
-    } catch(e:any) { alert(e.response?.data?.detail || "Could not open chat."); }
+    } catch(e:any) { showToast(e.response?.data?.detail || "Could not open chat.", "error"); }
     finally { setStartingMsg(false); }
   };
 

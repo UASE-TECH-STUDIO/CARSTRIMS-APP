@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
 import FollowButton from "@/components/ui/FollowButton";
 import { useMessagesStore } from "@/store/messagesStore";
+import { useToast } from "@/store/toastStore";
 
 const STATUS_C: Record<string,string> = {
   available:"#16A34A", sold:"#888", reserved:"#D97706", on_promotion:"#7C3AED"
@@ -22,6 +23,7 @@ function getMsgPath(role?: string) {
 }
 
 export default function DealerProfilePage() {
+  const showToast = useToast();
   const params   = useParams();
   const router   = useRouter();
   const dealerId = params?.dealerId as string;
@@ -60,7 +62,7 @@ export default function DealerProfilePage() {
   const handleMessage = async () => {
     if (!isAuthenticated) { router.push("/login"); return; }
     const rid = dealer?.userId || dealer?.ownerUserId;
-    if (!rid) { alert("Cannot start chat with this dealer."); return; }
+    if (!rid) { showToast("Cannot start chat with this dealer.", "error"); return; }
     setStartMsg(true);
     try {
       const r = await api.post("/api/v1/messages/start", { receiverId: rid });
@@ -71,7 +73,7 @@ export default function DealerProfilePage() {
         const msgPath = getMsgPath(user?.role);
         router.push(`${msgPath}?conv=${convId}`);
       }
-    } catch(e:any) { alert(e.response?.data?.detail || "Could not start chat."); }
+    } catch(e:any) { showToast(e.response?.data?.detail || "Could not start chat.", "error"); }
     finally { setStartMsg(false); }
   };
 
