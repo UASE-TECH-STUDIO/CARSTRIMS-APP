@@ -4,10 +4,12 @@ import { useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
 import { timeAgoShort } from "@/lib/timeUtils";
+import { useToast } from "@/store/toastStore";
 
 // Consistent message system  same engine as MessagesWidget used by all other roles
 export default function UserMessagesPage() {
   const { user } = useAuthStore();
+  const showToast = useToast();
   const uid = user?.userId;
   const searchParams = useSearchParams();
   const targetConvId = searchParams?.get("conv");
@@ -121,7 +123,7 @@ export default function UserMessagesPage() {
       const freshRes = await api.get("/api/v1/messages/conversations");
       const found = (freshRes.data||[]).find((c:any)=>c.conversationId===res.data?.conversationId);
       if (found) openConv(found);
-    } catch(err:any){alert(err.response?.data?.detail||"Failed");}
+    } catch(err:any){showToast(err.response?.data?.detail||"Failed", "error");}
   };
 
   const fmtTime=(iso:string)=>timeAgoShort(iso);

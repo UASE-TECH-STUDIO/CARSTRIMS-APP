@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
+import { useToast } from "@/store/toastStore";
 
 const ROLES = ["all","DEALER_ADMIN","DEALER_STAFF","PARTNER_USER","PUBLIC_USER","SYSTEM_ADMIN"];
 const ROLE_COLORS: Record<string,string> = {
@@ -21,6 +22,7 @@ const genPassword = () => {
 };
 
 export default function AdminUsersPage() {
+  const showToast = useToast();
   const [users, setUsers] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -114,7 +116,7 @@ export default function AdminUsersPage() {
             <p style={{fontSize:"0.875rem",color:"#737373"}}>New password for <strong>{resetResult.user.fullName}</strong>:</p>
             <div style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",borderRadius:"8px",padding:"1rem",display:"flex",alignItems:"center",justifyContent:"space-between",gap:"1rem"}}>
               <code style={{fontFamily:"monospace",fontSize:"1.1rem",color:"#1A1A1A",letterSpacing:"0.08em"}}>{resetResult.password}</code>
-              <button onClick={()=>{navigator.clipboard.writeText(resetResult.password);alert("Copied!");}} style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"6px",padding:"0.4rem 0.875rem",fontSize:"0.75rem",cursor:"pointer",whiteSpace:"nowrap"}}>Copy</button>
+              <button onClick={()=>{navigator.clipboard.writeText(resetResult.password).then(()=>showToast("Copied!","success")).catch(()=>showToast("Couldn't copy","error"));}} style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"6px",padding:"0.4rem 0.875rem",fontSize:"0.75rem",cursor:"pointer",whiteSpace:"nowrap"}}>Copy</button>
             </div>
             <p style={{fontSize:"0.78rem",color:"#737373",lineHeight:1.5}}>Share this with the user. They should change it after logging in. A notification has been sent to them.</p>
             <button onClick={()=>setResetResult(null)} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.75rem",fontSize:"0.875rem",cursor:"pointer"}}>Done</button>
