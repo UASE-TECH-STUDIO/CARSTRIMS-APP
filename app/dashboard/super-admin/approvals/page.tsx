@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import api from "@/lib/api";
+import { useConfirm } from "@/store/confirmStore";
 
 function PreviewModal({ src, type, onClose }: { src:string; type:"image"|"pdf"; onClose:()=>void }) {
   return (
@@ -17,6 +18,7 @@ function PreviewModal({ src, type, onClose }: { src:string; type:"image"|"pdf"; 
 }
 
 export default function ApprovalsPage() {
+  const askConfirm = useConfirm();
   const [dealers, setDealers] = useState<any[]>([]);
   const [noProfile, setNoProfile] = useState<any[]>([]);
   const [loading, setLoading]   = useState(true);
@@ -102,6 +104,17 @@ export default function ApprovalsPage() {
     finally { setUploading(null); }
   };
 
+  const handleDocRemove = async (dealerId: string, docType: string, label: string) => {
+    if (!(await askConfirm({ message: `Remove ${label}? You'll be able to upload a replacement right after.`, danger: true }))) return;
+    setUploading(`${dealerId}-${docType}`);
+    try {
+      await api.delete(`/api/v1/admin/dealers/${dealerId}/remove-doc?doc_type=${docType}`);
+      showMsg(`${label} removed`);
+      load();
+    } catch(err:any) { showMsg(`Remove failed: ${err.response?.data?.detail||"Error"}`,"error"); }
+    finally { setUploading(null); }
+  };
+
   const fmtDate = (iso:string) => { try { return new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}); } catch { return "-"; } };
 
   // Document display with upload-if-missing
@@ -127,6 +140,8 @@ export default function ApprovalsPage() {
               </div>
             )}
             <div style={{position:"absolute",top:"-6px",right:"-6px",background:"#16A34A",borderRadius:"50%",width:"18px",height:"18px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.6rem",color:"#fff",fontWeight:700}}></div>
+            <button onClick={(e)=>{e.stopPropagation();handleDocRemove(dealerId,docType,label);}} title={`Remove ${label}`}
+              style={{position:"absolute",top:"-6px",left:"-6px",background:"#DC2626",border:"2px solid #fff",borderRadius:"50%",width:"20px",height:"20px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.7rem",color:"#fff",cursor:"pointer",padding:0,lineHeight:1}}>×</button>
           </div>
         ) : (
           <label style={{width:"90px",height:"72px",border:"2px dashed #E5E5E5",borderRadius:"8px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",background:"#FAFAFA",gap:"0.25rem",transition:"border-color 0.2s"}}
