@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import api from "@/lib/api";
 import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
+import { useToast } from "@/store/toastStore";
 
 interface DealerStats {
   totalCars:number; availableCars:number; soldCars:number;
@@ -49,6 +50,7 @@ function getLinkForActivity(n: any): string {
 
 export default function DealerOverviewPage() {
   const { user } = useAuthStore();
+  const showToast = useToast();
   const [stats, setStats]   = useState<DealerStats|null>(null);
   const [dealer, setDealer] = useState<any>(null);
   const [activity, setActivity] = useState<any[]>([]);
@@ -91,7 +93,7 @@ export default function DealerOverviewPage() {
       const fd = new FormData(); fd.append("file", file);
       const res = await api.post("/api/v1/upload/dealer/logo", fd, {headers:{"Content-Type":"multipart/form-data"}});
       setDealer((d:any)=>({...d, logo:res.data.logo||res.data.url}));
-    } catch(e:any){ alert(e.response?.data?.detail||"Upload failed"); }
+    } catch(e:any){ showToast(e.response?.data?.detail||"Upload failed", "error"); }
     finally { setLogoUploading(false); if(logoRef.current) logoRef.current.value=""; }
   };
 

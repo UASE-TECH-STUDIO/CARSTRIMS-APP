@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import CustomSelect from "@/components/ui/CustomSelect";
+import { useToast } from "@/store/toastStore";
 
 const STREAM_TYPES = ["rtsp", "hls", "ip", "nvr", "cloud"];
 
@@ -23,6 +24,7 @@ const emptyForm = {
 };
 
 export default function CCTVPage() {
+  const showToast = useToast();
   const [cameras, setCameras] = useState<Camera[]>([]);
   const [stats, setStats] = useState({ total: 0, online: 0, offline: 0 });
   const [loading, setLoading] = useState(true);
@@ -66,7 +68,7 @@ export default function CCTVPage() {
       await api.delete(`/api/v1/cctv/${cameraId}`);
       if (activeCamera?.cameraId === cameraId) setActiveCamera(null);
       fetchCameras();
-    } catch (err: any) { alert(err.response?.data?.detail || "Failed"); }
+    } catch (err: any) { showToast(err.response?.data?.detail || "Failed", "error"); }
   };
 
   const handlePing = async (cameraId: string) => {
