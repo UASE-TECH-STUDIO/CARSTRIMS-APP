@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import Link from "next/link";
+import { useConfirm } from "@/store/confirmStore";
 
 function PreviewModal({ src, type, onClose }: { src:string; type:"image"|"pdf"; onClose:()=>void }) {
   return (
@@ -16,6 +17,7 @@ function PreviewModal({ src, type, onClose }: { src:string; type:"image"|"pdf"; 
 }
 
 export default function AdminDealerDetailPage() {
+  const askConfirm = useConfirm();
   const params   = useParams();
   const router   = useRouter();
   const dealerId = params?.dealerId as string;
@@ -50,6 +52,16 @@ export default function AdminDealerDetailPage() {
     finally { setUploading(null); }
   };
 
+  const handleDocRemove = async (docType: string, label: string) => {
+    if (!(await askConfirm({ message: `Remove ${label}? You'll be able to upload a replacement right after.`, danger: true }))) return;
+    setUploading(docType);
+    try {
+      await api.delete(`/api/v1/admin/dealers/${dealerId}/remove-doc?doc_type=${docType}`);
+      showMsg(`${label} removed`); load();
+    } catch (e: any) { showMsg(`Remove failed: ${e.response?.data?.detail||"Error"}`, "error"); }
+    finally { setUploading(null); }
+  };
+
   const handleAction = async (action: string, note?: string) => {
     setActionLoading(true);
     try {
@@ -77,6 +89,8 @@ export default function AdminDealerDetailPage() {
               <img src={url} alt="" onClick={()=>setPreview({src:url,type:"image"})} style={{width:"90px",height:"72px",objectFit:"cover",borderRadius:"8px",border:"2px solid #86EFAC",cursor:"zoom-in"}}/>
             )}
             <div style={{position:"absolute",top:"-6px",right:"-6px",background:"#16A34A",borderRadius:"50%",width:"18px",height:"18px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.6rem",color:"#fff"}}></div>
+            <button onClick={(e)=>{e.stopPropagation();handleDocRemove(docType,label);}} title={`Remove ${label}`}
+              style={{position:"absolute",top:"-6px",left:"-6px",background:"#DC2626",border:"2px solid #fff",borderRadius:"50%",width:"20px",height:"20px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.7rem",color:"#fff",cursor:"pointer",padding:0,lineHeight:1}}>×</button>
           </div>
         ) : (
           <label style={{width:"90px",height:"72px",border:"2px dashed #E5E5E5",borderRadius:"8px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",background:"#FAFAFA",gap:"0.25rem"}}
@@ -99,8 +113,12 @@ export default function AdminDealerDetailPage() {
       <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.5rem"}}>
         {isUpl ? <div style={{width:"80px",height:"80px",borderRadius:"50%",border:"2.5px dashed #F47B20",display:"flex",alignItems:"center",justifyContent:"center",background:"#FFF7ED"}}><div style={{width:"18px",height:"18px",border:"2px solid #E5E5E5",borderTopColor:"#F47B20",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/></div>
         : url ? (
-          <div onClick={()=>setPreview({src:url,type:"image"})} style={{width:"80px",height:"80px",borderRadius:"50%",overflow:"hidden",border:"2.5px solid #F47B20",cursor:"zoom-in"}}>
-            <img src={url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+          <div style={{position:"relative"}}>
+            <div onClick={()=>setPreview({src:url,type:"image"})} style={{width:"80px",height:"80px",borderRadius:"50%",overflow:"hidden",border:"2.5px solid #F47B20",cursor:"zoom-in"}}>
+              <img src={url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+            </div>
+            <button onClick={(e)=>{e.stopPropagation();handleDocRemove("passport","Passport Photo");}} title="Remove Passport Photo"
+              style={{position:"absolute",top:"-4px",left:"-4px",background:"#DC2626",border:"2px solid #fff",borderRadius:"50%",width:"20px",height:"20px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.7rem",color:"#fff",cursor:"pointer",padding:0,lineHeight:1}}>×</button>
           </div>
         ) : (
           <label style={{width:"80px",height:"80px",borderRadius:"50%",border:"2.5px dashed #E5E5E5",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",background:"#FAFAFA",gap:"0.2rem"}}
