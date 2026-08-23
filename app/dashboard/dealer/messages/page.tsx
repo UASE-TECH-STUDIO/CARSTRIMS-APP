@@ -40,6 +40,7 @@ export default function MessagesPage() {
   }, []);
 
   useEffect(() => { loadConvs(); const t = setInterval(loadConvs, 10000); return () => clearInterval(t); }, [loadConvs]);
+  useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
 
   useEffect(() => {
     api.get("/api/v1/messages/my-team").then(r => setMyTeam(r.data || [])).catch(() => {});

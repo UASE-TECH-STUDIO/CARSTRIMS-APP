@@ -133,6 +133,7 @@ function ConvPanel({mode,canReply,dealerName}:{mode:"dealer"|"mine";canReply:boo
 
   useEffect(()=>{loadConvs();const t=setInterval(loadConvs,15000);return()=>clearInterval(t);},[loadConvs]);
   useEffect(()=>{api.get("/api/v1/messages/my-team").then(r=>setTeam(r.data||[])).catch(()=>{});},[]);
+  useEffect(()=>()=>{if(pollRef.current) clearInterval(pollRef.current);},[]);
 
   useEffect(()=>{
     if(uSearch.length<2){setUR([]);return;}
