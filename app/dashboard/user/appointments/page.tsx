@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
+import CustomSelect from "@/components/ui/CustomSelect";
 
 const APT_TYPES = ["showroom_visit","test_drive","inspection","payment_meeting"];
 const STATUS_COLORS: Record<string,string> = {
@@ -234,9 +235,7 @@ export default function UserAppointmentsPage() {
                 )}
               </div>
               <div className="field"><label className="fl">Type</label>
-                <select className="fi" value={form.type} onChange={(e)=>setForm({...form,type:e.target.value})}>
-                  {APT_TYPES.map((t)=><option key={t} value={t}>{t.replace(/_/g," ")}</option>)}
-                </select>
+                <CustomSelect value={form.type} onChange={(v)=>setForm({...form,type:v})} options={APT_TYPES.map((t:string)=>({value:t,label:t.replace(/_/g," ")}))} />
               </div>
               <div className="field"><label className="fl">Date & Time</label><input type="datetime-local" className="fi" value={form.scheduledAt} onChange={(e)=>setForm({...form,scheduledAt:e.target.value})} /></div>
               <div className="field"><label className="fl">Notes</label><textarea className="fi fi-ta" rows={3} value={form.notes} onChange={(e)=>setForm({...form,notes:e.target.value})} placeholder="Any special notes..." /></div>

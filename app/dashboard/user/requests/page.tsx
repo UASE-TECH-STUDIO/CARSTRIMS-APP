@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
+import CustomSelect from "@/components/ui/CustomSelect";
 import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
 
@@ -522,9 +523,7 @@ export default function UserRequestsPage() {
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0.875rem"}}>
                       <div>
                         <label style={lbl}>Brand *</label>
-                        <select style={fi} value={form.carBrand} onChange={e=>setField("carBrand",e.target.value)}>
-                          {BRANDS.map(b=><option key={b}>{b}</option>)}
-                        </select>
+                        <CustomSelect value={form.carBrand} onChange={(v)=>setField("carBrand",v)} options={BRANDS.map((b:string)=>({value:b,label:b}))} />
                       </div>
                       <div>
                         <label style={lbl}>Model *</label>
@@ -567,21 +566,15 @@ export default function UserRequestsPage() {
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"0.625rem"}}>
                       <div>
                         <label style={lbl}>Condition</label>
-                        <select style={fi} value={form.condition} onChange={e=>setField("condition",e.target.value)}>
-                          {CONDS.map(c=><option key={c} value={c}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}
-                        </select>
+                        <CustomSelect value={form.condition} onChange={(v)=>setField("condition",v)} options={CONDS.map((c:string)=>({value:c,label:c.charAt(0).toUpperCase()+c.slice(1)}))} />
                       </div>
                       <div>
                         <label style={lbl}>Gearbox</label>
-                        <select style={fi} value={form.transmission} onChange={e=>setField("transmission",e.target.value)}>
-                          {TRANS.map(t=><option key={t} value={t}>{t.toUpperCase()}</option>)}
-                        </select>
+                        <CustomSelect value={form.transmission} onChange={(v)=>setField("transmission",v)} options={TRANS.map((t:string)=>({value:t,label:t.toUpperCase()}))} />
                       </div>
                       <div>
                         <label style={lbl}>Fuel</label>
-                        <select style={fi} value={form.fuelType} onChange={e=>setField("fuelType",e.target.value)}>
-                          {FUELS.map(f=><option key={f} value={f}>{f.charAt(0).toUpperCase()+f.slice(1)}</option>)}
-                        </select>
+                        <CustomSelect value={form.fuelType} onChange={(v)=>setField("fuelType",v)} options={FUELS.map((f:string)=>({value:f,label:f.charAt(0).toUpperCase()+f.slice(1)}))} />
                       </div>
                     </div>
 
@@ -598,9 +591,7 @@ export default function UserRequestsPage() {
                       </div>
                       <div>
                         <label style={lbl}>Payment Type</label>
-                        <select style={fi} value={form.paymentType} onChange={e=>setField("paymentType",e.target.value)}>
-                          {["full","installment","lease"].map(p=><option key={p} value={p}>{p.charAt(0).toUpperCase()+p.slice(1)}</option>)}
-                        </select>
+                        <CustomSelect value={form.paymentType} onChange={(v)=>setField("paymentType",v)} options={["full","installment","lease"].map((p:string)=>({value:p,label:p.charAt(0).toUpperCase()+p.slice(1)}))} />
                       </div>
                     </div>
 
