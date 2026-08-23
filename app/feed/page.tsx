@@ -719,9 +719,15 @@ export default function FeedPage() {
               <Link key={car._id} href={`/cars/${car.carId}`} className="car-card">
                 <div className="car-img-wrap">
                   {car.images?.[0]
-                    ? <img src={car.images[0]} alt="" loading="lazy" />
-                    : <div className="car-ph">No Image</div>
+                    ? <img src={car.images[0]} alt="" loading="lazy"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                          const ph = e.currentTarget.nextElementSibling as HTMLElement | null;
+                          if (ph) ph.style.display = "block";
+                        }} />
+                    : null
                   }
+                  <div className="car-ph" style={{display: car.images?.[0] ? "none" : "block"}}>No Image</div>
                   <div className="car-status-tag" style={{background:STATUS_COLORS[car.status]||"#737373"}}>
                     {car.status.replace(/_/g," ")}
                   </div>
