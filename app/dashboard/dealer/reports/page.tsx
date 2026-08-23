@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import api from "@/lib/api";
 import CarFinancialReport from "@/components/dealer/CarFinancialReport";
 import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+import { useToast } from "@/store/toastStore";
 
 //  Period presets 
 const PERIODS = [
@@ -25,6 +26,7 @@ const REPORT_TYPES = [
 ];
 
 export default function ReportsPage() {
+  const showToast = useToast();
   const [data, setData]       = useState<any>(null);
   const [dealer, setDealer]   = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -307,7 +309,7 @@ export default function ReportsPage() {
       const html = buildReportHtml();
       const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Financial Report");
       await downloadBlob(blob, `${reportExportFilename()}.${format}`);
-    } catch (e: any) { alert(e?.message || "Export failed"); }
+    } catch (e: any) { showToast(e?.message || "Export failed", "error"); }
     finally { setExportBusy(""); }
   };
 
@@ -317,7 +319,7 @@ export default function ReportsPage() {
       const html = buildReportHtml();
       const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Financial Report");
       await shareBlob(blob, `${reportExportFilename()}.${format}`, "Financial Report");
-    } catch (e: any) { alert(e?.message || "Share failed"); }
+    } catch (e: any) { showToast(e?.message || "Share failed", "error"); }
     finally { setExportBusy(""); }
   };
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
+import { useToast } from "@/store/toastStore";
 
 const STATUSES = ["all","awaiting_approval","approved","suspended","rejected","deleted"];
 const STATUS_COLORS: Record<string, string> = {
@@ -12,6 +13,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function AdminDealersPage() {
+  const showToast = useToast();
   const searchParams = useSearchParams();
   const [dealers, setDealers] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
@@ -54,7 +56,7 @@ export default function AdminDealersPage() {
       setActionNote("");
       fetchDealers();
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Action failed");
+      showToast(err.response?.data?.detail || "Action failed", "error");
     } finally { setActionLoading(false); }
   };
 
