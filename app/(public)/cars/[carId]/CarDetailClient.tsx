@@ -314,9 +314,15 @@ export default function CarDetailClient() {
             onClick={()=>car.images?.[activeImage]&&setLightboxOpen(true)}
           >
             {car.images?.[0]
-              ? <img src={car.images[activeImage]} alt={`${car.brand} ${car.model}`} />
-              : <div className="cd-no-img"></div>
+              ? <img key={activeImage} src={car.images[activeImage]} alt={`${car.brand} ${car.model}`}
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                    const ph = e.currentTarget.nextElementSibling as HTMLElement | null;
+                    if (ph) ph.style.display = "block";
+                  }} />
+              : null
             }
+            <div className="cd-no-img" style={{display: car.images?.[0] ? "none" : "block"}}></div>
             {car.status !== "available" && (
               <div className={`cd-status-overlay ${car.status}`}>{car.status.replace(/_/g," ").toUpperCase()}</div>
             )}
@@ -336,7 +342,7 @@ export default function CarDetailClient() {
             <div className="cd-thumbs">
               {car.images.map((img: string, i: number) => (
                 <div key={i} className={`cd-thumb ${activeImage===i?"active":""}`} onClick={()=>setActiveImage(i)}>
-                  <img src={img} alt="" />
+                  <img src={img} alt="" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
                 </div>
               ))}
             </div>
