@@ -216,10 +216,36 @@ export default function CarDetailClient() {
     catch(e:any) { showToast(e.response?.data?.detail || "Delete failed", "error"); }
   };
 
-  const handleShare = () => {
+  const handleShare = async () => {
     const url = window.location.href;
-    if (navigator.share) { navigator.share({ title:`${car?.brand} ${car?.model}`, url }); }
-    else { navigator.clipboard.writeText(url); alert("Link copied!"); }
+    const title = `${car?.brand || ""} ${car?.model || ""}`.trim() || "Vehicle";
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, url });
+      } catch (e: any) {
+        // AbortError means the person simply closed the native share
+        // sheet themselves - that's a normal, expected outcome, not
+        // an error to report. Anything else, fall through to copy.
+        if (e?.name === "AbortError") return;
+        await copyLinkFallback(url);
+      }
+      return;
+    }
+
+    await copyLinkFallback(url);
+  };
+
+  const copyLinkFallback = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast("Link copied!", "success");
+    } catch {
+      // Clipboard API can also fail (permissions, insecure context,
+      // older WebView) - never leave the person with no feedback at
+      // all or, worse, a hung UI from an uncaught rejection here.
+      showToast("Couldn't copy the link - try sharing again", "error");
+    }
   };
 
   const fmt = (n: number) => `NGN ${(n||0).toLocaleString()}`;

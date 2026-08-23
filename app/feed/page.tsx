@@ -353,8 +353,18 @@ export default function FeedPage() {
   const handleShare = async (e: React.MouseEvent, car: Car) => {
     e.preventDefault(); e.stopPropagation();
     const url = `${window.location.origin}/cars/${car.carId}`;
-    if (navigator.share) navigator.share({ title:`${car.brand} ${car.model}`, url });
-    else { await navigator.clipboard.writeText(url); alert("Link copied!"); }
+    const title = `${car.brand} ${car.model}`;
+    if (navigator.share) {
+      try { await navigator.share({ title, url }); }
+      catch (err: any) {
+        if (err?.name === "AbortError") return;
+        try { await navigator.clipboard.writeText(url); showToast("Link copied!", "success"); }
+        catch { showToast("Couldn't copy the link", "error"); }
+      }
+      return;
+    }
+    try { await navigator.clipboard.writeText(url); showToast("Link copied!", "success"); }
+    catch { showToast("Couldn't copy the link", "error"); }
   };
 
   const handleAdminDelete = async (e: React.MouseEvent, car: Car) => {
