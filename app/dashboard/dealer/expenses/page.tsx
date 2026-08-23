@@ -4,6 +4,7 @@ import api from "@/lib/api";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { useToast } from "@/store/toastStore";
+import { useConfirm } from "@/store/confirmStore";
 import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, downloadBlob } from "@/lib/documentExport";
 
 const CATEGORIES = [
@@ -32,6 +33,7 @@ export default function ExpensesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError]         = useState("");
   const showToast = useToast();
+  const askConfirm = useConfirm();
   const showErr = (msg: string) => { setError(msg); if (msg) showToast(msg, "error"); };
   const [success, setSuccess]     = useState("");
   // Car search
@@ -103,7 +105,7 @@ export default function ExpensesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this expense?")) return;
+    if (!(await askConfirm({ message: "Delete this expense?", danger: true }))) return;
     try { await api.delete(`/api/v1/inventory/expenses/${id}`); setSuccess("Expense deleted"); fetchExpenses(); }
     catch (err: any) { showErr(err.response?.data?.detail || "Delete failed"); }
   };

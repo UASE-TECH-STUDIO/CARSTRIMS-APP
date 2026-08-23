@@ -4,6 +4,7 @@ import api from "@/lib/api";
 import PasswordInput from "@/components/ui/PasswordInput";
 import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
+import { useConfirm } from "@/store/confirmStore";
 
 const PERM_GROUPS = [
   { group:"Inventory",        color:"#F47B20", perms:[
@@ -97,6 +98,7 @@ export default function DealerStaffPage() {
   const [search,   setSearch]   = useState("");
   const [dealer,   setDealer]   = useState<any>(null);
   const showToast = useToast();
+  const askConfirm = useConfirm();
   const [exportBusy, setExportBusy] = useState<""|"pdf"|"jpg"|"excel">("");
   const [showExportPicker, setShowExportPicker] = useState(false);
   const [idCardBusy, setIdCardBusy] = useState(false);
@@ -291,7 +293,7 @@ export default function DealerStaffPage() {
   };
 
   const toggleSuspend = async (s: any) => {
-    if (!confirm(`${s.status==="active"?"Suspend":"Reactivate"} ${s.fullName}?`)) return;
+    if (!(await askConfirm({ message: `${s.status==="active"?"Suspend":"Reactivate"} ${s.fullName}?`, danger: s.status==="active" }))) return;
     try { await api.post(`/api/v1/staff/${s._id||s.staffId}/toggle-suspend`); load(); }
     catch(e:any) { showToast(e.response?.data?.detail||"Failed", "error"); }
   };
