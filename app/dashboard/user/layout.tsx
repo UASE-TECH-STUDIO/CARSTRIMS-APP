@@ -195,7 +195,7 @@ export default function UserLayout({ children }: { children: ReactNode }) {
 
       <style>{`
         .user-shell{min-height:100vh;background:#F5F5F5;display:flex;flex-direction:column}
-        .user-topbar{height:calc(56px + env(safe-area-inset-top,0px));background:#fff;border-bottom:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+        .user-topbar{height:calc(56px + var(--sat, 0px));background:#fff;border-bottom:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;padding-top:var(--sat, 0px);position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
         .topbar-brand{font-family:var(--font-display);font-size:1.1rem;letter-spacing:0.18em;color:#F47B20;text-decoration:none;flex-shrink:0}
         .topbar-right{display:flex;align-items:center;gap:0.625rem}
         .search-topbar-btn{background:none;border:none;font-size:1.05rem;cursor:pointer;padding:0.25rem;line-height:1;color:#737373}

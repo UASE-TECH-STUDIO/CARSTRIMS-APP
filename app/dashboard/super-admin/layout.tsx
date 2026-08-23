@@ -61,7 +61,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       <style>{`
         .admin-shell{display:flex;min-height:100vh;background:#F5F5F5}
         .admin-main{flex:1;margin-left:240px;display:flex;flex-direction:column;min-height:100vh;min-width:0}
-        .admin-topbar{height:calc(60px + env(safe-area-inset-top,0px));background:#fff;border-bottom:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,0.05);gap:0.75rem}
+        .admin-topbar{height:calc(60px + var(--sat, 0px));background:#fff;border-bottom:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;padding-top:var(--sat, 0px);position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,0.05);gap:0.75rem}
         .tb-left{display:flex;align-items:center;gap:0.75rem}
         .tb-title{font-family:var(--font-display);font-size:1rem;letter-spacing:0.06em;color:#1A1A1A}
         .tb-right{display:flex;align-items:center;gap:0.75rem;flex-shrink:0}

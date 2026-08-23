@@ -242,7 +242,7 @@ export default function GlobalSearchModal({ onClose, role }: Props) {
         .gs-overlay {
           position: fixed; inset: 0; background: rgba(23,23,23,0.55); backdrop-filter: blur(4px);
           z-index: 10000; display: flex; align-items: flex-start; justify-content: center;
-          padding-top: calc(env(safe-area-inset-top, 0px));
+          padding-top: var(--sat, 0px);
         }
         .gs-panel {
           background: #fff; width: 100%; max-width: 640px; max-height: 88vh;

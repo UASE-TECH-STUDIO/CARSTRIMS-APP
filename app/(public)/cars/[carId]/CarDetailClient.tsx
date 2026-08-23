@@ -510,7 +510,7 @@ export default function CarDetailClient() {
 
       <style>{`
         .cd-page{min-height:100vh;background:#F5F5F5;color:#1A1A1A;font-family:var(--font-body);overflow-x:hidden;max-width:100vw}
-        .cd-topbar{display:flex;align-items:center;justify-content:space-between;padding:0.875rem 1.25rem;padding-top:calc(0.875rem + env(safe-area-inset-top,0px));background:#fff;border-bottom:1.5px solid #E5E5E5;position:sticky;top:0;z-index:40;gap:0.5rem}
+        .cd-topbar{display:flex;align-items:center;justify-content:space-between;padding:0.875rem 1.25rem;padding-top:calc(0.875rem + var(--sat, 0px));background:#fff;border-bottom:1.5px solid #E5E5E5;position:sticky;top:0;z-index:40;gap:0.5rem}
         .cd-back{background:none;border:none;color:#525252;font-size:0.95rem;cursor:pointer;font-family:var(--font-body);font-weight:600;padding:0.25rem 0}
         .cd-back:hover{color:#F47B20}
         .cd-topbar-right{display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap}

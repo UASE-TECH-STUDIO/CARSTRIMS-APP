@@ -127,7 +127,7 @@ function DealerShell({ children }: { children: ReactNode }) {
         .dealer-shell{display:flex;min-height:100vh;background:#F5F5F5;position:relative}
         .mobile-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:55;cursor:pointer}
         .shell-main{flex:1;margin-left:240px;display:flex;flex-direction:column;min-height:100vh;min-width:0}
-        .shell-topbar{height:calc(64px + env(safe-area-inset-top,0px));background:#fff;border-bottom:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-between;padding:0 1.75rem;padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,0.06);flex-shrink:0;gap:1rem}
+        .shell-topbar{height:calc(64px + var(--sat, 0px));background:#fff;border-bottom:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-between;padding:0 1.75rem;padding-top:var(--sat, 0px);position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,0.06);flex-shrink:0;gap:1rem}
         .topbar-left{display:flex;align-items:center;gap:0.875rem;min-width:0}
         .hamburger-btn{display:none;flex-direction:column;justify-content:center;gap:5px;background:none;border:none;cursor:pointer;padding:0.4rem;border-radius:6px;flex-shrink:0}
         .hamburger-btn:hover{background:#F5F5F5}
