@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import api from "@/lib/api";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
+import CustomSelect from "@/components/ui/CustomSelect";
 import { useToast } from "@/store/toastStore";
 import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob } from "@/lib/documentExport";
 
@@ -621,9 +622,7 @@ export default function DealerRequestsPage() {
                         <div style={{padding:"1rem",display:"flex",flexDirection:"column",gap:"0.75rem"}}>
                           <div>
                             <label style={lbl}>Stage</label>
-                            <select value={msStage} onChange={e=>setMsStage(e.target.value)} style={inp}>
-                              {STAGES.map(s=><option key={s.id} value={s.id}>{s.label}</option>)}
-                            </select>
+                            <CustomSelect value={msStage} onChange={setMsStage} options={STAGES.map((s:any)=>({value:s.id,label:s.label}))} />
                           </div>
                           <div>
                             <label style={lbl}>Title *</label>
