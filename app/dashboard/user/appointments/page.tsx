@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
+import { useConfirm } from "@/store/confirmStore";
 import CustomSelect from "@/components/ui/CustomSelect";
 
 const APT_TYPES = ["showroom_visit","test_drive","inspection","payment_meeting"];
@@ -36,7 +37,7 @@ export default function UserAppointmentsPage() {
   useEffect(() => { load(); }, []);
 
   const cancelAppt = async (aptId: string) => {
-    if (!confirm("Cancel this appointment?")) return;
+    if (!(await askConfirm({ message: "Cancel this appointment?", danger: true }))) return;
     setActioning(true);
     try {
       await api.post(`/api/v1/dealers/appointments/${aptId}/cancel`);
@@ -99,6 +100,7 @@ export default function UserAppointmentsPage() {
   }) : "";
 
   const showToast = useToast();
+  const askConfirm = useConfirm();
   const [exportBusy, setExportBusy] = useState<""|"pdf"|"jpg"|"excel">("");
   const [showExportPicker, setShowExportPicker] = useState(false);
 

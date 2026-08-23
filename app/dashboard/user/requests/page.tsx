@@ -6,6 +6,7 @@ import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
+import { useConfirm } from "@/store/confirmStore";
 
 const SC: Record<string,{bg:string;color:string;label:string}> = {
   pending:           {bg:"#FFF7ED",  color:"#D97706", label:"Pending"},
@@ -187,6 +188,7 @@ export default function UserRequestsPage() {
 
   const fmtDate = (iso:any) => iso?new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}):"";
   const showToast = useToast();
+  const askConfirm = useConfirm();
   const [exportBusy, setExportBusy] = useState<""|"pdf"|"jpg"|"excel">("");
   const [showExportPicker, setShowExportPicker] = useState(false);
 
@@ -435,7 +437,7 @@ export default function UserRequestsPage() {
                         {active.counterOffer.description&&<p style={{fontSize:"0.82rem",color:"#525252",margin:0,lineHeight:1.55}}>{active.counterOffer.description}</p>}
                         <div style={{display:"flex",gap:"0.5rem"}}>
                           <button onClick={()=>doAction(active.requestId||active._id,"accept")} style={{flex:1,background:"#16A34A",color:"#fff",border:"none",borderRadius:"8px",padding:"0.75rem",fontFamily:"var(--font-display)",fontSize:"0.82rem",cursor:"pointer",fontWeight:700}}>Accept Offer</button>
-                          <button onClick={()=>{if(!confirm("Decline this offer?"))return;doAction(active.requestId||active._id,"decline",{reason:"Declined by buyer"});}} style={{flex:1,background:"#FEF2F2",color:"#DC2626",border:"1.5px solid #FECACA",borderRadius:"8px",padding:"0.75rem",fontSize:"0.82rem",cursor:"pointer",fontWeight:600}}>Decline</button>
+                          <button onClick={async ()=>{if(!(await askConfirm({message:"Decline this offer?",danger:true})))return;doAction(active.requestId||active._id,"decline",{reason:"Declined by buyer"});}} style={{flex:1,background:"#FEF2F2",color:"#DC2626",border:"1.5px solid #FECACA",borderRadius:"8px",padding:"0.75rem",fontSize:"0.82rem",cursor:"pointer",fontWeight:600}}>Decline</button>
                         </div>
                       </div>
                     )}
