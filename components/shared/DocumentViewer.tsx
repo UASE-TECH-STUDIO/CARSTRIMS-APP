@@ -4,13 +4,14 @@ import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
+import { parseServerDate } from "@/lib/timeUtils";
 
 interface Props { doc: any; onClose: () => void; }
 
 const fmtN = (n: number) => `NGN ${(n || 0).toLocaleString()}`;
 const fmtD = (iso: any) => {
   if (!iso) return "";
-  try { return new Date(iso).toLocaleDateString("en-NG", { day: "numeric", month: "long", year: "numeric" }); }
+  try { return parseServerDate(iso)?.toLocaleDateString("en-NG", { day: "numeric", month: "long", year: "numeric" }) || ""; }
   catch { return ""; }
 };
 const DOC_TITLES: Record<string, string> = {

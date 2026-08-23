@@ -3,6 +3,7 @@ import { useState, useRef } from "react";
 import api from "@/lib/api";
 import { useToast } from "@/store/toastStore";
 import { renderElementToPdfBlob, downloadBlob } from "@/lib/documentExport";
+import { parseServerDate } from "@/lib/timeUtils";
 
 interface Props {
   transactionId: string;
@@ -24,7 +25,7 @@ export default function ReceiptGenerator({ transactionId, onClose }: Props) {
   });
 
   const fmt = (n: number) => `${(n || 0).toLocaleString()}`;
-  const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("en-NG", { day: "numeric", month: "long", year: "numeric" });
+  const fmtDate = (iso: string) => parseServerDate(iso)?.toLocaleDateString("en-NG", { day: "numeric", month: "long", year: "numeric" }) || "";
 
   const [downloading, setDownloading] = useState(false);
 

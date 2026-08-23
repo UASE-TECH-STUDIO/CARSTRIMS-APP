@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
 import { renderElementToPdfBlob, downloadBlob, shareBlob, rowsToExcelBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
+import { parseServerDate } from "@/lib/timeUtils";
 
 interface Props {
   carId: string;
@@ -22,7 +23,7 @@ export default function CarFinancialReport({ carId, onClose }: Props) {
   }, [carId]);
 
   const fmt = (n: number) => `${(n || 0).toLocaleString()}`;
-  const fmtDate = (iso: string) => iso ? new Date(iso).toLocaleDateString("en-NG", { day:"numeric", month:"short", year:"numeric" }) : "";
+  const fmtDate = (iso: string) => iso ? (parseServerDate(iso)?.toLocaleDateString("en-NG", { day:"numeric", month:"short", year:"numeric" })||"") : "";
 
   const [busy, setBusy] = useState<"" | "pdf" | "excel" | "share">("");
   const [showFormatPicker, setShowFormatPicker] = useState(false);
@@ -117,7 +118,7 @@ export default function CarFinancialReport({ carId, onClose }: Props) {
             </div>
             <div style={{textAlign:"right" as const}}>
               <div style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",color:"#F47B20",fontWeight:700}}>PER-CAR REPORT</div>
-              <div style={{fontSize:"0.72rem",color:"#737373"}}>{data.generatedAt ? new Date(data.generatedAt).toLocaleString("en-NG") : ""}</div>
+              <div style={{fontSize:"0.72rem",color:"#737373"}}>{data.generatedAt ? (parseServerDate(data.generatedAt)?.toLocaleString("en-NG")||"") : ""}</div>
             </div>
           </div>
 
