@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import { useToast } from "@/store/toastStore";
+import { parseServerDate } from "@/lib/timeUtils";
 
 const STATUSES = ["all","awaiting_approval","approved","suspended","rejected","deleted"];
 const STATUS_COLORS: Record<string, string> = {
@@ -60,7 +61,7 @@ export default function AdminDealersPage() {
     } finally { setActionLoading(false); }
   };
 
-  const fmtDate = (iso: string) => iso ? new Date(iso).toLocaleDateString("en-NG") : "";
+  const fmtDate = (iso: string) => iso ? (parseServerDate(iso)?.toLocaleDateString("en-NG")||"") : "";
 
   return (
     <div className="dealers-page">

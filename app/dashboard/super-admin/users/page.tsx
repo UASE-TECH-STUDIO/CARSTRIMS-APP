@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import { useToast } from "@/store/toastStore";
+import { parseServerDate } from "@/lib/timeUtils";
 
 const ROLES = ["all","DEALER_ADMIN","DEALER_STAFF","PARTNER_USER","PUBLIC_USER","SYSTEM_ADMIN"];
 const ROLE_COLORS: Record<string,string> = {
@@ -91,7 +92,7 @@ export default function AdminUsersPage() {
     } finally { setActionLoading(false); }
   };
 
-  const fmtDate = (iso: string) => iso ? new Date(iso).toLocaleDateString("en-NG") : "-";
+  const fmtDate = (iso: string) => iso ? (parseServerDate(iso)?.toLocaleDateString("en-NG")||"") : "-";
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:"1.5rem",fontFamily:"var(--font-body)"}}>

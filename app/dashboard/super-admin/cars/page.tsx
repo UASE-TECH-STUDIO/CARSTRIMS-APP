@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { rowsToExcelBlob, renderHtmlStringToPdfBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
+import { parseServerDate } from "@/lib/timeUtils";
 
 const STATUSES = ["all", "available", "sold", "pending", "unavailable"];
 const STATUS_COLORS: Record<string, string> = {
@@ -14,7 +15,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 function fmtDate(iso: string) {
   if (!iso) return "";
-  return new Date(iso).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" });
+  return parseServerDate(iso)?.toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" }) || "";
 }
 
 export default function AdminCarsPage() {
