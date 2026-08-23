@@ -7,6 +7,7 @@ import CarIdSearch from "@/components/dealer/CarIdSearch";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 import { useToast } from "@/store/toastStore";
 import { useConfirm } from "@/store/confirmStore";
+import { parseServerDate } from "@/lib/timeUtils";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 
@@ -94,7 +95,7 @@ export default function SalesPage() {
   const exportCSV=()=>{
     const rows=[
       ["TXN ID","Vehicle","Brand","Model","Selling Price","Purchase Price","Profit","Buyer","Buyer Phone","Payment","Date","Edited","Manual"],
-      ...sales.map(s=>[s.transactionId,s.carId,s.carBrand||"",s.carModel||"",s.sellingPrice,s.purchasePrice||0,s.profit,s.buyerName||"",s.buyerPhone||"",s.paymentMethod,s.soldAt?new Date(s.soldAt).toLocaleDateString():"",s.isEdited?"Yes":"No",s.isManual?"Yes":"No"]),
+      ...sales.map(s=>[s.transactionId,s.carId,s.carBrand||"",s.carModel||"",s.sellingPrice,s.purchasePrice||0,s.profit,s.buyerName||"",s.buyerPhone||"",s.paymentMethod,s.soldAt?(parseServerDate(s.soldAt)?.toLocaleDateString()||""):"",s.isEdited?"Yes":"No",s.isManual?"Yes":"No"]),
     ];
     const csv=rows.map(r=>r.map(c=>`"${String(c||"").replace(/"/g,'""')}"`).join(",")).join("\n");
     const blob=new Blob([csv],{type:"text/csv"});
@@ -105,7 +106,7 @@ export default function SalesPage() {
   const buildSalesHtml=():string=>{
     if(!summary)return "";
     const fmt=(n:number)=>`${(n||0).toLocaleString()}`;
-    const fmtD=(iso:string)=>iso?new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}):"";
+    const fmtD=(iso:string)=>iso?(parseServerDate(iso)?.toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"})||""):"";
     return `<!DOCTYPE html><html><head><title>Sales Report</title><style>
       *{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;padding:24px;color:#1A1A1A;max-width:960px;margin:0 auto}
       h1{font-size:1.5rem;color:#F47B20;margin:0 0 4px}
@@ -162,7 +163,7 @@ export default function SalesPage() {
   };
 
   const fmt=(n:number)=>`${(n||0).toLocaleString()}`;
-  const fmtDate=(iso:string)=>iso?new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}):"";
+  const fmtDate=(iso:string)=>iso?(parseServerDate(iso)?.toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"})||""):"";
 
   return (
     <>
@@ -353,7 +354,7 @@ export default function SalesPage() {
               {!showHistory.editHistory?.length?<div className="no-history">No edit history</div>
               :showHistory.editHistory?.map((h:any,i:number)=>(
                 <div key={i} className="history-item">
-                  <div className="hi-time">{new Date(h.editedAt).toLocaleString("en-NG")}</div>
+                  <div className="hi-time">{parseServerDate(h.editedAt)?.toLocaleString("en-NG")||""}</div>
                   <div className="hi-reason">Reason: {h.reason}</div>
                   <div className="hi-prev">Previous: {(h.previous?.sellingPrice||0).toLocaleString()}{h.previous?.buyerName?`  ${h.previous.buyerName}`:""}</div>
                 </div>
