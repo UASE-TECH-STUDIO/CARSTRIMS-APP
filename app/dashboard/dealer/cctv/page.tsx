@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
+import CustomSelect from "@/components/ui/CustomSelect";
 
 const STREAM_TYPES = ["rtsp", "hls", "ip", "nvr", "cloud"];
 
@@ -220,12 +221,8 @@ export default function CCTVPage() {
               <div className="form-row">
                 <div className="field">
                   <label className="field-label">Stream Type</label>
-                  <select className="field-input" value={form.streamType}
-                    onChange={(e) => setForm({ ...form, streamType: e.target.value })}>
-                    {STREAM_TYPES.map((t) => (
-                      <option key={t} value={t}>{t.toUpperCase()}</option>
-                    ))}
-                  </select>
+                  <CustomSelect value={form.streamType} onChange={(v)=>setForm({...form,streamType:v})}
+                    options={STREAM_TYPES.map((t:string)=>({value:t,label:t.toUpperCase()}))} />
                 </div>
                 <div className="field">
                   <label className="field-label">Provider (optional)</label>

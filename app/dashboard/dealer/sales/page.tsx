@@ -6,6 +6,7 @@ import CarFinancialReport from "@/components/dealer/CarFinancialReport";
 import CarIdSearch from "@/components/dealer/CarIdSearch";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 import { useToast } from "@/store/toastStore";
+import CustomSelect from "@/components/ui/CustomSelect";
 import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 
 const PAYMENT_COLORS:Record<string,string>={cash:"#16A34A",bank_transfer:"#F47B20",card:"#3B8BD4",installment:"#DC2626"};
@@ -294,10 +295,8 @@ export default function SalesPage() {
               <div className="field"><label className="fl">Buyer Email</label><input type="email" className="fi" value={manualForm.buyerEmail} onChange={e=>setManualForm({...manualForm,buyerEmail:e.target.value})}/></div>
               <div className="field" style={{gridColumn:"1/-1"}}><label className="fl">Buyer Address</label><input className="fi" placeholder="Street, City, State" value={manualForm.buyerAddress||""} onChange={e=>setManualForm({...manualForm,buyerAddress:e.target.value})}/></div>
               <div className="field"><label className="fl">Payment Method</label>
-                <select className="fi" value={manualForm.paymentMethod} onChange={e=>setManualForm({...manualForm,paymentMethod:e.target.value})}>
-                  <option value="cash">Cash</option><option value="bank_transfer">Bank Transfer</option>
-                  <option value="card">Card / POS</option><option value="installment">Installment</option><option value="other">Other</option>
-                </select>
+                <CustomSelect value={manualForm.paymentMethod} onChange={(v)=>setManualForm({...manualForm,paymentMethod:v})}
+                  options={[{value:"cash",label:"Cash"},{value:"bank_transfer",label:"Bank Transfer"},{value:"card",label:"Card / POS"},{value:"installment",label:"Installment"},{value:"other",label:"Other"}]} />
               </div>
               <div className="field"><label className="fl">Notes / Remarks</label><textarea className="fi fi-ta" rows={2} value={manualForm.notes} onChange={e=>setManualForm({...manualForm,notes:e.target.value})}/></div>
               {manualForm.sellingPrice&&manualForm.purchasePrice&&(
@@ -329,9 +328,8 @@ export default function SalesPage() {
                 <div className="field"><label className="fl">Buyer Phone</label><input className="fi" value={editForm.buyerPhone} onChange={e=>setEditForm({...editForm,buyerPhone:e.target.value})}/></div>
               </div>
               <div className="field"><label className="fl">Payment Method</label>
-                <select className="fi" value={editForm.paymentMethod} onChange={e=>setEditForm({...editForm,paymentMethod:e.target.value})}>
-                  <option value="cash">Cash</option><option value="bank_transfer">Bank Transfer</option><option value="card">Card</option><option value="installment">Installment</option>
-                </select>
+                <CustomSelect value={editForm.paymentMethod} onChange={(v)=>setEditForm({...editForm,paymentMethod:v})}
+                  options={[{value:"cash",label:"Cash"},{value:"bank_transfer",label:"Bank Transfer"},{value:"card",label:"Card"},{value:"installment",label:"Installment"},{value:"other",label:"Other"}]} />
               </div>
               <div className="field"><label className="fl">Notes</label><textarea className="fi fi-ta" rows={2} value={editForm.notes} onChange={e=>setEditForm({...editForm,notes:e.target.value})}/></div>
               <div className="field"><label className="fl">Reason for Edit *</label><input className="fi" placeholder="Why are you editing this sale?" value={editForm.editReason} onChange={e=>setEditForm({...editForm,editReason:e.target.value})} required/></div>
