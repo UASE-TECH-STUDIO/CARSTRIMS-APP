@@ -8,6 +8,7 @@ import DocumentViewer from "@/components/shared/DocumentViewer";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { useToast } from "@/store/toastStore";
+import { useConfirm } from "@/store/confirmStore";
 import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import Link from "next/link";
 
@@ -68,6 +69,7 @@ export default function DealerCarsPage() {
   const [saving,setSaving]     = useState(false);
   const [err,setErr]           = useState("");
   const showToast = useToast();
+  const askConfirm = useConfirm();
   // Sets the inline error banner (unchanged, existing behavior) AND fires
   // a floating toast so the error is visible even if the user is scrolled
   // deep into this long form and can't see the top of the modal.
@@ -243,7 +245,7 @@ export default function DealerCarsPage() {
   };
 
   const handleDelete = async(carId:string)=>{
-    if(!confirm("Delete this car permanently?")) return;
+    if(!(await askConfirm({message:"Delete this car permanently?",danger:true}))) return;
     try{await api.delete(`/api/v1/cars/${carId}`);await load();}
     catch(_){showToast("Delete failed.", "error");}
   };
