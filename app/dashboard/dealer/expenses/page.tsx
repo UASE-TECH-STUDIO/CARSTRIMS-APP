@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
+import CustomSelect from "@/components/ui/CustomSelect";
 import { useToast } from "@/store/toastStore";
 import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, downloadBlob } from "@/lib/documentExport";
 
@@ -241,10 +242,9 @@ export default function ExpensesPage() {
 
       {/* Category filter */}
       <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap"}}>
-        <select className="cat-select" value={catFilter} onChange={e=>setCatFilter(e.target.value)}>
-          <option value="all">All Categories</option>
-          {CATEGORIES.map(c=><option key={c} value={c}>{c.replace(/_/g," ")}</option>)}
-        </select>
+        <div style={{minWidth:"180px"}}>
+          <CustomSelect value={catFilter} onChange={setCatFilter} options={[{value:"all",label:"All Categories"},...CATEGORIES.map((c:string)=>({value:c,label:c.replace(/_/g," ")}))]} />
+        </div>
       </div>
 
       {loading?<div className="exp-loading"><div className="spinner"/></div>
@@ -289,9 +289,7 @@ export default function ExpensesPage() {
                 {form.carId&&<div style={{fontSize:"0.7rem",color:"#16A34A",marginTop:"0.2rem",fontWeight:600}}>Linked: {form.carId}</div>}
               </div>
               <div className="field"><label className="fl">Category *</label>
-                <select className="fi" value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>
-                  {CATEGORIES.map(c=><option key={c} value={c}>{c.replace(/_/g," ")}</option>)}
-                </select>
+                <CustomSelect value={form.category} onChange={(v)=>setForm({...form,category:v})} options={CATEGORIES.map((c:string)=>({value:c,label:c.replace(/_/g," ")}))} />
               </div>
               <div className="field"><label className="fl">Amount (NGN) *</label><FormattedNumberInput className="fi" value={form.amount} onChange={(raw)=>setForm({...form,amount:raw})} required/></div>
               <div className="field"><label className="fl">Description</label><textarea className="fi" rows={3} value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder="What was this expense for?" style={{resize:"vertical" as const}}/></div>
@@ -317,9 +315,7 @@ export default function ExpensesPage() {
                 {editForm.carId&&<div style={{fontSize:"0.7rem",color:"#16A34A",marginTop:"0.2rem",fontWeight:600}}>Linked: {editForm.carId}</div>}
               </div>
               <div className="field"><label className="fl">Category *</label>
-                <select className="fi" value={editForm.category} onChange={e=>setEditForm({...editForm,category:e.target.value})}>
-                  {CATEGORIES.map(c=><option key={c} value={c}>{c.replace(/_/g," ")}</option>)}
-                </select>
+                <CustomSelect value={editForm.category} onChange={(v)=>setEditForm({...editForm,category:v})} options={CATEGORIES.map((c:string)=>({value:c,label:c.replace(/_/g," ")}))} />
               </div>
               <div className="field"><label className="fl">Amount (NGN) *</label><FormattedNumberInput className="fi" value={editForm.amount} onChange={(raw)=>setEditForm({...editForm,amount:raw})} required/></div>
               <div className="field"><label className="fl">Description</label><textarea className="fi" rows={3} value={editForm.description} onChange={e=>setEditForm({...editForm,description:e.target.value})} style={{resize:"vertical" as const}}/></div>
