@@ -29,8 +29,8 @@ const CONDITIONS = [{v:"brand new",l:"Brand New"},{v:"foreign used",l:"Foreign U
 const TRANSMISSIONS = ["automatic","manual","semi-automatic"];
 const FUEL_TYPES = ["petrol","diesel","electric","hybrid","gas"];
 const COLORS = ["Black","White","Silver","Grey","Red","Blue","Green","Gold","Brown","Wine"];
-const STATES_NG = ["Abuja","Lagos","Kano","Rivers","Oyo","Kaduna","Anambra","Enugu","Delta","Ogun","Imo","Ondo","Kwara","Benue","Edo","Ekiti","Cross River"];
-const YEARS = Array.from({ length: 20 }, (_, i) => String(new Date().getFullYear() - i));
+const STATES_NG = ["Abia","Abuja","Adamawa","Akwa Ibom","Anambra","Bauchi","Bayelsa","Benue","Borno","Cross River","Delta","Ebonyi","Edo","Ekiti","Enugu","Gombe","Imo","Jigawa","Kaduna","Kano","Katsina","Kebbi","Kogi","Kwara","Lagos","Nasarawa","Niger","Ogun","Ondo","Osun","Oyo","Plateau","Rivers","Sokoto","Taraba","Yobe","Zamfara"];
+const YEARS = Array.from({ length: new Date().getFullYear() - 1979 }, (_, i) => String(new Date().getFullYear() - i));
 const SORT_OPTIONS = [
   {v:"score",l:"Recommended first"},
   {v:"newest",l:"Newest first"},
