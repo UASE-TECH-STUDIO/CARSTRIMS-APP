@@ -4,8 +4,10 @@ import PasswordInput from "@/components/ui/PasswordInput";
 import { useEffect, useState, useRef } from "react";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
+import { useConfirm } from "@/store/confirmStore";
 
 export default function PartnerSettingsPage() {
+  const askConfirm = useConfirm();
   const { user } = useAuthStore();
   const [me, setMe] = useState<any>(null);
   const [form, setForm] = useState({ fullName:"", phone:"", whatsapp:"", address:"", city:"", state:"" });
@@ -61,7 +63,7 @@ export default function PartnerSettingsPage() {
   };
 
   const removePhoto = async () => {
-    if (!confirm("Remove profile picture?")) return;
+    if (!(await askConfirm({ message: "Remove profile picture?", danger: true }))) return;
     try {
       await api.patch("/api/v1/users/profile", { profilePicture: null });
       setMsg("Photo removed"); loadMe();
