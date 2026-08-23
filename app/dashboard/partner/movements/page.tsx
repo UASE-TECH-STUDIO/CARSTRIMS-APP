@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
+import { parseServerDate } from "@/lib/timeUtils";
 
 export default function PartnerMovementsPage() {
   const [movements, setMovements] = useState<any[]>([]);
@@ -18,7 +19,7 @@ export default function PartnerMovementsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const fmt = (iso: string) => iso ? new Date(iso).toLocaleString("en-NG") : "";
+  const fmt = (iso: string) => iso ? (parseServerDate(iso)?.toLocaleString("en-NG")||"") : "";
   const STATUS_COLORS: Record<string,string> = { out:"#C9A84C", returned:"#4CAF82", overdue:"#E05252" };
 
   const buildMovementsHtml = () => {

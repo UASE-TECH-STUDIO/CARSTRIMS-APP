@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
+import { parseServerDate } from "@/lib/timeUtils";
 
 export default function PartnerEarningsPage() {
   const [data, setData] = useState<any>(null);
@@ -16,7 +17,7 @@ export default function PartnerEarningsPage() {
   }, []);
 
   const fmt = (n: number) => `${(n || 0).toLocaleString()}`;
-  const fmtDate = (iso: string) => iso ? new Date(iso).toLocaleDateString("en-NG") : "";
+  const fmtDate = (iso: string) => iso ? (parseServerDate(iso)?.toLocaleDateString("en-NG")||"") : "";
   const showToast = useToast();
   const [exportBusy, setExportBusy] = useState("");
   const [showExportPicker, setShowExportPicker] = useState(false);

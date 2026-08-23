@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
 import Link from "next/link";
+import { parseServerDate } from "@/lib/timeUtils";
 
 const PERM_LABELS: Record<string,string> = {
   view_inventory:"View Inventory",   add_cars:"Add Vehicles",           edit_cars:"Edit Vehicles",
@@ -100,7 +101,7 @@ export default function StaffOverviewPage() {
 
   const perms: string[] = staff?.permissions || [];
   const fmt = (n: number) => `${(n||0).toLocaleString()}`;
-  const fmtDate = (iso: string) => iso ? new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}) : "-";
+  const fmtDate = (iso: string) => iso ? (parseServerDate(iso)?.toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"})||"") : "-";
 
   // Deduplicate quick action routes
   const seen = new Set<string>();

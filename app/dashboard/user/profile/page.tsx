@@ -6,6 +6,7 @@ import PasswordInput from "@/components/ui/PasswordInput";
 import { useEffect, useRef, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
+import { parseServerDate } from "@/lib/timeUtils";
 
 const NIGERIAN_STATES = [
   "Abia","Adamawa","Akwa Ibom","Anambra","Bauchi","Bayelsa","Benue","Borno",
@@ -241,7 +242,7 @@ export default function UserProfilePage() {
               {label:"Email Address",   value:user?.email||profile?.email||""},
               {label:"Account Role",    value:"Buyer / Customer"},
               {label:"User ID",         value:user?.userId||profile?._id||"", mono:true},
-              {label:"Member Since",    value:profile?.createdAt?new Date(profile.createdAt).toLocaleDateString("en-NG",{year:"numeric",month:"long",day:"numeric"}):""},
+              {label:"Member Since",    value:profile?.createdAt?(parseServerDate(profile.createdAt)?.toLocaleDateString("en-NG",{year:"numeric",month:"long",day:"numeric"})||""):""},
               {label:"Account Status",  value:profile?.status||"active"},
             ].map(row=>(
               <div key={row.label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"0.75rem 0",borderBottom:"1px solid #F0F0F0"}}>

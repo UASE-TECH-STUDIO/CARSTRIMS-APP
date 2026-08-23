@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
+import { parseServerDate } from "@/lib/timeUtils";
 
 const STATUS_COLORS: Record<string,string> = {
   available:"#16A34A", sold:"#888", reserved:"#D97706",
@@ -149,7 +150,7 @@ export default function PartnerCarsPage() {
                   <div className="mv-title">{m.type || m.purpose || "Movement"} &middot; {m.carId}</div>
                   {m.takenByName && <div className="mv-sub">Taken by {m.takenByName}</div>}
                 </div>
-                <div className="mv-date">{m.createdAt ? new Date(m.createdAt).toLocaleDateString("en-NG",{day:"numeric",month:"short"}) : ""}</div>
+                <div className="mv-date">{m.createdAt ? (parseServerDate(m.createdAt)?.toLocaleDateString("en-NG",{day:"numeric",month:"short"})||"") : ""}</div>
               </div>
             ))}
           </div>
