@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
+import CustomSelect from "@/components/ui/CustomSelect";
 import { useToast } from "@/store/toastStore";
 
 const STEPS = [
@@ -285,10 +286,7 @@ export default function DealerSetupPage() {
               </div>
               <div style={row}>
                 <div><label style={lbl}>State *</label>
-                  <select style={{...fi,cursor:"pointer"}} value={company.state} onChange={e=>setCompany({...company,state:e.target.value})} required>
-                    <option value="">Select state...</option>
-                    {STATES.map(s=><option key={s} value={s}>{s}</option>)}
-                  </select>
+                  <CustomSelect value={company.state} onChange={(v)=>setCompany({...company,state:v})} placeholder="Select state..." options={STATES.map((s:string)=>({value:s,label:s}))} />
                 </div>
                 <div><label style={lbl}>Address</label><input style={fi} placeholder="Street address" value={company.address} onChange={e=>setCompany({...company,address:e.target.value})} /></div>
               </div>
@@ -364,9 +362,7 @@ export default function DealerSetupPage() {
             <form onSubmit={handleStep3} style={{display:"flex",flexDirection:"column",gap:"1.25rem"}}>
               <div style={row}>
                 <div><label style={lbl}>Brand *</label>
-                  <select style={{...fi,cursor:"pointer"}} value={car.brand} onChange={e=>setCar({...car,brand:e.target.value})}>
-                    {["Toyota","Honda","Mercedes","BMW","Lexus","Ford","Hyundai","Kia","Chevrolet","Nissan","Audi","Land Rover","Jeep","Volkswagen","Peugeot","Mitsubishi","Other"].map(b=><option key={b} value={b}>{b}</option>)}
-                  </select>
+                  <CustomSelect value={car.brand} onChange={(v)=>setCar({...car,brand:v})} options={["Toyota","Honda","Mercedes","BMW","Lexus","Ford","Hyundai","Kia","Chevrolet","Nissan","Audi","Land Rover","Jeep","Volkswagen","Peugeot","Mitsubishi","Other"].map(b=>({value:b,label:b}))} />
                 </div>
                 <div><label style={lbl}>Model *</label><input style={fi} placeholder="e.g. Camry, Accord..." value={car.model} onChange={e=>setCar({...car,model:e.target.value})} required /></div>
               </div>
@@ -380,23 +376,16 @@ export default function DealerSetupPage() {
               </div>
               <div style={row}>
                 <div><label style={lbl}>Condition</label>
-                  <select style={{...fi,cursor:"pointer"}} value={car.condition} onChange={e=>setCar({...car,condition:e.target.value})}>
-                    {["brand new","foreign used","locally used","salvage"].map(c=><option key={c} value={c}>{c}</option>)}
-                  </select>
+                  <CustomSelect value={car.condition} onChange={(v)=>setCar({...car,condition:v})} options={["brand new","foreign used","locally used","salvage"].map(c=>({value:c,label:c}))} />
                 </div>
                 <div><label style={lbl}>Transmission</label>
-                  <select style={{...fi,cursor:"pointer"}} value={car.transmission} onChange={e=>setCar({...car,transmission:e.target.value})}>
-                    {["automatic","manual","semi-automatic"].map(c=><option key={c} value={c}>{c}</option>)}
-                  </select>
+                  <CustomSelect value={car.transmission} onChange={(v)=>setCar({...car,transmission:v})} options={["automatic","manual","semi-automatic"].map(c=>({value:c,label:c}))} />
                 </div>
               </div>
               <div style={row}>
                 <div><label style={lbl}>City</label><input style={fi} placeholder="e.g. Lagos" value={car.city} onChange={e=>setCar({...car,city:e.target.value})} /></div>
                 <div><label style={lbl}>State</label>
-                  <select style={{...fi,cursor:"pointer"}} value={car.state} onChange={e=>setCar({...car,state:e.target.value})}>
-                    <option value="">Select state...</option>
-                    {STATES.map(s=><option key={s} value={s}>{s}</option>)}
-                  </select>
+                  <CustomSelect value={car.state} onChange={(v)=>setCar({...car,state:v})} placeholder="Select state..." options={STATES.map((s:string)=>({value:s,label:s}))} />
                 </div>
               </div>
               <div style={{display:"flex",gap:"0.75rem"}}>
@@ -462,9 +451,7 @@ export default function DealerSetupPage() {
               </div>
               <div><label style={lbl}>Stream URL</label><input style={fi} placeholder="rtsp://192.168.1.x:554/stream or https://..." value={cctv.streamUrl} onChange={e=>setCctv({...cctv,streamUrl:e.target.value})} /></div>
               <div><label style={lbl}>Stream Type</label>
-                <select style={{...fi,cursor:"pointer"}} value={cctv.streamType} onChange={e=>setCctv({...cctv,streamType:e.target.value})}>
-                  {["rtsp","hls","ip"].map(t=><option key={t} value={t}>{t.toUpperCase()}</option>)}
-                </select>
+                <CustomSelect value={cctv.streamType} onChange={(v)=>setCctv({...cctv,streamType:v})} options={["rtsp","hls","ip"].map(t=>({value:t,label:t.toUpperCase()}))} />
               </div>
               <div style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"10px",padding:"1.25rem"}}>
                 <div style={{fontFamily:"var(--font-display)",fontSize:"0.75rem",letterSpacing:"0.1em",color:"#15803D",marginBottom:"0.75rem"}}>SETUP COMPLETE  SUMMARY</div>
