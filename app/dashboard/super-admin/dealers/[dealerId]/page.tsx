@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import Link from "next/link";
 import { useConfirm } from "@/store/confirmStore";
+import { usePrompt } from "@/store/promptStore";
 
 function PreviewModal({ src, type, onClose }: { src:string; type:"image"|"pdf"; onClose:()=>void }) {
   return (
@@ -18,6 +19,7 @@ function PreviewModal({ src, type, onClose }: { src:string; type:"image"|"pdf"; 
 
 export default function AdminDealerDetailPage() {
   const askConfirm = useConfirm();
+  const askPrompt = usePrompt();
   const params   = useParams();
   const router   = useRouter();
   const dealerId = params?.dealerId as string;
@@ -158,8 +160,8 @@ export default function AdminDealerDetailPage() {
       {/* Actions */}
       <div style={{background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px",padding:"1.25rem",display:"flex",gap:"0.75rem",flexWrap:"wrap"}}>
         {dealer.status !== "approved" && <button onClick={()=>handleAction("approve")} disabled={actionLoading} style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.65rem 1.25rem",fontFamily:"var(--font-display)",fontSize:"0.82rem",letterSpacing:"0.08em",cursor:"pointer",opacity:actionLoading?0.6:1}}> Approve</button>}
-        {dealer.status === "approved"  && <button onClick={()=>{const n=prompt("Suspension reason:");if(n)handleAction("suspend",n);}} disabled={actionLoading} style={{background:"#FEF2F2",border:"1.5px solid #FCA5A5",color:"#DC2626",borderRadius:"8px",padding:"0.65rem 1.25rem",fontSize:"0.82rem",cursor:"pointer"}}> Suspend</button>}
-        <button onClick={()=>{const n=prompt("Warning message:");if(n)handleAction("warn",n);}} disabled={actionLoading} style={{background:"#FFF7ED",border:"1.5px solid rgba(244,123,32,0.3)",color:"#C4621A",borderRadius:"8px",padding:"0.65rem 1.25rem",fontSize:"0.82rem",cursor:"pointer"}}> Warn</button>
+        {dealer.status === "approved"  && <button onClick={async ()=>{const n=await askPrompt({message:"Suspension reason:"});if(n)handleAction("suspend",n);}} disabled={actionLoading} style={{background:"#FEF2F2",border:"1.5px solid #FCA5A5",color:"#DC2626",borderRadius:"8px",padding:"0.65rem 1.25rem",fontSize:"0.82rem",cursor:"pointer"}}> Suspend</button>}
+        <button onClick={async ()=>{const n=await askPrompt({message:"Warning message:"});if(n)handleAction("warn",n);}} disabled={actionLoading} style={{background:"#FFF7ED",border:"1.5px solid rgba(244,123,32,0.3)",color:"#C4621A",borderRadius:"8px",padding:"0.65rem 1.25rem",fontSize:"0.82rem",cursor:"pointer"}}> Warn</button>
         <Link href={`/dealers/${dealer.dealerId}`} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.65rem 1.25rem",fontSize:"0.82rem",textDecoration:"none",fontWeight:600}}>View Public Profile </Link>
         {dealer.ownerUser && <Link href={`/dashboard/super-admin/users/${dealer.userId}`} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.65rem 1.25rem",fontSize:"0.82rem",textDecoration:"none",fontWeight:600}}>View Owner Account </Link>}
       </div>
