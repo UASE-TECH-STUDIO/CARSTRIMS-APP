@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import api from "@/lib/api";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
+import CustomSelect from "@/components/ui/CustomSelect";
 
 interface Car {
   carId: string;
@@ -187,9 +188,7 @@ export default function MarkSoldModal({ car: initialCar, onClose, onSold }: Prop
           {/* Payment */}
           <div style={{display:"flex",flexDirection:"column",gap:"0.4rem"}}>
             <label style={lbl}>Payment Method *</label>
-            <select style={{...inp,cursor:"pointer"}} value={form.paymentMethod} onChange={e=>setForm({...form,paymentMethod:e.target.value})}>
-              {[["cash","Cash"],["bank_transfer","Bank Transfer"],["card","Card / POS"],["installment","Installment"],["other","Other"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}
-            </select>
+            <CustomSelect value={form.paymentMethod} onChange={(v)=>setForm({...form,paymentMethod:v})} options={[["cash","Cash"],["bank_transfer","Bank Transfer"],["card","Card / POS"],["installment","Installment"],["other","Other"]].map(([v,l])=>({value:v,label:l}))} />
           </div>
 
           {/* Buyer details */}

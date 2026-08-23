@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
+import CustomSelect from "@/components/ui/CustomSelect";
 import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
 
@@ -524,21 +525,11 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
                   </div>
                   <div style={fieldWrap}>
                     <label htmlFor="f-ptype" style={labelStyle}>Payment Type</label>
-                    <select id="f-ptype" style={{ ...inputStyle }} value={paymentType} onChange={e => setPaymentType(e.target.value)}>
-                      <option value="full">Full Payment</option>
-                      <option value="installment">Installment</option>
-                      <option value="lease">Lease</option>
-                    </select>
+                    <CustomSelect value={paymentType} onChange={setPaymentType} options={[{value:"full",label:"Full Payment"},{value:"installment",label:"Installment"},{value:"lease",label:"Lease"}]} />
                   </div>
                   <div style={fieldWrap}>
                     <label htmlFor="f-pmethod" style={labelStyle}>Payment Method</label>
-                    <select id="f-pmethod" style={{ ...inputStyle }} value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
-                      <option value="cash">Cash</option>
-                      <option value="card">Card</option>
-                      <option value="transfer">Bank Transfer</option>
-                      <option value="cheque">Cheque</option>
-                      <option value="pos">POS</option>
-                    </select>
+                    <CustomSelect value={paymentMethod} onChange={setPaymentMethod} options={[{value:"cash",label:"Cash"},{value:"card",label:"Card"},{value:"transfer",label:"Bank Transfer"},{value:"cheque",label:"Cheque"},{value:"pos",label:"POS"}]} />
                   </div>
                 </div>
               </div>
