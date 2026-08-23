@@ -27,7 +27,7 @@ export default function AdminTopbar() {
         <div className="topbar-avatar" style={{ background:"var(--error)" }}>A</div>
       </div>
       <style>{`
-        .topbar{height:calc(64px + env(safe-area-inset-top,0px));background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:50}
+        .topbar{height:calc(64px + var(--sat, 0px));background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;padding-top:var(--sat, 0px);position:sticky;top:0;z-index:50}
         .topbar-left{display:flex;flex-direction:column;gap:0.1rem}
         .page-title{font-family:var(--font-display);font-size:1.3rem;letter-spacing:0.08em;color:var(--text);line-height:1}
         .page-date{font-size:0.7rem;color:var(--text-dim);letter-spacing:0.05em}

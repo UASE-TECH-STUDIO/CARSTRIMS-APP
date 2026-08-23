@@ -63,7 +63,7 @@ export default function DealerTopbar() {
         </button>
       </div>
       <style>{`
-        .topbar{height:calc(60px + env(safe-area-inset-top,0px));background:#fff;border-bottom:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-between;padding:0 1.75rem;padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,0.06);flex-shrink:0}
+        .topbar{height:calc(60px + var(--sat, 0px));background:#fff;border-bottom:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-between;padding:0 1.75rem;padding-top:var(--sat, 0px);position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,0.06);flex-shrink:0}
         .topbar-left{display:flex;flex-direction:column;gap:0.1rem;min-width:0}
         .page-title{font-family:var(--font-display);font-size:1.25rem;letter-spacing:0.08em;color:#1A1A1A;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .page-date{font-size:0.68rem;color:#AAA;letter-spacing:0.04em}

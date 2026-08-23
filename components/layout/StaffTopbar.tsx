@@ -21,7 +21,7 @@ export default function StaffTopbar() {
         <div className="avatar" style={{background:"#1D9E75"}}>{user?.fullName?.charAt(0).toUpperCase() || "S"}</div>
       </div>
       <style>{`
-        .topbar{height:calc(64px + env(safe-area-inset-top,0px));background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:50}
+        .topbar{height:calc(64px + var(--sat, 0px));background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;padding-top:var(--sat, 0px);position:sticky;top:0;z-index:50}
         .page-title{font-family:var(--font-display);font-size:1.3rem;letter-spacing:0.08em;color:var(--text);line-height:1}
         .topbar-right{display:flex;align-items:center;gap:0.75rem}
         .avatar{width:34px;height:34px;border-radius:50%;color:#fff;font-family:var(--font-display);font-size:1rem;display:flex;align-items:center;justify-content:center}

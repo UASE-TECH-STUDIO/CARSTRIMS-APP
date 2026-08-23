@@ -209,7 +209,7 @@ export default function StaffShell({ children }: { children: ReactNode }) {
         .staff-sidebar{
           width:240px;height:100vh;height:100dvh;background:#fff;border-right:1.5px solid #E5E5E5;
           display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:60;
-          padding-top:env(safe-area-inset-top,0px);padding-left:env(safe-area-inset-left,0px);
+          padding-top:var(--sat, 0px);padding-left:env(safe-area-inset-left,0px);
           padding-bottom:env(safe-area-inset-bottom,0px);
           overflow-y:auto;transition:transform 0.25s ease;
         }
@@ -251,7 +251,7 @@ export default function StaffShell({ children }: { children: ReactNode }) {
 
         /* Main */
         .staff-main{flex:1;margin-left:240px;display:flex;flex-direction:column;min-height:100vh;min-width:0}
-        .staff-topbar{height:calc(64px + env(safe-area-inset-top,0px));background:#fff;border-bottom:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-between;padding:0 1.75rem;padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,0.06);flex-shrink:0;gap:1rem}
+        .staff-topbar{height:calc(64px + var(--sat, 0px));background:#fff;border-bottom:1.5px solid #E5E5E5;display:flex;align-items:center;justify-content:space-between;padding:0 1.75rem;padding-top:var(--sat, 0px);position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,0.06);flex-shrink:0;gap:1rem}
         .topbar-left{display:flex;align-items:center;gap:0.875rem;min-width:0}
         .hamburger-btn{display:none;flex-direction:column;justify-content:center;gap:5px;background:none;border:none;cursor:pointer;padding:0.4rem;border-radius:6px;flex-shrink:0}
         .hamburger-btn:hover{background:#F5F5F5}
