@@ -149,7 +149,7 @@ export default function DealerAppointmentsPage() {
   };
 
   const today    = appointments.filter(a => {
-    const d = a.scheduledAt ? new Date(a.scheduledAt) : null;
+    const d = a.scheduledAt ? parseServerDate(a.scheduledAt) : null;
     const n = new Date();
     return d && d.getDate()===n.getDate() && d.getMonth()===n.getMonth() && d.getFullYear()===n.getFullYear();
   }).length;

@@ -6,6 +6,7 @@ import Link from "next/link";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { useConfirm } from "@/store/confirmStore";
 import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+import { parseServerDate } from "@/lib/timeUtils";
 
 const ROLE_C: Record<string,string> = {DEALER_ADMIN:"#F47B20",DEALER_STAFF:"#D97706",PARTNER_USER:"#7B68EE",SYSTEM_ADMIN:"#DC2626",PUBLIC_USER:"#16A34A"};
 const STATUS_C: Record<string,string> = {active:"#16A34A",approved:"#16A34A",suspended:"#DC2626",awaiting_approval:"#D97706",pending:"#D97706",rejected:"#DC2626"};
@@ -52,7 +53,7 @@ export default function SuperAdminUserDetail() {
   useEffect(() => { if (userId) load(); }, [userId]);
 
   const fmt = (v:any) => (!v && v!==0) ? "N/A" : String(v);
-  const fmtDate = (d:any) => !d ? "N/A" : new Date(d).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
+  const fmtDate = (d:any) => !d ? "N/A" : (parseServerDate(d)?.toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})||"N/A");
   const fmtMoney = (n:number) => `NGN ${(n||0).toLocaleString()}`;
 
   const saveProfile = async () => {

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import Link from "next/link";
+import { parseServerDate } from "@/lib/timeUtils";
 
 export default function PartnerDealersPage() {
   const [links, setLinks] = useState<any[]>([]);
@@ -74,12 +75,12 @@ export default function PartnerDealersPage() {
                   </div>
                   {link.requestedAt && (
                     <div className="req-date">
-                      Requested {new Date(link.requestedAt).toLocaleDateString("en-NG")}
+                      Requested {parseServerDate(link.requestedAt)?.toLocaleDateString("en-NG")||""}
                     </div>
                   )}
                   {link.approvedAt && (
                     <div className="req-date" style={{color:"#16A34A"}}>
-                      Approved {new Date(link.approvedAt).toLocaleDateString("en-NG")}
+                      Approved {parseServerDate(link.approvedAt)?.toLocaleDateString("en-NG")||""}
                     </div>
                   )}
                 </div>

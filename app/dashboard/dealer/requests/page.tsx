@@ -201,7 +201,7 @@ export default function DealerRequestsPage() {
       <h1>Customer Requests — ${label}</h1>
       <div class="sub">${rows.length} request${rows.length!==1?"s":""} &bull; Generated ${now}</div>
       <table><thead><tr><th>Buyer</th><th>Vehicle Interest</th><th>Status</th><th>Date</th></tr></thead>
-      <tbody>${rows.map((r: any) => `<tr><td>${r.buyerName||r.userName||""}</td><td>${r.brand||""} ${r.model||""}</td><td>${STATUS_L[r.status]||r.status}</td><td>${r.createdAt?new Date(r.createdAt).toLocaleDateString("en-NG"):""}</td></tr>`).join("")}</tbody>
+      <tbody>${rows.map((r: any) => `<tr><td>${r.buyerName||r.userName||""}</td><td>${r.brand||""} ${r.model||""}</td><td>${STATUS_L[r.status]||r.status}</td><td>${r.createdAt?(parseServerDate(r.createdAt)?.toLocaleDateString("en-NG")||""):""}</td></tr>`).join("")}</tbody>
       </table>
       <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
       </body></html>`;
@@ -216,7 +216,7 @@ export default function DealerRequestsPage() {
       if (format === "excel") {
         const blob = rowsToExcelBlob(rows.map((r: any) => ({
           Buyer: r.buyerName || r.userName || "", "Vehicle Interest": `${r.brand||""} ${r.model||""}`.trim(),
-          Status: STATUS_L[r.status] || r.status, Date: r.createdAt ? new Date(r.createdAt).toLocaleDateString("en-NG") : "",
+          Status: STATUS_L[r.status] || r.status, Date: r.createdAt ? (parseServerDate(r.createdAt)?.toLocaleDateString("en-NG")||"") : "",
         })), "Requests");
         await downloadBlob(blob, `${filename}.xlsx`);
       } else {
