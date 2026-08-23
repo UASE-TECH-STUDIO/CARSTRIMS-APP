@@ -6,6 +6,7 @@ import { useAuthStore, getRoleRedirect } from "@/store/authStore";
 import { useMessagesStore } from "@/store/messagesStore";
 import Link from "next/link";
 import { useToast } from "@/store/toastStore";
+import { useConfirm } from "@/store/confirmStore";
 import ZoomableImage from "@/components/ui/ZoomableImage";
 import FeedHomeButton from "@/components/shared/FeedHomeButton";
 import { timeAgoLong } from "@/lib/timeUtils";
@@ -17,6 +18,7 @@ export default function CarDetailClient() {
   const { user, isAuthenticated } = useAuthStore();
   const isAdmin = user?.role === "SYSTEM_ADMIN";
   const showToast = useToast();
+  const askConfirm = useConfirm();
 
   const [car, setCar] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -211,7 +213,7 @@ export default function CarDetailClient() {
   };
 
   const handleAdminDeleteCar = async () => {
-    if (!confirm("Remove this car from the platform?")) return;
+    if (!(await askConfirm({ message: "Remove this car from the platform?", danger: true }))) return;
     try { await api.delete(`/api/v1/cars/${carId}`); showToast("Vehicle removed", "success"); router.push("/feed"); }
     catch(e:any) { showToast(e.response?.data?.detail || "Delete failed", "error"); }
   };

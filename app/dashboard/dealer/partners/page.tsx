@@ -4,6 +4,7 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { renderElementToPdfBlob, renderElementToJpgBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
+import { useConfirm } from "@/store/confirmStore";
 
 export default function PartnersPage() {
   const [partners, setPartners]     = useState<any[]>([]);
@@ -103,7 +104,7 @@ export default function PartnersPage() {
       }
       else if (action === "reject") await api.post(`/api/v1/partners/${linkId}/reject`, data);
       else if (action === "remove") {
-        if (!confirm("Remove this partner permanently?")) return;
+        if (!(await askConfirm({ message: "Remove this partner permanently?", danger: true }))) return;
         await api.delete(`/api/v1/partners/${linkId}`);
       }
       setShowDetail(null); setDetailData(null);
@@ -135,6 +136,7 @@ export default function PartnersPage() {
   const effectiveStatus = detailData?.link?.status || showDetail?.status;
   const exportRef = useRef<HTMLDivElement>(null);
   const showToast = useToast();
+  const askConfirm = useConfirm();
   const [exportBusy, setExportBusy] = useState<"" | "download" | "share">("");
   const [exportPicker, setExportPicker] = useState<"download" | "share" | "">("");
   const [listExportBusy, setListExportBusy] = useState<"" | "pdf" | "jpg" | "excel">("");
