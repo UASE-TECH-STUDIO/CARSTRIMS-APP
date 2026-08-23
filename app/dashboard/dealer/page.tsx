@@ -4,6 +4,7 @@ import api from "@/lib/api";
 import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
 import { useToast } from "@/store/toastStore";
+import { timeAgoLong } from "@/lib/timeUtils";
 
 interface DealerStats {
   totalCars:number; availableCars:number; soldCars:number;
@@ -97,10 +98,7 @@ export default function DealerOverviewPage() {
     finally { setLogoUploading(false); if(logoRef.current) logoRef.current.value=""; }
   };
 
-  const fmtTime = (iso:string) => {
-    const d = Date.now()-new Date(iso).getTime(); const m = Math.floor(d/60000);
-    return m<1?"just now":m<60?`${m}m ago`:m<1440?`${Math.floor(m/60)}h ago`:new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short"});
-  };
+  const fmtTime = (iso:string) => timeAgoLong(iso);
 
   if (loading) return (
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"60vh",flexDirection:"column",gap:"1rem"}}>

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { rowsToExcelBlob, downloadBlob } from "@/lib/documentExport";
+import { parseServerDate } from "@/lib/timeUtils";
 
 const TYPE_ICONS: Record<string, string> = {
   dealer_approved:"", dealer_suspended:"", general:"",
@@ -45,7 +46,8 @@ export default function ActivityPage() {
 
   const fmtTime = (iso: string) => {
     if (!iso) return "";
-    return new Date(iso).toLocaleString("en-NG", { day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" });
+    const d = parseServerDate(iso);
+    return d ? d.toLocaleString("en-NG", { day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" }) : "";
   };
 
   const TYPE_LABELS: Record<string, string> = {

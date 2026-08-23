@@ -4,6 +4,7 @@ import api from "@/lib/api";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { useToast } from "@/store/toastStore";
 import { useConfirm } from "@/store/confirmStore";
+import { parseServerDate } from "@/lib/timeUtils";
 
 const STREAM_TYPES = ["rtsp", "hls", "ip", "nvr", "cloud"];
 
@@ -82,7 +83,7 @@ export default function CCTVPage() {
   };
 
   const fmtTime = (iso?: string) =>
-    iso ? new Date(iso).toLocaleString("en-NG") : "Never";
+    iso ? (parseServerDate(iso)?.toLocaleString("en-NG") || "Never") : "Never";
 
   return (
     <div className="cctv-page">
