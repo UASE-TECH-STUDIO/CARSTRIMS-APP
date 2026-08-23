@@ -293,7 +293,7 @@ export default function DealerStaffPage() {
   const toggleSuspend = async (s: any) => {
     if (!confirm(`${s.status==="active"?"Suspend":"Reactivate"} ${s.fullName}?`)) return;
     try { await api.post(`/api/v1/staff/${s._id||s.staffId}/toggle-suspend`); load(); }
-    catch(e:any) { alert(e.response?.data?.detail||"Failed"); }
+    catch(e:any) { showToast(e.response?.data?.detail||"Failed", "error"); }
   };
 
   const fmtDate = (iso: any) =>

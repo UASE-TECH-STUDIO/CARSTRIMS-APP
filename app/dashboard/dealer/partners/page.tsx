@@ -108,7 +108,7 @@ export default function PartnersPage() {
       }
       setShowDetail(null); setDetailData(null);
       fetchPartners();
-    } catch (e: any) { alert(e.response?.data?.detail || "Action failed"); }
+    } catch (e: any) { showToast(e.response?.data?.detail || "Action failed", "error"); }
   };
 
   const fmt = (n: number) => `NGN ${(n||0).toLocaleString()}`;

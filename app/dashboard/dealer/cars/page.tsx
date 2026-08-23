@@ -245,7 +245,7 @@ export default function DealerCarsPage() {
   const handleDelete = async(carId:string)=>{
     if(!confirm("Delete this car permanently?")) return;
     try{await api.delete(`/api/v1/cars/${carId}`);await load();}
-    catch(_){alert("Delete failed.");}
+    catch(_){showToast("Delete failed.", "error");}
   };
 
   const fetchDoc = async(carId:string, type:string)=>{

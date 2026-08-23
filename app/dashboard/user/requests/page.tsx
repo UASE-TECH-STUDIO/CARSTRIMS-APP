@@ -136,7 +136,7 @@ export default function UserRequestsPage() {
 
   const doAction = async (id:string, endpoint:string, body?:any) => {
     try { await api.post(`/api/v1/users/requests/${id}/${endpoint}`,body||{}); load(); close(); }
-    catch(e:any) { alert(e.response?.data?.detail||"Action failed"); }
+    catch(e:any) { showToast(e.response?.data?.detail||"Action failed", "error"); }
   };
 
   const submitNew = async (e:React.FormEvent) => {
