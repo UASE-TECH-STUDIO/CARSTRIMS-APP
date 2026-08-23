@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import Link from "next/link";
 import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob } from "@/lib/documentExport";
+import { parseServerDate } from "@/lib/timeUtils";
 
 const STILL_ATTENDING_APT = ["pending", "pending_buyer"];
 const isStillAttendingApt = (status: string) => STILL_ATTENDING_APT.includes(status);
@@ -81,10 +82,10 @@ export default function DealerAppointmentsPage() {
 
   const fmt = (iso: any) => {
     if (!iso) return "Not set";
-    return new Date(iso).toLocaleString("en-NG", {
+    return parseServerDate(iso)?.toLocaleString("en-NG", {
       weekday:"short", day:"numeric", month:"short", year:"numeric",
       hour:"2-digit", minute:"2-digit"
-    });
+    }) || "Not set";
   };
 
   const filtered = filter === "all"
@@ -116,7 +117,7 @@ export default function DealerAppointmentsPage() {
       <h1>Appointments — ${label}</h1>
       <div class="sub">${rows.length} appointment${rows.length!==1?"s":""} &bull; Generated ${now}</div>
       <table><thead><tr><th>Buyer</th><th>Type</th><th>Status</th><th>Date</th></tr></thead>
-      <tbody>${rows.map((a: any) => `<tr><td>${a.buyerName||a.userName||""}</td><td>${TYPE_LABEL[a.type]||a.type||""}</td><td>${STATUS_LABEL[a.status]||a.status}</td><td>${a.scheduledAt?new Date(a.scheduledAt).toLocaleString("en-NG"):""}</td></tr>`).join("")}</tbody>
+      <tbody>${rows.map((a: any) => `<tr><td>${a.buyerName||a.userName||""}</td><td>${TYPE_LABEL[a.type]||a.type||""}</td><td>${STATUS_LABEL[a.status]||a.status}</td><td>${a.scheduledAt?(parseServerDate(a.scheduledAt)?.toLocaleString("en-NG")||""):""}</td></tr>`).join("")}</tbody>
       </table>
       <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
       </body></html>`;
@@ -131,7 +132,7 @@ export default function DealerAppointmentsPage() {
       if (format === "excel") {
         const blob = rowsToExcelBlob(rows.map((a: any) => ({
           Buyer: a.buyerName || a.userName || "", Type: TYPE_LABEL[a.type] || a.type || "",
-          Status: STATUS_LABEL[a.status] || a.status, Date: a.scheduledAt ? new Date(a.scheduledAt).toLocaleString("en-NG") : "",
+          Status: STATUS_LABEL[a.status] || a.status, Date: a.scheduledAt ? (parseServerDate(a.scheduledAt)?.toLocaleString("en-NG")||"") : "",
         })), "Appointments");
         await downloadBlob(blob, `${filename}.xlsx`);
       } else {

@@ -5,6 +5,7 @@ import api from "@/lib/api";
 import { renderElementToPdfBlob, renderElementToJpgBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
 import { useConfirm } from "@/store/confirmStore";
+import { parseServerDate } from "@/lib/timeUtils";
 
 export default function PartnersPage() {
   const [partners, setPartners]     = useState<any[]>([]);
@@ -508,7 +509,7 @@ export default function PartnersPage() {
                           <div key={m._id||i} style={{padding:"0.75rem 1rem",borderBottom:i<detailData.recentMovements.length-1?"1px solid #F5F5F5":"none"}}>
                             <div style={{display:"flex",justifyContent:"space-between",gap:"0.5rem"}}>
                               <div style={{fontSize:"0.8rem",fontWeight:600,color:"#1A1A1A"}}>{m.type||m.action||"Movement"} · {m.carId}</div>
-                              <div style={{fontSize:"0.68rem",color:"#AAA",flexShrink:0}}>{m.createdAt?new Date(m.createdAt).toLocaleDateString("en-NG",{day:"numeric",month:"short"}):""}</div>
+                              <div style={{fontSize:"0.68rem",color:"#AAA",flexShrink:0}}>{m.createdAt?(parseServerDate(m.createdAt)?.toLocaleDateString("en-NG",{day:"numeric",month:"short"})||""):""}</div>
                             </div>
                             {m.notes && <div style={{fontSize:"0.72rem",color:"#737373",marginTop:"0.15rem"}}>{m.notes}</div>}
                           </div>

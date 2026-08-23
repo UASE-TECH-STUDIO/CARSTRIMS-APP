@@ -5,6 +5,7 @@ import PasswordInput from "@/components/ui/PasswordInput";
 import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
 import { useConfirm } from "@/store/confirmStore";
+import { parseServerDate } from "@/lib/timeUtils";
 
 const PERM_GROUPS = [
   { group:"Inventory",        color:"#F47B20", perms:[
@@ -299,7 +300,7 @@ export default function DealerStaffPage() {
   };
 
   const fmtDate = (iso: any) =>
-    iso ? new Date(iso).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}) : "";
+    iso ? (parseServerDate(iso)?.toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"})||"") : "";
 
   const filtered = staff.filter(s =>
     !search || [s.fullName,s.email,s.position].some(v =>
