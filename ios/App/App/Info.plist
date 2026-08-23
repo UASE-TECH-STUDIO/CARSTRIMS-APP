@@ -55,6 +55,10 @@
 	<string>CARSTRIMS uses speech recognition so you can search for cars by speaking instead of typing.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>CARSTRIMS needs microphone access for voice search.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>CARSTRIMS uses your location to show nearby dealers and vehicles, and to fill in your state and city when setting up your dealership or listing a vehicle.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>CARSTRIMS uses your location to show nearby dealers and vehicles, and to fill in your state and city when setting up your dealership or listing a vehicle.</string>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 </dict>
