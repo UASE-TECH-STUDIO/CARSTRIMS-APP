@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useToast } from "@/store/toastStore";
 import ZoomableImage from "@/components/ui/ZoomableImage";
 import FeedHomeButton from "@/components/shared/FeedHomeButton";
+import { timeAgoLong } from "@/lib/timeUtils";
 
 export default function CarDetailPage() {
   const params = useParams();
@@ -222,10 +223,6 @@ export default function CarDetailPage() {
   };
 
   const fmt = (n: number) => `NGN ${(n||0).toLocaleString()}`;
-  const fmtTime = (iso: string) => {
-    const d = Date.now() - new Date(iso).getTime(); const m = Math.floor(d/60000);
-    return m<1?"just now":m<60?`${m}m ago`:m<1440?`${Math.floor(m/60)}h ago`:new Date(iso).toLocaleDateString();
-  };
 
   if (loading) return (
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#F5F5F5",flexDirection:"column",gap:"1rem"}}>
@@ -437,7 +434,7 @@ export default function CarDetailPage() {
                 <div className="cd-comment-body">
                   <div className="cd-comment-hdr">
                     <Link href={`/users/${c.userId}`} className="cd-comment-author">{c.userName}</Link>
-                    <span className="cd-comment-time">{fmtTime(c.createdAt)}</span>
+                    <span className="cd-comment-time">{timeAgoLong(c.createdAt)}</span>
                     {(isAdmin||(user&&c.userId===user.userId)) && (
                       <button className="cd-del-comment" onClick={async()=>{
                         try { await api.delete(`/api/v1/public/cars/${carId}/comments/${c.commentId}`); setComments(p=>p.filter(x=>x.commentId!==c.commentId)); }
@@ -451,7 +448,11 @@ export default function CarDetailPage() {
                       {c.replies.map((r: any)=>(
                         <div key={r.replyId} className="cd-reply">
                           <Link href={`/users/${r.userId}`} className="cd-reply-av">{r.userName?.charAt(0)||"?"}</Link>
-                          <div><Link href={`/users/${r.userId}`} className="cd-reply-author">{r.userName}</Link><div className="cd-reply-text">{r.text}</div></div>
+                          <div>
+                            <Link href={`/users/${r.userId}`} className="cd-reply-author">{r.userName}</Link>
+                            <span className="cd-comment-time" style={{marginLeft:"0.5rem"}}>{timeAgoLong(r.createdAt)}</span>
+                            <div className="cd-reply-text">{r.text}</div>
+                          </div>
                         </div>
                       ))}
                     </div>

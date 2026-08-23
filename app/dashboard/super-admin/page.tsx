@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import Link from "next/link";
+import { timeAgoLong } from "@/lib/timeUtils";
 
 export default function SuperAdminOverview() {
   const [stats,  setStats]  = useState<any>(null);
@@ -37,12 +38,6 @@ export default function SuperAdminOverview() {
 
   const fmt      = (n: number) => n.toLocaleString();
   const fmtNaira = (n: number) => `${n.toLocaleString()}`;
-  const fmtTime  = (iso: string) => {
-    if (!iso) return "";
-    const d = Date.now() - new Date(iso).getTime();
-    const m = Math.floor(d / 60000);
-    return m < 1 ? "just now" : m < 60 ? `${m}m ago` : m < 1440 ? `${Math.floor(m/60)}h ago` : new Date(iso).toLocaleDateString();
-  };
 
   const STAT_CARDS = [
     { label:"Total Dealers",  value:totalDealers,  sub:`${activeDealers} active  ${pendingDealers} pending`, href:"/dashboard/super-admin/dealers",  color:"#F47B20" },
@@ -135,7 +130,7 @@ export default function SuperAdminOverview() {
                 <div key={i} className="act-row">
                   <div className="act-icon">{a.type==="dealer_approved"?"":a.type==="announcement"?"":""}</div>
                   <div className="act-body"><div className="act-title">{a.title}</div><div className="act-msg">{a.message?.slice(0,60)}{a.message?.length>60?"...":""}</div></div>
-                  <div className="act-time">{fmtTime(a.createdAt)}</div>
+                  <div className="act-time">{timeAgoLong(a.createdAt)}</div>
                 </div>
               ))}
             </div>
