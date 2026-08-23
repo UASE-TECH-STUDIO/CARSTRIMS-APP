@@ -2,6 +2,7 @@
 import { useState, useRef } from "react";
 import api from "@/lib/api";
 import { useToast } from "@/store/toastStore";
+import { renderElementToPdfBlob, downloadBlob } from "@/lib/documentExport";
 
 interface Props {
   transactionId: string;
@@ -25,23 +26,20 @@ export default function ReceiptGenerator({ transactionId, onClose }: Props) {
   const fmt = (n: number) => `${(n || 0).toLocaleString()}`;
   const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("en-NG", { day: "numeric", month: "long", year: "numeric" });
 
-  const printOrDownload = () => {
+  const [downloading, setDownloading] = useState(false);
+
+  const printOrDownload = async () => {
     if (!printRef.current) return;
-    const w = window.open("", "_blank");
-    if (!w) return;
-    w.document.write(`
-      <!DOCTYPE html><html><head>
-      <title>CARSTRIMS ${type.toUpperCase()} - ${transactionId}</title>
-      <style>
-        body{font-family:Arial,sans-serif;margin:0;padding:20px;color:#1A1A1A}
-        .receipt{max-width:600px;margin:0 auto;border:1px solid #E5E5E5;border-radius:8px;overflow:hidden}
-        @media print{body{padding:0}.no-print{display:none}}
-      </style></head><body>
-      ${printRef.current.innerHTML}
-      <script>window.onload=()=>window.print()</script>
-      </body></html>
-    `);
-    w.document.close();
+    setDownloading(true);
+    try {
+      const blob = await renderElementToPdfBlob(printRef.current, `CARSTRIMS ${type.toUpperCase()} - ${transactionId}`);
+      await downloadBlob(blob, `carstrims-${type}-${transactionId}.pdf`);
+      showToast("Downloaded", "success");
+    } catch (e: any) {
+      showToast(e?.message || "Download failed", "error");
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const shareReceipt = async () => {
@@ -80,7 +78,7 @@ export default function ReceiptGenerator({ transactionId, onClose }: Props) {
             </button>
           ))}
           <div style={{flex:1}}/>
-          <button onClick={printOrDownload} style={{background:"#1A1A1A",color:"#fff",border:"none",borderRadius:"8px",padding:"0.5rem 1rem",fontSize:"0.8rem",cursor:"pointer",fontWeight:600}}> Print / Download PDF</button>
+          <button onClick={printOrDownload} disabled={downloading} style={{background:"#1A1A1A",color:"#fff",border:"none",borderRadius:"8px",padding:"0.5rem 1rem",fontSize:"0.8rem",cursor:"pointer",fontWeight:600,opacity:downloading?0.6:1}}>{downloading?"Generating…":"Download PDF"}</button>
           <button onClick={shareReceipt} style={{background:"#F0FDF4",color:"#16A34A",border:"1.5px solid #86EFAC",borderRadius:"8px",padding:"0.5rem 1rem",fontSize:"0.8rem",cursor:"pointer",fontWeight:600}}> Share</button>
           <button onClick={onClose} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",cursor:"pointer"}}> Close</button>
         </div>
