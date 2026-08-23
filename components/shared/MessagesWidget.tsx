@@ -5,11 +5,13 @@ import { useMessagesStore } from "@/store/messagesStore";
 import Link from "next/link";
 import api from "@/lib/api";
 import { timeAgoShort } from "@/lib/timeUtils";
+import { useToast } from "@/store/toastStore";
 
 interface Props { accentColor?: string; }
 
 export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
   const { user } = useAuthStore();
+  const showToast = useToast();
   const isSuperAdmin = user?.role === "SYSTEM_ADMIN";
   // mongoId matches str(_id) which backend stores as senderId
   const uid = user?.mongoId || user?.userId;
@@ -190,7 +192,7 @@ export default function MessagesWidget({ accentColor = "#F47B20" }: Props) {
       const freshRes = await api.get("/api/v1/messages/conversations");
       const found = (freshRes.data||[]).find((c:any)=>c.conversationId===res.data?.conversationId);
       if(found) openConv(found);
-    } catch(err:any){alert(err.response?.data?.detail||"Failed");}
+    } catch(err:any){showToast(err.response?.data?.detail||"Failed", "error");}
   };
 
   const fmtTime=(iso:string)=>timeAgoShort(iso);

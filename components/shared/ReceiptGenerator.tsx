@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef } from "react";
 import api from "@/lib/api";
+import { useToast } from "@/store/toastStore";
 
 interface Props {
   transactionId: string;
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export default function ReceiptGenerator({ transactionId, onClose }: Props) {
+  const showToast = useToast();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [type, setType] = useState<"receipt"|"invoice"|"proforma">("receipt");
@@ -42,10 +44,14 @@ export default function ReceiptGenerator({ transactionId, onClose }: Props) {
     w.document.close();
   };
 
-  const shareReceipt = () => {
+  const shareReceipt = async () => {
     const text = data ? `CARSTRIMS Sale Receipt\n${data.dealer?.name}\n${data.car?.brand} ${data.car?.model} ${data.car?.year}\nSelling Price: ${fmt(data.financials?.sellingPrice)}\nTransaction: ${transactionId}\nBuyer: ${data.buyer?.name || "N/A"}\nDate: ${data.issuedAt ? fmtDate(data.issuedAt) : ""}` : "";
-    if (navigator.share) { navigator.share({ title: `CARSTRIMS Receipt ${transactionId}`, text }); }
-    else { navigator.clipboard.writeText(text); alert("Receipt details copied to clipboard!"); }
+    if (navigator.share) {
+      try { await navigator.share({ title: `CARSTRIMS Receipt ${transactionId}`, text }); return; }
+      catch (e: any) { if (e?.name === "AbortError") return; }
+    }
+    try { await navigator.clipboard.writeText(text); showToast("Receipt details copied to clipboard!", "success"); }
+    catch { showToast("Couldn't copy the receipt", "error"); }
   };
 
   if (loading) return (

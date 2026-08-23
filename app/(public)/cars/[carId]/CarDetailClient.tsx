@@ -147,7 +147,7 @@ export default function CarDetailClient() {
 
   const handleMessageDealer = async () => {
     if (!isAuthenticated) { router.push("/login"); return; }
-    if (!car?.dealer) { alert("Dealer contact not available."); return; }
+    if (!car?.dealer) { showToast("Dealer contact not available.", "error"); return; }
     setStartingMsg(true);
     try {
       let dealerUserId = car.dealer?.userId || car.dealer?.ownerUserId || null;
@@ -157,7 +157,7 @@ export default function CarDetailClient() {
           dealerUserId = dr.data?.userId || dr.data?.ownerUserId || null;
         } catch {}
       }
-      if (!dealerUserId) { alert("Could not find dealer. Try WhatsApp or Call instead."); return; }
+      if (!dealerUserId) { showToast("Could not find dealer. Try WhatsApp or Call instead.", "error"); return; }
 
       const r = await api.post("/api/v1/messages/start", {
         receiverId: dealerUserId,
@@ -184,7 +184,7 @@ export default function CarDetailClient() {
         router.push(`${base}/messages?conv=${convId}&carId=${car.carId||""}&carImg=${encodeURIComponent(car.images?.[0]||"")}`);
       }
     } catch (e: any) {
-      alert(e.response?.data?.detail || "Could not open chat. Please use WhatsApp or Call.");
+      showToast(e.response?.data?.detail || "Could not open chat. Please use WhatsApp or Call.", "error");
     } finally { setStartingMsg(false); }
   };
 
