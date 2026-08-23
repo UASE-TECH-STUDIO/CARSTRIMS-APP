@@ -6,6 +6,7 @@ import MarkSoldModal from "@/components/shared/MarkSoldModal";
 import CarFinancialReport from "@/components/dealer/CarFinancialReport";
 import DocumentViewer from "@/components/shared/DocumentViewer";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
+import CustomSelect from "@/components/ui/CustomSelect";
 import { useToast } from "@/store/toastStore";
 import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import Link from "next/link";
@@ -294,10 +295,9 @@ export default function DealerCarsPage() {
 
         <div className="cp-filters">
           <input className="cp-search" placeholder="Search brand, model, ID..." value={search} onChange={e=>setSearch(e.target.value)}/>
-          <select className="cp-select" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}>
-            <option value="all">All Status</option>
-            {STATUSES.map(s=><option key={s} value={s}>{s.replace(/_/g," ")}</option>)}
-          </select>
+          <div style={{minWidth:"160px"}}>
+            <CustomSelect value={statusFilter} onChange={setStatusFilter} options={[{value:"all",label:"All Status"},...STATUSES.map((s:string)=>({value:s,label:s.replace(/_/g," ")}))]} />
+          </div>
         </div>
 
         {err&&<div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",color:"#DC2626",padding:"0.75rem 1rem",borderRadius:"8px",fontSize:"0.875rem",display:"flex",justifyContent:"space-between"}}><span>{err}</span><button onClick={()=>setErr("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer"}}>×</button></div>}
@@ -423,7 +423,7 @@ export default function DealerCarsPage() {
                   <div key={f.key}>
                     <label style={lbl}>{f.label}</label>
                     {f.type==="select"
-                      ?<select value={form[f.key]||""} onChange={e=>setForm((p:any)=>({...p,[f.key]:e.target.value}))} style={{...fi,cursor:"pointer",textTransform:"capitalize" as const}}>{(f.opts||[]).map((o:string)=><option key={o} value={o}>{o}</option>)}</select>
+                      ?<CustomSelect value={form[f.key]||""} onChange={(v)=>setForm((p:any)=>({...p,[f.key]:v}))} options={(f.opts||[]).map((o:string)=>({value:o,label:o}))} />
                       :f.format==="price"
                       ?<FormattedNumberInput value={form[f.key]} onChange={(raw)=>setForm((p:any)=>({...p,[f.key]:raw}))} placeholder={f.placeholder||""} style={fi}/>
                       :<input type={f.type||"text"} value={form[f.key]||""} onChange={e=>setForm((p:any)=>({...p,[f.key]:e.target.value}))} placeholder={f.placeholder||""} style={fi}/>
