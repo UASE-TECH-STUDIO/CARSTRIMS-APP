@@ -3,6 +3,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import api from "@/lib/api";
 import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, downloadBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
+import CustomSelect from "@/components/ui/CustomSelect";
 
 const PURPOSES   = ["test_drive","inspection","repair","delivery","personal_use","showroom","other"];
 const ID_TYPES   = ["NIN","BVN","Driver's License","International Passport","Voter's Card","Other"];
@@ -389,9 +390,7 @@ export default function MovementsPage() {
                 <div style={fw}><label style={la}>Taken By (Name) *</label><input style={fi} required value={form.takenByName} onChange={e=>setForm({...form,takenByName:e.target.value})} placeholder="Full name"/></div>
                 <div style={fw}><label style={la}>Phone Number</label><input style={fi} value={form.takenByPhone} onChange={e=>setForm({...form,takenByPhone:e.target.value})} placeholder="Contact phone"/></div>
                 <div style={fw}><label style={la}>Purpose *</label>
-                  <select style={fi} required value={form.purpose} onChange={e=>setForm({...form,purpose:e.target.value})}>
-                    {PURPOSES.map(p=><option key={p} value={p}>{p.replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase())}</option>)}
-                  </select>
+                  <CustomSelect value={form.purpose} onChange={(v)=>setForm({...form,purpose:v})} options={PURPOSES.map((p:string)=>({value:p,label:p.replace(/_/g," ").replace(/\b\w/g,(c:string)=>c.toUpperCase())}))} />
                 </div>
                 <div style={fw}><label style={la}>Expected Return Date & Time</label><input type="datetime-local" style={fi} value={form.expectedReturnTime} onChange={e=>setForm({...form,expectedReturnTime:e.target.value})}/></div>
                 <div style={{...fw, gridColumn:"1/-1"}}><label style={la}>Address</label><input style={fi} value={form.takenByAddress} onChange={e=>setForm({...form,takenByAddress:e.target.value})} placeholder="Address of person taking car"/></div>
@@ -402,9 +401,7 @@ export default function MovementsPage() {
                 <div style={{ fontSize:"11px", fontWeight:700, letterSpacing:"0.1em", color:"#525252", marginBottom:"12px" }}>ID VERIFICATION</div>
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0 14px" }}>
                   <div style={fw}><label style={la}>ID Type</label>
-                    <select style={fi} value={form.takenByIdType} onChange={e=>setForm({...form,takenByIdType:e.target.value})}>
-                      {ID_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
-                    </select>
+                    <CustomSelect value={form.takenByIdType} onChange={(v)=>setForm({...form,takenByIdType:v})} options={ID_TYPES.map((t:string)=>({value:t,label:t}))} />
                   </div>
                   <div style={fw}><label style={la}>ID Number</label><input style={fi} value={form.takenByIdNumber} onChange={e=>setForm({...form,takenByIdNumber:e.target.value})} placeholder="ID card number"/></div>
                   <div style={{...fw, gridColumn:"1/-1"}}>
@@ -591,15 +588,11 @@ export default function MovementsPage() {
                 <div style={fw}><label style={la}>Taken By (Name)</label><input style={fi} value={editForm.takenByName||""} onChange={e=>setEditForm({...editForm,takenByName:e.target.value})} placeholder="Full name"/></div>
                 <div style={fw}><label style={la}>Phone Number</label><input style={fi} value={editForm.takenByPhone||""} onChange={e=>setEditForm({...editForm,takenByPhone:e.target.value})} placeholder="Phone"/></div>
                 <div style={fw}><label style={la}>Purpose</label>
-                  <select style={fi} value={editForm.purpose||"test_drive"} onChange={e=>setEditForm({...editForm,purpose:e.target.value})}>
-                    {PURPOSES.map(p=><option key={p} value={p}>{p.replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase())}</option>)}
-                  </select>
+                  <CustomSelect value={editForm.purpose||"test_drive"} onChange={(v)=>setEditForm({...editForm,purpose:v})} options={PURPOSES.map((p:string)=>({value:p,label:p.replace(/_/g," ").replace(/\b\w/g,(c:string)=>c.toUpperCase())}))} />
                 </div>
                 <div style={fw}><label style={la}>Expected Return</label><input type="datetime-local" style={fi} value={editForm.expectedReturnTime||""} onChange={e=>setEditForm({...editForm,expectedReturnTime:e.target.value})}/></div>
                 <div style={fw}><label style={la}>ID Type</label>
-                  <select style={fi} value={editForm.takenByIdType||"NIN"} onChange={e=>setEditForm({...editForm,takenByIdType:e.target.value})}>
-                    {ID_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
-                  </select>
+                  <CustomSelect value={editForm.takenByIdType||"NIN"} onChange={(v)=>setEditForm({...editForm,takenByIdType:v})} options={ID_TYPES.map((t:string)=>({value:t,label:t}))} />
                 </div>
                 <div style={fw}><label style={la}>ID Number</label><input style={fi} value={editForm.takenByIdNumber||""} onChange={e=>setEditForm({...editForm,takenByIdNumber:e.target.value})} placeholder="ID number"/></div>
                 <div style={{...fw,gridColumn:"1/-1"}}><label style={la}>Address</label><input style={fi} value={editForm.takenByAddress||""} onChange={e=>setEditForm({...editForm,takenByAddress:e.target.value})} placeholder="Address"/></div>
@@ -665,9 +658,7 @@ export default function MovementsPage() {
               {/* Condition */}
               <div style={fw}>
                 <label style={la}>Vehicle Condition on Return</label>
-                <select style={fi} value={returnForm.condition} onChange={e=>setReturnForm({...returnForm,condition:e.target.value})}>
-                  {CONDITIONS.map(c=><option key={c} value={c}>{c.replace(/_/g," ").replace(/\b\w/g,x=>x.toUpperCase())}</option>)}
-                </select>
+                <CustomSelect value={returnForm.condition} onChange={(v)=>setReturnForm({...returnForm,condition:v})} options={CONDITIONS.map((c:string)=>({value:c,label:c.replace(/_/g," ").replace(/\b\w/g,(x:string)=>x.toUpperCase())}))} />
               </div>
               <div style={fw}>
                 <label style={la}>Return Notes</label>
