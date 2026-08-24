@@ -5,6 +5,7 @@ import PasswordInput from "@/components/ui/PasswordInput";
 import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
 import { useConfirm } from "@/store/confirmStore";
+import Link from "next/link";
 import { parseServerDate } from "@/lib/timeUtils";
 
 const PERM_GROUPS = [
@@ -107,7 +108,6 @@ export default function DealerStaffPage() {
   const askConfirm = useConfirm();
   const [exportBusy, setExportBusy] = useState<""|"pdf"|"jpg"|"excel">("");
   const [showExportPicker, setShowExportPicker] = useState(false);
-  const [idCardBusy, setIdCardBusy] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -198,54 +198,6 @@ export default function DealerStaffPage() {
       showToast(e?.message || "Export failed", "error");
     } finally {
       setExportBusy("");
-    }
-  };
-
-  // ── ID card generation ─────────────────────────────────────────
-  const buildIdCardHtml = (s: any) => {
-    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
-      *{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:40px;background:#F5F5F5;display:flex;justify-content:center}
-      .card{width:340px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.12);border:1px solid #E5E5E5}
-      .band{background:#F47B20;padding:14px 18px;color:#fff}
-      .brand{font-weight:900;font-size:14px;letter-spacing:0.08em}
-      .company{font-size:9px;opacity:0.9;margin-top:1px}
-      .body{padding:20px 18px;text-align:center}
-      .photo{width:96px;height:96px;border-radius:50%;background:#FFF7ED;border:3px solid #F47B20;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:36px;color:#F47B20;font-weight:700;overflow:hidden}
-      .photo img{width:100%;height:100%;object-fit:cover}
-      .name{font-size:17px;font-weight:800;color:#1A1A1A}
-      .pos{font-size:12px;color:#F47B20;font-weight:700;margin-top:2px;text-transform:uppercase;letter-spacing:0.04em}
-      .divider{height:1px;background:#E5E5E5;margin:14px 0}
-      .row{display:flex;justify-content:space-between;font-size:10.5px;padding:4px 0;text-align:left}
-      .rl{color:#A3A3A3;text-transform:uppercase;letter-spacing:0.05em;font-weight:700}
-      .rv{color:#1A1A1A;font-weight:600}
-      .footer{background:#1A1A1A;color:#fff;text-align:center;padding:7px;font-size:8px;letter-spacing:0.05em}
-      </style></head><body>
-      <div class="card">
-        <div class="band"><div class="brand">CARSTRIMS</div><div class="company">${dealer?.companyName || ""}</div></div>
-        <div class="body">
-          <div class="photo">${s.profilePicture ? `<img src="${s.profilePicture}"/>` : (s.fullName || "?").charAt(0).toUpperCase()}</div>
-          <div class="name">${s.fullName || ""}</div>
-          <div class="pos">${s.position || "Staff"}</div>
-          <div class="divider"></div>
-          <div class="row"><span class="rl">Staff ID</span><span class="rv">${s.staffId || ""}</span></div>
-          <div class="row"><span class="rl">Phone</span><span class="rv">${s.phone || ""}</span></div>
-          <div class="row"><span class="rl">Email</span><span class="rv">${s.email || ""}</span></div>
-        </div>
-        <div class="footer">${dealer?.address || ""} ${dealer?.city ? "&bull; " + dealer.city : ""}</div>
-      </div>
-      </body></html>`;
-  };
-
-  const handleGenerateIdCard = async (s: any) => {
-    setIdCardBusy(true);
-    try {
-      const blob = await renderHtmlStringToPdfBlob(buildIdCardHtml(s), `${s.fullName} - ID Card`);
-      await downloadBlob(blob, `carstrims-id-card-${(s.fullName || "staff").toLowerCase().replace(/\s+/g, "-")}.pdf`);
-      showToast("ID card downloaded", "success");
-    } catch (e: any) {
-      showToast(e?.message || "Could not generate ID card", "error");
-    } finally {
-      setIdCardBusy(false);
     }
   };
 
@@ -727,11 +679,12 @@ export default function DealerStaffPage() {
                 borderRadius:"8px",padding:"8px 16px",fontSize:"13px",cursor:"pointer",fontWeight:600}}>
               {selected.status==="active"?"Suspend":"Reactivate"}
             </button>
-            <button onClick={()=>handleGenerateIdCard(selected)} disabled={idCardBusy}
+            <Link href={`/dashboard/dealer/id-cards?staffId=${selected.staffId}`}
               style={{background:"#F5F5F5",border:"1px solid #E5E5E5",color:"#525252",
-                borderRadius:"8px",padding:"8px 16px",fontSize:"13px",cursor:"pointer",fontWeight:600}}>
-              {idCardBusy?"Generating…":"ID Card"}
-            </button>
+                borderRadius:"8px",padding:"8px 16px",fontSize:"13px",cursor:"pointer",fontWeight:600,
+                textDecoration:"none",display:"inline-flex",alignItems:"center"}}>
+              ID Card
+            </Link>
             <button onClick={()=>setShowDeleteConfirm(true)}
               style={{background:"#FEF2F2",border:"1px solid #FECACA",color:"#DC2626",
                 borderRadius:"8px",padding:"8px 16px",fontSize:"13px",cursor:"pointer",fontWeight:600}}>
