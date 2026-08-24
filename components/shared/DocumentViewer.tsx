@@ -294,7 +294,9 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
     setShowFormatPicker("");
     setBusy(format);
     try {
-      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(buildHtml()) : await renderHtmlStringToPdfBlob(buildHtml(), docTitle);
+      const blob = activeNewDesign && newDesignRef.current
+        ? (format === "jpg" ? await renderElementToJpgBlob(newDesignRef.current, 0.95) : await renderElementToPdfBlob(newDesignRef.current, docTitle))
+        : (format === "jpg" ? await renderHtmlStringToJpgBlob(buildHtml()) : await renderHtmlStringToPdfBlob(buildHtml(), docTitle));
       await downloadBlob(blob, `${docFilename()}.${format}`);
       showToast("Downloaded", "success");
     } catch (e: any) {
@@ -308,7 +310,9 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
     setShowFormatPicker("");
     setBusy("share");
     try {
-      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(buildHtml()) : await renderHtmlStringToPdfBlob(buildHtml(), docTitle);
+      const blob = activeNewDesign && newDesignRef.current
+        ? (format === "jpg" ? await renderElementToJpgBlob(newDesignRef.current, 0.95) : await renderElementToPdfBlob(newDesignRef.current, docTitle))
+        : (format === "jpg" ? await renderHtmlStringToJpgBlob(buildHtml()) : await renderHtmlStringToPdfBlob(buildHtml(), docTitle));
       await shareBlob(blob, `${docFilename()}.${format}`, docTitle);
     } catch (e: any) {
       showToast(e?.message || "Share failed — please try again", "error");
