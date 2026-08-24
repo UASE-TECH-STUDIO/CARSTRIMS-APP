@@ -1,20 +1,23 @@
 /**
- * Client-side background removal for logos and signatures.
+ * AI-powered client-side background removal for logos, signatures,
+ * and other images uploaded across the app.
  *
- * This is NOT full AI-based subject segmentation (that needs either a
- * paid API or a server-side ML model, neither of which this app has
- * set up) — it's a targeted, zero-cost approach for the actual use
- * case: logos and signatures are almost always uploaded on a plain
- * white or near-white background (a scan, a photo of paper, a logo
- * exported with a white canvas). This detects pixels close to that
- * background color and makes them transparent, with edge feathering
- * so the result doesn't look jagged/cut-out.
+ * Uses @imgly/background-removal - a real neural-network-based subject
+ * segmentation model (ONNX, running via WebAssembly), the same
+ * underlying technology behind most "perfect" background removal
+ * tools. Runs entirely in the browser/WebView - no server cost, no
+ * API key, no images ever leave the device.
  *
- * Works well for: white-background logos, black-ink signatures on
- * white paper. Does NOT work for: photos with complex/non-white
- * backgrounds, logos that are themselves white/very light colored
- * (those would get removed too) — which is why this is offered as an
- * optional, previewable step, not applied automatically.
+ * This replaces the previous approach, which only detected and
+ * removed near-white pixels - it worked for a logo scanned on plain
+ * white paper, but did nothing at all for anything with a real,
+ * complex background (a car photo, a logo on a colored background,
+ * a signature photographed on a desk), which is exactly the
+ * "isn't removing anything" complaint this replaces.
+ *
+ * The AI model files (~40-80MB) download on first use and are cached
+ * by the browser afterward - the first run on a given device will be
+ * noticeably slower than every run after.
  */
 
 export interface BgRemovalResult {
@@ -22,6 +25,53 @@ export interface BgRemovalResult {
   previewUrl: string;
 }
 
+export interface BgRemovalProgress {
+  /** 0-100, or null while still in an indeterminate phase (e.g. warming up) */
+  percent: number | null;
+  label: string;
+}
+
+/**
+ * Removes the background from any image using real AI subject
+ * segmentation. Works for logos, signatures, product photos, and
+ * general images with any background - not just plain white ones.
+ */
+export async function removeBackgroundAI(
+  file: File,
+  onProgress?: (progress: BgRemovalProgress) => void
+): Promise<BgRemovalResult> {
+  onProgress?.({ percent: null, label: "Loading AI model…" });
+
+  // Lazy-loaded - this library and its model files are large, so we
+  // only ever pull them in when someone actually uses this feature,
+  // not as part of the app's normal page-load bundle.
+  const { default: removeBackground } = await import("@imgly/background-removal");
+
+  const blob = await removeBackground(file, {
+    progress: (key: string, current: number, total: number) => {
+      if (!onProgress) return;
+      const pct = total > 0 ? Math.round((current / total) * 100) : null;
+      const label = key.includes("fetch")
+        ? "Downloading AI model…"
+        : "Removing background…";
+      onProgress({ percent: pct, label });
+    },
+  });
+
+  onProgress?.({ percent: 100, label: "Done" });
+
+  const outFile = new File([blob], renameToPng(file.name), { type: "image/png" });
+  return { file: outFile, previewUrl: URL.createObjectURL(blob) };
+}
+
+/**
+ * Fallback: the original near-white-background removal approach.
+ * Kept available for two cases: (1) the AI model fails to load
+ * (offline first-use, restrictive network, unsupported WebView
+ * configuration) and (2) documents that genuinely are just a plain
+ * white-background scan, where this simpler method is instant with
+ * no model download at all.
+ */
 export async function removeNearWhiteBackground(
   file: File,
   options: { threshold?: number; feather?: number } = {}
@@ -41,15 +91,10 @@ export async function removeNearWhiteBackground(
 
   for (let i = 0; i < data.length; i += 4) {
     const r = data[i], g = data[i + 1], b = data[i + 2];
-    // How close this pixel is to white, on a 0 (not white at all) to
-    // 255 (pure white) scale, using the darkest channel as the
-    // limiting factor so colored-but-light pixels aren't over-removed.
     const brightness = Math.min(r, g, b);
     if (brightness >= threshold) {
-      data[i + 3] = 0; // fully transparent
+      data[i + 3] = 0;
     } else if (brightness >= threshold - feather) {
-      // Feathered edge: smoothly ramp alpha down instead of a hard
-      // cutoff, so the boundary doesn't look jagged.
       const t = (brightness - (threshold - feather)) / feather;
       data[i + 3] = Math.round(data[i + 3] * (1 - t));
     }
@@ -63,6 +108,26 @@ export async function removeNearWhiteBackground(
 
   const outFile = new File([blob], renameToPng(file.name), { type: "image/png" });
   return { file: outFile, previewUrl: URL.createObjectURL(blob) };
+}
+
+/**
+ * Tries the real AI removal first; if it fails for any reason (model
+ * couldn't load, unsupported environment, network issue on first
+ * use), falls back to the near-white method rather than leaving the
+ * person with a hard error and no result at all.
+ */
+export async function removeBackgroundSmart(
+  file: File,
+  onProgress?: (progress: BgRemovalProgress) => void
+): Promise<BgRemovalResult & { usedFallback: boolean }> {
+  try {
+    const result = await removeBackgroundAI(file, onProgress);
+    return { ...result, usedFallback: false };
+  } catch (e) {
+    onProgress?.({ percent: null, label: "AI model unavailable, using basic removal…" });
+    const result = await removeNearWhiteBackground(file);
+    return { ...result, usedFallback: true };
+  }
 }
 
 function loadImage(file: File): Promise<HTMLImageElement> {

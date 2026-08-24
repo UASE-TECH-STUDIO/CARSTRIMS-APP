@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { removeNearWhiteBackground } from "@/lib/backgroundRemoval";
+import { removeBackgroundSmart, BgRemovalProgress } from "@/lib/backgroundRemoval";
 
 interface Props {
   file: File;
@@ -21,6 +21,8 @@ export default function BackgroundRemovalPreview({ file, onConfirm, onCancel, la
   const [processedUrl, setProcessedUrl] = useState<string>("");
   const [processedFile, setProcessedFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [progress, setProgress] = useState<BgRemovalProgress | null>(null);
+  const [usedFallback, setUsedFallback] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -32,14 +34,17 @@ export default function BackgroundRemovalPreview({ file, onConfirm, onCancel, la
   const handleRemoveBackground = async () => {
     setProcessing(true);
     setError("");
+    setProgress(null);
     try {
-      const result = await removeNearWhiteBackground(file);
+      const result = await removeBackgroundSmart(file, setProgress);
       setProcessedUrl(result.previewUrl);
       setProcessedFile(result.file);
+      setUsedFallback(result.usedFallback);
     } catch (e: any) {
       setError(e?.message || "Couldn't process this image");
     } finally {
       setProcessing(false);
+      setProgress(null);
     }
   };
 
@@ -48,7 +53,7 @@ export default function BackgroundRemovalPreview({ file, onConfirm, onCancel, la
       <div className="bgr-panel" onClick={(e) => e.stopPropagation()}>
         <h3 className="bgr-title">{label}</h3>
         <p className="bgr-hint">
-          Works best when the background is plain white — a scanned signature or a logo exported on a white canvas.
+          Uses AI to detect and remove the background automatically — works with any photo, not just plain white backgrounds. The first time may take a little longer while the model loads.
         </p>
 
         <div className="bgr-preview-row">
@@ -62,7 +67,14 @@ export default function BackgroundRemovalPreview({ file, onConfirm, onCancel, la
             <div className="bgr-label">Background Removed</div>
             <div className="bgr-preview-box bgr-checkered">
               {processing ? (
-                <div className="bgr-spinner" />
+                <div className="bgr-progress">
+                  <div className="bgr-spinner" />
+                  {progress && (
+                    <span className="bgr-progress-label">
+                      {progress.label}{progress.percent != null ? ` ${progress.percent}%` : ""}
+                    </span>
+                  )}
+                </div>
               ) : processedUrl ? (
                 <img src={processedUrl} alt="Background removed" />
               ) : (
@@ -73,6 +85,11 @@ export default function BackgroundRemovalPreview({ file, onConfirm, onCancel, la
         </div>
 
         {error && <div className="bgr-error">{error}</div>}
+        {usedFallback && !error && (
+          <div className="bgr-notice">
+            AI background removal wasn't available right now, so a simpler method was used instead — it works best on plain white backgrounds. Try again for AI-quality results on any background.
+          </div>
+        )}
 
         <div className="bgr-actions">
           {!processedFile ? (
@@ -106,6 +123,9 @@ export default function BackgroundRemovalPreview({ file, onConfirm, onCancel, la
           .bgr-placeholder { font-size: 0.72rem; color: #A3A3A3; text-align: center; padding: 1rem; }
           .bgr-spinner { width: 24px; height: 24px; border: 2.5px solid #E5E5E5; border-top-color: #F47B20; border-radius: 50%; animation: bgr-spin 0.8s linear infinite; }
           @keyframes bgr-spin { to { transform: rotate(360deg); } }
+          .bgr-progress { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }
+          .bgr-progress-label { font-size: 0.68rem; color: #A3A3A3; text-align: center; padding: 0 0.5rem; }
+          .bgr-notice { background: #FFF7ED; color: #C4621A; border: 1px solid rgba(244,123,32,0.3); border-radius: 8px; padding: 0.6rem 0.875rem; font-size: 0.78rem; line-height: 1.5; margin-bottom: 1rem; }
           .bgr-error { background: #FEF2F2; color: #DC2626; border: 1px solid #FCA5A5; border-radius: 8px; padding: 0.6rem 0.875rem; font-size: 0.8rem; margin-bottom: 1rem; }
           .bgr-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
           .bgr-btn { flex: 1; min-width: 120px; border: none; border-radius: 8px; padding: 0.7rem 1rem; font-size: 0.85rem; font-weight: 700; cursor: pointer; font-family: var(--font-body, inherit); }
