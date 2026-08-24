@@ -107,9 +107,6 @@ export default function SWRegistrar() {
         const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
         await navigator.serviceWorker.ready;
 
-        // Warm cache after 3s
-        setTimeout(() => reg.active?.postMessage({ type: "WARM_CACHE", pages: ["/feed","/login","/register"] }), 3000);
-
         // If already logged in  ask for push permission with slight delay
         const raw = localStorage.getItem("auth-storage");
         if (raw && JSON.parse(raw)?.state?.isAuthenticated) {

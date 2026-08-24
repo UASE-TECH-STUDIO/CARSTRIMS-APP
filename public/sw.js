@@ -1,6 +1,5 @@
-const CACHE = "carstrims-v5";
+const CACHE = "carstrims-v6";
 const STATIC = [
-  "/", "/feed", "/login", "/register",
   "/favicon.svg", "/logo.png", "/icon-192.png", "/icon-72.png", "/audio.mp3",
 ];
 const NOTIF_ICON  = "/icon-192.png";
@@ -23,7 +22,16 @@ self.addEventListener("activate", (e) => {
   );
 });
 
-// Fetch  network first for pages, cache first for assets
+// Fetch  cache-first for hashed static assets only. Page/navigation
+// requests are deliberately NOT intercepted here at all (see below) -
+// this was the root cause of a real white-screen-on-refresh bug:
+// a stale cached HTML shell from an old deployment references JS
+// chunk filenames that Next.js deletes on every new deploy, so
+// serving that cached shell as a fallback left the app's JS 404ing
+// and never hydrating. Letting the browser handle navigations
+// natively avoids that entirely, since only content-hashed assets
+// (safe to cache indefinitely, since a hash change means a new URL)
+// pass through this handler.
 self.addEventListener("fetch", (e) => {
   const { request } = e;
   const url = new URL(request.url);
@@ -31,6 +39,8 @@ self.addEventListener("fetch", (e) => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/api/")) return;
   if (request.method !== "GET") return;
+  if (request.mode === "navigate") return;
+  if (request.destination === "document") return;
 
   if (/\.(js|css|png|svg|jpg|jpeg|webp|woff2?|ico|mp3)$/.test(url.pathname)) {
     e.respondWith(
@@ -44,16 +54,8 @@ self.addEventListener("fetch", (e) => {
     );
     return;
   }
-
-  e.respondWith(
-    fetch(request).then(res => {
-      if (res.ok && res.status < 400) {
-        const clone = res.clone();
-        caches.open(CACHE).then(c => c.put(request, clone));
-      }
-      return res;
-    }).catch(() => caches.match(request).then(c => c || caches.match("/")))
-  );
+  // Anything else (non-navigation, non-hashed-asset GET) - let the
+  // browser handle it normally, don't intercept.
 });
 
 //  PUSH from server 
@@ -113,14 +115,6 @@ self.addEventListener("notificationclick", (event) => {
   );
 });
 
-//  Messages from page 
+//  Messages from page  (reserved for future use)
 self.addEventListener("message", (event) => {
-  if (event.data?.type === "WARM_CACHE") {
-    const pages = event.data.pages || [];
-    caches.open(CACHE).then(c => {
-      pages.forEach(p => {
-        fetch(p, { priority: "low" }).then(r => { if (r.ok) c.put(p, r); }).catch(() => {});
-      });
-    });
-  }
 });
