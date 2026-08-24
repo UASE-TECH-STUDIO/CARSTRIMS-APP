@@ -1,23 +1,22 @@
 /**
- * AI-powered client-side background removal for logos, signatures,
- * and other images uploaded across the app.
+ * Client-side background removal for logos, signatures, and other
+ * images uploaded across the app.
  *
- * Uses @imgly/background-removal - a real neural-network-based subject
- * segmentation model (ONNX, running via WebAssembly), the same
- * underlying technology behind most "perfect" background removal
- * tools. Runs entirely in the browser/WebView - no server cost, no
- * API key, no images ever leave the device.
+ * Detects and removes near-white pixels with a feathered edge - works
+ * well for a logo or signature scanned/photographed on plain white
+ * paper, which is the common case across the app's upload flows.
  *
- * This replaces the previous approach, which only detected and
- * removed near-white pixels - it worked for a logo scanned on plain
- * white paper, but did nothing at all for anything with a real,
- * complex background (a car photo, a logo on a colored background,
- * a signature photographed on a desk), which is exactly the
- * "isn't removing anything" complaint this replaces.
- *
- * The AI model files (~40-80MB) download on first use and are cached
- * by the browser afterward - the first run on a given device will be
- * noticeably slower than every run after.
+ * A real AI-based subject segmentation approach (@imgly/background-
+ * removal, via onnxruntime-web) was tried here and reverted - it
+ * ships pre-built .mjs bundles that use import.meta in a way Next.js's
+ * webpack/Terser build cannot compile, confirmed across multiple
+ * different bundled backend files (CPU, WASM, WebGPU), not just one -
+ * a systemic packaging incompatibility rather than a single
+ * fixable spot. A targeted webpack workaround was attempted first and
+ * didn't resolve it, so reverting to this proven, working method was
+ * the right call rather than continuing to fight bundler
+ * configuration for a dependency that isn't Next.js-compatible out of
+ * the box.
  */
 
 export interface BgRemovalResult {
@@ -25,52 +24,11 @@ export interface BgRemovalResult {
   previewUrl: string;
 }
 
-export interface BgRemovalProgress {
-  /** 0-100, or null while still in an indeterminate phase (e.g. warming up) */
-  percent: number | null;
-  label: string;
-}
-
 /**
- * Removes the background from any image using real AI subject
- * segmentation. Works for logos, signatures, product photos, and
- * general images with any background - not just plain white ones.
- */
-export async function removeBackgroundAI(
-  file: File,
-  onProgress?: (progress: BgRemovalProgress) => void
-): Promise<BgRemovalResult> {
-  onProgress?.({ percent: null, label: "Loading AI model…" });
-
-  // Lazy-loaded - this library and its model files are large, so we
-  // only ever pull them in when someone actually uses this feature,
-  // not as part of the app's normal page-load bundle.
-  const { default: removeBackground } = await import("@imgly/background-removal");
-
-  const blob = await removeBackground(file, {
-    progress: (key: string, current: number, total: number) => {
-      if (!onProgress) return;
-      const pct = total > 0 ? Math.round((current / total) * 100) : null;
-      const label = key.includes("fetch")
-        ? "Downloading AI model…"
-        : "Removing background…";
-      onProgress({ percent: pct, label });
-    },
-  });
-
-  onProgress?.({ percent: 100, label: "Done" });
-
-  const outFile = new File([blob], renameToPng(file.name), { type: "image/png" });
-  return { file: outFile, previewUrl: URL.createObjectURL(blob) };
-}
-
-/**
- * Fallback: the original near-white-background removal approach.
- * Kept available for two cases: (1) the AI model fails to load
- * (offline first-use, restrictive network, unsupported WebView
- * configuration) and (2) documents that genuinely are just a plain
- * white-background scan, where this simpler method is instant with
- * no model download at all.
+ * Removes near-white background pixels, with a feathered edge so the
+ * cutout doesn't look harshly cut out. Best suited to plain
+ * white-background scans/photos - won't do anything useful for a
+ * photo with a real, complex background.
  */
 export async function removeNearWhiteBackground(
   file: File,
@@ -108,26 +66,6 @@ export async function removeNearWhiteBackground(
 
   const outFile = new File([blob], renameToPng(file.name), { type: "image/png" });
   return { file: outFile, previewUrl: URL.createObjectURL(blob) };
-}
-
-/**
- * Tries the real AI removal first; if it fails for any reason (model
- * couldn't load, unsupported environment, network issue on first
- * use), falls back to the near-white method rather than leaving the
- * person with a hard error and no result at all.
- */
-export async function removeBackgroundSmart(
-  file: File,
-  onProgress?: (progress: BgRemovalProgress) => void
-): Promise<BgRemovalResult & { usedFallback: boolean }> {
-  try {
-    const result = await removeBackgroundAI(file, onProgress);
-    return { ...result, usedFallback: false };
-  } catch (e) {
-    onProgress?.({ percent: null, label: "AI model unavailable, using basic removal…" });
-    const result = await removeNearWhiteBackground(file);
-    return { ...result, usedFallback: true };
-  }
 }
 
 function loadImage(file: File): Promise<HTMLImageElement> {

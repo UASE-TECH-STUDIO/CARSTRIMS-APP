@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { removeBackgroundSmart, BgRemovalProgress } from "@/lib/backgroundRemoval";
+import { removeNearWhiteBackground } from "@/lib/backgroundRemoval";
 
 interface Props {
   file: File;
@@ -21,8 +21,6 @@ export default function BackgroundRemovalPreview({ file, onConfirm, onCancel, la
   const [processedUrl, setProcessedUrl] = useState<string>("");
   const [processedFile, setProcessedFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [progress, setProgress] = useState<BgRemovalProgress | null>(null);
-  const [usedFallback, setUsedFallback] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -34,17 +32,14 @@ export default function BackgroundRemovalPreview({ file, onConfirm, onCancel, la
   const handleRemoveBackground = async () => {
     setProcessing(true);
     setError("");
-    setProgress(null);
     try {
-      const result = await removeBackgroundSmart(file, setProgress);
+      const result = await removeNearWhiteBackground(file);
       setProcessedUrl(result.previewUrl);
       setProcessedFile(result.file);
-      setUsedFallback(result.usedFallback);
     } catch (e: any) {
       setError(e?.message || "Couldn't process this image");
     } finally {
       setProcessing(false);
-      setProgress(null);
     }
   };
 
@@ -53,7 +48,7 @@ export default function BackgroundRemovalPreview({ file, onConfirm, onCancel, la
       <div className="bgr-panel" onClick={(e) => e.stopPropagation()}>
         <h3 className="bgr-title">{label}</h3>
         <p className="bgr-hint">
-          Uses AI to detect and remove the background automatically — works with any photo, not just plain white backgrounds. The first time may take a little longer while the model loads.
+          Detects and removes a plain white background automatically — works best on logos or signatures scanned or photographed on plain white paper.
         </p>
 
         <div className="bgr-preview-row">
@@ -69,11 +64,6 @@ export default function BackgroundRemovalPreview({ file, onConfirm, onCancel, la
               {processing ? (
                 <div className="bgr-progress">
                   <div className="bgr-spinner" />
-                  {progress && (
-                    <span className="bgr-progress-label">
-                      {progress.label}{progress.percent != null ? ` ${progress.percent}%` : ""}
-                    </span>
-                  )}
                 </div>
               ) : processedUrl ? (
                 <img src={processedUrl} alt="Background removed" />
@@ -85,11 +75,6 @@ export default function BackgroundRemovalPreview({ file, onConfirm, onCancel, la
         </div>
 
         {error && <div className="bgr-error">{error}</div>}
-        {usedFallback && !error && (
-          <div className="bgr-notice">
-            AI background removal wasn't available right now, so a simpler method was used instead — it works best on plain white backgrounds. Try again for AI-quality results on any background.
-          </div>
-        )}
 
         <div className="bgr-actions">
           {!processedFile ? (
