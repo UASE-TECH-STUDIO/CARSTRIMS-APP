@@ -11,6 +11,14 @@ import { useConfirm } from "@/store/confirmStore";
 import { useVoiceInput } from "@/lib/useVoiceInput";
 import { correctVoiceTranscript } from "@/lib/voiceCarCorrection";
 import FeedFilterDropdown from "@/components/shared/FeedFilterDropdown";
+import CustomSelect from "@/components/ui/CustomSelect";
+
+const SORT_OPTIONS = [
+  {value:"score",label:"Recommended"},
+  {value:"newest",label:"Newest first"},
+  {value:"price_asc",label:"Lowest price"},
+  {value:"price_desc",label:"Highest price"},
+];
 
 const BRANDS = ["Toyota","Honda","Mercedes","BMW","Lexus","Ford","Hyundai","Kia","Chevrolet","Audi","Land Rover","Jeep","Volkswagen","Nissan","Mazda","Peugeot","Mitsubishi","Subaru","Volvo","Porsche"];
 const CONDITIONS = ["brand_new","foreign_used","locally_used"];
@@ -690,6 +698,14 @@ export default function FeedPage() {
       {/* FEED INFO */}
       <div className="feed-info">
         <span className="feed-count">{total.toLocaleString()} vehicles found</span>
+        <div className="feed-info-controls">
+          <div style={{width:"148px"}}>
+            <CustomSelect value={fSort} onChange={setFSort} options={SORT_OPTIONS} />
+          </div>
+          <button type="button" className="feed-filter-btn" onClick={() => setShowFilter((v) => !v)}>
+            Filter
+          </button>
+        </div>
         {!isAuthenticated && <span className="guest-note">Login to save favorites and post comments</span>}
       </div>
 
@@ -1021,6 +1037,8 @@ export default function FeedPage() {
         /* FEED INFO */
         .feed-info { display:flex; align-items:center; justify-content:space-between; padding:0.75rem 1.25rem; flex-wrap:wrap; gap:0.5rem; }
         .feed-count { font-size:0.825rem; color:#737373; font-weight:500; }
+        .feed-info-controls { display:flex; align-items:center; gap:0.5rem; margin-left:auto; }
+        .feed-filter-btn { padding:0.45rem 0.9rem; border-radius:8px; border:1.5px solid #E5E5E5; background:#fff; color:#525252; font-size:0.8rem; font-weight:600; cursor:pointer; white-space:nowrap; }
         .guest-note { font-size:0.72rem; color:#A3A3A3; }
 
         /* CARS GRID */
