@@ -8,6 +8,8 @@ import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, 
 import { useToast } from "@/store/toastStore";
 import { useConfirm } from "@/store/confirmStore";
 import { parseServerDate } from "@/lib/timeUtils";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import PullToRefreshIndicator from "@/components/shared/PullToRefreshIndicator";
 
 const SC: Record<string,{bg:string;color:string;label:string}> = {
   pending:           {bg:"#FFF7ED",  color:"#D97706", label:"Pending"},
@@ -73,6 +75,8 @@ export default function UserRequestsPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const pull = usePullToRefresh(load);
 
   useEffect(() => {
     if (dealerSearch.length < 2) { setDealers([]); return; }
@@ -243,7 +247,8 @@ export default function UserRequestsPage() {
   const canAbort = (r:any) => !["cancelled","completed","aborted","declined"].includes(r.status);
 
   return (
-    <div style={{display:"flex",flexDirection:"column",gap:"1.5rem",fontFamily:"var(--font-body)"}}>
+    <div style={{display:"flex",flexDirection:"column",gap:"1.5rem",fontFamily:"var(--font-body)"}} {...pull.handlers}>
+      <PullToRefreshIndicator pullDistance={pull.pullDistance} refreshing={pull.refreshing} />
 
       {/* Lightbox */}
       {lightbox&&(
