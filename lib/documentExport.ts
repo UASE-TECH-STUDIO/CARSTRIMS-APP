@@ -112,6 +112,30 @@ export async function renderElementToCardPdfBlob(element: HTMLElement, title = "
 }
 
 /**
+ * Renders a DOM element to a PDF sized as a standard CR80 card
+ * (3.375in x 2.125in - the same physical dimensions as a credit card
+ * and what most professional ID card printers expect), rather than
+ * forcing it onto a full A4 page like renderElementToPdfBlob does.
+ * Used for ID cards and any other small-format printable design.
+ *
+ * Captured at a higher scale than the general document exporter
+ * (3x instead of 2x) - cards are physically small, so print crispness
+ * per square inch matters more here than it does for a full page.
+ */
+export async function renderElementToCardPdfBlob(element: HTMLElement, title = "ID Card"): Promise<Blob> {
+  const canvas = await html2canvas(element, { scale: 3, useCORS: true, backgroundColor: "#ffffff" });
+
+  const CARD_WIDTH_PT = 243;  // 3.375in * 72pt/in
+  const CARD_HEIGHT_PT = 153; // 2.125in * 72pt/in
+
+  const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: [CARD_WIDTH_PT, CARD_HEIGHT_PT] });
+  const imgData = canvas.toDataURL("image/png");
+  pdf.addImage(imgData, "PNG", 0, 0, CARD_WIDTH_PT, CARD_HEIGHT_PT);
+  pdf.setProperties({ title });
+  return pdf.output("blob");
+}
+
+/**
  * Renders a full standalone HTML document string (e.g. the detailed
  * invoice/receipt templates already built with window.print() in mind)
  * into a real PDF, via a hidden offscreen iframe. This means existing,
