@@ -27,6 +27,8 @@ export default function CarDetailClient() {
   const [favorited, setFavorited] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [comments, setComments] = useState<any[]>([]);
+  const [commentLikes, setCommentLikes] = useState<string[]>([]);
+  const [likingComment, setLikingComment] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
   const [showContact, setShowContact] = useState(false);
@@ -120,6 +122,13 @@ export default function CarDetailClient() {
             const lr = await api.get(`/api/v1/public/cars/${carId}/likes/me`);
             setLiked(lr.data.liked); setFavorited(lr.data.favorited);
           } catch {}
+          const commentIds = (commentRes.data.comments || []).map((c: any) => c.commentId);
+          if (commentIds.length > 0) {
+            try {
+              const clr = await api.get(`/api/v1/public/cars/${carId}/comments/likes/me`, { params: { comment_ids: commentIds.join(",") } });
+              setCommentLikes(clr.data.liked || []);
+            } catch {}
+          }
         }
       } catch { } finally { setLoading(false); }
     };
@@ -210,6 +219,25 @@ export default function CarDetailClient() {
       setComments(r.data.comments || []);
       setReplyTo(null); setReplyText("");
     } catch {}
+  };
+
+  const handleCommentLike = async (commentId: string) => {
+    if (!isAuthenticated || likingComment) return;
+    const wasLiked = commentLikes.includes(commentId);
+    // Optimistic update - toggle immediately, revert only if the
+    // request actually fails, so liking feels instant rather than
+    // waiting on a round trip for a simple counter.
+    setCommentLikes(p => wasLiked ? p.filter(id => id !== commentId) : [...p, commentId]);
+    setComments(p => p.map(c => c.commentId === commentId ? { ...c, likes: (c.likes || 0) + (wasLiked ? -1 : 1) } : c));
+    setLikingComment(commentId);
+    try {
+      await api.post(`/api/v1/public/cars/${carId}/comments/${commentId}/like`);
+    } catch {
+      setCommentLikes(p => wasLiked ? [...p, commentId] : p.filter(id => id !== commentId));
+      setComments(p => p.map(c => c.commentId === commentId ? { ...c, likes: (c.likes || 0) + (wasLiked ? 1 : -1) } : c));
+    } finally {
+      setLikingComment(null);
+    }
   };
 
   const handleAdminDeleteCar = async () => {
@@ -477,6 +505,20 @@ export default function CarDetailClient() {
                     )}
                   </div>
                   <div className="cd-comment-text">{c.text}</div>
+                  <div className="cd-comment-actions">
+                    <button
+                      className={`cd-comment-like-btn ${commentLikes.includes(c.commentId)?"liked":""}`}
+                      disabled={!isAuthenticated}
+                      onClick={() => handleCommentLike(c.commentId)}
+                    >
+                      {commentLikes.includes(c.commentId) ? "♥" : "♡"} {c.likes > 0 ? c.likes : ""}
+                    </button>
+                    {isAuthenticated && (
+                      <button className="cd-reply-btn" onClick={()=>setReplyTo(replyTo===c.commentId?null:c.commentId)}>
+                        Reply{c.replies?.length > 0 ? ` (${c.replies.length})` : ""}
+                      </button>
+                    )}
+                  </div>
                   {c.replies?.length > 0 && (
                     <div className="cd-replies">
                       {c.replies.map((r: any)=>(
@@ -490,9 +532,6 @@ export default function CarDetailClient() {
                         </div>
                       ))}
                     </div>
-                  )}
-                  {isAuthenticated && (
-                    <button className="cd-reply-btn" onClick={()=>setReplyTo(replyTo===c.commentId?null:c.commentId)}>Reply</button>
                   )}
                   {replyTo===c.commentId && (
                     <div className="cd-reply-form">
@@ -615,6 +654,11 @@ export default function CarDetailClient() {
         .cd-reply-author{font-size:0.8rem;font-weight:700;color:#1A1A1A;text-decoration:none;display:block}
         .cd-reply-author:hover{color:#F47B20}
         .cd-reply-text{font-size:0.825rem;color:#525252;line-height:1.55}
+        .cd-comment-actions{display:flex;align-items:center;gap:1rem;margin-top:0.35rem}
+        .cd-comment-like-btn{background:none;border:none;color:#A3A3A3;cursor:pointer;font-size:0.85rem;font-family:var(--font-body);font-weight:600;padding:0;display:flex;align-items:center;gap:0.25rem}
+        .cd-comment-like-btn:hover{color:#DC2626}
+        .cd-comment-like-btn.liked{color:#DC2626}
+        .cd-comment-like-btn:disabled{cursor:default;opacity:0.6}
         .cd-reply-btn{background:none;border:none;color:#A3A3A3;cursor:pointer;font-size:0.78rem;font-family:var(--font-body);font-weight:600;padding:0}
         .cd-reply-btn:hover{color:#F47B20}
         .cd-reply-form{display:flex;gap:0.5rem;margin-top:0.5rem;flex-wrap:wrap}
