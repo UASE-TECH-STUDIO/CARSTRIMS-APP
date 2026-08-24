@@ -464,7 +464,7 @@ export default function CarDetailClient() {
             ? <div className="cd-no-comments">Be the first to comment</div>
             : comments.map((c)=>(
               <div key={c._id} className="cd-comment">
-                <Link href={`/users/${c.userId}`} className="cd-comment-av">{c.userName?.charAt(0)||"?"}</Link>
+                <Link href={`/users/${c.userId}`} className="cd-comment-av">{c.userPic?<img src={c.userPic} alt=""/>:(c.userName?.charAt(0)||"?")}</Link>
                 <div className="cd-comment-body">
                   <div className="cd-comment-hdr">
                     <Link href={`/users/${c.userId}`} className="cd-comment-author">{c.userName}</Link>
@@ -481,7 +481,7 @@ export default function CarDetailClient() {
                     <div className="cd-replies">
                       {c.replies.map((r: any)=>(
                         <div key={r.replyId} className="cd-reply">
-                          <Link href={`/users/${r.userId}`} className="cd-reply-av">{r.userName?.charAt(0)||"?"}</Link>
+                          <Link href={`/users/${r.userId}`} className="cd-reply-av">{r.userPic?<img src={r.userPic} alt=""/>:(r.userName?.charAt(0)||"?")}</Link>
                           <div>
                             <Link href={`/users/${r.userId}`} className="cd-reply-author">{r.userName}</Link>
                             <span className="cd-comment-time" style={{marginLeft:"0.5rem"}}>{timeAgoLong(r.createdAt)}</span>
@@ -596,7 +596,8 @@ export default function CarDetailClient() {
         .cd-no-comments{text-align:center;padding:2rem;color:#A3A3A3;font-size:0.9rem}
         .cd-comments-list{display:flex;flex-direction:column;gap:1.25rem}
         .cd-comment{display:flex;gap:0.75rem}
-        .cd-comment-av{width:36px;height:36px;border-radius:50%;background:#E5E5E5;color:#737373;font-size:0.9rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none;transition:background 0.15s}
+        .cd-comment-av{width:36px;height:36px;border-radius:50%;background:#E5E5E5;color:#737373;font-size:0.9rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none;transition:background 0.15s;overflow:hidden}
+        .cd-comment-av img{width:100%;height:100%;object-fit:cover}
         .cd-comment-av:hover{background:#F47B20;color:#fff}
         .cd-comment-body{flex:1;display:flex;flex-direction:column;gap:0.4rem}
         .cd-comment-hdr{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap}
@@ -608,7 +609,8 @@ export default function CarDetailClient() {
         .cd-comment-text{font-size:0.9rem;color:#404040;line-height:1.6}
         .cd-replies{margin-top:0.5rem;padding-left:1rem;border-left:2.5px solid #E5E5E5;display:flex;flex-direction:column;gap:0.625rem}
         .cd-reply{display:flex;gap:0.5rem;align-items:flex-start}
-        .cd-reply-av{width:26px;height:26px;border-radius:50%;background:#E5E5E5;color:#737373;font-size:0.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none}
+        .cd-reply-av{width:26px;height:26px;border-radius:50%;background:#E5E5E5;color:#737373;font-size:0.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none;overflow:hidden}
+        .cd-reply-av img{width:100%;height:100%;object-fit:cover}
         .cd-reply-av:hover{background:#F47B20;color:#fff}
         .cd-reply-author{font-size:0.8rem;font-weight:700;color:#1A1A1A;text-decoration:none;display:block}
         .cd-reply-author:hover{color:#F47B20}
