@@ -98,6 +98,70 @@ export function LetterheadMinimal({ data }: { data: BusinessDocData }) {
   );
 }
 
+export function LetterheadDark({ data }: { data: BusinessDocData }) {
+  return (
+    <div style={{ width: PAGE_W, height: PAGE_H, position: "relative", background: "#fff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
+      <div style={{ background: "#1A1A1A", padding: "40px 60px", display: "flex", alignItems: "center", gap: 16 }}>
+        {data.companyLogo && <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 48, height: 48, objectFit: "contain" }} />}
+        <div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: "#fff" }}>{data.companyName}</div>
+          <div style={{ fontSize: 9.5, color: "rgba(255,255,255,0.6)", marginTop: 4 }}>
+            {[data.companyAddress, [data.companyCity, data.companyState].filter(Boolean).join(", "), data.companyPhone, data.companyEmail].filter(Boolean).join("   ")}
+          </div>
+        </div>
+        {data.qrCode && <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: 44, height: 44, objectFit: "contain", marginLeft: "auto" }} />}
+      </div>
+      <div style={{ position: "absolute", left: 0, right: 0, top: 122, height: 4, background: "linear-gradient(90deg, #F47B20, #C9A84C)" }} />
+      {poweredByFooter(false)}
+    </div>
+  );
+}
+
+export function LetterheadSidebar({ data }: { data: BusinessDocData }) {
+  return (
+    <div style={{ width: PAGE_W, height: PAGE_H, position: "relative", background: "#fff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
+      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 14, background: "#F47B20" }} />
+      <div style={{ position: "absolute", left: 50, top: 50, display: "flex", flexDirection: "column", gap: 6 }}>
+        {data.companyLogo && <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 44, height: 44, objectFit: "contain" }} />}
+        <div style={{ fontSize: 19, fontWeight: 700, color: "#1A1A1A", marginTop: 6 }}>{data.companyName}</div>
+        <div style={{ fontSize: 9.5, color: "#737373", lineHeight: 1.6 }}>
+          <div>{data.companyAddress}</div>
+          <div>{[data.companyCity, data.companyState].filter(Boolean).join(", ")}</div>
+          <div>{[data.companyPhone, data.companyEmail].filter(Boolean).join(" · ")}</div>
+        </div>
+      </div>
+      {data.qrCode && (
+        <div style={{ position: "absolute", right: 50, top: 50, width: 46, height: 46 }}>
+          <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
+      )}
+      <div style={{ position: "absolute", left: 50, right: 50, top: 150, height: 1, background: "#E5E5E5" }} />
+      {poweredByFooter(false)}
+    </div>
+  );
+}
+
+export function LetterheadElegantGold({ data }: { data: BusinessDocData }) {
+  return (
+    <div style={{ width: PAGE_W, height: PAGE_H, position: "relative", background: "#FCFCFB", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
+      <div style={{ position: "absolute", left: 0, right: 0, top: 0, display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 44 }}>
+        {data.companyLogo && <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 46, height: 46, objectFit: "contain" }} />}
+        <div style={{ fontSize: 18, fontWeight: 700, color: "#1A1A1A", letterSpacing: "0.08em", textTransform: "uppercase", marginTop: 8 }}>{data.companyName}</div>
+        <div style={{ width: 40, height: 1.5, background: "#C9A84C", marginTop: 8 }} />
+        <div style={{ fontSize: 9, color: "#8A7539", marginTop: 8 }}>
+          {[data.companyAddress, [data.companyCity, data.companyState].filter(Boolean).join(", "), data.companyPhone, data.companyEmail].filter(Boolean).join("   ·   ")}
+        </div>
+      </div>
+      {data.qrCode && (
+        <div style={{ position: "absolute", right: 60, bottom: 60, width: 44, height: 44 }}>
+          <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
+      )}
+      {poweredByFooter(false)}
+    </div>
+  );
+}
+
 // ── Proforma Invoice ─────────────────────────────────────────────
 
 function ProformaHeader({ data, accent }: { data: BusinessDocData; accent: string }) {
@@ -216,6 +280,110 @@ export function ProformaDark({ data }: { data: BusinessDocData }) {
       </div>
       {data.qrCode && (
         <div style={{ position: "absolute", right: 60, bottom: 60, width: 46, height: 46 }}>
+          <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
+      )}
+      {poweredByFooter(false)}
+    </div>
+  );
+}
+
+export function ProformaMinimal({ data }: { data: BusinessDocData }) {
+  const total = itemsSubtotal(data.items);
+  return (
+    <div style={{ width: PAGE_W, height: PAGE_H, position: "relative", background: "#fff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.1)", paddingTop: 50 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "0 60px" }}>
+        <div>
+          {data.companyLogo && <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 36, height: 36, objectFit: "contain", marginBottom: 8 }} />}
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#1A1A1A" }}>{data.companyName}</div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: "#1A1A1A", letterSpacing: "0.1em" }}>PROFORMA</div>
+          <div style={{ fontSize: 8.5, color: "#A3A3A3", marginTop: 4 }}>{data.docNumber || "—"} · {data.docDate || "—"}</div>
+        </div>
+      </div>
+      <div style={{ margin: "24px 60px 0", height: 1, background: "#1A1A1A" }} />
+      <div style={{ padding: "20px 60px 0" }}>
+        <div style={{ fontSize: 9, fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>To</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#1A1A1A" }}>{data.customerName || "—"}</div>
+        <div style={{ fontSize: 9.5, color: "#737373" }}>{[data.customerPhone, data.customerAddress].filter(Boolean).join(" · ")}</div>
+      </div>
+      <div style={{ padding: "24px 60px 0" }}>
+        <ItemsTable items={data.items} accent="#1A1A1A" />
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#1A1A1A" }}>Total: {fmtNaira(total)}</div>
+        </div>
+      </div>
+      {data.qrCode && (
+        <div style={{ position: "absolute", right: 60, bottom: 60, width: 40, height: 40 }}>
+          <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
+      )}
+      {poweredByFooter(false)}
+    </div>
+  );
+}
+
+export function ProformaGreenAccent({ data }: { data: BusinessDocData }) {
+  const total = itemsSubtotal(data.items);
+  return (
+    <div style={{ width: PAGE_W, height: PAGE_H, position: "relative", background: "#fff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
+      <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 8, background: "#16A34A" }} />
+      <ProformaHeader data={data} accent="#16A34A" />
+      <div style={{ padding: "36px 60px 0" }}>
+        <div style={{ fontSize: 9, fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Prepared For</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#1A1A1A" }}>{data.customerName || "—"}</div>
+        <div style={{ fontSize: 9.5, color: "#737373" }}>{[data.customerPhone, data.customerAddress].filter(Boolean).join(" · ")}</div>
+      </div>
+      <div style={{ padding: "24px 60px 0" }}>
+        <ItemsTable items={data.items} accent="#16A34A" />
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
+          <div style={{ width: 220, background: "#F0FDF4", border: "1.5px solid #16A34A", borderRadius: 8, padding: "10px 14px", display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 700, color: "#16A34A" }}>
+            <span>Total</span><span>{fmtNaira(total)}</span>
+          </div>
+        </div>
+        {data.notes && (
+          <div style={{ marginTop: 24, fontSize: 9, color: "#737373", lineHeight: 1.6 }}>
+            <div style={{ fontWeight: 700, color: "#1A1A1A", marginBottom: 4 }}>Notes</div>
+            {data.notes}
+          </div>
+        )}
+      </div>
+      {data.qrCode && (
+        <div style={{ position: "absolute", right: 60, bottom: 60, width: 46, height: 46 }}>
+          <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
+      )}
+      {poweredByFooter(false)}
+    </div>
+  );
+}
+
+export function ProformaElegantGold({ data }: { data: BusinessDocData }) {
+  const total = itemsSubtotal(data.items);
+  return (
+    <div style={{ width: PAGE_W, height: PAGE_H, position: "relative", background: "#FCFCFB", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
+      <div style={{ padding: "44px 60px 0", textAlign: "center" }}>
+        {data.companyLogo && <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 40, height: 40, objectFit: "contain" }} />}
+        <div style={{ fontSize: 15, fontWeight: 700, color: "#1A1A1A", letterSpacing: "0.06em", marginTop: 6 }}>{data.companyName}</div>
+        <div style={{ fontSize: 17, fontWeight: 700, color: "#C9A84C", letterSpacing: "0.1em", marginTop: 14 }}>PROFORMA INVOICE</div>
+        <div style={{ fontSize: 8.5, color: "#8A7539", marginTop: 4 }}>{data.docNumber || "—"} · {data.docDate || "—"}</div>
+      </div>
+      <div style={{ padding: "26px 60px 0" }}>
+        <div style={{ fontSize: 9, fontWeight: 700, color: "#8A7539", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Prepared For</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#1A1A1A" }}>{data.customerName || "—"}</div>
+        <div style={{ fontSize: 9.5, color: "#737373" }}>{[data.customerPhone, data.customerAddress].filter(Boolean).join(" · ")}</div>
+      </div>
+      <div style={{ padding: "20px 60px 0" }}>
+        <ItemsTable items={data.items} accent="#C9A84C" />
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
+          <div style={{ width: 220, borderTop: "2px solid #C9A84C", padding: "8px 0", display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 700, color: "#1A1A1A" }}>
+            <span>Total</span><span>{fmtNaira(total)}</span>
+          </div>
+        </div>
+      </div>
+      {data.qrCode && (
+        <div style={{ position: "absolute", right: 60, bottom: 60, width: 44, height: 44, border: "1px solid #C9A84C", borderRadius: 4, padding: 2 }}>
           <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
         </div>
       )}
