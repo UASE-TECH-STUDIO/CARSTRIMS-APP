@@ -1,10 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 import CustomSelect from "@/components/ui/CustomSelect";
-import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, renderElementToPdfBlob, renderElementToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
 import { parseServerDate } from "@/lib/timeUtils";
+import { RECEIPT_DESIGNS, PROFORMA_DESIGNS, BusinessDocData } from "@/components/design-studio/BusinessDocDesigns";
 
 interface Props { doc: any; onClose: () => void; }
 
@@ -56,6 +57,42 @@ export default function DocumentViewer({ doc: initialDoc, onClose }: Props) {
   const totalAmt   = parseFloat(amount) || 0;
   const isReceipt  = ["RECEIPT","VEHICLE_SALES_RECEIPT"].includes(initialDoc?.documentType);
   const isProforma = initialDoc?.documentType === "PROFORMA_INVOICE";
+
+  // Design picker: "original" keeps the existing, fully-featured
+  // template (installments, vehicle image, etc.) completely
+  // unchanged as the default - the 5 new Design Studio designs are
+  // offered as additional style choices for receipts/invoices/
+  // proforma, reusing the same templates from the standalone
+  // Business Documents generator so both places share one set of
+  // designs. These cover the simpler, common case (no installment
+  // breakdown, no vehicle photo) - "Original" stays the right choice
+  // whenever those matter.
+  const designChoices = isProforma ? PROFORMA_DESIGNS : RECEIPT_DESIGNS;
+  const [designId, setDesignId] = useState<string>("original");
+  const newDesignRef = useRef<HTMLDivElement>(null);
+  const activeNewDesign = designId !== "original" ? designChoices.find(d => d.id === designId) : null;
+
+  const businessDocData: BusinessDocData = {
+    companyName: dealerName || "Dealer",
+    companyLogo: initialDoc?.dealer?.logo || null,
+    qrCode: initialDoc?.dealer?.qrCode || null,
+    companyAddress: dealerAddress,
+    companyPhone: dealerPhone,
+    companyEmail: initialDoc?.dealer?.email,
+    companyCity: initialDoc?.dealer?.city,
+    companyState: initialDoc?.dealer?.state,
+    docNumber: docNumber,
+    docDate: fmtD((docDate || "") + "T00:00:00Z") || fmtD(initialDoc?.issuedAt) || "",
+    customerName: buyerName || "Cash Buyer",
+    customerPhone: buyerPhone,
+    customerAddress: buyerAddress,
+    items: [{ description: `${carBrand} ${carModel} ${carYear}`.trim(), qty: 1, unitPrice: totalAmt }],
+    notes: notes,
+    amountPaid: isReceipt ? totalAmt : undefined,
+    paymentMethod: paymentMethod?.replace(/_/g, " "),
+    documentTitle: docTitle,
+  };
+
   const installments =
     initialDoc?.buyer?.installmentPlan?.installments ||
     (Array.isArray(initialDoc?.buyer?.installmentPlan) ? initialDoc?.buyer?.installmentPlan : null);
