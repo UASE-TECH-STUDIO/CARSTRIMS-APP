@@ -8,6 +8,8 @@ import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 import { useToast } from "@/store/toastStore";
 import { useConfirm } from "@/store/confirmStore";
 import { parseServerDate } from "@/lib/timeUtils";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import PullToRefreshIndicator from "@/components/shared/PullToRefreshIndicator";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 
@@ -60,6 +62,8 @@ export default function SalesPage() {
   };
 
   useEffect(()=>{fetchSales();},[search,skip]);
+
+  const pull = usePullToRefresh(fetchSales);
 
   const handleManualSale=async(e:React.FormEvent)=>{
     e.preventDefault();setSubmitting(true);setError("");
@@ -170,7 +174,8 @@ export default function SalesPage() {
       {invoiceTxn&&<InvoiceGenerator transactionId={invoiceTxn} onClose={()=>setInvoiceTxn(null)}/>}
       {reportCarId&&<CarFinancialReport carId={reportCarId} onClose={()=>setReportCarId(null)}/>}
 
-    <div className="sales-page">
+    <div className="sales-page" {...pull.handlers}>
+      <PullToRefreshIndicator pullDistance={pull.pullDistance} refreshing={pull.refreshing} />
       <div className="page-header">
         <div>
           <h2 className="page-heading">Sales Log</h2>
