@@ -61,7 +61,8 @@ const ENTRIES: NavEntry[] = [
   { path: "/dashboard/dealer/expenses", label: "Expenses", description: "Track and review expenses on your vehicles", keywords: ["expenses", "cost", "spending", "money spent"], roles: ["dealer"] },
 
   { path: "/dashboard/dealer/staff?action=add", label: "Add a Staff Member", description: "Create a new staff account with a role and permissions", keywords: ["add staff", "new staff", "add employee", "add worker", "create staff account", "hire", "add a staff member"], roles: ["dealer"] },
-  { path: "/dashboard/dealer/staff", label: "Staff", description: "Manage staff accounts, permissions, staff ID cards", keywords: ["staff", "employee", "manage staff", "workers", "team", "staff id card", "print id card", "staff permissions", "delete staff", "remove staff"], roles: ["dealer"] },
+  { path: "/dashboard/dealer/staff", label: "Staff", description: "Manage staff accounts and permissions", keywords: ["staff", "employee", "manage staff", "workers", "team", "staff permissions", "delete staff", "remove staff"], roles: ["dealer"] },
+  { path: "/dashboard/dealer/id-cards", label: "ID Cards", description: "Generate and download professional ID cards for the dealer or staff members", keywords: ["id card", "id cards", "print id card", "staff id card", "generate id card", "identity card", "employee card", "business card"], roles: ["dealer"] },
 
   { path: "/dashboard/dealer/partners", label: "Partners & Consignors", description: "Manage consignors/partners, assign vehicles, approve partner requests", keywords: ["partner", "consignor", "assign car", "assign vehicle", "approve partner", "partner request", "link partner", "my partners"], roles: ["dealer"] },
 
@@ -104,6 +105,7 @@ const ENTRIES: NavEntry[] = [
   { path: "/dashboard/staff/messages", label: "Messages", description: "Chat with buyers, partners, and your dealer", keywords: ["message", "chat", "talk to buyer", "contact", "inbox"], roles: ["staff"] },
 
   { path: "/dashboard/staff/staff", label: "Staff Management", description: "See or manage other staff accounts (needs view_staff or create_staff permission)", keywords: ["staff", "employee", "manage staff", "other staff", "team", "workers", "add staff", "add worker", "new worker", "add a new staff", "staff accounts"], roles: ["staff"] },
+  { path: "/dashboard/staff/id-cards", label: "ID Cards", description: "Generate and download ID cards (needs generate_id_cards permission)", keywords: ["id card", "id cards", "print id card", "generate id card", "identity card", "employee card"], roles: ["staff"] },
 
   { path: "/dashboard/staff/settings#password", label: "Change Password", description: "Update your account password", keywords: ["change password", "change my password", "reset password", "new password", "update password", "forgot password"], roles: ["staff"] },
   { path: "/dashboard/staff/settings#profile", label: "Profile Picture & Signature", description: "Update your profile picture or digital signature", keywords: ["profile picture", "change photo", "signature", "my photo"], roles: ["staff"] },
