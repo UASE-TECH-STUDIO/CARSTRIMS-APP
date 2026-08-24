@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href:"/dashboard/dealer/expenses", label:"Expenses", icon:"" },
   { href:"/dashboard/dealer/staff", label:"Staff", icon:"" },
   { href:"/dashboard/dealer/id-cards", label:"ID Cards", icon:"" },
+  { href:"/dashboard/dealer/business-docs", label:"Business Documents", icon:"" },
   { href:"/dashboard/dealer/partners", label:"Partners", icon:"" },
   { href:"/dashboard/dealer/requests", label:"Requests", icon:"" },
   { href:"/dashboard/dealer/appointments", label:"Appointments", icon:"" },
