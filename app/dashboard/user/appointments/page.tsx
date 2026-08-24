@@ -6,6 +6,8 @@ import { useToast } from "@/store/toastStore";
 import { useConfirm } from "@/store/confirmStore";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { parseServerDate } from "@/lib/timeUtils";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import PullToRefreshIndicator from "@/components/shared/PullToRefreshIndicator";
 
 const APT_TYPES = ["showroom_visit","test_drive","inspection","payment_meeting"];
 const STATUS_COLORS: Record<string,string> = {
@@ -35,7 +37,16 @@ export default function UserAppointmentsPage() {
       .finally(() => setLoading(false));
   };
 
+  const reload = async () => {
+    try {
+      const r = await api.get("/api/v1/users/appointments");
+      setAppointments(r.data || []);
+    } catch {} finally { setLoading(false); }
+  };
+
   useEffect(() => { load(); }, []);
+
+  const pull = usePullToRefresh(reload);
 
   const cancelAppt = async (aptId: string) => {
     if (!(await askConfirm({ message: "Cancel this appointment?", danger: true }))) return;
@@ -150,7 +161,8 @@ export default function UserAppointmentsPage() {
   };
 
   return (
-    <div className="apts-page">
+    <div className="apts-page" {...pull.handlers}>
+      <PullToRefreshIndicator pullDistance={pull.pullDistance} refreshing={pull.refreshing} />
       <div className="page-header">
         <div>
           <h2 className="page-heading">Appointments</h2>
