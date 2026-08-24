@@ -39,7 +39,7 @@ const STATUS_COLORS: Record<string,string> = { available:"#16A34A", sold:"#73737
 interface Car {
   _id:string; carId:string; brand:string; model:string; year:number;
   color:string; sellingPrice:number; promoPrice?:number; status:string;
-  images:string[]; viewCount:number; likeCount:number;
+  images:string[]; viewCount:number; likeCount:number; commentCount?:number;
   city?:string; state?:string; transmission?:string; fuelType?:string;
   dealerName?:string; dealerLogo?:string; condition?:string;
 }
@@ -750,18 +750,11 @@ export default function FeedPage() {
                   {car.promoPrice > 0 && car.promoPrice < car.sellingPrice && (
                     <div className="promo-tag">PROMO</div>
                   )}
-                  <div className="card-actions">
-                    <button className={`ca-btn ${userLikes.includes(car.carId)?"liked":""}`}
-                      onClick={(e) => handleLike(e, car.carId)}>
-                      {userLikes.includes(car.carId) ? "LIKED" : "LIKE"} {car.likeCount||0}
-                    </button>
-                    <button className={`ca-btn ${userFavs.includes(car.carId)?"faved":""}`}
-                      onClick={(e) => handleFav(e, car.carId)}>
-                      {userFavs.includes(car.carId) ? "SAVED" : "SAVE"}
-                    </button>
-                    <button className="ca-btn" onClick={(e) => handleShare(e, car)}>SHARE</button>
-                    {isAdmin && <button className="ca-btn ca-admin-del" onClick={(e) => handleAdminDelete(e, car)}>DELETE</button>}
-                  </div>
+                  {isAdmin && (
+                    <div className="card-actions">
+                      <button className="ca-btn ca-admin-del" onClick={(e) => handleAdminDelete(e, car)}>DELETE</button>
+                    </div>
+                  )}
                 </div>
 
                 {car.dealerName && (
@@ -773,14 +766,34 @@ export default function FeedPage() {
                 )}
 
                 <div className="car-info">
-                  <div className="car-name">{car.brand} {car.model}</div>
-                  <div className="car-sub">{car.year}{car.color?` - ${car.color}`:""}{car.transmission?` - ${car.transmission}`:""}</div>
-                  {car.city && <div className="car-loc">{car.city}{car.state?`, ${car.state}`:""}</div>}
-                  <div className="price-row">
-                    <span className="car-price">{fmt(car.sellingPrice)}</span>
-                    {car.promoPrice > 0 && car.promoPrice < car.sellingPrice && (
-                      <span className="car-promo">{fmt(car.promoPrice)}</span>
-                    )}
+                  <div className="car-info-top">
+                    <div className="car-info-main">
+                      <div className="car-name">{car.brand} {car.model}</div>
+                      <div className="car-sub">{car.year}{car.color?` - ${car.color}`:""}{car.transmission?` - ${car.transmission}`:""}</div>
+                      {car.city && <div className="car-loc">{car.city}{car.state?`, ${car.state}`:""}</div>}
+                      <div className="price-row">
+                        <span className="car-price">{fmt(car.sellingPrice)}</span>
+                        {car.promoPrice > 0 && car.promoPrice < car.sellingPrice && (
+                          <span className="car-promo">{fmt(car.promoPrice)}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="card-vactions">
+                      <button className={`va-btn ${userLikes.includes(car.carId)?"liked":""}`} onClick={(e) => handleLike(e, car.carId)}>
+                        <span className="va-icon">{userLikes.includes(car.carId) ? "♥" : "♡"}</span>
+                        <span className="va-count">{car.likeCount||0}</span>
+                      </button>
+                      <span className="va-btn va-static">
+                        <span className="va-icon">💬</span>
+                        <span className="va-count">{car.commentCount||0}</span>
+                      </span>
+                      <button className="va-btn" onClick={(e) => handleShare(e, car)}>
+                        <span className="va-icon">⤴</span>
+                      </button>
+                      <button className={`va-btn ${userFavs.includes(car.carId)?"faved":""}`} onClick={(e) => handleFav(e, car.carId)}>
+                        <span className="va-icon">{userFavs.includes(car.carId) ? "🔖" : "☆"}</span>
+                      </button>
+                    </div>
                   </div>
                   <div className="card-footer">
                     <span className="view-ct">Views: {car.viewCount||0}</span>
@@ -1070,9 +1083,7 @@ export default function FeedPage() {
           position:absolute; bottom:0; left:0; right:0;
           display:flex; gap:0.25rem; padding:0.5rem;
           background:linear-gradient(transparent,rgba(23,23,23,0.6));
-          opacity:0; transition:opacity 0.2s;
         }
-        .car-card:hover .card-actions { opacity:1; }
         .ca-btn {
           flex:1; background:rgba(23,23,23,0.55); backdrop-filter:blur(4px); border:none;
           border-radius:5px; padding:0.3rem; font-size:0.65rem; font-weight:700;
@@ -1080,8 +1091,6 @@ export default function FeedPage() {
           letter-spacing:0.04em; font-family:var(--font-body);
         }
         .ca-btn:hover { background:rgba(23,23,23,0.8); }
-        .ca-btn.liked { background:rgba(220,38,38,0.75); }
-        .ca-btn.faved { background:rgba(244,123,32,0.75); }
         .ca-admin-del { background:rgba(220,38,38,0.9)!important; }
 
         .dealer-strip {
@@ -1099,12 +1108,25 @@ export default function FeedPage() {
         .ds-loc { font-size:0.65rem; color:#A3A3A3; white-space:nowrap; }
 
         .car-info { padding:0.875rem; display:flex; flex-direction:column; gap:0.28rem; flex:1; }
+        .car-info-top { display:flex; align-items:flex-end; justify-content:space-between; gap:0.5rem; }
+        .car-info-main { display:flex; flex-direction:column; gap:0.28rem; min-width:0; flex:1; }
         .car-name { font-weight:700; font-size:0.9rem; color:#171717; }
         .car-sub { font-size:0.7rem; color:#737373; text-transform:capitalize; }
         .car-loc { font-size:0.68rem; color:#A3A3A3; }
         .price-row { display:flex; align-items:baseline; gap:0.5rem; margin-top:0.2rem; }
         .car-price { font-family:var(--font-display); font-size:1.2rem; color:#F47B20; letter-spacing:0.02em; }
         .car-promo { font-size:0.78rem; color:#16A34A; font-weight:600; }
+        .card-vactions { display:flex; flex-direction:column; align-items:center; gap:0.4rem; flex-shrink:0; }
+        .va-btn {
+          display:flex; flex-direction:column; align-items:center; gap:0.05rem;
+          background:none; border:none; cursor:pointer; padding:0; color:#A3A3A3;
+          font-family:var(--font-body); line-height:1;
+        }
+        .va-btn.va-static { cursor:default; }
+        .va-icon { font-size:1.05rem; }
+        .va-btn.liked .va-icon { color:#DC2626; }
+        .va-btn.faved .va-icon { color:#F47B20; }
+        .va-count { font-size:0.62rem; font-weight:700; color:#737373; }
         .card-footer {
           display:flex; align-items:center; justify-content:space-between;
           margin-top:0.4rem; padding-top:0.4rem; border-top:1px solid #F0F0F0;
