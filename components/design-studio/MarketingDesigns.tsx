@@ -128,9 +128,94 @@ export function ComplimentaryCardWhite({ data }: { data: ComplimentaryCardData }
   );
 }
 
+export function ComplimentaryCardDarkGold({ data }: { data: ComplimentaryCardData }) {
+  return (
+    <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: "#1A1A1A", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.25)", borderRadius: 8 }}>
+      <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 3, background: "linear-gradient(90deg, #F47B20, #C9A84C)" }} />
+      <div style={{ position: "absolute", left: 20, top: 20, display: "flex", alignItems: "center", gap: 8 }}>
+        {data.companyLogo && <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 24, height: 24, objectFit: "contain" }} />}
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#fff" }}>{data.companyName}</div>
+      </div>
+      {data.personName && (
+        <div style={{ position: "absolute", left: 20, top: 90 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{data.personName}</div>
+          {data.personRole && <div style={{ fontSize: 8, color: "#C9A84C", marginTop: 2, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>{data.personRole}</div>}
+        </div>
+      )}
+      <div style={{ position: "absolute", left: 20, bottom: 22, fontSize: 7.5, color: "rgba(255,255,255,0.6)", lineHeight: 1.7 }}>
+        {[data.companyPhone, data.companyEmail].filter(Boolean).map((l, i) => <div key={i}>{l}</div>)}
+      </div>
+      {data.qrCode && (
+        <div style={{ position: "absolute", right: 16, bottom: 16, width: 44, height: 44, background: "#fff", padding: 3, borderRadius: 4 }}>
+          <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
+      )}
+      {poweredByCard(true)}
+    </div>
+  );
+}
+
+export function ComplimentaryCardMinimalLine({ data }: { data: ComplimentaryCardData }) {
+  return (
+    <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: "#ffffff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.15)", borderRadius: 4 }}>
+      <div style={{ position: "absolute", left: 22, top: 22, display: "flex", alignItems: "center", gap: 6 }}>
+        {data.companyLogo && <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 16, height: 16, objectFit: "contain" }} />}
+        <div style={{ fontSize: 8, fontWeight: 700, color: "#1A1A1A", letterSpacing: "0.1em", textTransform: "uppercase" }}>{data.companyName}</div>
+      </div>
+      <div style={{ position: "absolute", left: 22, right: 22, top: 44, height: 1, background: "#E5E5E5" }} />
+      {data.personName && (
+        <div style={{ position: "absolute", left: 22, top: 90 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#1A1A1A" }}>{data.personName}</div>
+          {data.personRole && <div style={{ fontSize: 8, color: "#525252", marginTop: 3 }}>{data.personRole}</div>}
+        </div>
+      )}
+      <div style={{ position: "absolute", left: 22, bottom: 22, fontSize: 7, color: "#A3A3A3", lineHeight: 1.7 }}>
+        {[data.companyPhone, data.companyEmail].filter(Boolean).map((l, i) => <div key={i}>{l}</div>)}
+      </div>
+      {data.qrCode && (
+        <div style={{ position: "absolute", right: 22, bottom: 22, width: 38, height: 38 }}>
+          <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
+      )}
+      {poweredByCard(false)}
+    </div>
+  );
+}
+
+export function ComplimentaryCardSplit({ data }: { data: ComplimentaryCardData }) {
+  return (
+    <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: "#ffffff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.15)", borderRadius: 8 }}>
+      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: "38%", background: "#F47B20", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {data.companyLogo && <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 36, height: 36, objectFit: "contain" }} />}
+      </div>
+      <div style={{ position: "absolute", left: "42%", top: 18, right: 16 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: "#1A1A1A" }}>{data.companyName}</div>
+        {data.personName && (
+          <>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#1A1A1A", marginTop: 16 }}>{data.personName}</div>
+            {data.personRole && <div style={{ fontSize: 7.5, color: "#F47B20", marginTop: 2, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 700 }}>{data.personRole}</div>}
+          </>
+        )}
+      </div>
+      <div style={{ position: "absolute", left: "42%", bottom: 20, fontSize: 7, color: "#737373", lineHeight: 1.6 }}>
+        {[data.companyPhone, data.companyEmail].filter(Boolean).map((l, i) => <div key={i}>{l}</div>)}
+      </div>
+      {data.qrCode && (
+        <div style={{ position: "absolute", right: 14, bottom: 14, width: 36, height: 36 }}>
+          <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
+      )}
+      {poweredByCard(false)}
+    </div>
+  );
+}
+
 export const COMPLIMENTARY_CARD_DESIGNS = [
   { id: "orange", name: "Orange", Component: ComplimentaryCardOrange },
   { id: "white", name: "White", Component: ComplimentaryCardWhite },
+  { id: "dark-gold", name: "Dark Gold", Component: ComplimentaryCardDarkGold },
+  { id: "minimal-line", name: "Minimal Line", Component: ComplimentaryCardMinimalLine },
+  { id: "split", name: "Split", Component: ComplimentaryCardSplit },
 ];
 
 // ── Flyers ────────────────────────────────────────────────────────
