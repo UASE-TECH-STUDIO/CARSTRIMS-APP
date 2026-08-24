@@ -60,6 +60,11 @@ const PERM_GROUPS = [
     { id:"edit_staff",        label:"Edit Staff Details",       desc:"Update staff info and permissions" },
     { id:"suspend_staff",     label:"Suspend / Reactivate",     desc:"Suspend or reactivate staff" },
   ]},
+  { group:"Design Studio",    color:"#C9A84C", perms:[
+    { id:"generate_id_cards",             label:"Generate ID Cards",             desc:"Create staff and dealer ID cards - kept separate since these carry staff personal data" },
+    { id:"generate_marketing_materials",  label:"Generate Marketing Materials",  desc:"Create flyers, posters, and complimentary cards" },
+    { id:"generate_business_docs",        label:"Generate Business Documents",   desc:"Create letterheads, proforma invoices, and receipts" },
+  ]},
 ];
 
 const ALL_PERMS = PERM_GROUPS.flatMap(g => g.perms.map(p => p.id));
