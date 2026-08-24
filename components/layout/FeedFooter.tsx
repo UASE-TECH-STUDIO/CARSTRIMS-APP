@@ -155,14 +155,12 @@ export default function FeedFooter({ onScan }: Props) {
           background: #FFF7ED; border-color: #F47B20; color: #F47B20;
         }
         .bn-icon.qr {
-          background: #F47B20; border-color: #F47B20; color: #fff;
-          border-radius: 50%; width: 40px; height: 40px;
-          display: flex; align-items: center; justify-content: center;
-          margin-top: -10px;
-          box-shadow: 0 4px 12px rgba(244,123,32,0.35);
-          font-size: 0.65rem;
+          /* Intentionally matches the base .bn-icon style exactly -
+             no special shape, size, color, or raised position. It
+             should sit in the same row, same frame, as every other
+             nav icon rather than standing out as a different design
+             element. */
         }
-        .bn-item:hover .bn-icon.qr { background: #FF9340; border-color: #FF9340; color: #fff; }
         .bn-icon.out:hover, .bn-item:hover .bn-icon.out { background: #FEF2F2; border-color: #DC2626; color: #DC2626; }
         .bn-icon.info { font-size: 0.7rem; }
         .bn-label { font-size: 0.56rem; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 600; }
