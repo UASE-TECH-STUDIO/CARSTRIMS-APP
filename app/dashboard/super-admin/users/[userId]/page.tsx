@@ -334,7 +334,7 @@ export default function SuperAdminUserDetail() {
               {docExportBusy==="pdf"||docExportBusy==="jpg"?"Exporting…":"Download"}
             </button>
             {showDocPicker==="download" && (
-              <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,zIndex:30,background:"#fff",border:"1px solid #E5E5E5",borderRadius:"8px",boxShadow:"0 6px 18px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"110px"}}>
+              <div style={{position:"absolute",top:"calc(100% + 4px)",right:0,zIndex:30,background:"#fff",border:"1px solid #E5E5E5",borderRadius:"8px",boxShadow:"0 6px 18px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"110px"}}>
                 <button onClick={()=>handleDocDownload("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.5rem 0.75rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.72rem",fontWeight:600}}>as PDF</button>
                 <button onClick={()=>handleDocDownload("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.5rem 0.75rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.72rem",fontWeight:600}}>as JPG</button>
               </div>
@@ -345,7 +345,7 @@ export default function SuperAdminUserDetail() {
               {docExportBusy==="share"?"Sharing…":"Share"}
             </button>
             {showDocPicker==="share" && (
-              <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,zIndex:30,background:"#fff",border:"1px solid #E5E5E5",borderRadius:"8px",boxShadow:"0 6px 18px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"110px"}}>
+              <div style={{position:"absolute",top:"calc(100% + 4px)",right:0,zIndex:30,background:"#fff",border:"1px solid #E5E5E5",borderRadius:"8px",boxShadow:"0 6px 18px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"110px"}}>
                 <button onClick={()=>handleDocShare("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.5rem 0.75rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.72rem",fontWeight:600}}>as PDF</button>
                 <button onClick={()=>handleDocShare("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.5rem 0.75rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.72rem",fontWeight:600}}>as JPG</button>
               </div>
