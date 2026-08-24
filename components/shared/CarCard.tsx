@@ -59,7 +59,7 @@ export default function CarCard({ car, onLike, onSave, liked, saved, compact }: 
             </div>
           )}
           {/* Promo badge */}
-          {car.promoPrice && car.promoPrice < car.sellingPrice && (
+          {car.promoPrice > 0 && car.promoPrice < car.sellingPrice && (
             <div className="cc-promo-badge">PROMO</div>
           )}
         </div>
@@ -77,7 +77,7 @@ export default function CarCard({ car, onLike, onSave, liked, saved, compact }: 
           )}
           <div className="cc-price-row">
             <div className="cc-price">{fmt(car.sellingPrice)}</div>
-            {car.promoPrice && car.promoPrice < car.sellingPrice && (
+            {car.promoPrice > 0 && car.promoPrice < car.sellingPrice && (
               <div className="cc-promo-price">{fmt(car.promoPrice)}</div>
             )}
           </div>

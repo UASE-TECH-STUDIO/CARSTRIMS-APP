@@ -731,7 +731,7 @@ export default function FeedPage() {
                   <div className="car-status-tag" style={{background:STATUS_COLORS[car.status]||"#737373"}}>
                     {car.status.replace(/_/g," ")}
                   </div>
-                  {car.promoPrice && car.promoPrice < car.sellingPrice && (
+                  {car.promoPrice > 0 && car.promoPrice < car.sellingPrice && (
                     <div className="promo-tag">PROMO</div>
                   )}
                   <div className="card-actions">
@@ -762,7 +762,7 @@ export default function FeedPage() {
                   {car.city && <div className="car-loc">{car.city}{car.state?`, ${car.state}`:""}</div>}
                   <div className="price-row">
                     <span className="car-price">{fmt(car.sellingPrice)}</span>
-                    {car.promoPrice && car.promoPrice < car.sellingPrice && (
+                    {car.promoPrice > 0 && car.promoPrice < car.sellingPrice && (
                       <span className="car-promo">{fmt(car.promoPrice)}</span>
                     )}
                   </div>

@@ -366,7 +366,7 @@ export default function CarDetailClient() {
             <div className="cd-car-meta">{car.year} . {car.color} . {car.condition}</div>
             <div className="cd-price-row">
               <div className="cd-price">{fmt(car.sellingPrice)}</div>
-              {car.promoPrice && car.promoPrice < car.sellingPrice && (
+              {car.promoPrice > 0 && car.promoPrice < car.sellingPrice && (
                 <div className="cd-promo">Promo: {fmt(car.promoPrice)}</div>
               )}
             </div>
