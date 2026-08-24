@@ -282,7 +282,7 @@ export default function ReportsPage() {
       ${dealer?.signature ? `
         <div class="sig-row">
           <div>
-            <img src="${dealer.signature}" style="height:48px;object-fit:contain;display:block;mix-blend-mode:multiply;margin-bottom:6px"/>
+            <img src="${dealer.signature}" style="height:48px;object-fit:contain;display:block;margin-bottom:6px"/>
             <div class="sig-line"></div>
             <div style="font-size:0.75rem;color:#888">${dealer?.companyName} — Authorised Signatory</div>
           </div>

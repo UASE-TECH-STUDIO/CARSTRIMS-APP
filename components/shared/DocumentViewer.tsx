@@ -229,7 +229,7 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
 <div class="sg">
   <div>
     <div class="sl">Seller Signature / Manager's Signature</div>
-    ${d?.dealer?.signature ? `<img src="${d.dealer.signature}" style="max-height:52px;max-width:180px;object-fit:contain;display:block;mix-blend-mode:multiply;margin-bottom:4px" alt=""/>` : `<div class="sline"></div>`}
+    ${d?.dealer?.signature ? `<img src="${d.dealer.signature}" style="max-height:52px;max-width:180px;object-fit:contain;display:block;margin-bottom:4px" alt=""/>` : `<div class="sline"></div>`}
     <div style="font-size:10px;font-weight:700">${dealerName}</div>
     <div class="ss">Authorised Signatory</div>
   </div>
