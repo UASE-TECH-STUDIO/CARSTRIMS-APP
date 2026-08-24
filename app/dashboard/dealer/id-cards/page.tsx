@@ -22,6 +22,7 @@ export default function IdCardsPage() {
   const [downloading, setDownloading] = useState<"jpg" | "pdf" | null>(null);
 
   const cardRef = useRef<HTMLDivElement>(null);
+  const cardBackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     (async () => {
@@ -74,6 +75,9 @@ export default function IdCardsPage() {
         personPhoto: dealer.logo || null,
         companyCity: dealer.city,
         companyState: dealer.state,
+        companyPhone: dealer.phone,
+        companyEmail: dealer.email,
+        companyAddress: dealer.address,
       };
     }
     if (subject === "staff" && selectedStaff) {
@@ -87,6 +91,9 @@ export default function IdCardsPage() {
         personPhoto: selectedStaff.profilePicture || null,
         companyCity: dealer.city,
         companyState: dealer.state,
+        companyPhone: dealer.phone,
+        companyEmail: dealer.email,
+        companyAddress: dealer.address,
       };
     }
     return null;
@@ -96,15 +103,28 @@ export default function IdCardsPage() {
   const activeDesign = ID_CARD_DESIGNS.find(d => d.id === designId);
 
   const handleDownload = async (format: "jpg" | "pdf") => {
-    if (!cardRef.current || !cardData) return;
+    if (!cardRef.current || !cardBackRef.current || !cardData) return;
     setDownloading(format);
     try {
       const filenameBase = `${dealer.companyName || "id-card"}-${cardData.personName}`.replace(/\s+/g, "-").toLowerCase();
       if (format === "jpg") {
-        const blob = await renderElementToJpgBlob(cardRef.current, 0.95);
-        await downloadBlob(blob, `${filenameBase}.jpg`);
+        const [frontBlob, backBlob] = await Promise.all([
+          renderElementToJpgBlob(cardRef.current, 0.95),
+          renderElementToJpgBlob(cardBackRef.current, 0.95),
+        ]);
+        await downloadBlob(frontBlob, `${filenameBase}-front.jpg`);
+        // A short gap before the second download - triggering two
+        // downloads back-to-back in the same tick risks the second
+        // one being silently blocked by some browsers/WebViews,
+        // which treat rapid successive programmatic downloads
+        // similarly to popup spam.
+        await new Promise(resolve => setTimeout(resolve, 400));
+        await downloadBlob(backBlob, `${filenameBase}-back.jpg`);
       } else {
-        const blob = await renderElementToCardPdfBlob(cardRef.current, `${cardData.personName} - ID Card`);
+        const blob = await renderElementToCardPdfBlob(
+          [cardRef.current, cardBackRef.current],
+          `${cardData.personName} - ID Card`
+        );
         await downloadBlob(blob, `${filenameBase}.pdf`);
       }
       showToast("Downloaded", "success");
@@ -177,10 +197,19 @@ export default function IdCardsPage() {
           <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
             {ID_CARD_DESIGNS.map(d => (
               <button key={d.id} onClick={() => setDesignId(d.id)} style={designThumbStyle(designId === d.id)}>
-                <div style={{ transform: "scale(0.42)", transformOrigin: "top left", width: "337.5px", height: "212.5px", pointerEvents: "none" }}>
-                  <d.Component data={cardData} />
+                <div style={{ display: "flex", gap: "0.2rem" }}>
+                  <div style={{ width: "81px", height: "51px", overflow: "hidden", flexShrink: 0 }}>
+                    <div style={{ transform: "scale(0.24)", transformOrigin: "top left", pointerEvents: "none" }}>
+                      <d.Component data={cardData} />
+                    </div>
+                  </div>
+                  <div style={{ width: "81px", height: "51px", overflow: "hidden", flexShrink: 0 }}>
+                    <div style={{ transform: "scale(0.24)", transformOrigin: "top left", pointerEvents: "none" }}>
+                      <d.BackComponent data={cardData} />
+                    </div>
+                  </div>
                 </div>
-                <div style={{ marginTop: "-0.6rem", fontSize: "0.72rem", fontWeight: 700, color: "#525252" }}>{d.name}</div>
+                <div style={{ marginTop: "0.3rem", fontSize: "0.72rem", fontWeight: 700, color: "#525252" }}>{d.name}</div>
               </button>
             ))}
           </div>
@@ -191,9 +220,18 @@ export default function IdCardsPage() {
       {cardData && activeDesign && (
         <div>
           <div style={stepLabelStyle}>{subject === "staff" ? "4" : "3"}. Preview & download</div>
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: "1.25rem", padding: "1.5rem", background: "#FAFAFA", borderRadius: "12px" }}>
-            <div ref={cardRef}>
-              <activeDesign.Component data={cardData} />
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "1.5rem", marginBottom: "1.25rem", padding: "1.5rem", background: "#FAFAFA", borderRadius: "12px" }}>
+            <div>
+              <div style={{ fontSize: "0.68rem", fontWeight: 700, color: "#A3A3A3", textAlign: "center", marginBottom: "0.4rem" }}>FRONT</div>
+              <div ref={cardRef}>
+                <activeDesign.Component data={cardData} />
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: "0.68rem", fontWeight: 700, color: "#A3A3A3", textAlign: "center", marginBottom: "0.4rem" }}>BACK</div>
+              <div ref={cardBackRef}>
+                <activeDesign.BackComponent data={cardData} />
+              </div>
             </div>
           </div>
           <div style={{ display: "flex", gap: "0.75rem" }}>
@@ -237,7 +275,7 @@ function designThumbStyle(active: boolean): CSSProperties {
     display: "flex", flexDirection: "column", alignItems: "center",
     padding: "0.5rem", borderRadius: "10px", cursor: "pointer",
     border: active ? "2px solid #F47B20" : "1.5px solid #E5E5E5",
-    background: "#fff", width: "150px", height: "110px", overflow: "hidden",
+    background: "#fff", width: "184px", height: "80px", overflow: "hidden",
   };
 }
 
