@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, CSSProperties } from "react";
+import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import FeedHomeButton from "@/components/shared/FeedHomeButton";
 import { useToast } from "@/store/toastStore";
@@ -10,6 +11,7 @@ type Subject = "dealer" | "staff";
 
 export default function IdCardsPage() {
   const showToast = useToast();
+  const searchParams = useSearchParams();
   const [dealer, setDealer] = useState<any>(null);
   const [staffList, setStaffList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,7 +42,17 @@ export default function IdCardsPage() {
           } catch { /* card still works without a QR code if this fails */ }
         }
         setDealer(d);
-        setStaffList(sRes.data.staff || []);
+        const staff = sRes.data.staff || [];
+        setStaffList(staff);
+
+        const preselectId = searchParams.get("staffId");
+        if (preselectId) {
+          const match = staff.find((s: any) => s.staffId === preselectId);
+          if (match) {
+            setSubject("staff");
+            setSelectedStaff(match);
+          }
+        }
       } catch {
         showToast("Couldn't load your details", "error");
       } finally {
