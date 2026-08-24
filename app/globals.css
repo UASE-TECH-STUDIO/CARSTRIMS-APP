@@ -61,15 +61,26 @@
   --sar: env(safe-area-inset-right, 0px);
 }
 
-/* Inside the native app, the StatusBar plugin (overlaysWebView:false)
-   already pushes the entire WebView down below the status bar at the
-   OS level - so the app's own top safe-area padding would double up
-   on top of that already-pushed-down content, pushing the header
-   noticeably further down than intended. Zeroing --sat here only
-   applies when actually running as the native app (see
-   PlatformClass.tsx); a regular mobile browser tab still gets the
-   real inset, since no such native push-down exists there. */
-html.is-native-app {
+/* Inside the native iOS app, the StatusBar plugin (overlaysWebView:
+   false) reliably pushes the entire WebView down below the status
+   bar at the OS level - so the app's own top safe-area padding would
+   double up on top of that already-pushed-down content, pushing the
+   header noticeably further down than intended. Zeroing --sat here
+   only applies on native iOS specifically (see PlatformClass.tsx).
+
+   Native Android is deliberately NOT included in this override -
+   the same overlaysWebView:false setting is known to be inconsistent
+   on Android (a documented Capacitor/Android quirk, worse on newer
+   Android versions that enforce edge-to-edge display), confirmed by
+   a direct report: the same page collided with the status bar icons
+   on Android while it was fine on iPhone. Android still needs the
+   real CSS inset as a necessary supplement, not a redundant double-
+   up like on iOS.
+
+   A regular mobile browser tab (not the native app at all) also
+   keeps the real inset, since no native push-down exists there
+   either. */
+html.is-native-ios {
   --sat: 0px;
 }
 
