@@ -11,6 +11,8 @@ import { useToast } from "@/store/toastStore";
 import { useConfirm } from "@/store/confirmStore";
 import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import Link from "next/link";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import PullToRefreshIndicator from "@/components/shared/PullToRefreshIndicator";
 
 const BRANDS = ["Toyota","Honda","Mercedes","BMW","Lexus","Ford","Hyundai","Kia","Chevrolet","Audi","Land Rover","Jeep","Volkswagen","Nissan","Mazda","Peugeot","Mitsubishi","Subaru","Isuzu","Other"];
 const VEHICLE_TYPES = ["car","motorcycle","tricycle","truck","bus","van"];
@@ -97,6 +99,8 @@ export default function DealerCarsPage() {
       setCars(r.data.cars||[]); setTotal(r.data.total||0);
     } catch {} finally {setLoading(false);}
   },[search,statusFilter]);
+
+  const pull = usePullToRefresh(load);
 
   // Exports the FULL set of cars matching the current search/status
   // filter (not just whatever page is currently loaded) — so "export
@@ -269,7 +273,8 @@ export default function DealerCarsPage() {
       {reportCarId&&<CarFinancialReport carId={reportCarId} onClose={()=>setReportCarId(null)}/>}
       {docData&&<DocumentViewer doc={docData} onClose={()=>setDocData(null)}/>}
 
-      <div className="cars-page">
+      <div className="cars-page" {...pull.handlers}>
+        <PullToRefreshIndicator pullDistance={pull.pullDistance} refreshing={pull.refreshing} />
         {preview&&<PreviewModal src={preview.src} type={preview.type} onClose={()=>setPreview(null)}/>}
 
         <div className="cp-header">
