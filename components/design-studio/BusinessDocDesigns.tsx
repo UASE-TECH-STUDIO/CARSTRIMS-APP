@@ -492,11 +492,17 @@ export function ReceiptStamped({ data }: { data: BusinessDocData }) {
 export const LETTERHEAD_DESIGNS = [
   { id: "classic", name: "Classic", Component: LetterheadClassic },
   { id: "minimal", name: "Minimal", Component: LetterheadMinimal },
+  { id: "dark", name: "Dark", Component: LetterheadDark },
+  { id: "sidebar", name: "Sidebar", Component: LetterheadSidebar },
+  { id: "elegant-gold", name: "Elegant Gold", Component: LetterheadElegantGold },
 ];
 
 export const PROFORMA_DESIGNS = [
   { id: "classic", name: "Classic", Component: ProformaClassic },
   { id: "dark", name: "Dark Header", Component: ProformaDark },
+  { id: "minimal", name: "Minimal", Component: ProformaMinimal },
+  { id: "green-accent", name: "Green Accent", Component: ProformaGreenAccent },
+  { id: "elegant-gold", name: "Elegant Gold", Component: ProformaElegantGold },
 ];
 
 export const RECEIPT_DESIGNS = [
