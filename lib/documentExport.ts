@@ -88,25 +88,37 @@ export async function renderElementToPdfBlob(element: HTMLElement, title = "Docu
 }
 
 /**
- * Renders a DOM element to a PDF sized as a standard CR80 card
- * (3.375in x 2.125in - the same physical dimensions as a credit card
- * and what most professional ID card printers expect), rather than
- * forcing it onto a full A4 page like renderElementToPdfBlob does.
- * Used for ID cards and any other small-format printable design.
+ * Renders one or more DOM elements to a PDF sized as a standard CR80
+ * card (3.375in x 2.125in - the same physical dimensions as a credit
+ * card and what most professional ID card printers expect), rather
+ * than forcing it onto a full A4 page like renderElementToPdfBlob
+ * does. Used for ID cards and any other small-format printable
+ * design.
+ *
+ * Accepts either a single element or an array - an array of two
+ * (front, back) produces a proper 2-page PDF, since a printer needs
+ * both sides and most professional card printers expect either
+ * separate files or a multi-page PDF, not a single combined image.
  *
  * Captured at a higher scale than the general document exporter
  * (3x instead of 2x) - cards are physically small, so print crispness
  * per square inch matters more here than it does for a full page.
  */
-export async function renderElementToCardPdfBlob(element: HTMLElement, title = "ID Card"): Promise<Blob> {
-  const canvas = await html2canvas(element, { scale: 3, useCORS: true, backgroundColor: "#ffffff" });
+export async function renderElementToCardPdfBlob(elementOrElements: HTMLElement | HTMLElement[], title = "ID Card"): Promise<Blob> {
+  const elements = Array.isArray(elementOrElements) ? elementOrElements : [elementOrElements];
 
   const CARD_WIDTH_PT = 243;  // 3.375in * 72pt/in
   const CARD_HEIGHT_PT = 153; // 2.125in * 72pt/in
 
   const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: [CARD_WIDTH_PT, CARD_HEIGHT_PT] });
-  const imgData = canvas.toDataURL("image/png");
-  pdf.addImage(imgData, "PNG", 0, 0, CARD_WIDTH_PT, CARD_HEIGHT_PT);
+
+  for (let i = 0; i < elements.length; i++) {
+    const canvas = await html2canvas(elements[i], { scale: 3, useCORS: true, backgroundColor: "#ffffff" });
+    const imgData = canvas.toDataURL("image/png");
+    if (i > 0) pdf.addPage([CARD_WIDTH_PT, CARD_HEIGHT_PT], "landscape");
+    pdf.addImage(imgData, "PNG", 0, 0, CARD_WIDTH_PT, CARD_HEIGHT_PT);
+  }
+
   pdf.setProperties({ title });
   return pdf.output("blob");
 }
