@@ -316,7 +316,128 @@ export function FlyerClean({ data }: { data: FlyerCarData }) {
   );
 }
 
+export function FlyerSplit({ data }: { data: FlyerCarData }) {
+  return (
+    <div style={{ width: PAGE_W, height: PAGE_H, position: "relative", background: "#fff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.1)", display: "flex" }}>
+      <div style={{ width: "44%", height: "100%", background: "#F5F5F5", position: "relative" }}>
+        {data.carImage && <img src={data.carImage} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+      </div>
+      <div style={{ flex: 1, padding: "50px 40px", display: "flex", flexDirection: "column" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {data.companyLogo && <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 30, height: 30, objectFit: "contain" }} />}
+          <div style={{ fontSize: 12, fontWeight: 700, color: "#1A1A1A" }}>{data.companyName}</div>
+        </div>
+        {data.headline && <div style={{ fontSize: 11, fontWeight: 700, color: "#F47B20", textTransform: "uppercase", letterSpacing: "0.1em", marginTop: 30 }}>{data.headline}</div>}
+        <div style={{ fontSize: 24, fontWeight: 700, color: "#1A1A1A", marginTop: 8, lineHeight: 1.2 }}>{data.carBrand} {data.carModel}</div>
+        <div style={{ fontSize: 12, color: "#737373", marginTop: 2 }}>{data.carYear}{data.carCondition ? ` · ${data.carCondition}` : ""}</div>
+        <div style={{ fontSize: 26, fontWeight: 700, color: "#F47B20", marginTop: 20 }}>{fmtNaira(data.carPrice)}</div>
+        <div style={{ marginTop: 24 }}>
+          <SpecRow label="Mileage" value={data.carMileage} />
+          <SpecRow label="Transmission" value={data.carTransmission} />
+          <SpecRow label="Fuel Type" value={data.carFuelType} />
+        </div>
+        <div style={{ marginTop: "auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ fontSize: 9.5, color: "#A3A3A3" }}>{[data.companyPhone, [data.companyCity, data.companyState].filter(Boolean).join(", ")].filter(Boolean).join(" · ")}</div>
+          {data.qrCode && (
+            <div style={{ width: 44, height: 44 }}>
+              <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function FlyerDarkLuxury({ data }: { data: FlyerCarData }) {
+  return (
+    <div style={{ width: PAGE_W, height: PAGE_H, position: "relative", background: "#1A1A1A", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.2)", overflow: "hidden" }}>
+      <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 4, background: "linear-gradient(90deg, #F47B20, #C9A84C)" }} />
+      <div style={{ padding: "34px 40px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {data.companyLogo && <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 30, height: 30, objectFit: "contain" }} />}
+          <div style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>{data.companyName}</div>
+        </div>
+        {data.qrCode && (
+          <div style={{ width: 38, height: 38, background: "#fff", padding: 2, borderRadius: 4 }}>
+            <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+          </div>
+        )}
+      </div>
+      <div style={{ padding: "16px 60px 0", textAlign: "center" }}>
+        {data.headline && <div style={{ fontSize: 11, fontWeight: 700, color: "#C9A84C", textTransform: "uppercase", letterSpacing: "0.12em" }}>{data.headline}</div>}
+        <div style={{ fontSize: 27, fontWeight: 700, color: "#fff", marginTop: 8 }}>{data.carBrand} {data.carModel}</div>
+        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginTop: 2 }}>{data.carYear}</div>
+      </div>
+      <div style={{ padding: "20px 60px 0" }}>
+        <div style={{ width: "100%", height: 380, borderRadius: 10, overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)" }}>
+          {data.carImage && <img src={data.carImage} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+        </div>
+      </div>
+      <div style={{ textAlign: "center", marginTop: 20 }}>
+        <div style={{ display: "inline-block", border: "2px solid #C9A84C", color: "#C9A84C", padding: "10px 28px", borderRadius: 10, fontSize: 20, fontWeight: 700 }}>
+          {fmtNaira(data.carPrice)}
+        </div>
+      </div>
+      <div style={{ padding: "22px 60px 0", display: "flex", justifyContent: "center", gap: 26, fontSize: 9.5, color: "rgba(255,255,255,0.55)" }}>
+        {data.carMileage && <span>{data.carMileage}</span>}
+        {data.carTransmission && <span>{data.carTransmission}</span>}
+        {data.carFuelType && <span>{data.carFuelType}</span>}
+      </div>
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: 40, textAlign: "center", fontSize: 9.5, color: "rgba(255,255,255,0.4)" }}>
+        {[data.companyPhone, [data.companyCity, data.companyState].filter(Boolean).join(", ")].filter(Boolean).join("  ·  ")}
+      </div>
+      {poweredByPage(true)}
+    </div>
+  );
+}
+
+export function FlyerGridSpecs({ data }: { data: FlyerCarData }) {
+  const specs = [
+    ["Mileage", data.carMileage], ["Transmission", data.carTransmission],
+    ["Fuel Type", data.carFuelType], ["Condition", data.carCondition],
+  ].filter(([, v]) => v) as [string, string][];
+  return (
+    <div style={{ width: PAGE_W, height: PAGE_H, position: "relative", background: "#fff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "30px 40px 0" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {data.companyLogo && <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 30, height: 30, objectFit: "contain" }} />}
+          <div style={{ fontSize: 12, fontWeight: 700, color: "#1A1A1A" }}>{data.companyName}</div>
+        </div>
+        {data.headline && <div style={{ fontSize: 10, fontWeight: 700, color: "#F47B20", textTransform: "uppercase", letterSpacing: "0.08em" }}>{data.headline}</div>}
+      </div>
+      <div style={{ padding: "16px 40px 0" }}>
+        <div style={{ width: "100%", height: 340, borderRadius: 10, overflow: "hidden", background: "#F5F5F5" }}>
+          {data.carImage && <img src={data.carImage} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+        </div>
+      </div>
+      <div style={{ padding: "20px 40px 0", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+        <div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: "#1A1A1A" }}>{data.carBrand} {data.carModel}</div>
+          <div style={{ fontSize: 12, color: "#737373" }}>{data.carYear}</div>
+        </div>
+        <div style={{ fontSize: 24, fontWeight: 700, color: "#F47B20" }}>{fmtNaira(data.carPrice)}</div>
+      </div>
+      <div style={{ padding: "24px 40px 0", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        {specs.map(([label, value]) => (
+          <div key={label} style={{ border: "1px solid #E5E5E5", borderRadius: 8, padding: "10px 14px" }}>
+            <div style={{ fontSize: 8, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>{label}</div>
+            <div style={{ fontSize: 12, color: "#1A1A1A", fontWeight: 700, marginTop: 2 }}>{value}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: 60, textAlign: "center", fontSize: 10, color: "#A3A3A3" }}>
+        {[data.companyPhone, [data.companyCity, data.companyState].filter(Boolean).join(", ")].filter(Boolean).join("  ·  ")}
+      </div>
+      {poweredByPage(false)}
+    </div>
+  );
+}
+
 export const FLYER_DESIGNS = [
   { id: "bold", name: "Bold", Component: FlyerBold },
   { id: "clean", name: "Clean", Component: FlyerClean },
+  { id: "split", name: "Split", Component: FlyerSplit },
+  { id: "dark-luxury", name: "Dark Luxury", Component: FlyerDarkLuxury },
+  { id: "grid-specs", name: "Grid Specs", Component: FlyerGridSpecs },
 ];
