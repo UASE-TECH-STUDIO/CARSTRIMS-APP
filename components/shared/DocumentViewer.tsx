@@ -434,6 +434,29 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
 
         {/*  PREVIEW  */}
         {step === "view" && (
+          <>
+            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", padding: "12px 20px 0" }}>
+              <button onClick={() => setDesignId("original")}
+                style={{ padding: "6px 12px", borderRadius: "6px", border: designId === "original" ? "1.5px solid #F47B20" : "1.5px solid #E5E5E5", background: designId === "original" ? "#FFF7ED" : "#fff", color: designId === "original" ? "#F47B20" : "#525252", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>
+                Original
+              </button>
+              {designChoices.map(d => (
+                <button key={d.id} onClick={() => setDesignId(d.id)}
+                  style={{ padding: "6px 12px", borderRadius: "6px", border: designId === d.id ? "1.5px solid #F47B20" : "1.5px solid #E5E5E5", background: designId === d.id ? "#FFF7ED" : "#fff", color: designId === d.id ? "#F47B20" : "#525252", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>
+                  {d.name}
+                </button>
+              ))}
+            </div>
+
+            {activeNewDesign ? (
+              <div style={{ background: "#FAFAFA", padding: "20px", maxHeight: "75vh", overflowY: "auto", display: "flex", justifyContent: "center" }}>
+                <div style={{ transform: "scale(0.62)", transformOrigin: "top center" }}>
+                  <div ref={newDesignRef}>
+                    <activeNewDesign.Component data={businessDocData} />
+                  </div>
+                </div>
+              </div>
+            ) : (
           <div style={{ background: "#fff", padding: "20px", maxHeight: "75vh", overflowY: "auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "3px solid #F47B20", paddingBottom: "12px", marginBottom: "16px", gap: "12px", flexWrap: "wrap" }}>
               <div>
@@ -488,6 +511,8 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
               </div>
             )}
           </div>
+            )}
+          </>
         )}
 
         {/*  EDIT FORM  */}
