@@ -489,6 +489,112 @@ export function ReceiptStamped({ data }: { data: BusinessDocData }) {
   );
 }
 
+export function ReceiptMinimal({ data }: { data: BusinessDocData }) {
+  const total = itemsSubtotal(data.items);
+  return (
+    <div style={{ width: PAGE_W, height: PAGE_H, position: "relative", background: "#fff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.1)", paddingTop: 50 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "0 60px" }}>
+        <div>
+          {data.companyLogo && <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 36, height: 36, objectFit: "contain", marginBottom: 8 }} />}
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#1A1A1A" }}>{data.companyName}</div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: "#1A1A1A", letterSpacing: "0.1em" }}>RECEIPT</div>
+          <div style={{ fontSize: 8.5, color: "#A3A3A3", marginTop: 4 }}>{data.docNumber || "—"} · {data.docDate || "—"}</div>
+        </div>
+      </div>
+      <div style={{ margin: "24px 60px 0", height: 1, background: "#1A1A1A" }} />
+      <div style={{ padding: "20px 60px 0" }}>
+        <div style={{ fontSize: 9, fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Received From</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#1A1A1A" }}>{data.customerName || "—"}</div>
+      </div>
+      <div style={{ padding: "24px 60px 0" }}>
+        <ItemsTable items={data.items} accent="#1A1A1A" />
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#1A1A1A" }}>Amount Paid: {fmtNaira(data.amountPaid ?? total)}</div>
+        </div>
+      </div>
+      {data.qrCode && (
+        <div style={{ position: "absolute", right: 60, bottom: 60, width: 40, height: 40 }}>
+          <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
+      )}
+      {poweredByFooter(false)}
+    </div>
+  );
+}
+
+export function ReceiptBlue({ data }: { data: BusinessDocData }) {
+  const total = itemsSubtotal(data.items);
+  return (
+    <div style={{ width: PAGE_W, height: PAGE_H, position: "relative", background: "#fff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
+      <div style={{ background: "#1E4E8C", padding: "36px 60px", color: "#fff" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            {data.companyLogo && <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 38, height: 38, objectFit: "contain" }} />}
+            <div style={{ fontSize: 15, fontWeight: 700 }}>{data.companyName}</div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: "0.06em" }}>RECEIPT</div>
+            <div style={{ fontSize: 8.5, opacity: 0.8, marginTop: 4 }}>{data.docNumber || "—"} · {data.docDate || "—"}</div>
+          </div>
+        </div>
+      </div>
+      <div style={{ padding: "24px 60px 0" }}>
+        <div style={{ fontSize: 9, fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Received From</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#1A1A1A" }}>{data.customerName || "—"}</div>
+        <div style={{ fontSize: 9.5, color: "#737373" }}>{data.customerPhone}</div>
+      </div>
+      <div style={{ padding: "24px 60px 0" }}>
+        <ItemsTable items={data.items} accent="#1E4E8C" />
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
+          <div style={{ width: 220, background: "#1E4E8C", color: "#fff", padding: "10px 14px", display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 700 }}>
+            <span>Amount Paid</span><span>{fmtNaira(data.amountPaid ?? total)}</span>
+          </div>
+        </div>
+      </div>
+      {data.qrCode && (
+        <div style={{ position: "absolute", right: 60, bottom: 60, width: 44, height: 44 }}>
+          <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
+      )}
+      {poweredByFooter(false)}
+    </div>
+  );
+}
+
+export function ReceiptElegantGold({ data }: { data: BusinessDocData }) {
+  const total = itemsSubtotal(data.items);
+  return (
+    <div style={{ width: PAGE_W, height: PAGE_H, position: "relative", background: "#FCFCFB", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
+      <div style={{ padding: "44px 60px 0", textAlign: "center" }}>
+        {data.companyLogo && <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 40, height: 40, objectFit: "contain" }} />}
+        <div style={{ fontSize: 15, fontWeight: 700, color: "#1A1A1A", letterSpacing: "0.06em", marginTop: 6 }}>{data.companyName}</div>
+        <div style={{ fontSize: 17, fontWeight: 700, color: "#C9A84C", letterSpacing: "0.1em", marginTop: 14 }}>RECEIPT</div>
+        <div style={{ fontSize: 8.5, color: "#8A7539", marginTop: 4 }}>{data.docNumber || "—"} · {data.docDate || "—"}</div>
+      </div>
+      <div style={{ padding: "26px 60px 0" }}>
+        <div style={{ fontSize: 9, fontWeight: 700, color: "#8A7539", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Received From</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#1A1A1A" }}>{data.customerName || "—"}</div>
+      </div>
+      <div style={{ padding: "20px 60px 0" }}>
+        <ItemsTable items={data.items} accent="#C9A84C" />
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
+          <div style={{ borderTop: "2px solid #C9A84C", padding: "8px 0", fontSize: 13, fontWeight: 700, color: "#1A1A1A" }}>
+            Amount Paid: {fmtNaira(data.amountPaid ?? total)}
+          </div>
+        </div>
+      </div>
+      {data.qrCode && (
+        <div style={{ position: "absolute", right: 60, bottom: 60, width: 44, height: 44, border: "1px solid #C9A84C", borderRadius: 4, padding: 2 }}>
+          <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
+      )}
+      {poweredByFooter(false)}
+    </div>
+  );
+}
+
 export const LETTERHEAD_DESIGNS = [
   { id: "classic", name: "Classic", Component: LetterheadClassic },
   { id: "minimal", name: "Minimal", Component: LetterheadMinimal },
@@ -508,4 +614,7 @@ export const PROFORMA_DESIGNS = [
 export const RECEIPT_DESIGNS = [
   { id: "classic", name: "Classic", Component: ReceiptClassic },
   { id: "stamped", name: "Paid Stamp", Component: ReceiptStamped },
+  { id: "minimal", name: "Minimal", Component: ReceiptMinimal },
+  { id: "blue", name: "Blue Professional", Component: ReceiptBlue },
+  { id: "elegant-gold", name: "Elegant Gold", Component: ReceiptElegantGold },
 ];
