@@ -11,6 +11,7 @@ import { useConfirm } from "@/store/confirmStore";
 import { useVoiceInput } from "@/lib/useVoiceInput";
 import { correctVoiceTranscript } from "@/lib/voiceCarCorrection";
 import FeedFilterDropdown from "@/components/shared/FeedFilterDropdown";
+import ShareMenu from "@/components/shared/ShareMenu";
 import CustomSelect from "@/components/ui/CustomSelect";
 
 const SORT_OPTIONS = [
@@ -360,21 +361,11 @@ export default function FeedPage() {
   const askConfirm = useConfirm();
   const isAdmin = user?.role === "SYSTEM_ADMIN";
 
-  const handleShare = async (e: React.MouseEvent, car: Car) => {
+  const [shareCar, setShareCar] = useState<Car | null>(null);
+
+  const handleShare = (e: React.MouseEvent, car: Car) => {
     e.preventDefault(); e.stopPropagation();
-    const url = `${window.location.origin}/cars/${car.carId}`;
-    const title = `${car.brand} ${car.model}`;
-    if (navigator.share) {
-      try { await navigator.share({ title, url }); }
-      catch (err: any) {
-        if (err?.name === "AbortError") return;
-        try { await navigator.clipboard.writeText(url); showToast("Link copied!", "success"); }
-        catch { showToast("Couldn't copy the link", "error"); }
-      }
-      return;
-    }
-    try { await navigator.clipboard.writeText(url); showToast("Link copied!", "success"); }
-    catch { showToast("Couldn't copy the link", "error"); }
+    setShareCar(car);
   };
 
   const handleAdminDelete = async (e: React.MouseEvent, car: Car) => {
@@ -811,6 +802,14 @@ export default function FeedPage() {
             </div>
           )}
         </>
+      )}
+
+      {shareCar && (
+        <ShareMenu
+          url={`${window.location.origin}/cars/${shareCar.carId}`}
+          title={`${shareCar.brand} ${shareCar.model}`}
+          onClose={() => setShareCar(null)}
+        />
       )}
 
       <FeedFooter onScan={() => setShowScan(true)} />
