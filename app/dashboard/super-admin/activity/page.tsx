@@ -8,6 +8,7 @@ const TYPE_ICONS: Record<string, string> = {
   dealer_approved:"", dealer_suspended:"", general:"",
   broadcast:"", password_recovery:"", appointment:"",
   car_request:"", partner_request:"",
+  new_dealer:"", new_listing:"", sale_completed:"",
 };
 
 export default function ActivityPage() {
@@ -54,6 +55,7 @@ export default function ActivityPage() {
     dealer_approved:"Dealer Approved", dealer_suspended:"Account Suspended",
     general:"General", broadcast:"Broadcast", password_recovery:"Password Reset",
     appointment:"Appointment", car_request:"Vehicle Request", partner_request:"Partnership",
+    new_dealer:"New Dealer", new_listing:"New Listing", sale_completed:"Sale",
   };
 
   return (
