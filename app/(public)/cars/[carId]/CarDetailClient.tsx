@@ -32,6 +32,8 @@ export default function CarDetailClient() {
   const [comments, setComments] = useState<any[]>([]);
   const [commentLikes, setCommentLikes] = useState<string[]>([]);
   const [likingComment, setLikingComment] = useState<string | null>(null);
+  const [replyLikes, setReplyLikes] = useState<string[]>([]);
+  const [likingReply, setLikingReply] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
   const [showContact, setShowContact] = useState(false);
@@ -130,6 +132,13 @@ export default function CarDetailClient() {
             try {
               const clr = await api.get(`/api/v1/public/cars/${carId}/comments/likes/me`, { params: { comment_ids: commentIds.join(",") } });
               setCommentLikes(clr.data.liked || []);
+            } catch {}
+          }
+          const replyIds = (commentRes.data.comments || []).flatMap((c: any) => (c.replies || []).map((r: any) => r.replyId));
+          if (replyIds.length > 0) {
+            try {
+              const rlr = await api.get(`/api/v1/public/cars/${carId}/comments/replies/likes/me`, { params: { reply_ids: replyIds.join(",") } });
+              setReplyLikes(rlr.data.liked || []);
             } catch {}
           }
         }
@@ -250,6 +259,27 @@ export default function CarDetailClient() {
       setComments(p => p.map(c => c.commentId === commentId ? { ...c, likes: (c.likes || 0) + (wasLiked ? 1 : -1) } : c));
     } finally {
       setLikingComment(null);
+    }
+  };
+
+  const handleReplyLike = async (commentId: string, replyId: string) => {
+    if (!isAuthenticated || likingReply) return;
+    const wasLiked = replyLikes.includes(replyId);
+    const bump = (delta: number) => setComments(p => p.map(c =>
+      c.commentId === commentId
+        ? { ...c, replies: (c.replies || []).map((r: any) => r.replyId === replyId ? { ...r, likes: (r.likes || 0) + delta } : r) }
+        : c
+    ));
+    setReplyLikes(p => wasLiked ? p.filter(id => id !== replyId) : [...p, replyId]);
+    bump(wasLiked ? -1 : 1);
+    setLikingReply(replyId);
+    try {
+      await api.post(`/api/v1/public/cars/${carId}/comments/${commentId}/replies/${replyId}/like`);
+    } catch {
+      setReplyLikes(p => wasLiked ? [...p, replyId] : p.filter(id => id !== replyId));
+      bump(wasLiked ? 1 : -1);
+    } finally {
+      setLikingReply(null);
     }
   };
 
@@ -512,6 +542,13 @@ export default function CarDetailClient() {
                             <Link href={`/users/${r.userId}`} className="cd-reply-author">{r.userName}</Link>
                             <span className="cd-comment-time" style={{marginLeft:"0.5rem"}}>{timeAgoLong(r.createdAt)}</span>
                             <div className="cd-reply-text">{r.text}</div>
+                            <button
+                              className={`cd-reply-like-btn ${replyLikes.includes(r.replyId)?"liked":""}`}
+                              disabled={!isAuthenticated}
+                              onClick={() => handleReplyLike(c.commentId, r.replyId)}
+                            >
+                              {replyLikes.includes(r.replyId) ? "♥" : "♡"} {r.likes > 0 ? r.likes : ""}
+                            </button>
                           </div>
                         </div>
                       ))}
@@ -638,6 +675,10 @@ export default function CarDetailClient() {
         .cd-reply-author{font-size:0.8rem;font-weight:700;color:#1A1A1A;text-decoration:none;display:block}
         .cd-reply-author:hover{color:#F47B20}
         .cd-reply-text{font-size:0.825rem;color:#525252;line-height:1.55}
+        .cd-reply-like-btn{background:none;border:none;color:#A3A3A3;cursor:pointer;font-size:0.78rem;font-family:var(--font-body);font-weight:600;padding:0;margin-top:0.3rem}
+        .cd-reply-like-btn:hover{color:#DC2626}
+        .cd-reply-like-btn.liked{color:#DC2626}
+        .cd-reply-like-btn:disabled{cursor:default;opacity:0.6}
         .cd-comment-actions{display:flex;align-items:center;gap:1rem;margin-top:0.35rem}
         .cd-comment-like-btn{background:none;border:none;color:#A3A3A3;cursor:pointer;font-size:0.85rem;font-family:var(--font-body);font-weight:600;padding:0;display:flex;align-items:center;gap:0.25rem}
         .cd-comment-like-btn:hover{color:#DC2626}
