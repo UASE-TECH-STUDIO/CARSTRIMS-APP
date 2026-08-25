@@ -47,6 +47,10 @@ export default function AdminCarsPage() {
   const [showExportPicker, setShowExportPicker] = useState(false);
   const [userLikes, setUserLikes] = useState<string[]>([]);
   const [userFavs, setUserFavs] = useState<string[]>([]);
+  const [groupByDealer, setGroupByDealer] = useState(false);
+  const [groupedCars, setGroupedCars] = useState<any[]>([]);
+  const [groupSort, setGroupSort] = useState<"name" | "count">("name");
+  const [loadingGroups, setLoadingGroups] = useState(false);
   const LIMIT = 20;
 
   const fetchCars = async () => {
@@ -126,6 +130,29 @@ export default function AdminCarsPage() {
     return res.data.cars || [];
   };
 
+  // Grouped view needs every matching car loaded at once (not just
+  // one paginated page), since a dealer's cars could span multiple
+  // pages otherwise - reuses the same "fetch everything matching"
+  // logic the export feature already relies on.
+  useEffect(() => {
+    if (!groupByDealer) return;
+    setLoadingGroups(true);
+    fetchAllMatching().then(setGroupedCars).catch(() => setGroupedCars([])).finally(() => setLoadingGroups(false));
+  }, [groupByDealer, search, statusFilter]);
+
+  const dealerGroups = (() => {
+    const map = new Map<string, { dealerId: string; dealerName: string; cars: any[] }>();
+    for (const c of groupedCars) {
+      const key = c.dealerId || "unknown";
+      if (!map.has(key)) map.set(key, { dealerId: key, dealerName: c.dealerName || "Unknown Dealer", cars: [] });
+      map.get(key)!.cars.push(c);
+    }
+    const groups = Array.from(map.values());
+    if (groupSort === "name") groups.sort((a, b) => a.dealerName.localeCompare(b.dealerName));
+    else groups.sort((a, b) => b.cars.length - a.cars.length);
+    return groups;
+  })();
+
   const handleExport = async (format: "excel" | "pdf") => {
     setShowExportPicker(false);
     setExportBusy(format);
@@ -193,9 +220,51 @@ export default function AdminCarsPage() {
             </button>
           ))}
         </div>
+        <button className={`group-toggle ${groupByDealer ? "active" : ""}`} onClick={() => setGroupByDealer(v => !v)}>
+          {groupByDealer ? "✓ " : ""}Group by Dealer
+        </button>
+        {groupByDealer && (
+          <div className="group-sort-tabs">
+            <button className={`status-tab ${groupSort === "name" ? "active" : ""}`} onClick={() => setGroupSort("name")}>Dealer A–Z</button>
+            <button className={`status-tab ${groupSort === "count" ? "active" : ""}`} onClick={() => setGroupSort("count")}>Most Vehicles</button>
+          </div>
+        )}
       </div>
 
-      {loading ? (
+      {groupByDealer ? (
+        loadingGroups ? (
+          <div className="loading-state"><div className="spinner" /></div>
+        ) : dealerGroups.length === 0 ? (
+          <div className="empty-state"><div className="empty-icon">🚗</div><h3>No cars found</h3></div>
+        ) : (
+          <div className="dealer-groups">
+            {dealerGroups.map((g) => (
+              <div key={g.dealerId} className="dealer-group">
+                <div className="dealer-group-header">
+                  <span className="dealer-group-name">{g.dealerName}</span>
+                  <span className="dealer-group-count">{g.cars.length} vehicle{g.cars.length !== 1 ? "s" : ""}</span>
+                </div>
+                <div className="cars-card-grid">
+                  {g.cars.map((c: any) => (
+                    <CarCard
+                      key={c._id || c.carId}
+                      car={c}
+                      isAuthenticated={true}
+                      liked={userLikes.includes(c.carId)}
+                      favorited={userFavs.includes(c.carId)}
+                      onToggleLike={handleToggleLike}
+                      onToggleFav={handleToggleFav}
+                      isAdmin={true}
+                      onAdminDelete={handleAdminDelete}
+                      statusColors={STATUS_COLORS}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      ) : loading ? (
         <div className="loading-state"><div className="spinner" /></div>
       ) : cars.length === 0 ? (
         <div className="empty-state"><div className="empty-icon">🚗</div><h3>No cars found</h3></div>
@@ -218,11 +287,13 @@ export default function AdminCarsPage() {
         </div>
       )}
 
-      <div className="pagination">
-        <button className="pg-btn" onClick={() => setSkip(Math.max(0, skip - LIMIT))} disabled={skip === 0}>← Prev</button>
-        <span className="pg-info">{Math.floor(skip / LIMIT) + 1} / {Math.max(1, Math.ceil(total / LIMIT))}</span>
-        <button className="pg-btn" onClick={() => setSkip(skip + LIMIT)} disabled={skip + LIMIT >= total}>Next →</button>
-      </div>
+      {!groupByDealer && (
+        <div className="pagination">
+          <button className="pg-btn" onClick={() => setSkip(Math.max(0, skip - LIMIT))} disabled={skip === 0}>← Prev</button>
+          <span className="pg-info">{Math.floor(skip / LIMIT) + 1} / {Math.max(1, Math.ceil(total / LIMIT))}</span>
+          <button className="pg-btn" onClick={() => setSkip(skip + LIMIT)} disabled={skip + LIMIT >= total}>Next →</button>
+        </div>
+      )}
 
       <style>{`
         .dealers-page{display:flex;flex-direction:column;gap:1.5rem}
@@ -235,6 +306,14 @@ export default function AdminCarsPage() {
         .search-input{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:0.65rem 1rem;color:var(--text);font-size:0.875rem;font-family:var(--font-body);outline:none;transition:border-color 0.2s;width:280px}
         .search-input:focus{border-color:var(--error)}
         .status-tabs{display:flex;gap:0.35rem;flex-wrap:wrap}
+        .group-toggle{background:transparent;border:1px solid var(--border);border-radius:20px;padding:0.35rem 0.875rem;color:var(--text-muted);font-size:0.75rem;cursor:pointer;transition:all 0.2s;font-family:var(--font-body);white-space:nowrap}
+        .group-toggle:hover{border-color:rgba(224,82,82,0.4);color:var(--text)}
+        .group-toggle.active{background:var(--error);color:#fff;border-color:var(--error)}
+        .group-sort-tabs{display:flex;gap:0.35rem;flex-wrap:wrap}
+        .dealer-groups{display:flex;flex-direction:column;gap:2rem}
+        .dealer-group-header{display:flex;align-items:baseline;justify-content:space-between;gap:0.75rem;padding-bottom:0.6rem;border-bottom:1.5px solid var(--border);margin-bottom:1rem}
+        .dealer-group-name{font-family:var(--font-display);font-size:1.1rem;letter-spacing:0.03em;color:var(--text)}
+        .dealer-group-count{font-size:0.78rem;color:var(--text-muted);white-space:nowrap}
         .status-tab{background:transparent;border:1px solid var(--border);border-radius:20px;padding:0.35rem 0.875rem;color:var(--text-muted);font-size:0.75rem;cursor:pointer;transition:all 0.2s;text-transform:capitalize;font-family:var(--font-body)}
         .status-tab:hover{border-color:rgba(224,82,82,0.4);color:var(--text)}
         .status-tab.active{background:var(--error);color:#fff;border-color:var(--error)}
