@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import { useAuthStore, getRoleRedirect } from "@/store/authStore";
 import { useMessagesStore } from "@/store/messagesStore";
@@ -15,7 +15,9 @@ import { timeAgoLong } from "@/lib/timeUtils";
 export default function CarDetailClient() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const carId = params?.carId as string;
+  const commentsRef = useRef<HTMLDivElement>(null);
   const { user, isAuthenticated } = useAuthStore();
   const isAdmin = user?.role === "SYSTEM_ADMIN";
   const showToast = useToast();
@@ -135,6 +137,16 @@ export default function CarDetailClient() {
     };
     load();
   }, [carId, isAuthenticated, isAdmin]);
+
+  // Scroll to the comments section when arriving via the feed's
+  // "View comments" link (?scrollTo=comments) - only fires once
+  // loading has finished, since scrolling before content has
+  // rendered would land on the wrong position.
+  useEffect(() => {
+    if (!loading && searchParams?.get("scrollTo") === "comments" && commentsRef.current) {
+      commentsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [loading, searchParams]);
 
   const handleLike = async () => {
     if (!isAuthenticated) { router.push("/login"); return; }
@@ -442,7 +454,7 @@ export default function CarDetailClient() {
       </div>
 
       {/* Comments */}
-      <div className="cd-comments">
+      <div className="cd-comments" ref={commentsRef}>
         <h2 className="cd-comments-title">COMMENTS ({comments.length})</h2>
         {isAuthenticated ? (
           <form onSubmit={handleComment} className="cd-comment-form">
