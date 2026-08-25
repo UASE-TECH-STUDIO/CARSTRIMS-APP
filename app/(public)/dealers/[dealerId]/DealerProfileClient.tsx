@@ -7,6 +7,7 @@ import { useAuthStore } from "@/store/authStore";
 import FollowButton from "@/components/ui/FollowButton";
 import { useMessagesStore } from "@/store/messagesStore";
 import { useToast } from "@/store/toastStore";
+import CarCard from "@/components/shared/CarCard";
 
 const STATUS_C: Record<string,string> = {
   available:"#16A34A", sold:"#888", reserved:"#D97706", on_promotion:"#7C3AED"
@@ -37,6 +38,8 @@ export default function DealerProfileClient() {
   const [showFollowers, setShowFollowers] = useState(false);
   const [lightbox, setLightbox]           = useState<string|null>(null);
   const [startMsg, setStartMsg]           = useState(false);
+  const [userLikes, setUserLikes]         = useState<string[]>([]);
+  const [userFavs, setUserFavs]           = useState<string[]>([]);
 
   useEffect(() => {
     if (!dealerId) return;
@@ -44,7 +47,39 @@ export default function DealerProfileClient() {
       .then(r => { setDealer(r.data); setFollowerCount(r.data.followerCount||0); })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [dealerId]);
+    if (isAuthenticated) {
+      api.get("/api/v1/users/likes").then(r => setUserLikes(r.data || [])).catch(() => {});
+      api.get("/api/v1/users/favorites").then(r => setUserFavs((r.data||[]).map((f:any) => f.carId))).catch(() => {});
+    }
+  }, [dealerId, isAuthenticated]);
+
+  const handleToggleLike = async (carId: string) => {
+    const wasLiked = userLikes.includes(carId);
+    setUserLikes(p => wasLiked ? p.filter(id => id !== carId) : [...p, carId]);
+    setDealer((p: any) => p ? { ...p, availableCars: p.availableCars.map((c: any) => c.carId === carId ? { ...c, likeCount: (c.likeCount||0) + (wasLiked ? -1 : 1) } : c) } : p);
+    try {
+      const res = await api.post(`/api/v1/public/cars/${carId}/like`);
+      if (res.data.liked !== !wasLiked) {
+        // Server disagreed with the optimistic guess - resync from
+        // its actual response rather than leaving a wrong count.
+        setUserLikes(p => res.data.liked ? [...p.filter(id => id !== carId), carId] : p.filter(id => id !== carId));
+      }
+    } catch {
+      setUserLikes(p => wasLiked ? [...p, carId] : p.filter(id => id !== carId));
+      setDealer((p: any) => p ? { ...p, availableCars: p.availableCars.map((c: any) => c.carId === carId ? { ...c, likeCount: (c.likeCount||0) + (wasLiked ? 1 : -1) } : c) } : p);
+    }
+  };
+
+  const handleToggleFav = async (carId: string) => {
+    const wasFav = userFavs.includes(carId);
+    setUserFavs(p => wasFav ? p.filter(id => id !== carId) : [...p, carId]);
+    try {
+      if (wasFav) await api.delete(`/api/v1/public/cars/${carId}/favorite`);
+      else await api.post(`/api/v1/public/cars/${carId}/favorite`);
+    } catch {
+      setUserFavs(p => wasFav ? [...p, carId] : p.filter(id => id !== carId));
+    }
+  };
 
   const loadFollowers = async () => {
     try {
@@ -271,25 +306,18 @@ export default function DealerProfileClient() {
             No available vehicles right now
           </div>
         ) : (
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(180px,100%),1fr))",gap:"0.875rem"}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(220px,100%),1fr))",gap:"0.875rem"}}>
             {dealer.availableCars?.map((c:any)=>(
-              <Link key={c._id||c.carId} href={`/cars/${c.carId}`}
-                style={{textDecoration:"none",background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"12px",overflow:"hidden",display:"flex",flexDirection:"column",transition:"all 0.2s"}}
-                onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.borderColor="#F47B20";(e.currentTarget as HTMLElement).style.transform="translateY(-2px)";}}
-                onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.borderColor="#E5E5E5";(e.currentTarget as HTMLElement).style.transform="";}}>
-                <div style={{aspectRatio:"4/3",background:"#F5F5F5",position:"relative",overflow:"hidden"}}>
-                  {c.images?.[0]
-                    ?<img src={c.images[0]} alt="" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
-                    :<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",fontSize:"2rem",opacity:0.2}}>vehicle</div>
-                  }
-                  <div style={{position:"absolute",top:"0.5rem",left:"0.5rem",background:STATUS_C[c.status]||"#888",color:"#fff",padding:"0.18rem 0.5rem",borderRadius:"20px",fontSize:"0.62rem",fontWeight:700,textTransform:"capitalize" as const}}>{c.status}</div>
-                </div>
-                <div style={{padding:"0.75rem"}}>
-                  <div style={{fontWeight:700,fontSize:"0.85rem",color:"#1A1A1A",lineHeight:1.3}}>{c.brand} {c.model} {c.year}</div>
-                  <div style={{fontSize:"0.7rem",color:"#737373",marginTop:"0.15rem"}}>{[c.color,c.transmission].filter(Boolean).join(" . ")}</div>
-                  <div style={{fontFamily:"var(--font-display)",fontSize:"1rem",color:"#F47B20",marginTop:"0.3rem"}}>NGN {(c.sellingPrice||0).toLocaleString()}</div>
-                </div>
-              </Link>
+              <CarCard
+                key={c._id||c.carId}
+                car={c}
+                isAuthenticated={isAuthenticated}
+                liked={userLikes.includes(c.carId)}
+                favorited={userFavs.includes(c.carId)}
+                onToggleLike={handleToggleLike}
+                onToggleFav={handleToggleFav}
+                statusColors={STATUS_C}
+              />
             ))}
           </div>
         )}
