@@ -1,12 +1,13 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState, useRef } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
-import { rowsToExcelBlob, renderHtmlStringToPdfBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+import { rowsToExcelBlob, renderHtmlStringToPdfBlob, downloadBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
+import { useConfirm } from "@/store/confirmStore";
 import { parseServerDate } from "@/lib/timeUtils";
+import CarCard from "@/components/shared/CarCard";
 
 const STATUSES = ["all", "available", "sold", "pending", "unavailable"];
 const STATUS_COLORS: Record<string, string> = {
@@ -18,9 +19,24 @@ function fmtDate(iso: string) {
   return parseServerDate(iso)?.toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" }) || "";
 }
 
+/**
+ * Item 9: gives the Super Admin car list the same card display (with
+ * like/comment/share icons, inline comment, share menu) as the feed
+ * and dealer profile, plus real admin power - delete, wired through
+ * CarCard's existing isAdmin/onAdminDelete props.
+ *
+ * Deliberately scoped to just the display + delete for this pass.
+ * Hide/mute and suspend/warn-with-a-note-before-republishing (the
+ * rest of item 9) are a genuinely separate, larger feature - they
+ * need new car-level status fields, a moderation-note data model,
+ * and routing those notes into the target user's notifications
+ * (item 11) - not something to bolt onto a display change without
+ * designing that properly first.
+ */
 export default function AdminCarsPage() {
   const searchParams = useSearchParams();
-  const router = useRouter();
+  const showToast = useToast();
+  const askConfirm = useConfirm();
   const [cars, setCars] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -29,7 +45,8 @@ export default function AdminCarsPage() {
   const [skip, setSkip] = useState(0);
   const [exportBusy, setExportBusy] = useState("");
   const [showExportPicker, setShowExportPicker] = useState(false);
-  const showToast = useToast();
+  const [userLikes, setUserLikes] = useState<string[]>([]);
+  const [userFavs, setUserFavs] = useState<string[]>([]);
   const LIMIT = 20;
 
   const fetchCars = async () => {
@@ -45,6 +62,46 @@ export default function AdminCarsPage() {
   };
 
   useEffect(() => { fetchCars(); }, [search, statusFilter, skip]);
+
+  useEffect(() => {
+    api.get("/api/v1/users/likes").then(r => setUserLikes(r.data || [])).catch(() => {});
+    api.get("/api/v1/users/favorites").then(r => setUserFavs((r.data||[]).map((f:any) => f.carId))).catch(() => {});
+  }, []);
+
+  const handleToggleLike = async (carId: string) => {
+    const wasLiked = userLikes.includes(carId);
+    setUserLikes(p => wasLiked ? p.filter(id => id !== carId) : [...p, carId]);
+    setCars(p => p.map(c => c.carId === carId ? { ...c, likeCount: (c.likeCount||0) + (wasLiked ? -1 : 1) } : c));
+    try {
+      await api.post(`/api/v1/public/cars/${carId}/like`);
+    } catch {
+      setUserLikes(p => wasLiked ? [...p, carId] : p.filter(id => id !== carId));
+      setCars(p => p.map(c => c.carId === carId ? { ...c, likeCount: (c.likeCount||0) + (wasLiked ? 1 : -1) } : c));
+    }
+  };
+
+  const handleToggleFav = async (carId: string) => {
+    const wasFav = userFavs.includes(carId);
+    setUserFavs(p => wasFav ? p.filter(id => id !== carId) : [...p, carId]);
+    try {
+      if (wasFav) await api.delete(`/api/v1/public/cars/${carId}/favorite`);
+      else await api.post(`/api/v1/public/cars/${carId}/favorite`);
+    } catch {
+      setUserFavs(p => wasFav ? [...p, carId] : p.filter(id => id !== carId));
+    }
+  };
+
+  const handleAdminDelete = async (car: any) => {
+    if (!(await askConfirm({ message: `Remove "${car.brand} ${car.model}" from the platform?`, danger: true }))) return;
+    try {
+      await api.delete(`/api/v1/cars/${car.carId}`);
+      setCars(p => p.filter(c => c.carId !== car.carId));
+      setTotal(t => t - 1);
+      showToast("Vehicle removed", "success");
+    } catch (err: any) {
+      showToast(err?.response?.data?.detail || "Delete failed", "error");
+    }
+  };
 
   const rowsFor = (list: any[]) => list.map((c: any) => ({
     "Vehicle ID": c.carId,
@@ -143,35 +200,21 @@ export default function AdminCarsPage() {
       ) : cars.length === 0 ? (
         <div className="empty-state"><div className="empty-icon">🚗</div><h3>No cars found</h3></div>
       ) : (
-        <div className="dealers-table-wrap">
-          <table className="dealers-table">
-            <thead>
-              <tr>
-                <th>Vehicle</th><th>Dealer</th><th>Price</th><th>Status</th><th>Listed</th><th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {cars.map((c) => (
-                <tr key={c._id} className="clickable-row" onClick={() => router.push(`/cars/${c.carId}`)}>
-                  <td>
-                    <div className="co-name">{c.brand} {c.model} {c.year}</div>
-                    <div className="co-id">{c.carId}</div>
-                  </td>
-                  <td>{c.dealerName || "—"}</td>
-                  <td className="num-cell">NGN {Number(c.sellingPrice || 0).toLocaleString()}</td>
-                  <td>
-                    <span className="status-pill" style={{ color: STATUS_COLORS[c.status] || "#888", borderColor: (STATUS_COLORS[c.status] || "#888") + "44", background: (STATUS_COLORS[c.status] || "#888") + "11" }}>
-                      {c.status}
-                    </span>
-                  </td>
-                  <td className="date-cell">{fmtDate(c.createdAt)}</td>
-                  <td>
-                    <Link href={`/cars/${c.carId}`} className="act-btn" onClick={(e)=>e.stopPropagation()}>View</Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="cars-card-grid">
+          {cars.map((c) => (
+            <CarCard
+              key={c._id || c.carId}
+              car={c}
+              isAuthenticated={true}
+              liked={userLikes.includes(c.carId)}
+              favorited={userFavs.includes(c.carId)}
+              onToggleLike={handleToggleLike}
+              onToggleFav={handleToggleFav}
+              isAdmin={true}
+              onAdminDelete={handleAdminDelete}
+              statusColors={STATUS_COLORS}
+            />
+          ))}
         </div>
       )}
 
@@ -201,20 +244,7 @@ export default function AdminCarsPage() {
         .empty-state{display:flex;flex-direction:column;align-items:center;gap:0.75rem;padding:3rem;text-align:center;border:1px dashed var(--border);border-radius:12px}
         .empty-icon{font-size:2.5rem}
         .empty-state h3{font-family:var(--font-display);font-size:1.2rem;color:var(--text)}
-        .dealers-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px}
-        .dealers-table{width:100%;border-collapse:collapse;min-width:800px}
-        .dealers-table th{padding:0.75rem 1rem;text-align:left;font-size:0.68rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);background:var(--surface-2);border-bottom:1px solid var(--border)}
-        .dealers-table td{padding:0.875rem 1rem;border-bottom:1px solid var(--border);font-size:0.825rem;color:var(--text);vertical-align:top}
-        .dealers-table tr:last-child td{border-bottom:none}
-        .dealers-table tr:hover td{background:var(--surface-2)}
-        .clickable-row{cursor:pointer}
-        .co-name{font-weight:600;font-size:0.875rem}
-        .co-id{font-family:var(--font-mono);font-size:0.68rem;color:var(--text-dim)}
-        .num-cell{text-align:left;font-family:var(--font-mono)}
-        .status-pill{padding:0.2rem 0.6rem;border-radius:20px;font-size:0.7rem;font-weight:500;text-transform:capitalize;border:1px solid;white-space:nowrap}
-        .date-cell{color:var(--text-muted);font-size:0.75rem;white-space:nowrap}
-        .act-btn{background:transparent;border:1px solid var(--border);border-radius:4px;padding:0.3rem 0.6rem;font-size:0.75rem;cursor:pointer;text-decoration:none;color:var(--text-muted);white-space:nowrap}
-        .act-btn:hover{color:var(--text);border-color:var(--border-light)}
+        .cars-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1rem}
         .pagination{display:flex;align-items:center;gap:1rem;justify-content:center}
         .pg-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-muted);padding:0.5rem 1rem;border-radius:6px;cursor:pointer;font-size:0.825rem;font-family:var(--font-body);transition:all 0.2s}
         .pg-btn:hover:not(:disabled){border-color:var(--error);color:var(--text)}
