@@ -9,6 +9,7 @@ const NAV = [
   { href:"/dashboard/super-admin/dealers", label:"Dealers", icon:"" },
   { href:"/dashboard/super-admin/cars", label:"Vehicles", icon:"" },
   { href:"/dashboard/super-admin/users", label:"Users", icon:"" },
+  { href:"/dashboard/super-admin/deleted-accounts", label:"Deleted Accounts", icon:"" },
   { href:"/dashboard/super-admin/approvals", label:"Approvals", icon:"" },
   { href:"/dashboard/super-admin/analytics", label:"Analytics", icon:"" },
   { href:"/dashboard/super-admin/activity", label:"Activity Log", icon:"" },

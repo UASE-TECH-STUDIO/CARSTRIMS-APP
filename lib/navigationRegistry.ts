@@ -142,6 +142,7 @@ const ENTRIES: NavEntry[] = [
   { path: "/dashboard/super-admin/create-dealer", label: "Create Dealer Account", description: "Set up a new dealer's company details and account", keywords: ["create dealer", "new dealer", "add dealer", "onboard dealer", "register a dealer", "company details"], roles: ["super-admin"] },
 
   { path: "/dashboard/super-admin/users", label: "Users", description: "Manage all platform users", keywords: ["users", "manage users", "all users"], roles: ["super-admin"] },
+  { path: "/dashboard/super-admin/deleted-accounts", label: "Deleted Accounts", description: "View deleted user and dealer accounts, permanently wipe their data", keywords: ["deleted accounts", "deleted users", "deleted dealers", "wipe account", "wipe data", "permanently delete"], roles: ["super-admin"] },
 
   { path: "/dashboard/super-admin/approvals", label: "Approvals", description: "Pending dealer registration approvals — approve or cancel", keywords: ["approvals", "pending approval", "approve dealer", "pending registration", "cancel registration", "wants to be approved", "needs approval", "new dealer waiting"], roles: ["super-admin"] },
 
