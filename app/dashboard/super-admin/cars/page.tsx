@@ -6,6 +6,7 @@ import api from "@/lib/api";
 import { rowsToExcelBlob, renderHtmlStringToPdfBlob, downloadBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
 import { useConfirm } from "@/store/confirmStore";
+import { usePrompt } from "@/store/promptStore";
 import { parseServerDate } from "@/lib/timeUtils";
 import CarCard from "@/components/shared/CarCard";
 
@@ -37,6 +38,7 @@ export default function AdminCarsPage() {
   const searchParams = useSearchParams();
   const showToast = useToast();
   const askConfirm = useConfirm();
+  const askPrompt = usePrompt();
   const [cars, setCars] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -100,10 +102,64 @@ export default function AdminCarsPage() {
     try {
       await api.delete(`/api/v1/cars/${car.carId}`);
       setCars(p => p.filter(c => c.carId !== car.carId));
+      setGroupedCars(p => p.filter(c => c.carId !== car.carId));
       setTotal(t => t - 1);
       showToast("Vehicle removed", "success");
     } catch (err: any) {
       showToast(err?.response?.data?.detail || "Delete failed", "error");
+    }
+  };
+
+  // Shared updater for hide/mute state changes - both car lists (the
+  // flat paginated view and the grouped-by-dealer view) need to stay
+  // in sync with whichever one is actually on screen, since either
+  // could be active when an admin acts.
+  const patchCarInBothLists = (carId: string, patch: any) => {
+    setCars(p => p.map(c => c.carId === carId ? { ...c, ...patch } : c));
+    setGroupedCars(p => p.map(c => c.carId === carId ? { ...c, ...patch } : c));
+  };
+
+  const handleAdminHide = async (car: any) => {
+    const note = await askPrompt({ message: `Why is "${car.brand} ${car.model}" being hidden? This note goes to the dealer.` });
+    if (!note) return;
+    try {
+      await api.post(`/api/v1/admin/cars/${car.carId}/hide`, { note });
+      patchCarInBothLists(car.carId, { adminHidden: true });
+      showToast("Listing hidden from the public feed", "success");
+    } catch (err: any) {
+      showToast(err?.response?.data?.detail || "Couldn't hide listing", "error");
+    }
+  };
+
+  const handleAdminUnhide = async (car: any) => {
+    try {
+      await api.post(`/api/v1/admin/cars/${car.carId}/unhide`);
+      patchCarInBothLists(car.carId, { adminHidden: false });
+      showToast("Listing re-published", "success");
+    } catch (err: any) {
+      showToast(err?.response?.data?.detail || "Couldn't unhide listing", "error");
+    }
+  };
+
+  const handleAdminMute = async (car: any) => {
+    const note = await askPrompt({ message: `Why are comments being disabled on "${car.brand} ${car.model}"? This note goes to the dealer.` });
+    if (!note) return;
+    try {
+      await api.post(`/api/v1/admin/cars/${car.carId}/mute`, { note });
+      patchCarInBothLists(car.carId, { adminMuted: true });
+      showToast("Comments disabled on this listing", "success");
+    } catch (err: any) {
+      showToast(err?.response?.data?.detail || "Couldn't mute listing", "error");
+    }
+  };
+
+  const handleAdminUnmute = async (car: any) => {
+    try {
+      await api.post(`/api/v1/admin/cars/${car.carId}/unmute`);
+      patchCarInBothLists(car.carId, { adminMuted: false });
+      showToast("Comments re-enabled", "success");
+    } catch (err: any) {
+      showToast(err?.response?.data?.detail || "Couldn't unmute listing", "error");
     }
   };
 
@@ -256,6 +312,10 @@ export default function AdminCarsPage() {
                       onToggleFav={handleToggleFav}
                       isAdmin={true}
                       onAdminDelete={handleAdminDelete}
+                      onAdminHide={handleAdminHide}
+                      onAdminUnhide={handleAdminUnhide}
+                      onAdminMute={handleAdminMute}
+                      onAdminUnmute={handleAdminUnmute}
                       statusColors={STATUS_COLORS}
                     />
                   ))}
@@ -281,6 +341,10 @@ export default function AdminCarsPage() {
               onToggleFav={handleToggleFav}
               isAdmin={true}
               onAdminDelete={handleAdminDelete}
+              onAdminHide={handleAdminHide}
+              onAdminUnhide={handleAdminUnhide}
+              onAdminMute={handleAdminMute}
+              onAdminUnmute={handleAdminUnmute}
               statusColors={STATUS_COLORS}
             />
           ))}
