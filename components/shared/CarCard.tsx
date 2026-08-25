@@ -25,6 +25,8 @@ export interface CarCardData {
   state?: string;
   dealerName?: string;
   dealerLogo?: string;
+  adminHidden?: boolean;
+  adminMuted?: boolean;
 }
 
 interface Props {
@@ -36,6 +38,10 @@ interface Props {
   onToggleFav: (carId: string) => void;
   isAdmin?: boolean;
   onAdminDelete?: (car: CarCardData) => void;
+  onAdminHide?: (car: CarCardData) => void;
+  onAdminUnhide?: (car: CarCardData) => void;
+  onAdminMute?: (car: CarCardData) => void;
+  onAdminUnmute?: (car: CarCardData) => void;
   statusColors?: Record<string, string>;
 }
 
@@ -59,7 +65,7 @@ const DEFAULT_STATUS_COLORS: Record<string, string> = {
  * was just stabilized. A future pass could unify them once this
  * component has proven itself on a second page.
  */
-export default function CarCard({ car, isAuthenticated, liked, favorited, onToggleLike, onToggleFav, isAdmin, onAdminDelete, statusColors }: Props) {
+export default function CarCard({ car, isAuthenticated, liked, favorited, onToggleLike, onToggleFav, isAdmin, onAdminDelete, onAdminHide, onAdminUnhide, onAdminMute, onAdminUnmute, statusColors }: Props) {
   const router = useRouter();
   const showToast = useToast();
   const colors = statusColors || DEFAULT_STATUS_COLORS;
@@ -116,6 +122,18 @@ export default function CarCard({ car, isAuthenticated, liked, favorited, onTogg
     onAdminDelete?.(car);
   };
 
+  const handleAdminHideClick = (e: React.MouseEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    if (car.adminHidden) onAdminUnhide?.(car);
+    else onAdminHide?.(car);
+  };
+
+  const handleAdminMuteClick = (e: React.MouseEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    if (car.adminMuted) onAdminUnmute?.(car);
+    else onAdminMute?.(car);
+  };
+
   return (
     <div className="cc-card">
       <Link href={`/cars/${car.carId}`} className="cc-link">
@@ -136,8 +154,20 @@ export default function CarCard({ car, isAuthenticated, liked, favorited, onTogg
           {car.promoPrice != null && car.promoPrice > 0 && car.promoPrice < car.sellingPrice && (
             <div className="cc-promo-tag">PROMO</div>
           )}
+          {car.adminHidden && <div className="cc-mod-badge cc-badge-hidden">HIDDEN</div>}
+          {car.adminMuted && <div className="cc-mod-badge cc-badge-muted" style={car.adminHidden ? { top: "2.7rem" } : undefined}>MUTED</div>}
           {isAdmin && (
-            <button className="cc-admin-del" onClick={handleAdminDeleteClick}>DELETE</button>
+            <div className="cc-admin-actions">
+              {(onAdminHide || onAdminUnhide) && (
+                <button className="cc-admin-btn" onClick={handleAdminHideClick}>{car.adminHidden ? "UNHIDE" : "HIDE"}</button>
+              )}
+              {(onAdminMute || onAdminUnmute) && (
+                <button className="cc-admin-btn" onClick={handleAdminMuteClick}>{car.adminMuted ? "UNMUTE" : "MUTE"}</button>
+              )}
+              {onAdminDelete && (
+                <button className="cc-admin-btn cc-admin-del" onClick={handleAdminDeleteClick}>DELETE</button>
+              )}
+            </div>
           )}
         </div>
 
@@ -228,7 +258,12 @@ export default function CarCard({ car, isAuthenticated, liked, favorited, onTogg
         .cc-ph { font-size:0.8rem; font-weight:600; color:#A3A3A3; letter-spacing:0.1em; align-items:center; justify-content:center; height:100%; }
         .cc-status-tag { position:absolute; top:0.5rem; left:0.5rem; color:#fff; padding:0.18rem 0.6rem; border-radius:20px; font-size:0.62rem; font-weight:700; text-transform:capitalize; }
         .cc-promo-tag { position:absolute; top:0.5rem; right:0.5rem; background:#DC2626; color:#fff; padding:0.18rem 0.6rem; border-radius:20px; font-size:0.62rem; font-weight:700; }
-        .cc-admin-del { position:absolute; bottom:0.5rem; right:0.5rem; background:rgba(220,38,38,0.9); color:#fff; border:none; border-radius:6px; padding:0.35rem 0.6rem; font-size:0.68rem; font-weight:700; cursor:pointer; }
+        .cc-admin-actions { position:absolute; bottom:0.5rem; right:0.5rem; display:flex; gap:0.35rem; }
+        .cc-admin-btn { background:rgba(23,23,23,0.85); color:#fff; border:none; border-radius:6px; padding:0.35rem 0.55rem; font-size:0.64rem; font-weight:700; cursor:pointer; white-space:nowrap; }
+        .cc-admin-del { background:rgba(220,38,38,0.9); }
+        .cc-mod-badge { position:absolute; top:1.6rem; left:0.5rem; color:#fff; padding:0.18rem 0.55rem; border-radius:20px; font-size:0.6rem; font-weight:700; letter-spacing:0.04em; }
+        .cc-badge-hidden { background:#737373; }
+        .cc-badge-muted { background:#C4621A; }
         .cc-dealer-strip { display:flex; align-items:center; gap:0.4rem; padding:0.4rem 0.875rem; background:#F5F5F5; border-bottom:1px solid #E5E5E5; }
         .cc-dealer-logo { width:22px; height:22px; border-radius:50%; overflow:hidden; background:#FFF7ED; color:#F47B20; display:flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:700; flex-shrink:0; }
         .cc-dealer-logo img { width:100%; height:100%; object-fit:cover; }
