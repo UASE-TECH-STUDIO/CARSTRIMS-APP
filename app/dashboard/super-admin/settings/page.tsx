@@ -4,6 +4,7 @@ import PasswordInput from "@/components/ui/PasswordInput";
 import { useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
+import DeleteAccountSection from "@/components/shared/DeleteAccountSection";
 
 export default function AdminSettingsPage() {
   const { user } = useAuthStore();
@@ -217,6 +218,8 @@ export default function AdminSettingsPage() {
         <p style={{fontFamily:"var(--font-display)",fontSize:"0.75rem",letterSpacing:"0.15em",textTransform:"uppercase",color:"#888",margin:"0 0 1rem"}}>NOTIFICATIONS &amp; SOUND</p>
         <NotificationSettings/>
       </div>
+
+      <DeleteAccountSection />
 
     </div>
   );

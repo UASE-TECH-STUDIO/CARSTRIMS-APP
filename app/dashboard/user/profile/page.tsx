@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
 import { parseServerDate } from "@/lib/timeUtils";
+import DeleteAccountSection from "@/components/shared/DeleteAccountSection";
 
 const NIGERIAN_STATES = [
   "Abia","Adamawa","Akwa Ibom","Anambra","Bauchi","Bayelsa","Benue","Borno",
@@ -263,6 +264,9 @@ export default function UserProfilePage() {
     <NotificationSettings/>
   </div>
 )}
+
+<DeleteAccountSection />
+
 <style>{`
         input:focus,select:focus,textarea:focus{border-color:#F47B20!important;background:#fff!important}
         @media(max-width:640px){

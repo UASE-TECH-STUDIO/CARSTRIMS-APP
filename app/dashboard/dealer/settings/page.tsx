@@ -6,6 +6,7 @@ import api from "@/lib/api";
 import DealerQRCode from "@/components/ui/DealerQRCode";
 import PasswordInput from "@/components/ui/PasswordInput";
 import BackgroundRemovalPreview from "@/components/ui/BackgroundRemovalPreview";
+import DeleteAccountSection from "@/components/shared/DeleteAccountSection";
 
 export default function SettingsPage() {
   const { user } = useAuthStore();
@@ -429,6 +430,8 @@ export default function SettingsPage() {
         <p style={{fontFamily:"var(--font-display)",fontSize:"0.75rem",letterSpacing:"0.15em",textTransform:"uppercase",color:"#888",margin:"0 0 1rem"}}>NOTIFICATIONS &amp; SOUND</p>
         <NotificationSettings/>
       </div>
+
+      <DeleteAccountSection />
 
     </div>
   );
