@@ -5,23 +5,47 @@ import { useAuthStore } from "@/store/authStore";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
-const NAV_ITEMS = [
-  { href:"/dashboard/dealer", label:"Overview", icon:"", exact:true },
-  { href:"/dashboard/dealer/cars", label:"Vehicles & Inventory", icon:"" },
-  { href:"/dashboard/dealer/sales", label:"Sales", icon:"" },
-  { href:"/dashboard/dealer/expenses", label:"Expenses", icon:"" },
-  { href:"/dashboard/dealer/staff", label:"Staff", icon:"" },
-  { href:"/dashboard/dealer/id-cards", label:"ID Cards", icon:"" },
-  { href:"/dashboard/dealer/business-docs", label:"Business Documents", icon:"" },
-  { href:"/dashboard/dealer/marketing", label:"Marketing Materials", icon:"" },
-  { href:"/dashboard/dealer/partners", label:"Partners", icon:"" },
-  { href:"/dashboard/dealer/requests", label:"Requests", icon:"" },
-  { href:"/dashboard/dealer/appointments", label:"Appointments", icon:"" },
-  { href:"/dashboard/dealer/movements", label:"Movements", icon:"" },
-  { href:"/dashboard/dealer/cctv", label:"CCTV", icon:"" },
-  { href:"/dashboard/dealer/reports", label:"Reports", icon:"" },
-  { href:"/dashboard/dealer/notifications", label:"Notifications", icon:"" },
-  { href:"/dashboard/dealer/settings", label:"Settings", icon:"" },
+const NAV_GROUPS: { label: string; items: { href: string; label: string; icon: string; exact?: boolean }[] }[] = [
+  {
+    label: "Inventory & Sales",
+    items: [
+      { href:"/dashboard/dealer/cars", label:"Vehicles & Inventory", icon:"" },
+      { href:"/dashboard/dealer/sales", label:"Sales", icon:"" },
+      { href:"/dashboard/dealer/expenses", label:"Expenses", icon:"" },
+      { href:"/dashboard/dealer/reports", label:"Reports", icon:"" },
+    ],
+  },
+  {
+    label: "Team",
+    items: [
+      { href:"/dashboard/dealer/staff", label:"Staff", icon:"" },
+      { href:"/dashboard/dealer/partners", label:"Partners", icon:"" },
+    ],
+  },
+  {
+    label: "Design Studio",
+    items: [
+      { href:"/dashboard/dealer/id-cards", label:"ID Cards", icon:"" },
+      { href:"/dashboard/dealer/business-docs", label:"Business Documents", icon:"" },
+      { href:"/dashboard/dealer/marketing", label:"Marketing Materials", icon:"" },
+    ],
+  },
+  {
+    label: "Operations",
+    items: [
+      { href:"/dashboard/dealer/requests", label:"Requests", icon:"" },
+      { href:"/dashboard/dealer/appointments", label:"Appointments", icon:"" },
+      { href:"/dashboard/dealer/movements", label:"Movements", icon:"" },
+      { href:"/dashboard/dealer/cctv", label:"CCTV", icon:"" },
+    ],
+  },
+  {
+    label: "Account",
+    items: [
+      { href:"/dashboard/dealer/notifications", label:"Notifications", icon:"" },
+      { href:"/dashboard/dealer/settings", label:"Settings", icon:"" },
+    ],
+  },
 ];
 
 interface Props { isOpen?: boolean; onClose?: () => void; }
@@ -32,12 +56,29 @@ export default function DealerSidebar({ isOpen, onClose }: Props) {
   const { user, logout } = useAuthStore();
   const [dealer, setDealer] = useState<any>(null);
 
+  const isActive = (href: string, exact?: boolean) =>
+    exact ? pathname === href : pathname.startsWith(href);
+
+  // Starts with only the group containing the current page expanded
+  // (or the first group, if on Overview/an unmatched page) - this is
+  // the actual fix for "sidebar too large": 16 links collapsed into
+  // 5 short group headers instead of one long flat list, while every
+  // link stays fully reachable, none removed.
+  const initialGroupIndex = NAV_GROUPS.findIndex((g) => g.items.some((i) => isActive(i.href)));
+  const [expandedGroups, setExpandedGroups] = useState<Set<number>>(
+    new Set([initialGroupIndex >= 0 ? initialGroupIndex : 0])
+  );
+  const toggleGroup = (idx: number) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx); else next.add(idx);
+      return next;
+    });
+  };
+
   useEffect(() => {
     api.get("/api/v1/dealers/me").then((r) => setDealer(r.data)).catch(() => {});
   }, []);
-
-  const isActive = (href: string, exact?: boolean) =>
-    exact ? pathname === href : pathname.startsWith(href);
 
   const handleNav = () => {
     if (typeof window !== "undefined" && window.innerWidth <= 768) onClose?.();
@@ -67,17 +108,43 @@ export default function DealerSidebar({ isOpen, onClose }: Props) {
         </Link>
 
         <nav className="sb-nav">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`sb-item${isActive(item.href, (item as any).exact) ? " active" : ""}`}
-              onClick={handleNav}
-            >
-              <span className="sb-icon">{item.icon}</span>
-              <span>{item.label}</span>
-            </Link>
-          ))}
+          <Link
+            href="/dashboard/dealer"
+            className={`sb-item${isActive("/dashboard/dealer", true) ? " active" : ""}`}
+            onClick={handleNav}
+          >
+            <span className="sb-icon"></span>
+            <span>Overview</span>
+          </Link>
+
+          {NAV_GROUPS.map((group, idx) => {
+            const expanded = expandedGroups.has(idx);
+            const groupHasActive = group.items.some((i) => isActive(i.href));
+            return (
+              <div key={group.label} className="sb-group">
+                <button
+                  type="button"
+                  className={`sb-group-header${groupHasActive ? " has-active" : ""}`}
+                  onClick={() => toggleGroup(idx)}
+                >
+                  <span>{group.label}</span>
+                  <span className={`sb-chevron${expanded ? " open" : ""}`}>&rsaquo;</span>
+                </button>
+                {expanded && group.items.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`sb-item sb-sub${isActive(item.href) ? " active" : ""}`}
+                    onClick={handleNav}
+                  >
+                    <span className="sb-icon">{item.icon}</span>
+                    <span>{item.label}</span>
+                  </Link>
+                ))}
+              </div>
+            );
+          })}
+
           <div className="sb-div"/>
           <Link href="/feed" className="sb-item feed" onClick={handleNav}>
             <span className="sb-icon"></span>
@@ -138,6 +205,19 @@ export default function DealerSidebar({ isOpen, onClose }: Props) {
         .sb-item.feed{color:#A3A3A3}
         .sb-item.feed:hover{color:#F47B20}
         .sb-icon{font-size:0.9rem;width:16px;text-align:center;flex-shrink:0}
+        .sb-group{display:flex;flex-direction:column}
+        .sb-group-header{
+          display:flex;align-items:center;justify-content:space-between;gap:0.5rem;
+          padding:0.55rem 1rem;background:none;border:none;cursor:pointer;
+          font-family:var(--font-body);font-size:0.7rem;font-weight:700;
+          letter-spacing:0.08em;text-transform:uppercase;color:#A3A3A3;
+          transition:color 0.15s;width:100%;text-align:left;
+        }
+        .sb-group-header:hover{color:#F47B20}
+        .sb-group-header.has-active{color:#F47B20}
+        .sb-chevron{font-size:1rem;transition:transform 0.2s;flex-shrink:0}
+        .sb-chevron.open{transform:rotate(90deg)}
+        .sb-sub{padding-left:1.5rem;font-size:0.8rem}
         .sb-div{height:1px;background:#E5E5E5;margin:0.4rem 1rem}
         .sb-bot{padding:0.875rem 1rem;border-top:1px solid #E5E5E5;flex-shrink:0}
         .sb-dev{font-size:0.6rem;color:#C0C0C0;text-align:center;margin-bottom:0.5rem}
