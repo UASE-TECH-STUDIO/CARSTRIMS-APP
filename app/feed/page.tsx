@@ -824,29 +824,6 @@ export default function FeedPage() {
                   </div>
                 </div>
               </Link>
-              {commentBoxFor === car.carId && (
-                <div className="inline-comment-box" onClick={(e) => e.stopPropagation()}>
-                  <input
-                    type="text"
-                    className="icb-input"
-                    placeholder={isAuthenticated ? "Write a comment..." : "Log in to comment"}
-                    value={commentDraft}
-                    disabled={!isAuthenticated || postingComment}
-                    onChange={(e) => setCommentDraft(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter" && !postingComment) handlePostQuickComment(e as any, car.carId); }}
-                  />
-                  {isAuthenticated ? (
-                    <button className="icb-send" disabled={!commentDraft.trim() || postingComment} onClick={(e) => handlePostQuickComment(e, car.carId)}>
-                      {postingComment ? "..." : "Post"}
-                    </button>
-                  ) : (
-                    <button className="icb-send" onClick={() => router.push("/login")}>Log In</button>
-                  )}
-                  <Link href={`/cars/${car.carId}?scrollTo=comments`} className="icb-view">
-                    View {car.commentCount ? `${car.commentCount} ` : ""}comments
-                  </Link>
-                </div>
-              )}
               </div>
             ))}
           </div>
@@ -859,6 +836,41 @@ export default function FeedPage() {
           )}
         </>
       )}
+
+      {commentBoxFor && (() => {
+        const targetCar = cars.find(c => c.carId === commentBoxFor);
+        if (!targetCar) return null;
+        return (
+          <div className="cmt-backdrop" onClick={() => setCommentBoxFor(null)}>
+            <div className="cmt-sheet" onClick={(e) => e.stopPropagation()}>
+              <div className="cmt-handle" />
+              <div className="cmt-title">{targetCar.brand} {targetCar.model}</div>
+              <textarea
+                className="cmt-textarea"
+                placeholder={isAuthenticated ? "Write a comment..." : "Log in to comment"}
+                value={commentDraft}
+                disabled={!isAuthenticated || postingComment}
+                onChange={(e) => setCommentDraft(e.target.value)}
+                autoFocus
+                rows={4}
+              />
+              <Link href={`/cars/${targetCar.carId}?scrollTo=comments`} className="cmt-view-link">
+                View {targetCar.commentCount ? `${targetCar.commentCount} ` : ""}comments
+              </Link>
+              <div className="cmt-actions">
+                <button className="cmt-cancel" onClick={() => setCommentBoxFor(null)}>Cancel</button>
+                {isAuthenticated ? (
+                  <button className="cmt-post" disabled={!commentDraft.trim() || postingComment} onClick={(e) => handlePostQuickComment(e, targetCar.carId)}>
+                    {postingComment ? "Posting..." : "Post"}
+                  </button>
+                ) : (
+                  <button className="cmt-post" onClick={() => router.push("/login")}>Log In</button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {shareCar && (
         <ShareMenu
@@ -1118,23 +1130,30 @@ export default function FeedPage() {
         }
         .car-card:hover { border-color:#F47B20; transform:translateY(-3px); box-shadow:0 8px 28px rgba(244,123,32,0.1); }
         .car-card-link { display:flex; flex-direction:column; text-decoration:none; color:inherit; }
-        .inline-comment-box {
-          display:flex; align-items:center; gap:0.4rem; padding:0.6rem 0.75rem;
-          border-top:1px solid #F0F0F0; background:#FAFAFA;
+
+        .cmt-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1200; display:flex; align-items:flex-end; }
+        .cmt-sheet { width:100%; background:#fff; border-radius:16px 16px 0 0; padding:0.75rem 1.25rem calc(1rem + var(--sab, 0px)); }
+        .cmt-handle { width:36px; height:4px; background:#E5E5E5; border-radius:2px; margin:0 auto 0.75rem; }
+        .cmt-title { font-size:0.85rem; font-weight:700; color:#1A1A1A; margin-bottom:0.75rem; }
+        .cmt-textarea {
+          width:100%; border:1.5px solid #E5E5E5; border-radius:10px; padding:0.7rem 0.85rem;
+          font-size:0.88rem; font-family:var(--font-body); outline:none; resize:none;
+          box-sizing:border-box;
         }
-        .icb-input {
-          flex:1; min-width:0; border:1.5px solid #E5E5E5; border-radius:8px;
-          padding:0.4rem 0.6rem; font-size:0.78rem; font-family:var(--font-body);
-          outline:none; background:#fff;
+        .cmt-textarea:focus { border-color:#F47B20; }
+        .cmt-view-link { display:inline-block; font-size:0.75rem; color:#F47B20; font-weight:600; text-decoration:none; margin-top:0.6rem; }
+        .cmt-actions { display:flex; gap:0.6rem; margin-top:0.9rem; }
+        .cmt-cancel {
+          flex:1; padding:0.75rem; border-radius:10px; border:1.5px solid #E5E5E5;
+          background:#F5F5F5; color:#525252; font-weight:700; font-size:0.85rem;
+          cursor:pointer; font-family:var(--font-body);
         }
-        .icb-input:focus { border-color:#F47B20; }
-        .icb-send {
-          background:#F47B20; color:#fff; border:none; border-radius:8px;
-          padding:0.4rem 0.7rem; font-size:0.75rem; font-weight:700; cursor:pointer;
-          font-family:var(--font-body); white-space:nowrap; flex-shrink:0;
+        .cmt-post {
+          flex:1; padding:0.75rem; border-radius:10px; border:none;
+          background:#F47B20; color:#fff; font-weight:700; font-size:0.85rem;
+          cursor:pointer; font-family:var(--font-body);
         }
-        .icb-send:disabled { opacity:0.5; cursor:not-allowed; }
-        .icb-view { font-size:0.68rem; color:#F47B20; font-weight:600; white-space:nowrap; flex-shrink:0; text-decoration:none; }
+        .cmt-post:disabled { opacity:0.5; cursor:not-allowed; }
 
         .car-img-wrap { position:relative; height:185px; background:#E5E5E5; overflow:hidden; display:flex; align-items:center; justify-content:center; }
         .car-img-wrap img { width:100%; height:100%; object-fit:cover; transition:transform 0.3s; }
