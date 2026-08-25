@@ -9,6 +9,7 @@ import { useToast } from "@/store/toastStore";
 import { useConfirm } from "@/store/confirmStore";
 import ZoomableImage from "@/components/ui/ZoomableImage";
 import FeedHomeButton from "@/components/shared/FeedHomeButton";
+import ShareMenu from "@/components/shared/ShareMenu";
 import { timeAgoLong } from "@/lib/timeUtils";
 
 export default function CarDetailClient() {
@@ -246,37 +247,8 @@ export default function CarDetailClient() {
     catch(e:any) { showToast(e.response?.data?.detail || "Delete failed", "error"); }
   };
 
-  const handleShare = async () => {
-    const url = window.location.href;
-    const title = `${car?.brand || ""} ${car?.model || ""}`.trim() || "Vehicle";
-
-    if (navigator.share) {
-      try {
-        await navigator.share({ title, url });
-      } catch (e: any) {
-        // AbortError means the person simply closed the native share
-        // sheet themselves - that's a normal, expected outcome, not
-        // an error to report. Anything else, fall through to copy.
-        if (e?.name === "AbortError") return;
-        await copyLinkFallback(url);
-      }
-      return;
-    }
-
-    await copyLinkFallback(url);
-  };
-
-  const copyLinkFallback = async (url: string) => {
-    try {
-      await navigator.clipboard.writeText(url);
-      showToast("Link copied!", "success");
-    } catch {
-      // Clipboard API can also fail (permissions, insecure context,
-      // older WebView) - never leave the person with no feedback at
-      // all or, worse, a hung UI from an uncaught rejection here.
-      showToast("Couldn't copy the link - try sharing again", "error");
-    }
-  };
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const handleShare = () => setShowShareMenu(true);
 
   const fmt = (n: number) => `NGN ${(n||0).toLocaleString()}`;
 
@@ -671,6 +643,14 @@ export default function CarDetailClient() {
         @media(max-width:640px){.cd-topbar{padding:0.75rem 1rem}.cd-body{padding:0.75rem;gap:1rem}.cd-comments{padding:0 0.75rem 3rem}.cd-specs{grid-template-columns:1fr}.cd-main-img{aspect-ratio:4/3}.cd-right{min-width:0}.cd-info-card{padding:1rem}.cd-car-title{font-size:1.4rem}}
         @media(max-width:480px){.cd-body{padding:0.5rem}.cd-topbar-right{gap:0.25rem}.cd-action{padding:0.35rem 0.6rem;font-size:0.75rem}}
       `}</style>
+
+      {showShareMenu && (
+        <ShareMenu
+          url={typeof window !== "undefined" ? window.location.href : ""}
+          title={`${car?.brand || ""} ${car?.model || ""}`.trim() || "Vehicle"}
+          onClose={() => setShowShareMenu(false)}
+        />
+      )}
     </div>
   );
 }
