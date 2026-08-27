@@ -1,0 +1,259 @@
+From 9af015217cd4dc31d308a40ca094f208dee98884 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Tue, 25 Aug 2026 08:02:47 +0000
+Subject: [PATCH 1/2] feat: CarCard supports hide/unhide and mute/unmute admin
+ actions (item 9 part 2, frontend foundation)
+
+Extends the shared CarCard with 4 new fully optional callback props
+(onAdminHide/onAdminUnhide/onAdminMute/onAdminUnmute) - every existing
+caller (feed, dealer profile) that doesn't pass them is completely
+unaffected, since each admin button only renders when its specific
+callback is actually provided.
+
+Also adds HIDDEN/MUTED status badges (top-left, stacked below the
+existing status tag) so an admin can see a listing's moderation
+state at a glance without opening it. Button label flips between
+action and its reverse (HIDE/UNHIDE, MUTE/UNMUTE) based on the car's
+current adminHidden/adminMuted state, which is now part of
+CarCardData.
+
+Real positioning bug caught before committing: the new badges were
+first placed at the exact same top:0.5rem;left:0.5rem spot as the
+existing status tag, which would have overlapped it. Fixed by
+stacking the new badges below it instead, with the muted badge
+shifting further down when both hidden and muted are shown together.
+
+Prompting for the required note and the actual API calls are left to
+the parent page (super-admin car list, next commit) - same
+delegation pattern already used for onAdminDelete, keeping CarCard
+itself free of page-specific UI like confirm/prompt dialogs.
+---
+ components/shared/CarCard.tsx | 41 ++++++++++++++++++++++++++++++++---
+ 1 file changed, 38 insertions(+), 3 deletions(-)
+
+diff --git a/components/shared/CarCard.tsx b/components/shared/CarCard.tsx
+index 975b09b..3bcf2c5 100644
+--- a/components/shared/CarCard.tsx
++++ b/components/shared/CarCard.tsx
+@@ -25,6 +25,8 @@ export interface CarCardData {
+   state?: string;
+   dealerName?: string;
+   dealerLogo?: string;
++  adminHidden?: boolean;
++  adminMuted?: boolean;
+ }
+ 
+ interface Props {
+@@ -36,6 +38,10 @@ interface Props {
+   onToggleFav: (carId: string) => void;
+   isAdmin?: boolean;
+   onAdminDelete?: (car: CarCardData) => void;
++  onAdminHide?: (car: CarCardData) => void;
++  onAdminUnhide?: (car: CarCardData) => void;
++  onAdminMute?: (car: CarCardData) => void;
++  onAdminUnmute?: (car: CarCardData) => void;
+   statusColors?: Record<string, string>;
+ }
+ 
+@@ -59,7 +65,7 @@ const DEFAULT_STATUS_COLORS: Record<string, string> = {
+  * was just stabilized. A future pass could unify them once this
+  * component has proven itself on a second page.
+  */
+-export default function CarCard({ car, isAuthenticated, liked, favorited, onToggleLike, onToggleFav, isAdmin, onAdminDelete, statusColors }: Props) {
++export default function CarCard({ car, isAuthenticated, liked, favorited, onToggleLike, onToggleFav, isAdmin, onAdminDelete, onAdminHide, onAdminUnhide, onAdminMute, onAdminUnmute, statusColors }: Props) {
+   const router = useRouter();
+   const showToast = useToast();
+   const colors = statusColors || DEFAULT_STATUS_COLORS;
+@@ -116,6 +122,18 @@ export default function CarCard({ car, isAuthenticated, liked, favorited, onTogg
+     onAdminDelete?.(car);
+   };
+ 
++  const handleAdminHideClick = (e: React.MouseEvent) => {
++    e.preventDefault(); e.stopPropagation();
++    if (car.adminHidden) onAdminUnhide?.(car);
++    else onAdminHide?.(car);
++  };
++
++  const handleAdminMuteClick = (e: React.MouseEvent) => {
++    e.preventDefault(); e.stopPropagation();
++    if (car.adminMuted) onAdminUnmute?.(car);
++    else onAdminMute?.(car);
++  };
++
+   return (
+     <div className="cc-card">
+       <Link href={`/cars/${car.carId}`} className="cc-link">
+@@ -136,8 +154,20 @@ export default function CarCard({ car, isAuthenticated, liked, favorited, onTogg
+           {car.promoPrice != null && car.promoPrice > 0 && car.promoPrice < car.sellingPrice && (
+             <div className="cc-promo-tag">PROMO</div>
+           )}
++          {car.adminHidden && <div className="cc-mod-badge cc-badge-hidden">HIDDEN</div>}
++          {car.adminMuted && <div className="cc-mod-badge cc-badge-muted" style={car.adminHidden ? { top: "2.7rem" } : undefined}>MUTED</div>}
+           {isAdmin && (
+-            <button className="cc-admin-del" onClick={handleAdminDeleteClick}>DELETE</button>
++            <div className="cc-admin-actions">
++              {(onAdminHide || onAdminUnhide) && (
++                <button className="cc-admin-btn" onClick={handleAdminHideClick}>{car.adminHidden ? "UNHIDE" : "HIDE"}</button>
++              )}
++              {(onAdminMute || onAdminUnmute) && (
++                <button className="cc-admin-btn" onClick={handleAdminMuteClick}>{car.adminMuted ? "UNMUTE" : "MUTE"}</button>
++              )}
++              {onAdminDelete && (
++                <button className="cc-admin-btn cc-admin-del" onClick={handleAdminDeleteClick}>DELETE</button>
++              )}
++            </div>
+           )}
+         </div>
+ 
+@@ -228,7 +258,12 @@ export default function CarCard({ car, isAuthenticated, liked, favorited, onTogg
+         .cc-ph { font-size:0.8rem; font-weight:600; color:#A3A3A3; letter-spacing:0.1em; align-items:center; justify-content:center; height:100%; }
+         .cc-status-tag { position:absolute; top:0.5rem; left:0.5rem; color:#fff; padding:0.18rem 0.6rem; border-radius:20px; font-size:0.62rem; font-weight:700; text-transform:capitalize; }
+         .cc-promo-tag { position:absolute; top:0.5rem; right:0.5rem; background:#DC2626; color:#fff; padding:0.18rem 0.6rem; border-radius:20px; font-size:0.62rem; font-weight:700; }
+-        .cc-admin-del { position:absolute; bottom:0.5rem; right:0.5rem; background:rgba(220,38,38,0.9); color:#fff; border:none; border-radius:6px; padding:0.35rem 0.6rem; font-size:0.68rem; font-weight:700; cursor:pointer; }
++        .cc-admin-actions { position:absolute; bottom:0.5rem; right:0.5rem; display:flex; gap:0.35rem; }
++        .cc-admin-btn { background:rgba(23,23,23,0.85); color:#fff; border:none; border-radius:6px; padding:0.35rem 0.55rem; font-size:0.64rem; font-weight:700; cursor:pointer; white-space:nowrap; }
++        .cc-admin-del { background:rgba(220,38,38,0.9); }
++        .cc-mod-badge { position:absolute; top:1.6rem; left:0.5rem; color:#fff; padding:0.18rem 0.55rem; border-radius:20px; font-size:0.6rem; font-weight:700; letter-spacing:0.04em; }
++        .cc-badge-hidden { background:#737373; }
++        .cc-badge-muted { background:#C4621A; }
+         .cc-dealer-strip { display:flex; align-items:center; gap:0.4rem; padding:0.4rem 0.875rem; background:#F5F5F5; border-bottom:1px solid #E5E5E5; }
+         .cc-dealer-logo { width:22px; height:22px; border-radius:50%; overflow:hidden; background:#FFF7ED; color:#F47B20; display:flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:700; flex-shrink:0; }
+         .cc-dealer-logo img { width:100%; height:100%; object-fit:cover; }
+-- 
+2.43.0
+
+
+From b06c375d9497ecbd4f8782a9b88fe99fb50f3d5b Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Tue, 25 Aug 2026 08:04:41 +0000
+Subject: [PATCH 2/2] feat: wire hide/unhide/mute/unmute into the Super Admin
+ car list (item 9 part 2, complete)
+
+Final piece connecting everything built in the previous two commits
+- passes the new handler props into both CarCard render call sites
+on this page (the flat paginated view and the grouped-by-dealer
+view), so every listing everywhere on this page now has real,
+working HIDE/UNHIDE and MUTE/UNMUTE buttons alongside DELETE.
+
+Item 9 is now fully complete: same card display with icons (part 1),
+plus real moderation power - delete, hide/unhide with a note routed
+to the dealer's notifications, and mute/unmute for comments (part 2).
+Item 11 is also complete for cars specifically, matching what
+already existed for dealer-level suspend/warn.
+---
+ app/dashboard/super-admin/cars/page.tsx | 64 +++++++++++++++++++++++++
+ 1 file changed, 64 insertions(+)
+
+diff --git a/app/dashboard/super-admin/cars/page.tsx b/app/dashboard/super-admin/cars/page.tsx
+index 0d5e2e3..7100c3e 100644
+--- a/app/dashboard/super-admin/cars/page.tsx
++++ b/app/dashboard/super-admin/cars/page.tsx
+@@ -6,6 +6,7 @@ import api from "@/lib/api";
+ import { rowsToExcelBlob, renderHtmlStringToPdfBlob, downloadBlob } from "@/lib/documentExport";
+ import { useToast } from "@/store/toastStore";
+ import { useConfirm } from "@/store/confirmStore";
++import { usePrompt } from "@/store/promptStore";
+ import { parseServerDate } from "@/lib/timeUtils";
+ import CarCard from "@/components/shared/CarCard";
+ 
+@@ -37,6 +38,7 @@ export default function AdminCarsPage() {
+   const searchParams = useSearchParams();
+   const showToast = useToast();
+   const askConfirm = useConfirm();
++  const askPrompt = usePrompt();
+   const [cars, setCars] = useState<any[]>([]);
+   const [total, setTotal] = useState(0);
+   const [loading, setLoading] = useState(true);
+@@ -100,6 +102,7 @@ export default function AdminCarsPage() {
+     try {
+       await api.delete(`/api/v1/cars/${car.carId}`);
+       setCars(p => p.filter(c => c.carId !== car.carId));
++      setGroupedCars(p => p.filter(c => c.carId !== car.carId));
+       setTotal(t => t - 1);
+       showToast("Vehicle removed", "success");
+     } catch (err: any) {
+@@ -107,6 +110,59 @@ export default function AdminCarsPage() {
+     }
+   };
+ 
++  // Shared updater for hide/mute state changes - both car lists (the
++  // flat paginated view and the grouped-by-dealer view) need to stay
++  // in sync with whichever one is actually on screen, since either
++  // could be active when an admin acts.
++  const patchCarInBothLists = (carId: string, patch: any) => {
++    setCars(p => p.map(c => c.carId === carId ? { ...c, ...patch } : c));
++    setGroupedCars(p => p.map(c => c.carId === carId ? { ...c, ...patch } : c));
++  };
++
++  const handleAdminHide = async (car: any) => {
++    const note = await askPrompt({ message: `Why is "${car.brand} ${car.model}" being hidden? This note goes to the dealer.` });
++    if (!note) return;
++    try {
++      await api.post(`/api/v1/admin/cars/${car.carId}/hide`, { note });
++      patchCarInBothLists(car.carId, { adminHidden: true });
++      showToast("Listing hidden from the public feed", "success");
++    } catch (err: any) {
++      showToast(err?.response?.data?.detail || "Couldn't hide listing", "error");
++    }
++  };
++
++  const handleAdminUnhide = async (car: any) => {
++    try {
++      await api.post(`/api/v1/admin/cars/${car.carId}/unhide`);
++      patchCarInBothLists(car.carId, { adminHidden: false });
++      showToast("Listing re-published", "success");
++    } catch (err: any) {
++      showToast(err?.response?.data?.detail || "Couldn't unhide listing", "error");
++    }
++  };
++
++  const handleAdminMute = async (car: any) => {
++    const note = await askPrompt({ message: `Why are comments being disabled on "${car.brand} ${car.model}"? This note goes to the dealer.` });
++    if (!note) return;
++    try {
++      await api.post(`/api/v1/admin/cars/${car.carId}/mute`, { note });
++      patchCarInBothLists(car.carId, { adminMuted: true });
++      showToast("Comments disabled on this listing", "success");
++    } catch (err: any) {
++      showToast(err?.response?.data?.detail || "Couldn't mute listing", "error");
++    }
++  };
++
++  const handleAdminUnmute = async (car: any) => {
++    try {
++      await api.post(`/api/v1/admin/cars/${car.carId}/unmute`);
++      patchCarInBothLists(car.carId, { adminMuted: false });
++      showToast("Comments re-enabled", "success");
++    } catch (err: any) {
++      showToast(err?.response?.data?.detail || "Couldn't unmute listing", "error");
++    }
++  };
++
+   const rowsFor = (list: any[]) => list.map((c: any) => ({
+     "Vehicle ID": c.carId,
+     Brand: c.brand,
+@@ -256,6 +312,10 @@ export default function AdminCarsPage() {
+                       onToggleFav={handleToggleFav}
+                       isAdmin={true}
+                       onAdminDelete={handleAdminDelete}
++                      onAdminHide={handleAdminHide}
++                      onAdminUnhide={handleAdminUnhide}
++                      onAdminMute={handleAdminMute}
++                      onAdminUnmute={handleAdminUnmute}
+                       statusColors={STATUS_COLORS}
+                     />
+                   ))}
+@@ -281,6 +341,10 @@ export default function AdminCarsPage() {
+               onToggleFav={handleToggleFav}
+               isAdmin={true}
+               onAdminDelete={handleAdminDelete}
++              onAdminHide={handleAdminHide}
++              onAdminUnhide={handleAdminUnhide}
++              onAdminMute={handleAdminMute}
++              onAdminUnmute={handleAdminUnmute}
+               statusColors={STATUS_COLORS}
+             />
+           ))}
+-- 
+2.43.0
+

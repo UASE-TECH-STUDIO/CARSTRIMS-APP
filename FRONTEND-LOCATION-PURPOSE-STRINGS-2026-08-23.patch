@@ -1,0 +1,46 @@
+From 5d00971e06f3e2fdfac57ef6cc82b2890206f24a Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 23 Aug 2026 18:58:49 +0000
+Subject: [PATCH] fix: add missing location purpose strings - resolves the
+ ITMS-90683 warnings from build 74
+
+Build 74 uploaded successfully (this was just a warning, not a
+rejection), but worth fixing before submitting for review - Apple's
+human reviewers can reject an app later for a missing purpose string
+even when the automated upload check only warned.
+
+Added NSLocationWhenInUseUsageDescription and
+NSLocationAlwaysAndWhenInUseUsageDescription to Info.plist, matching
+the existing pattern and voice used for the camera/photo library/
+microphone descriptions already there.
+
+Worth knowing: checked the app's own code and it never actually calls
+the Geolocation plugin anywhere - @capacitor/geolocation is installed
+but unused, which is exactly why this warning appeared (the plugin's
+native code is bundled into the app regardless of whether the JS side
+ever calls it). Removing the unused dependency entirely would be a
+cleaner fix, but that's a more invasive change (package.json + native
+project regeneration) - fine as a future cleanup, not urgent, and the
+purpose strings alone fully resolve what Apple actually flagged.
+---
+ ios/App/App/Info.plist | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/ios/App/App/Info.plist b/ios/App/App/Info.plist
+index 4ebd439..2bb4d37 100644
+--- a/ios/App/App/Info.plist
++++ b/ios/App/App/Info.plist
+@@ -55,6 +55,10 @@
+ 	<string>CARSTRIMS uses speech recognition so you can search for cars by speaking instead of typing.</string>
+ 	<key>NSMicrophoneUsageDescription</key>
+ 	<string>CARSTRIMS needs microphone access for voice search.</string>
++	<key>NSLocationWhenInUseUsageDescription</key>
++	<string>CARSTRIMS uses your location to show nearby dealers and vehicles, and to fill in your state and city when setting up your dealership or listing a vehicle.</string>
++	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
++	<string>CARSTRIMS uses your location to show nearby dealers and vehicles, and to fill in your state and city when setting up your dealership or listing a vehicle.</string>
+ 	<key>UIViewControllerBasedStatusBarAppearance</key>
+ 	<true/>
+ </dict>
+-- 
+2.43.0
+

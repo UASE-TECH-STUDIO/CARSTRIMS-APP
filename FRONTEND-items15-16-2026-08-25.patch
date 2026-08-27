@@ -1,0 +1,258 @@
+From 647fe941f8831b9c2aa00ad4f3599b3a4f4377ab Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Tue, 25 Aug 2026 08:25:42 +0000
+Subject: [PATCH 1/2] feat: display labels for the 3 new platform activity
+ types (item 15, frontend)
+
+The dedicated Activity Log page's type badge falls back to the raw
+type string when it isn't in TYPE_LABELS/TYPE_ICONS - added entries
+for the 3 new event types the backend now emits (new_dealer,
+new_listing, sale_completed) so they show proper labels ('New
+Dealer', 'New Listing', 'Sale') instead of the raw snake_case value.
+
+The dashboard's own Recent Activity widget needed no change at all -
+it already renders title/message/createdAt directly without going
+through TYPE_LABELS, so the new event types display there
+automatically.
+---
+ app/dashboard/super-admin/activity/page.tsx | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/app/dashboard/super-admin/activity/page.tsx b/app/dashboard/super-admin/activity/page.tsx
+index 17dbb01..01589b3 100644
+--- a/app/dashboard/super-admin/activity/page.tsx
++++ b/app/dashboard/super-admin/activity/page.tsx
+@@ -8,6 +8,7 @@ const TYPE_ICONS: Record<string, string> = {
+   dealer_approved:"", dealer_suspended:"", general:"",
+   broadcast:"", password_recovery:"", appointment:"",
+   car_request:"", partner_request:"",
++  new_dealer:"", new_listing:"", sale_completed:"",
+ };
+ 
+ export default function ActivityPage() {
+@@ -54,6 +55,7 @@ export default function ActivityPage() {
+     dealer_approved:"Dealer Approved", dealer_suspended:"Account Suspended",
+     general:"General", broadcast:"Broadcast", password_recovery:"Password Reset",
+     appointment:"Appointment", car_request:"Vehicle Request", partner_request:"Partnership",
++    new_dealer:"New Dealer", new_listing:"New Listing", sale_completed:"Sale",
+   };
+ 
+   return (
+-- 
+2.43.0
+
+
+From 4701782b0d47b6109927401dbd4e2ae2b22f71e8 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Tue, 25 Aug 2026 08:27:54 +0000
+Subject: [PATCH 2/2] feat: restructure the dealer sidebar into collapsible
+ groups (item 16)
+
+16 flat links (grown from the original set as ID Cards, Business
+Documents, and Marketing Materials were added this session) into 5
+short, labeled, collapsible groups: Inventory & Sales, Team, Design
+Studio, Operations, Account - plus Overview as its own standalone
+link at the top, always visible.
+
+Only the group containing whatever page you're currently on starts
+expanded; the rest start collapsed. This is the actual fix for 'too
+large' - the visible height drops from 16 items to effectively 5
+group headers plus whichever few are relevant to where you are, while
+every single link stays fully reachable - nothing was removed, only
+organized.
+
+Real UX bug caught and fixed before committing: my first version had
+the expand/collapse chevron rotation backwards - pointing down when
+collapsed and up when expanded, the opposite of the standard,
+intuitive pattern (closed = pointing right/down toward more content,
+open = pointing down/toward the now-visible content). Fixed to
+collapsed = pointing right, expanded = rotated down.
+
+Verified programmatically that all 15 grouped links plus the
+standalone Overview link account for exactly the same 16 destinations
+that existed before - none dropped in the restructure.
+---
+ components/layout/DealerSidebar.tsx | 142 ++++++++++++++++++++++------
+ 1 file changed, 111 insertions(+), 31 deletions(-)
+
+diff --git a/components/layout/DealerSidebar.tsx b/components/layout/DealerSidebar.tsx
+index 525245d..8c98daf 100644
+--- a/components/layout/DealerSidebar.tsx
++++ b/components/layout/DealerSidebar.tsx
+@@ -5,23 +5,47 @@ import { useAuthStore } from "@/store/authStore";
+ import { useEffect, useState } from "react";
+ import api from "@/lib/api";
+ 
+-const NAV_ITEMS = [
+-  { href:"/dashboard/dealer", label:"Overview", icon:"", exact:true },
+-  { href:"/dashboard/dealer/cars", label:"Vehicles & Inventory", icon:"" },
+-  { href:"/dashboard/dealer/sales", label:"Sales", icon:"" },
+-  { href:"/dashboard/dealer/expenses", label:"Expenses", icon:"" },
+-  { href:"/dashboard/dealer/staff", label:"Staff", icon:"" },
+-  { href:"/dashboard/dealer/id-cards", label:"ID Cards", icon:"" },
+-  { href:"/dashboard/dealer/business-docs", label:"Business Documents", icon:"" },
+-  { href:"/dashboard/dealer/marketing", label:"Marketing Materials", icon:"" },
+-  { href:"/dashboard/dealer/partners", label:"Partners", icon:"" },
+-  { href:"/dashboard/dealer/requests", label:"Requests", icon:"" },
+-  { href:"/dashboard/dealer/appointments", label:"Appointments", icon:"" },
+-  { href:"/dashboard/dealer/movements", label:"Movements", icon:"" },
+-  { href:"/dashboard/dealer/cctv", label:"CCTV", icon:"" },
+-  { href:"/dashboard/dealer/reports", label:"Reports", icon:"" },
+-  { href:"/dashboard/dealer/notifications", label:"Notifications", icon:"" },
+-  { href:"/dashboard/dealer/settings", label:"Settings", icon:"" },
++const NAV_GROUPS: { label: string; items: { href: string; label: string; icon: string; exact?: boolean }[] }[] = [
++  {
++    label: "Inventory & Sales",
++    items: [
++      { href:"/dashboard/dealer/cars", label:"Vehicles & Inventory", icon:"" },
++      { href:"/dashboard/dealer/sales", label:"Sales", icon:"" },
++      { href:"/dashboard/dealer/expenses", label:"Expenses", icon:"" },
++      { href:"/dashboard/dealer/reports", label:"Reports", icon:"" },
++    ],
++  },
++  {
++    label: "Team",
++    items: [
++      { href:"/dashboard/dealer/staff", label:"Staff", icon:"" },
++      { href:"/dashboard/dealer/partners", label:"Partners", icon:"" },
++    ],
++  },
++  {
++    label: "Design Studio",
++    items: [
++      { href:"/dashboard/dealer/id-cards", label:"ID Cards", icon:"" },
++      { href:"/dashboard/dealer/business-docs", label:"Business Documents", icon:"" },
++      { href:"/dashboard/dealer/marketing", label:"Marketing Materials", icon:"" },
++    ],
++  },
++  {
++    label: "Operations",
++    items: [
++      { href:"/dashboard/dealer/requests", label:"Requests", icon:"" },
++      { href:"/dashboard/dealer/appointments", label:"Appointments", icon:"" },
++      { href:"/dashboard/dealer/movements", label:"Movements", icon:"" },
++      { href:"/dashboard/dealer/cctv", label:"CCTV", icon:"" },
++    ],
++  },
++  {
++    label: "Account",
++    items: [
++      { href:"/dashboard/dealer/notifications", label:"Notifications", icon:"" },
++      { href:"/dashboard/dealer/settings", label:"Settings", icon:"" },
++    ],
++  },
+ ];
+ 
+ interface Props { isOpen?: boolean; onClose?: () => void; }
+@@ -32,13 +56,30 @@ export default function DealerSidebar({ isOpen, onClose }: Props) {
+   const { user, logout } = useAuthStore();
+   const [dealer, setDealer] = useState<any>(null);
+ 
++  const isActive = (href: string, exact?: boolean) =>
++    exact ? pathname === href : pathname.startsWith(href);
++
++  // Starts with only the group containing the current page expanded
++  // (or the first group, if on Overview/an unmatched page) - this is
++  // the actual fix for "sidebar too large": 16 links collapsed into
++  // 5 short group headers instead of one long flat list, while every
++  // link stays fully reachable, none removed.
++  const initialGroupIndex = NAV_GROUPS.findIndex((g) => g.items.some((i) => isActive(i.href)));
++  const [expandedGroups, setExpandedGroups] = useState<Set<number>>(
++    new Set([initialGroupIndex >= 0 ? initialGroupIndex : 0])
++  );
++  const toggleGroup = (idx: number) => {
++    setExpandedGroups((prev) => {
++      const next = new Set(prev);
++      if (next.has(idx)) next.delete(idx); else next.add(idx);
++      return next;
++    });
++  };
++
+   useEffect(() => {
+     api.get("/api/v1/dealers/me").then((r) => setDealer(r.data)).catch(() => {});
+   }, []);
+ 
+-  const isActive = (href: string, exact?: boolean) =>
+-    exact ? pathname === href : pathname.startsWith(href);
+-
+   const handleNav = () => {
+     if (typeof window !== "undefined" && window.innerWidth <= 768) onClose?.();
+   };
+@@ -67,17 +108,43 @@ export default function DealerSidebar({ isOpen, onClose }: Props) {
+         </Link>
+ 
+         <nav className="sb-nav">
+-          {NAV_ITEMS.map((item) => (
+-            <Link
+-              key={item.href}
+-              href={item.href}
+-              className={`sb-item${isActive(item.href, (item as any).exact) ? " active" : ""}`}
+-              onClick={handleNav}
+-            >
+-              <span className="sb-icon">{item.icon}</span>
+-              <span>{item.label}</span>
+-            </Link>
+-          ))}
++          <Link
++            href="/dashboard/dealer"
++            className={`sb-item${isActive("/dashboard/dealer", true) ? " active" : ""}`}
++            onClick={handleNav}
++          >
++            <span className="sb-icon"></span>
++            <span>Overview</span>
++          </Link>
++
++          {NAV_GROUPS.map((group, idx) => {
++            const expanded = expandedGroups.has(idx);
++            const groupHasActive = group.items.some((i) => isActive(i.href));
++            return (
++              <div key={group.label} className="sb-group">
++                <button
++                  type="button"
++                  className={`sb-group-header${groupHasActive ? " has-active" : ""}`}
++                  onClick={() => toggleGroup(idx)}
++                >
++                  <span>{group.label}</span>
++                  <span className={`sb-chevron${expanded ? " open" : ""}`}>&rsaquo;</span>
++                </button>
++                {expanded && group.items.map((item) => (
++                  <Link
++                    key={item.href}
++                    href={item.href}
++                    className={`sb-item sb-sub${isActive(item.href) ? " active" : ""}`}
++                    onClick={handleNav}
++                  >
++                    <span className="sb-icon">{item.icon}</span>
++                    <span>{item.label}</span>
++                  </Link>
++                ))}
++              </div>
++            );
++          })}
++
+           <div className="sb-div"/>
+           <Link href="/feed" className="sb-item feed" onClick={handleNav}>
+             <span className="sb-icon"></span>
+@@ -138,6 +205,19 @@ export default function DealerSidebar({ isOpen, onClose }: Props) {
+         .sb-item.feed{color:#A3A3A3}
+         .sb-item.feed:hover{color:#F47B20}
+         .sb-icon{font-size:0.9rem;width:16px;text-align:center;flex-shrink:0}
++        .sb-group{display:flex;flex-direction:column}
++        .sb-group-header{
++          display:flex;align-items:center;justify-content:space-between;gap:0.5rem;
++          padding:0.55rem 1rem;background:none;border:none;cursor:pointer;
++          font-family:var(--font-body);font-size:0.7rem;font-weight:700;
++          letter-spacing:0.08em;text-transform:uppercase;color:#A3A3A3;
++          transition:color 0.15s;width:100%;text-align:left;
++        }
++        .sb-group-header:hover{color:#F47B20}
++        .sb-group-header.has-active{color:#F47B20}
++        .sb-chevron{font-size:1rem;transition:transform 0.2s;flex-shrink:0}
++        .sb-chevron.open{transform:rotate(90deg)}
++        .sb-sub{padding-left:1.5rem;font-size:0.8rem}
+         .sb-div{height:1px;background:#E5E5E5;margin:0.4rem 1rem}
+         .sb-bot{padding:0.875rem 1rem;border-top:1px solid #E5E5E5;flex-shrink:0}
+         .sb-dev{font-size:0.6rem;color:#C0C0C0;text-align:center;margin-bottom:0.5rem}
+-- 
+2.43.0
+

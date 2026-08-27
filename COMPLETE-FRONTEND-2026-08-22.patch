@@ -1,0 +1,1527 @@
+From df00787d97dc51e120f4ee7a790e28be056e92fe Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 06:37:37 +0000
+Subject: [PATCH 01/12] fix: dealer notifications page crash - genuinely
+ missing import, not a mystery bug
+
+Found the definitive root cause this time (previous investigation
+couldn't pin it down without console access): timeAgoLong was called
+on every real notification but never imported anywhere in this file -
+a plain ReferenceError. Checked all 4 role-specific notification
+pages for the same pattern - only the dealer one had it (staff and
+partner correctly import it, super-admin doesn't use it at all).
+
+This also explains 'it was showing before' exactly: with zero
+notifications, the .map() that calls timeAgoLong never executes, so
+the page rendered fine on an empty list. The moment a real
+notification existed to render, it crashed immediately - matching the
+timing of when this started being reported. The error boundary from
+earlier in this engagement caught it correctly and prevented it from
+taking down the whole dashboard, exactly as designed - but this fixes
+the actual underlying crash rather than just containing it.
+---
+ app/dashboard/dealer/notifications/page.tsx | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/app/dashboard/dealer/notifications/page.tsx b/app/dashboard/dealer/notifications/page.tsx
+index 1e51ec6..5379bd2 100644
+--- a/app/dashboard/dealer/notifications/page.tsx
++++ b/app/dashboard/dealer/notifications/page.tsx
+@@ -2,6 +2,7 @@
+ import { useEffect, useState } from "react";
+ import { useRouter } from "next/navigation";
+ import api from "@/lib/api";
++import { timeAgoLong } from "@/lib/timeUtils";
+ 
+ const TYPE_ICON: Record<string,string> = {
+   car_sold:"", dealer_approved:"", dealer_suspended:"",
+-- 
+2.43.0
+
+
+From bffc5fb33df70f4f95439bc4a4b179366cce1bbb Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 04:47:25 +0000
+Subject: [PATCH 02/12] fix: JPG export was broken app-wide - the functions
+ were called everywhere but never actually implemented
+
+Traced the exact error from the screenshot: '(0, a.renderElementToJpgBlob) is not a function'. Confirmed via direct search: renderElementToJpgBlob and renderHtmlStringToJpgBlob were called from 8 different files across the app (dealer cars/sales/movements/expenses/reports, partner cars, admin user detail) but neither function was EVER actually defined in lib/documentExport.ts - only their PDF equivalents (renderElementToPdfBlob, renderHtmlStringToPdfBlob) existed. Every 'Export as JPG' button in the entire app has been silently broken since it was first wired up, throwing this exact crash the moment it's clicked.
+
+Implemented both using the same html2canvas rendering technique already used by the working PDF functions - renderElementToJpgBlob captures a DOM element directly to a JPG blob, renderHtmlStringToJpgBlob uses the same offscreen-iframe technique as its PDF counterpart to render a full HTML template string (used by all the export templates already built for invoices/receipts/reports) to JPG instead. Verified every one of the 8 call sites against the actual function signature built - all call with a single argument, matching exactly.
+
+This single fix resolves 'the jpg export feature function is showing error' across every dealer/partner/admin export surface in the app at once, not just one page.
+---
+ lib/documentExport.ts | 65 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 65 insertions(+)
+
+diff --git a/lib/documentExport.ts b/lib/documentExport.ts
+index 35a85ce..ae1782b 100644
+--- a/lib/documentExport.ts
++++ b/lib/documentExport.ts
+@@ -123,6 +123,71 @@ export async function renderHtmlStringToPdfBlob(htmlString: string, title = "Doc
+     document.body.removeChild(iframe);
+   }
+ }
++
++/**
++ * Renders a DOM element to a JPG Blob. These two JPG functions were
++ * called throughout the app (dealer cars/sales/movements/expenses/
++ * reports, partner cars, admin user detail) but never actually
++ * implemented here - every "Export as JPG" button in the app has been
++ * silently broken since it was first wired up, throwing
++ * "renderElementToJpgBlob is not a function" the moment it's clicked.
++ */
++export async function renderElementToJpgBlob(element: HTMLElement, quality = 0.92): Promise<Blob> {
++  const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
++  return new Promise((resolve, reject) => {
++    canvas.toBlob(
++      (blob) => (blob ? resolve(blob) : reject(new Error("Could not generate image"))),
++      "image/jpeg",
++      quality
++    );
++  });
++}
++
++/**
++ * Same idea as renderHtmlStringToPdfBlob, but for JPG - renders a full
++ * standalone HTML document string via a hidden offscreen iframe, then
++ * captures it as a single JPG image instead of assembling a PDF.
++ */
++export async function renderHtmlStringToJpgBlob(htmlString: string): Promise<Blob> {
++  const iframe = document.createElement("iframe");
++  iframe.style.position = "fixed";
++  iframe.style.left = "-99999px";
++  iframe.style.top = "0";
++  iframe.style.width = "800px";
++  iframe.style.height = "1131px";
++  iframe.style.border = "none";
++  document.body.appendChild(iframe);
++
++  try {
++    await new Promise<void>((resolve, reject) => {
++      const doc = iframe.contentDocument;
++      if (!doc) { reject(new Error("Could not prepare document for image export")); return; }
++      doc.open();
++      doc.write(htmlString.replace(/<script>window\.onload=\(\)=>window\.print\(\)<\\\/script>/, ""));
++      doc.close();
++
++      const settle = () => {
++        const imgs = Array.from(doc.images || []);
++        const pending = imgs.filter((img) => !img.complete);
++        if (pending.length === 0) { resolve(); return; }
++        let remaining = pending.length;
++        const done = () => { remaining -= 1; if (remaining <= 0) resolve(); };
++        pending.forEach((img) => { img.onload = done; img.onerror = done; });
++        setTimeout(resolve, 3000);
++      };
++
++      if (doc.readyState === "complete") settle();
++      else iframe.onload = () => settle();
++    });
++
++    const target = iframe.contentDocument?.body;
++    if (!target) throw new Error("Nothing to export yet");
++    return await renderElementToJpgBlob(target);
++  } finally {
++    document.body.removeChild(iframe);
++  }
++}
++
+ export function rowsToExcelBlob(rows: Record<string, any>[], sheetName = "Sheet1"): Blob {
+   const ws = XLSX.utils.json_to_sheet(rows);
+   const wb = XLSX.utils.book_new();
+-- 
+2.43.0
+
+
+From 0cc226f1d780914d5af34edc19549728d41c32a1 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 06:21:40 +0000
+Subject: [PATCH 03/12] feat: JPG export added to invoices/receipts (was
+ PDF-only)
+
+DocumentViewer.tsx (used for cash invoices, receipts, and proforma
+documents) only ever offered PDF for both Download and Share, in both
+of its two button layouts (the compact top-bar version and the full-
+width bottom-sheet version) - JPG has been available as a format
+everywhere else in the app but was missing here specifically. Added a
+proper format picker offering both PDF and JPG to all 4 button
+instances, consistent with the pattern used across dealer/partner/
+admin export pages.
+---
+ components/shared/DocumentViewer.tsx | 85 ++++++++++++++++++++--------
+ 1 file changed, 60 insertions(+), 25 deletions(-)
+
+diff --git a/components/shared/DocumentViewer.tsx b/components/shared/DocumentViewer.tsx
+index 89f5943..c808b9a 100644
+--- a/components/shared/DocumentViewer.tsx
++++ b/components/shared/DocumentViewer.tsx
+@@ -1,7 +1,7 @@
+ "use client";
+ import { useState } from "react";
+ import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
+-import { renderHtmlStringToPdfBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
++import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+ import { useToast } from "@/store/toastStore";
+ 
+ interface Props { doc: any; onClose: () => void; }
+@@ -247,14 +247,16 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
+   const docFilename = () =>
+     `carstrims-${(docTitle || "doc").toLowerCase().replace(/[^a-z0-9]/g, "-")}-${Date.now()}`;
+ 
+-  const [busy, setBusy] = useState<"" | "download" | "share">("");
++  const [busy, setBusy] = useState<"" | "pdf" | "jpg" | "share">("");
++  const [showFormatPicker, setShowFormatPicker] = useState<"download" | "share" | "">("");
+   const showToast = useToast();
+ 
+-  const handleDownload = async () => {
+-    setBusy("download");
++  const handleDownload = async (format: "pdf" | "jpg") => {
++    setShowFormatPicker("");
++    setBusy(format);
+     try {
+-      const blob = await renderHtmlStringToPdfBlob(buildHtml(), docTitle);
+-      await downloadBlob(blob, `${docFilename()}.pdf`);
++      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(buildHtml()) : await renderHtmlStringToPdfBlob(buildHtml(), docTitle);
++      await downloadBlob(blob, `${docFilename()}.${format}`);
+       showToast("Downloaded", "success");
+     } catch (e: any) {
+       showToast(e?.message || "Download failed — please try again", "error");
+@@ -263,11 +265,12 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
+     }
+   };
+ 
+-  const handleShare = async () => {
++  const handleShare = async (format: "pdf" | "jpg") => {
++    setShowFormatPicker("");
+     setBusy("share");
+     try {
+-      const blob = await renderHtmlStringToPdfBlob(buildHtml(), docTitle);
+-      await shareBlob(blob, `${docFilename()}.pdf`, docTitle);
++      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(buildHtml()) : await renderHtmlStringToPdfBlob(buildHtml(), docTitle);
++      await shareBlob(blob, `${docFilename()}.${format}`, docTitle);
+     } catch (e: any) {
+       showToast(e?.message || "Share failed — please try again", "error");
+     } finally {
+@@ -348,14 +351,30 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
+                 Edit Fields
+               </button>
+             </div>
+-            <button onClick={handleDownload} disabled={busy !== ""}
+-              style={{ background: "#16A34A", border: "none", color: "#fff", borderRadius: "8px", padding: "8px 14px", fontSize: "13px", cursor: "pointer", fontWeight: 700, opacity: busy ? 0.7 : 1 }}>
+-              {busy === "download" ? "Downloading…" : "Download"}
+-            </button>
+-            <button onClick={handleShare} disabled={busy !== ""}
+-              style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", borderRadius: "8px", padding: "8px 14px", fontSize: "13px", cursor: "pointer", fontWeight: 700, opacity: busy ? 0.7 : 1 }}>
+-              {busy === "share" ? "Sharing…" : "Share"}
+-            </button>
++            <div style={{ position: "relative" }}>
++              <button onClick={() => setShowFormatPicker(showFormatPicker === "download" ? "" : "download")} disabled={busy !== ""}
++                style={{ background: "#16A34A", border: "none", color: "#fff", borderRadius: "8px", padding: "8px 14px", fontSize: "13px", cursor: "pointer", fontWeight: 700, opacity: busy ? 0.7 : 1 }}>
++                {busy === "pdf" || busy === "jpg" ? "Downloading…" : "Download"}
++              </button>
++              {showFormatPicker === "download" && (
++                <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 40, background: "#fff", border: "1.5px solid #E5E5E5", borderRadius: "8px", boxShadow: "0 8px 24px rgba(0,0,0,0.2)", overflow: "hidden", minWidth: "120px" }}>
++                  <button onClick={() => handleDownload("pdf")} style={{ display: "block", width: "100%", textAlign: "left" as const, padding: "0.6rem 0.9rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, color: "#1A1A1A" }}>as PDF</button>
++                  <button onClick={() => handleDownload("jpg")} style={{ display: "block", width: "100%", textAlign: "left" as const, padding: "0.6rem 0.9rem", background: "none", border: "none", borderTop: "1px solid #F5F5F5", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, color: "#1A1A1A" }}>as JPG Image</button>
++                </div>
++              )}
++            </div>
++            <div style={{ position: "relative" }}>
++              <button onClick={() => setShowFormatPicker(showFormatPicker === "share" ? "" : "share")} disabled={busy !== ""}
++                style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", borderRadius: "8px", padding: "8px 14px", fontSize: "13px", cursor: "pointer", fontWeight: 700, opacity: busy ? 0.7 : 1 }}>
++                {busy === "share" ? "Sharing…" : "Share"}
++              </button>
++              {showFormatPicker === "share" && (
++                <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 40, background: "#fff", border: "1.5px solid #E5E5E5", borderRadius: "8px", boxShadow: "0 8px 24px rgba(0,0,0,0.2)", overflow: "hidden", minWidth: "120px" }}>
++                  <button onClick={() => handleShare("pdf")} style={{ display: "block", width: "100%", textAlign: "left" as const, padding: "0.6rem 0.9rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, color: "#1A1A1A" }}>as PDF</button>
++                  <button onClick={() => handleShare("jpg")} style={{ display: "block", width: "100%", textAlign: "left" as const, padding: "0.6rem 0.9rem", background: "none", border: "none", borderTop: "1px solid #F5F5F5", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, color: "#1A1A1A" }}>as JPG Image</button>
++                </div>
++              )}
++            </div>
+             <button onClick={onClose}
+               style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", borderRadius: "8px", padding: "8px 12px", fontSize: "16px", cursor: "pointer", lineHeight: 1 }}>
+               X
+@@ -577,14 +596,30 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
+ 
+             {/* Download / Share / Cancel */}
+             <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
+-              <button onClick={handleDownload} disabled={busy !== ""}
+-                style={{ flex: 1, background: "#F47B20", color: "#fff", border: "none", borderRadius: "12px", padding: "16px", fontFamily: "var(--font-display)", fontSize: "15px", letterSpacing: "0.08em", cursor: "pointer", fontWeight: 700, opacity: busy ? 0.7 : 1 }}>
+-                {busy === "download" ? "DOWNLOADING…" : "DOWNLOAD DOCUMENT"}
+-              </button>
+-              <button onClick={handleShare} disabled={busy !== ""}
+-                style={{ flex: 1, background: "#1A1A1A", color: "#fff", border: "none", borderRadius: "12px", padding: "16px", fontFamily: "var(--font-display)", fontSize: "15px", letterSpacing: "0.08em", cursor: "pointer", fontWeight: 700, opacity: busy ? 0.7 : 1 }}>
+-                {busy === "share" ? "SHARING…" : "SHARE"}
+-              </button>
++              <div style={{ position: "relative", flex: 1 }}>
++                <button onClick={() => setShowFormatPicker(showFormatPicker === "download" ? "" : "download")} disabled={busy !== ""}
++                  style={{ width: "100%", background: "#F47B20", color: "#fff", border: "none", borderRadius: "12px", padding: "16px", fontFamily: "var(--font-display)", fontSize: "15px", letterSpacing: "0.08em", cursor: "pointer", fontWeight: 700, opacity: busy ? 0.7 : 1 }}>
++                  {busy === "pdf" || busy === "jpg" ? "DOWNLOADING…" : "DOWNLOAD DOCUMENT"}
++                </button>
++                {showFormatPicker === "download" && (
++                  <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: 0, right: 0, zIndex: 40, background: "#fff", border: "1.5px solid #E5E5E5", borderRadius: "10px", boxShadow: "0 -8px 24px rgba(0,0,0,0.2)", overflow: "hidden" }}>
++                    <button onClick={() => handleDownload("pdf")} style={{ display: "block", width: "100%", textAlign: "center" as const, padding: "0.8rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.9rem", fontWeight: 600, color: "#1A1A1A" }}>as PDF</button>
++                    <button onClick={() => handleDownload("jpg")} style={{ display: "block", width: "100%", textAlign: "center" as const, padding: "0.8rem", background: "none", border: "none", borderTop: "1px solid #F5F5F5", cursor: "pointer", fontSize: "0.9rem", fontWeight: 600, color: "#1A1A1A" }}>as JPG Image</button>
++                  </div>
++                )}
++              </div>
++              <div style={{ position: "relative", flex: 1 }}>
++                <button onClick={() => setShowFormatPicker(showFormatPicker === "share" ? "" : "share")} disabled={busy !== ""}
++                  style={{ width: "100%", background: "#1A1A1A", color: "#fff", border: "none", borderRadius: "12px", padding: "16px", fontFamily: "var(--font-display)", fontSize: "15px", letterSpacing: "0.08em", cursor: "pointer", fontWeight: 700, opacity: busy ? 0.7 : 1 }}>
++                  {busy === "share" ? "SHARING…" : "SHARE"}
++                </button>
++                {showFormatPicker === "share" && (
++                  <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: 0, right: 0, zIndex: 40, background: "#fff", border: "1.5px solid #E5E5E5", borderRadius: "10px", boxShadow: "0 -8px 24px rgba(0,0,0,0.2)", overflow: "hidden" }}>
++                    <button onClick={() => handleShare("pdf")} style={{ display: "block", width: "100%", textAlign: "center" as const, padding: "0.8rem", background: "none", border: "none", cursor: "pointer", fontSize: "0.9rem", fontWeight: 600, color: "#1A1A1A" }}>as PDF</button>
++                    <button onClick={() => handleShare("jpg")} style={{ display: "block", width: "100%", textAlign: "center" as const, padding: "0.8rem", background: "none", border: "none", borderTop: "1px solid #F5F5F5", cursor: "pointer", fontSize: "0.9rem", fontWeight: 600, color: "#1A1A1A" }}>as JPG Image</button>
++                  </div>
++                )}
++              </div>
+             </div>
+             <button onClick={onClose}
+               style={{ width: "100%", background: "#F5F5F5", color: "#525252", border: "1.5px solid #E5E5E5", borderRadius: "12px", padding: "12px", fontSize: "14px", cursor: "pointer", fontWeight: 600, marginBottom: "8px" }}>
+-- 
+2.43.0
+
+
+From c43694d19eb15f3c99f4db86432f54ac5534979c Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 04:52:53 +0000
+Subject: [PATCH 04/12] fix: two messaging systems open simultaneously - the
+ floating widget was redundant on the dedicated messages page
+
+Found the exact cause: MessagesWidget (a small floating 'MSG' bubble)
+is mounted persistently in every dashboard layout across all 5 roles,
+AND app/dashboard/*/messages/page.tsx has its own completely separate,
+independently-built full-page chat implementation (NOT actually
+reusing MessagesWidget, despite a comment claiming otherwise) - both
+active simultaneously whenever someone is on their /messages page.
+
+Clicking 'Message Dealer' from a car detail page makes this
+collision obvious: it sets the shared store that tells MessagesWidget
+to auto-open AND navigates to the dashboard's /messages page, which
+has its own full implementation already showing that same
+conversation - two chat interfaces rendering at once.
+
+Fixed by hiding the floating widget specifically on each role's own
+/messages route, where the full-page implementation already covers
+the same functionality - it stays exactly as before on every other
+page, where it serves as quick-access chat without navigating away.
+Applied to all 5 roles (dealer, partner, user, staff, super-admin).
+---
+ app/dashboard/dealer/layout.tsx      | 2 +-
+ app/dashboard/partner/layout.tsx     | 2 +-
+ app/dashboard/super-admin/layout.tsx | 5 +++--
+ app/dashboard/user/layout.tsx        | 2 +-
+ components/layout/StaffShell.tsx     | 2 +-
+ 5 files changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/app/dashboard/dealer/layout.tsx b/app/dashboard/dealer/layout.tsx
+index 54ffbd5..8fc1b97 100644
+--- a/app/dashboard/dealer/layout.tsx
++++ b/app/dashboard/dealer/layout.tsx
+@@ -115,7 +115,7 @@ function DealerShell({ children }: { children: ReactNode }) {
+         <main className="shell-content">{children}</main>
+       </div>
+ 
+-      <MessagesWidget accentColor="#F47B20"/>
++      {!pathname?.endsWith("/messages") && <MessagesWidget accentColor="#F47B20"/>}
+ 
+       <style>{`
+         .dealer-shell{display:flex;min-height:100vh;background:#F5F5F5;position:relative}
+diff --git a/app/dashboard/partner/layout.tsx b/app/dashboard/partner/layout.tsx
+index 2cd94b3..fa36de9 100644
+--- a/app/dashboard/partner/layout.tsx
++++ b/app/dashboard/partner/layout.tsx
+@@ -104,7 +104,7 @@ export default function PartnerLayout({ children }: { children: ReactNode }) {
+           <main className="partner-content">{children}</main>
+           <footer className="partner-footer">Powered by <strong>UASE TECH STUDIO</strong> for CARSTRIMS 2026</footer>
+         </div>
+-        <MessagesWidget accentColor="#F47B20" />
++        {!pathname?.endsWith("/messages") && <MessagesWidget accentColor="#F47B20" />}
+       </div>
+ 
+       <style>{`
+diff --git a/app/dashboard/super-admin/layout.tsx b/app/dashboard/super-admin/layout.tsx
+index 323ed24..273aed3 100644
+--- a/app/dashboard/super-admin/layout.tsx
++++ b/app/dashboard/super-admin/layout.tsx
+@@ -9,7 +9,7 @@ import MessagesWidget from "@/components/shared/MessagesWidget";
+ import GlobalSearchModal from "@/components/shared/GlobalSearchModal";
+ import { useSidebar } from "@/hooks/useSidebar";
+ import { useAuthStore } from "@/store/authStore";
+-import { useRouter } from "next/navigation";
++import { useRouter, usePathname } from "next/navigation";
+ 
+ function getGreeting() {
+   const h = new Date().getHours();
+@@ -23,6 +23,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
+   const { isOpen, toggle, close } = useSidebar();
+   const { user } = useAuthStore();
+   const router = useRouter();
++  const pathname = usePathname();
+   const [showSearch, setShowSearch] = useState(false);
+ 
+   return (
+@@ -49,7 +50,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
+           {showSearch && <GlobalSearchModal onClose={() => setShowSearch(false)} />}
+           <main className="admin-content">{children}</main>
+         </div>
+-        <MessagesWidget accentColor="#F47B20" />
++        {!pathname?.endsWith("/messages") && <MessagesWidget accentColor="#F47B20" />}
+       </div>
+       <style>{`
+         .admin-shell{display:flex;min-height:100vh;background:#F5F5F5}
+diff --git a/app/dashboard/user/layout.tsx b/app/dashboard/user/layout.tsx
+index 9553976..e4e64a2 100644
+--- a/app/dashboard/user/layout.tsx
++++ b/app/dashboard/user/layout.tsx
+@@ -184,7 +184,7 @@ export default function UserLayout({ children }: { children: ReactNode }) {
+           </div>
+         )}
+ 
+-        <MessagesWidget accentColor="#F47B20"/>
++        {!pathname?.endsWith("/messages") && <MessagesWidget accentColor="#F47B20"/>}
+       </div>
+ 
+       <style>{`
+diff --git a/components/layout/StaffShell.tsx b/components/layout/StaffShell.tsx
+index 18ab7d6..32aa607 100644
+--- a/components/layout/StaffShell.tsx
++++ b/components/layout/StaffShell.tsx
+@@ -193,7 +193,7 @@ export default function StaffShell({ children }: { children: ReactNode }) {
+         <main className="staff-content">{children}</main>
+       </div>
+ 
+-      <MessagesWidget accentColor="#1D9E75"/>
++      {!pathname?.endsWith("/messages") && <MessagesWidget accentColor="#1D9E75"/>}
+ 
+       <style>{`
+         .staff-shell{display:flex;min-height:100vh;background:#F5F5F5;position:relative}
+-- 
+2.43.0
+
+
+From 79e25812c7fb423e69cdcad502a38cd60f25739e Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 05:48:02 +0000
+Subject: [PATCH 05/12] fix: iOS build - commit an actual Package.resolved
+ instead of trying to generate one during CI
+
+Two previous attempts at generating Package.resolved fresh during
+ci_post_clone.sh both failed to reliably produce a file Xcode's
+archive step would accept (once causing the script itself to fail
+outright, then even after making that non-fatal, the underlying
+resolution still wasn't succeeding - confirmed by the identical
+'Configuration Issues... Package.resolved' error persisting in the
+next build).
+
+Took a fundamentally different approach: committed an actual, correct
+Package.resolved directly to the repo at the exact path Xcode Cloud's
+own error message specified. This project has only ONE real remote
+Swift Package dependency - capacitor-swift-pm, pinned to exact version
+8.4.0 in Package.swift - everything else (CapacitorApp, CapacitorCamera,
+etc.) is a local path dependency under node_modules and doesn't need
+SPM registry resolution at all. Looked up the exact commit hash for
+the 8.4.0 tag directly from GitHub (44ae2505f54a80c5e559533950886d0644fc2fca,
+confirmed via git ls-remote, a lightweight tag with no annotation to
+dereference) and hand-built a valid version-2 Package.resolved pinning
+it precisely.
+
+This sidesteps the CI-generation unreliability entirely - the file is
+just there from the moment Xcode Cloud clones the repo, matching
+exactly what the error message says is required, rather than depending
+on a runtime step to create it correctly. Kept the ci_post_clone.sh
+resolution attempt as a non-fatal defensive backup for if a future
+plugin gets added without this file being updated, but it's no longer
+the primary fix.
+---
+ .../xcshareddata/swiftpm/Package.resolved     | 14 +++++++
+ ios/App/ci_scripts/ci_post_clone.sh           | 40 ++++++++-----------
+ 2 files changed, 31 insertions(+), 23 deletions(-)
+ create mode 100644 ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+
+diff --git a/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved b/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+new file mode 100644
+index 0000000..6634cee
+--- /dev/null
++++ b/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+@@ -0,0 +1,14 @@
++{
++  "pins" : [
++    {
++      "identity" : "capacitor-swift-pm",
++      "kind" : "remoteSourceControl",
++      "location" : "https://github.com/ionic-team/capacitor-swift-pm.git",
++      "state" : {
++        "revision" : "44ae2505f54a80c5e559533950886d0644fc2fca",
++        "version" : "8.4.0"
++      }
++    }
++  ],
++  "version" : 2
++}
+diff --git a/ios/App/ci_scripts/ci_post_clone.sh b/ios/App/ci_scripts/ci_post_clone.sh
+index 3ac4722..f45205f 100644
+--- a/ios/App/ci_scripts/ci_post_clone.sh
++++ b/ios/App/ci_scripts/ci_post_clone.sh
+@@ -14,30 +14,24 @@ npm install
+ 
+ echo "==> Done. node_modules/@capacitor/* should now exist for SPM to resolve."
+ 
+-# Xcode Cloud disables automatic package resolution for reproducible
+-# builds, which means it REQUIRES a Package.resolved file to already
+-# exist and be up to date — it won't just resolve fresh dependencies
+-# on the fly. Since this repo has never had one committed, any time a
+-# new Capacitor plugin gets added (like @capacitor/camera or
+-# @capacitor-community/speech-recognition, both added recently), the
+-# build fails outright with "a resolved file is required... Running
+-# resolver because the following dependencies were added: ...".
++# PRIMARY FIX: a Package.resolved file is now committed directly to
++# the repo (ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/
++# swiftpm/Package.resolved), pinning the one actual remote dependency
++# this project has (capacitor-swift-pm@8.4.0 - everything else is a
++# local path dependency under node_modules, which doesn't need SPM
++# registry resolution). Two earlier attempts at generating this file
++# fresh during ci_post_clone.sh (once fatally, once non-fatally) both
++# failed to reliably produce a file Xcode's own archive step would
++# accept - committing a known-correct one directly sidesteps that
++# unreliability entirely.
+ #
+-# Rather than trying to hand-maintain a committed Package.resolved
+-# (fragile — anyone forgetting to regenerate and commit it after
+-# adding a plugin breaks the next build), this generates one fresh on
+-# Xcode Cloud's own machine, which has real Xcode/xcodebuild and full
+-# network access, right before the build needs it.
+-#
+-# IMPORTANT: this step is intentionally NOT fatal to the script. An
+-# earlier version let a failure here (e.g. a network hiccup resolving
+-# packages from GitHub) crash the whole ci_post_clone.sh script with
+-# its own generic exit-code failure, which masked whatever the real
+-# underlying build error actually was. If resolution fails here, log
+-# it clearly and let the build proceed to Xcode's own archive step,
+-# where the real, actionable error (if any) will surface directly
+-# instead of being hidden behind a script failure.
+-echo "==> Resolving Swift Package dependencies"
++# This resolution step below is now just a DEFENSIVE BACKUP for the
++# future: if a new Capacitor plugin gets added later without someone
++# remembering to regenerate and commit an updated Package.resolved,
++# this at least attempts to patch that gap at build time rather than
++# failing outright - but the committed file above is what actually
++# fixes today's build.
++echo "==> Resolving Swift Package dependencies (defensive backup only - see comment above)"
+ cd "$CI_PRIMARY_REPOSITORY_PATH/ios/App"
+ if xcodebuild -resolvePackageDependencies -workspace App.xcodeproj/project.xcworkspace -scheme App; then
+   echo "==> Package resolution complete."
+-- 
+2.43.0
+
+
+From c02c7158861d74dbb17ce8e6790a86b0934340dd Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 05:50:38 +0000
+Subject: [PATCH 06/12] fix: search box drag removed (click-to-enlarge
+ instead), hint repositioned, chip bars now consistent
+
+1. Removed the drag-based resize entirely per explicit request -
+   replaced with a simple click-to-toggle between compact (44px) and
+   enlarged (140px, fixed) states. Content inside is completely
+   unaffected by the toggle either way. No more risk of dragging the
+   box to an awkward size or off-screen.
+
+2. Repositioned the 'enlarge' hint to sit clearly above the search bar
+   (rather than immediately below it alongside the other 3 hints),
+   pointing diagonally down-right at the button specifically - it was
+   crowding/overlapping the 'Or speak' hint since both sat in the same
+   area near the right edge. Updated text to 'Click here to enlarge',
+   matching the new click behavior instead of the removed drag one.
+
+3. Both filter chip bars (the structured 'Filtered:' one and the
+   search/voice-derived 'Understood:' one) now have the same pair of
+   actions - Add More Filter and Clear all - instead of each having
+   only one of the two inconsistently.
+---
+ app/feed/page.tsx | 77 +++++++++++++++++++----------------------------
+ 1 file changed, 31 insertions(+), 46 deletions(-)
+
+diff --git a/app/feed/page.tsx b/app/feed/page.tsx
+index e13e239..b1bc8e9 100644
+--- a/app/feed/page.tsx
++++ b/app/feed/page.tsx
+@@ -51,41 +51,18 @@ export default function FeedPage() {
+   const feedSeedRef = useRef<string>(Math.random().toString(36).slice(2) + Date.now().toString(36));
+ 
+   const [searchInput, setSearchInput] = useState("");
+-  const [searchBoxHeight, setSearchBoxHeight] = useState(44);
++  // Search box enlarge: a simple click-to-toggle between compact
++  // (44px, single line) and enlarged (a fixed, generous height so
++  // long typed/spoken text is fully visible) - explicitly NOT a drag
++  // gesture, since dragging could push the box off-screen and was
++  // fiddly to use precisely. Content inside is completely unaffected
++  // by the toggle either way - only the box's own height changes.
++  const [searchEnlarged, setSearchEnlarged] = useState(false);
++  const searchBoxHeight = searchEnlarged ? 140 : 44;
+   const filterBtnRef = useRef<HTMLButtonElement>(null);
+   const micBtnRef = useRef<HTMLButtonElement>(null);
+   const resizeHandleRef = useRef<HTMLDivElement>(null);
+   const [hintPositions, setHintPositions] = useState<{filter:number; mic:number; resize:number} | null>(null);
+-  const [isResizingSearch, setIsResizingSearch] = useState(false);
+-  const resizeStartRef = useRef<{ y: number; startHeight: number } | null>(null);
+-
+-  const handleResizeStart = (clientY: number) => {
+-    resizeStartRef.current = { y: clientY, startHeight: searchBoxHeight };
+-    setIsResizingSearch(true);
+-  };
+-  const handleResizeMove = (clientY: number) => {
+-    if (!resizeStartRef.current) return;
+-    const delta = clientY - resizeStartRef.current.y;
+-    const maxHeight = Math.min(280, window.innerHeight * 0.45);
+-    setSearchBoxHeight(Math.max(44, Math.min(maxHeight, resizeStartRef.current.startHeight + delta)));
+-  };
+-  const handleResizeEnd = () => { resizeStartRef.current = null; setIsResizingSearch(false); };
+-
+-  useEffect(() => {
+-    if (!isResizingSearch) return;
+-    const onMouseMove = (e: MouseEvent) => handleResizeMove(e.clientY);
+-    const onTouchMove = (e: TouchEvent) => handleResizeMove(e.touches[0].clientY);
+-    document.addEventListener("mousemove", onMouseMove);
+-    document.addEventListener("mouseup", handleResizeEnd);
+-    document.addEventListener("touchmove", onTouchMove);
+-    document.addEventListener("touchend", handleResizeEnd);
+-    return () => {
+-      document.removeEventListener("mousemove", onMouseMove);
+-      document.removeEventListener("mouseup", handleResizeEnd);
+-      document.removeEventListener("touchmove", onTouchMove);
+-      document.removeEventListener("touchend", handleResizeEnd);
+-    };
+-  }, [isResizingSearch]);
+   const [understoodFilters, setUnderstoodFilters] = useState<{type:string; label:string; matchedText:string}[]>([]);
+   // Shows fresh every time the feed is genuinely opened/returned to
+   // (component remount), and dismisses only for the current viewing
+@@ -536,14 +513,13 @@ export default function FeedPage() {
+             >
+               {listening ? "●" : "🎤"}
+             </button>
+-            <div
++            <button
+               ref={resizeHandleRef}
++              type="button"
+               className="search-resize-handle"
+-              title="Drag to enlarge, double-tap to reset"
+-              onMouseDown={(e) => { e.preventDefault(); handleResizeStart(e.clientY); }}
+-              onTouchStart={(e) => handleResizeStart(e.touches[0].clientY)}
+-              onDoubleClick={() => setSearchBoxHeight(44)}
+-            >⋮⋮</div>
++              title={searchEnlarged ? "Click to shrink back" : "Click to enlarge"}
++              onClick={(e) => { e.stopPropagation(); setSearchEnlarged((v) => !v); }}
++            >{searchEnlarged ? "⌃" : "⌄"}</button>
+           </div>
+ 
+           {showFilter && (
+@@ -621,9 +597,9 @@ export default function FeedPage() {
+                 <div className="hint-bubble">Or speak</div>
+               </div>
+ 
+-              <div className="hint-item" style={{left: hintPositions.resize, transform: "translateX(-50%)", top: "-2.1rem", alignItems: "center" as const}}>
+-                <div className="hint-bubble">Drag to enlarge</div>
+-                <div className="hint-arrow hint-arrow-down">↓</div>
++              <div className="hint-item hint-item-enlarge">
++                <div className="hint-bubble">Click here to enlarge</div>
++                <div className="hint-arrow hint-arrow-down">↘</div>
+               </div>
+             </div>
+           )}
+@@ -653,13 +629,16 @@ export default function FeedPage() {
+           {fTransmission && <span className="af-tag">{fTransmission} <button onClick={() => setFTransmission("")}>x</button></span>}
+           {fFuel && <span className="af-tag">{fFuel} <button onClick={() => setFFuel("")}>x</button></span>}
+           {fColor && <span className="af-tag">{fColor} <button onClick={() => setFColor("")}>x</button></span>}
++          <button className="ab-add" onClick={() => setShowFilter(true)}>+ Add More Filter</button>
+           <button className="ab-clear" onClick={clearAll}>Clear all</button>
+         </div>
+       )}
+ 
+       {/* WHAT THE SEARCH/VOICE UNDERSTOOD — itemized, adjustable, like Jiji.
+           Clicking a chip's label opens the manual filter dropdown so it
+-          can be fine-tuned there; the x removes it directly. */}
++          can be fine-tuned there; the x removes it directly. Same
++          Clear all / Add More Filter pair as the structured filter bar,
++          for consistency between the two. */}
+       {understoodFilters.length > 0 && (
+         <div className="active-bar">
+           <span className="ab-label">Understood:</span>
+@@ -669,7 +648,8 @@ export default function FeedPage() {
+               <button onClick={() => removeUnderstoodFilter(f)}>x</button>
+             </span>
+           ))}
+-          <button className="ab-clear" onClick={() => setShowFilter(true)} style={{marginLeft:"0.25rem"}}>Adjust in Filters</button>
++          <button className="ab-add" onClick={() => setShowFilter(true)}>+ Add More Filter</button>
++          <button className="ab-clear" onClick={clearAll}>Clear all</button>
+         </div>
+       )}
+ 
+@@ -834,6 +814,9 @@ export default function FeedPage() {
+         }
+         .hint-item { position:absolute; display:flex; flex-direction:column; align-items:center; pointer-events:none; }
+         .hint-item-type { left:50%; transform:translateX(-50%); }
++        .hint-item-enlarge {
++          top:-3.6rem; right:2%; left:auto; align-items:flex-end;
++        }
+         .hint-arrow-down { animation:search-hint-bounce-down 1.1s ease-in-out infinite; }
+         @keyframes search-hint-bounce-down { 0%,100%{transform:translateY(0);} 50%{transform:translateY(5px);} }
+         .hint-arrow { font-size:1.15rem; color:#F47B20; line-height:1; animation:search-hint-bounce 1.1s ease-in-out infinite; }
+@@ -871,10 +854,11 @@ export default function FeedPage() {
+         }
+         .search-box:focus-within { border-color:#F47B20; background:#fff; box-shadow:0 0 0 3px rgba(244,123,32,0.12); }
+         .search-resize-handle {
+-          position:absolute; bottom:1px; right:1px; width:18px; height:16px; cursor:ns-resize;
+-          display:flex; align-items:center; justify-content:center; font-size:0.6rem; color:#A3A3A3;
+-          background:#F5F5F5; line-height:1; transform:rotate(90deg); touch-action:none; z-index:2;
++          position:absolute; bottom:1px; right:1px; width:22px; height:20px; cursor:pointer;
++          display:flex; align-items:center; justify-content:center; font-size:0.85rem; color:#737373;
++          background:#F5F5F5; line-height:1; border:none; padding:0; border-radius:4px; z-index:2;
+         }
++        .search-resize-handle:hover { color:#F47B20; }
+         .s-filter-btn {
+           background:#1A1A1A; color:#fff; border:none; font-family:var(--font-display); font-weight:700;
+           font-size:0.85rem; letter-spacing:0.02em; padding:0.7rem 0.9rem; cursor:pointer; flex-shrink:0; align-self:stretch;
+@@ -989,7 +973,8 @@ export default function FeedPage() {
+           border-radius:20px; padding:0.3rem 0.75rem; font-size:0.85rem; font-weight:500;
+         }
+         .af-tag button { background:none; border:none; cursor:pointer; color:#F47B20; font-size:0.78rem; line-height:1; padding:0; font-weight:700; }
+-        .ab-clear { background:transparent; border:none; color:#DC2626; font-size:0.82rem; font-weight:600; cursor:pointer; font-family:var(--font-body); margin-left:auto; white-space:nowrap; }
++        .ab-add { background:#fff; border:1.5px solid #F47B20; color:#F47B20; font-size:0.8rem; font-weight:600; cursor:pointer; font-family:var(--font-body); white-space:nowrap; border-radius:20px; padding:0.3rem 0.75rem; margin-left:auto; }
++        .ab-clear { background:transparent; border:none; color:#DC2626; font-size:0.82rem; font-weight:600; cursor:pointer; font-family:var(--font-body); white-space:nowrap; }
+ 
+         /* BRAND TABS */
+         .brand-scroll { overflow-x:auto; border-bottom:1.5px solid #E5E5E5; background:#fff; }
+-- 
+2.43.0
+
+
+From 3ed2680edff56fbfc068efb9a1ccc0899a3f26f3 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 05:55:12 +0000
+Subject: [PATCH 07/12] feat: sort filter (Jiji-style) + filter panel
+ drag-resize removed, width fixed
+
+Added Sort By as a dropdown (Recommended/Newest/Lowest price/Highest
+price first, matching Jiji's own 4 options) - the backend already
+supported all 4 sort modes, this was purely a missing frontend
+control. Wired through buildParams, both fetch-triggering effects,
+and clearAll.
+
+Removed the filter panel's drag-resize entirely, same reasoning as
+the search box fix: this was very likely the actual cause of 'still
+slim on the screen' and 'price range went off screen' - the panel
+could be dragged narrower than comfortable and that size would
+persist, with no way to reset except reopening. Replaced with a
+single, generous fixed max-width (480px, capped at 96vw) that should
+be comfortable on typical phone screens without needing any manual
+resize at all.
+
+Component is now fully stateless (controlled entirely by props from
+the parent) after removing the resize state - cleaned up now-unused
+useState/useRef/useEffect imports.
+---
+ app/feed/page.tsx                        | 10 +--
+ components/shared/FeedFilterDropdown.tsx | 77 ++++++------------------
+ 2 files changed, 25 insertions(+), 62 deletions(-)
+
+diff --git a/app/feed/page.tsx b/app/feed/page.tsx
+index b1bc8e9..da08729 100644
+--- a/app/feed/page.tsx
++++ b/app/feed/page.tsx
+@@ -126,6 +126,7 @@ export default function FeedPage() {
+   const [fMaxMileage, setFMaxMileage] = useState("");
+   const [fPromoOnly, setFPromoOnly] = useState(false);
+   const [fVehicleType, setFVehicleType] = useState("");
++  const [fSort, setFSort] = useState("score");
+ 
+   const [userLikes, setUserLikes] = useState<string[]>([]);
+   const [userFavs, setUserFavs] = useState<string[]>([]);
+@@ -143,7 +144,7 @@ export default function FeedPage() {
+   ].filter(Boolean);
+ 
+   const buildParams = useCallback((skip = 0) => {
+-    const p: any = { skip, limit: LIMIT, sort: "score", seed: feedSeedRef.current };
++    const p: any = { skip, limit: LIMIT, sort: fSort, seed: feedSeedRef.current };
+     if (search) p.search = search;
+     if (selectedBrand) p.brand = selectedBrand;
+     if (fState) p.city = fState;
+@@ -165,7 +166,7 @@ export default function FeedPage() {
+       if (fMaxPrice) p.max_price = Number(fMaxPrice);
+     }
+     return p;
+-  }, [search, selectedBrand, fStatus, fCondition, fTransmission, fFuel, fState, fYearFrom, fYearTo, fColor, fPrice, fMinPrice, fMaxPrice, fMaxMileage, fPromoOnly, fVehicleType]);
++  }, [search, selectedBrand, fStatus, fCondition, fTransmission, fFuel, fState, fYearFrom, fYearTo, fColor, fPrice, fMinPrice, fMaxPrice, fMaxMileage, fPromoOnly, fVehicleType, fSort]);
+ 
+   const fetchCars = useCallback(async (reset = false, silent = false) => {
+     if (reset && !silent) { setLoading(true); }
+@@ -232,7 +233,7 @@ export default function FeedPage() {
+     return () => { if (carSearchDebounceRef.current) clearTimeout(carSearchDebounceRef.current); };
+   }, [searchInput]);
+ 
+-  useEffect(() => { fetchCars(true); }, [search, selectedBrand, fStatus, fCondition, fTransmission, fFuel, fState, fYearFrom, fYearTo, fColor, fPrice, fMinPrice, fMaxPrice, fMaxMileage, fPromoOnly, fVehicleType]);
++  useEffect(() => { fetchCars(true); }, [search, selectedBrand, fStatus, fCondition, fTransmission, fFuel, fState, fYearFrom, fYearTo, fColor, fPrice, fMinPrice, fMaxPrice, fMaxMileage, fPromoOnly, fVehicleType, fSort]);
+ 
+   // Debounced dealer/people lookup for the unified search box — shows
+   // as a small dropdown under the search input, alongside the car
+@@ -373,7 +374,7 @@ export default function FeedPage() {
+     setFStatus("available"); setFPrice(""); setFCondition(""); setFTransmission("");
+     setFFuel(""); setFState(""); setFYearFrom(""); setFYearTo("");
+     setFMinPrice(""); setFMaxPrice(""); setFColor("");
+-    setFMaxMileage(""); setFPromoOnly(false); setFVehicleType("");
++    setFMaxMileage(""); setFPromoOnly(false); setFVehicleType(""); setFSort("score");
+   };
+ 
+   // Removes just ONE understood filter chip. For regex-matched chips
+@@ -539,6 +540,7 @@ export default function FeedPage() {
+                 fMaxMileage={fMaxMileage} setFMaxMileage={setFMaxMileage}
+                 fPromoOnly={fPromoOnly} setFPromoOnly={setFPromoOnly}
+                 fVehicleType={fVehicleType} setFVehicleType={setFVehicleType}
++                fSort={fSort} setFSort={setFSort}
+                 onClose={() => setShowFilter(false)}
+                 onClear={clearAll}
+               />
+diff --git a/components/shared/FeedFilterDropdown.tsx b/components/shared/FeedFilterDropdown.tsx
+index 7ba4813..6bc5a0d 100644
+--- a/components/shared/FeedFilterDropdown.tsx
++++ b/components/shared/FeedFilterDropdown.tsx
+@@ -1,5 +1,5 @@
+ "use client";
+-import { useState, useRef, useEffect } from "react";
++
+ import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
+ 
+ interface Props {
+@@ -17,6 +17,7 @@ interface Props {
+   fMaxMileage: string; setFMaxMileage: (v: string) => void;
+   fPromoOnly: boolean; setFPromoOnly: (v: boolean) => void;
+   fVehicleType: string; setFVehicleType: (v: string) => void;
++  fSort: string; setFSort: (v: string) => void;
+   onClose: () => void;
+   onClear: () => void;
+ }
+@@ -29,6 +30,12 @@ const FUEL_TYPES = ["petrol","diesel","electric","hybrid","gas"];
+ const COLORS = ["Black","White","Silver","Grey","Red","Blue","Green","Gold","Brown","Wine"];
+ const STATES_NG = ["Abuja","Lagos","Kano","Rivers","Oyo","Kaduna","Anambra","Enugu","Delta","Ogun","Imo","Ondo","Kwara","Benue","Edo","Ekiti","Cross River"];
+ const YEARS = Array.from({ length: 20 }, (_, i) => String(new Date().getFullYear() - i));
++const SORT_OPTIONS = [
++  {v:"score",l:"Recommended first"},
++  {v:"newest",l:"Newest first"},
++  {v:"price_asc",l:"Lowest price first"},
++  {v:"price_desc",l:"Highest price first"},
++];
+ 
+ /**
+  * The manual/structured filter picker — matches everything a Jiji-
+@@ -50,58 +57,17 @@ export default function FeedFilterDropdown(props: Props) {
+     fYearTo, setFYearTo, fMinPrice, setFMinPrice, fMaxPrice, setFMaxPrice,
+     fStatus, setFStatus, onClose, onClear,
+     fMaxMileage, setFMaxMileage, fPromoOnly, setFPromoOnly,
+-    fVehicleType, setFVehicleType,
++    fVehicleType, setFVehicleType, fSort, setFSort,
+   } = props;
+ 
+-  // Panel is draggable-resizable from its bottom-right corner (same
+-  // pattern as the search box) — useful on small phone screens where
+-  // the default compact size can feel cramped, without forcing every
+-  // user into a larger panel by default.
+-  const [panelSize, setPanelSize] = useState<{ w: number | null; h: number | null }>({ w: null, h: null });
+-  const [isResizingPanel, setIsResizingPanel] = useState(false);
+-  const resizeStartRef = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
+-  const panelRef = useRef<HTMLDivElement>(null);
+-
+-  const startResize = (clientX: number, clientY: number) => {
+-    const rect = panelRef.current?.getBoundingClientRect();
+-    resizeStartRef.current = { x: clientX, y: clientY, w: rect?.width || 380, h: rect?.height || 480 };
+-    setIsResizingPanel(true);
+-  };
+-  const moveResize = (clientX: number, clientY: number) => {
+-    if (!resizeStartRef.current) return;
+-    const { x, y, w, h } = resizeStartRef.current;
+-    setPanelSize({
+-      w: Math.max(280, Math.min(window.innerWidth - 16, w + (clientX - x))),
+-      h: Math.max(300, Math.min(window.innerHeight - 100, h + (clientY - y))),
+-    });
+-  };
+-  const endResize = () => { resizeStartRef.current = null; setIsResizingPanel(false); };
+-
+-  useEffect(() => {
+-    if (!isResizingPanel) return;
+-    const onMouseMove = (e: MouseEvent) => moveResize(e.clientX, e.clientY);
+-    const onTouchMove = (e: TouchEvent) => moveResize(e.touches[0].clientX, e.touches[0].clientY);
+-    document.addEventListener("mousemove", onMouseMove);
+-    document.addEventListener("mouseup", endResize);
+-    document.addEventListener("touchmove", onTouchMove);
+-    document.addEventListener("touchend", endResize);
+-    return () => {
+-      document.removeEventListener("mousemove", onMouseMove);
+-      document.removeEventListener("mouseup", endResize);
+-      document.removeEventListener("touchmove", onTouchMove);
+-      document.removeEventListener("touchend", endResize);
+-    };
+-  }, [isResizingPanel]);
+-
+   return (
+-    <div ref={panelRef} className="ffd-panel" onClick={(e) => e.stopPropagation()}
+-      style={panelSize.w ? { width: panelSize.w, maxWidth: "96vw" } : undefined}>
++    <div className="ffd-panel" onClick={(e) => e.stopPropagation()}>
+       <div className="ffd-header">
+         <span>Filter Vehicles</span>
+         <button type="button" className="ffd-close" onClick={onClose} aria-label="Close filters">✕</button>
+       </div>
+ 
+-      <div className="ffd-body" style={panelSize.h ? { maxHeight: panelSize.h - 130 } : undefined}>
++      <div className="ffd-body">
+         <div className="ffd-group">
+           <label className="ffd-label">Vehicle Type</label>
+           <div className="ffd-pills">
+@@ -112,6 +78,13 @@ export default function FeedFilterDropdown(props: Props) {
+           </div>
+         </div>
+ 
++        <div className="ffd-group">
++          <label className="ffd-label">Sort By</label>
++          <select className="ffd-select" value={fSort} onChange={(e) => setFSort(e.target.value)}>
++            {SORT_OPTIONS.map((s) => <option key={s.v} value={s.v}>{s.l}</option>)}
++          </select>
++        </div>
++
+         <div className="ffd-group">
+           <label className="ffd-label">Brand</label>
+           <select className="ffd-select" value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)}>
+@@ -220,25 +193,13 @@ export default function FeedFilterDropdown(props: Props) {
+         <button type="button" className="ffd-apply" onClick={onClose}>Show Results</button>
+       </div>
+ 
+-      <div
+-        className="ffd-resize-handle"
+-        title="Drag to enlarge or reduce"
+-        onMouseDown={(e) => { e.preventDefault(); startResize(e.clientX, e.clientY); }}
+-        onTouchStart={(e) => startResize(e.touches[0].clientX, e.touches[0].clientY)}
+-      >⤡</div>
+-
+       <style jsx>{`
+         .ffd-panel {
+           position: absolute; top: calc(100% + 8px); left: 0;
+-          width: 100%; max-width: min(420px, 94vw);
++          width: 100%; max-width: min(480px, 96vw);
+           background: #fff; border: 1.5px solid #E5E5E5; border-radius: 14px;
+           box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden; z-index: 70;
+         }
+-        .ffd-resize-handle {
+-          position: absolute; bottom: 4px; right: 4px; width: 22px; height: 22px;
+-          display: flex; align-items: center; justify-content: center; font-size: 0.85rem;
+-          color: #A3A3A3; cursor: nwse-resize; touch-action: none; z-index: 5;
+-        }
+         .ffd-header { display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1.1rem; border-bottom: 1px solid #F0F0F0; font-family: var(--font-display, inherit); font-size: 0.95rem; font-weight: 700; color: #1A1A1A; }
+         .ffd-close { background: none; border: none; font-size: 1rem; color: #A3A3A3; cursor: pointer; padding: 0.25rem; }
+         .ffd-body { max-height: min(60vh, 480px); overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 1.1rem; }
+-- 
+2.43.0
+
+
+From 7fcb9d7368662155e1d48fe13ff082d0e0c9da79 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 06:00:02 +0000
+Subject: [PATCH 08/12] fix: native mic 'unexpected error' - hardcoded en-GB
+ locale likely unsupported on some devices
+
+Matches the exact progression shown in the latest screenshot: the
+error is now 'unexpected error, please try again' (the runtime-error
+case), not 'not supported' - meaning the plugin loads fine, permission
+gets granted, but the actual SpeechRecognition.start() call itself is
+rejecting. This is consistent with a locale that isn't installed for
+recognition on that specific device - Android's start() call rejects
+outright in that case rather than falling back gracefully on its own.
+
+Removed the hardcoded language: 'en-GB' and let the device use its own
+configured default instead, which is always guaranteed to be valid and
+installed since it's whatever the device itself already uses - safer
+than guessing a specific locale, and most Nigerian Android phones are
+commonly already configured close to what was being targeted anyway.
+
+Added a defensive fallback on top: if the device-default attempt still
+fails for any reason, automatically retry once with en-US explicitly
+(the single most universally-supported locale on Android) before
+giving up and showing the error toast - maximizes the chance of
+success across different devices without needing to guess right the
+first time.
+---
+ lib/useVoiceInput.ts | 32 +++++++++++++++++++++++++-------
+ 1 file changed, 25 insertions(+), 7 deletions(-)
+
+diff --git a/lib/useVoiceInput.ts b/lib/useVoiceInput.ts
+index 69aaee1..4868eb7 100644
+--- a/lib/useVoiceInput.ts
++++ b/lib/useVoiceInput.ts
+@@ -88,12 +88,18 @@ export function useVoiceInput(onResult: (text: string) => void) {
+       setSupported(true);
+       setListening(true);
+ 
+-      // en-GB rather than en-US: Nigeria's spoken English follows
+-      // British pronunciation patterns much more closely than
+-      // American ones (education system, media, etc.), and this was
+-      // a real, confirmed mismatch — this file previously hardcoded
+-      // en-US here while the web version already correctly tried
+-      // en-NG first.
++      // No language specified — lets the device use its own
++      // configured default, which is ALWAYS guaranteed to be valid
++      // and installed, unlike a hardcoded locale. An earlier version
++      // hardcoded "en-GB" here (reasoning: closer to Nigerian spoken
++      // English than "en-US") but that's very likely the actual cause
++      // of the native-only "unexpected error" — if a given device
++      // doesn't have that specific locale installed for recognition,
++      // start() rejects outright rather than falling back gracefully.
++      // The device's own default is a safer bet: most Nigerian Android
++      // phones (Samsung/Tecno/Infinix etc.) are commonly already
++      // configured close to what was being targeted anyway, without
++      // the risk of hardcoding something unsupported.
+       //
+       // maxResults raised from 1 to 3: native speech engines often
+       // rank alternative interpretations, and the single top pick
+@@ -107,10 +113,22 @@ export function useVoiceInput(onResult: (text: string) => void) {
+       // of the app's own search box (the mic icon pulses) rather than
+       // a jarring native overlay taking over the screen.
+       const result = await SpeechRecognition.start({
+-        language: "en-GB",
+         maxResults: 3,
+         partialResults: false,
+         popup: false,
++      }).catch(async (deviceDefaultErr: any) => {
++        // Defensive fallback: if the device's own default language
++        // somehow still fails to start recognition, retry once with
++        // en-US explicitly - the single most universally-supported
++        // locale on Android, present on virtually every device
++        // regardless of region settings.
++        console.warn("[useVoiceInput] Device-default language failed, retrying with en-US:", deviceDefaultErr);
++        return SpeechRecognition.start({
++          language: "en-US",
++          maxResults: 3,
++          partialResults: false,
++          popup: false,
++        });
+       });
+ 
+       setListening(false);
+-- 
+2.43.0
+
+
+From e179c4382225ae7abc597e420fe5492f5d36d074 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 06:05:53 +0000
+Subject: [PATCH 09/12] feat: trigger the daily greeting push on app open
+
+Added DailyGreeting.tsx, mounted globally in the root layout - calls
+the new backend daily-greeting endpoint once per authenticated app
+session. Deliberately NOT gated to native-only (unlike
+CapacitorPush.tsx) since this should reach web push subscribers too,
+not just the installed app.
+
+No client-side 'already sent today' tracking needed - the backend
+endpoint is idempotent, so this safely fires every app load without
+needing to worry about duplicate greetings; a module-level guard just
+prevents firing more than once per session as the person navigates
+between pages.
+---
+ app/layout.tsx                      |  2 ++
+ components/shared/DailyGreeting.tsx | 41 +++++++++++++++++++++++++++++
+ 2 files changed, 43 insertions(+)
+ create mode 100644 components/shared/DailyGreeting.tsx
+
+diff --git a/app/layout.tsx b/app/layout.tsx
+index 5f2b18e..3012f49 100644
+--- a/app/layout.tsx
++++ b/app/layout.tsx
+@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
+ import "./globals.css";
+ import SWRegistrar from "@/components/shared/SWRegistrar";
+ import CapacitorPush from "@/components/shared/CapacitorPush";
++import DailyGreeting from "@/components/shared/DailyGreeting";
+ import ToastContainer from "@/components/ui/ToastContainer";
+ import BackButtonHandler from "@/components/shared/BackButtonHandler";
+ import EdgeSwipeNavigation from "@/components/shared/EdgeSwipeNavigation";
+@@ -162,6 +163,7 @@ export default function RootLayout({ children }: { children: React.ReactNode })
+       <body>
+         <SWRegistrar />
+         <CapacitorPush />
++        <DailyGreeting />
+         <ToastContainer />
+         <BackButtonHandler />
+         <EdgeSwipeNavigation>
+diff --git a/components/shared/DailyGreeting.tsx b/components/shared/DailyGreeting.tsx
+new file mode 100644
+index 0000000..704db23
+--- /dev/null
++++ b/components/shared/DailyGreeting.tsx
+@@ -0,0 +1,41 @@
++"use client";
++import { useEffect, useRef } from "react";
++import api from "@/lib/api";
++import { useAuthStore } from "@/store/authStore";
++
++// Module-level guard (not component state) so this only fires once
++// per actual app load, not once per component remount as the person
++// navigates between pages within the same session.
++let greetingTriggeredThisSession = false;
++
++/**
++ * Triggers the daily "good morning/afternoon/evening" push greeting
++ * once the person is authenticated. Deliberately NOT gated to native-
++ * only like CapacitorPush.tsx — this should reach web push
++ * subscribers too, not just the installed app.
++ *
++ * No client-side "have I sent this today" tracking needed - the
++ * backend endpoint is idempotent (only actually sends once per
++ * calendar day per user, checked server-side), so this can safely
++ * fire every time the app loads without worrying about being called
++ * more than once a day.
++ */
++export default function DailyGreeting() {
++  const { user, isAuthenticated } = useAuthStore();
++  const firedRef = useRef(false);
++
++  useEffect(() => {
++    if (!isAuthenticated || !user) return;
++    if (greetingTriggeredThisSession || firedRef.current) return;
++    firedRef.current = true;
++    greetingTriggeredThisSession = true;
++
++    api.post("/api/v1/push/daily-greeting").catch(() => {
++      // Silent failure — a missed greeting notification is not worth
++      // bothering the person about, and it'll just try again next
++      // time the app opens.
++    });
++  }, [isAuthenticated, user]);
++
++  return null;
++}
+-- 
+2.43.0
+
+
+From eb7e6afb18c403b56b12b9e4ef2441963c670bfd Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 06:09:57 +0000
+Subject: [PATCH 10/12] fix: unify export format pickers on reports and sales
+ pages - all 3 formats now in one consistent picker
+
+Both pages had a standalone 'CSV' / 'CSV / Excel' button SEPARATE from
+the PDF/JPG download picker, while every other dealer export page
+(cars, movements, expenses) already uses one unified 'Download' button
+with all 3 formats listed together. Folded the standalone CSV button
+into the same picker as a third option on both pages, matching the
+consistent pattern everywhere else - addresses 'not all have the
+three' export formats, since the functionality already existed on
+these two pages, just presented inconsistently as a separate button
+rather than genuinely missing.
+---
+ app/dashboard/dealer/reports/page.tsx | 2 +-
+ app/dashboard/dealer/sales/page.tsx   | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/app/dashboard/dealer/reports/page.tsx b/app/dashboard/dealer/reports/page.tsx
+index e49f185..6cfb8cf 100644
+--- a/app/dashboard/dealer/reports/page.tsx
++++ b/app/dashboard/dealer/reports/page.tsx
+@@ -419,7 +419,6 @@ export default function ReportsPage() {
+             </div>
+           </div>
+           <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap"}}>
+-            <button className="btn-export" onClick={exportCSV} style={{background:"#F0FDF4",color:"#16A34A",border:"1.5px solid #86EFAC"}}>CSV</button>
+             <div style={{position:"relative"}}>
+               <button className="btn-export" onClick={()=>setShowExportPicker(showExportPicker==="download"?"":"download")} disabled={exportBusy!==""}>
+                 {exportBusy==="pdf"||exportBusy==="jpg" ? "Exporting…" : "Download"}
+@@ -428,6 +427,7 @@ export default function ReportsPage() {
+                 <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"130px"}}>
+                   <button onClick={()=>handleReportDownload("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as PDF</button>
+                   <button onClick={()=>handleReportDownload("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as JPG Image</button>
++                  <button onClick={()=>{setShowExportPicker("");exportCSV();}} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as Excel / CSV</button>
+                 </div>
+               )}
+             </div>
+diff --git a/app/dashboard/dealer/sales/page.tsx b/app/dashboard/dealer/sales/page.tsx
+index 7be79da..91aec38 100644
+--- a/app/dashboard/dealer/sales/page.tsx
++++ b/app/dashboard/dealer/sales/page.tsx
+@@ -173,15 +173,15 @@ export default function SalesPage() {
+           <p className="page-sub">{total} transaction{total!==1?"s":""}</p>
+         </div>
+         <div className="header-btns">
+-          <button className="btn-outline" onClick={exportCSV}> CSV / Excel</button>
+           <div style={{position:"relative",display:"inline-block"}}>
+             <button className="btn-outline" onClick={()=>setShowSalesPicker(showSalesPicker==="download"?"":"download")} disabled={salesExportBusy!==""} style={{borderColor:"#F47B20",color:"#F47B20"}}>
+-              {salesExportBusy==="pdf"||salesExportBusy==="jpg"?"Exporting…":"Download PDF/JPG"}
++              {salesExportBusy==="pdf"||salesExportBusy==="jpg"?"Exporting…":"Download"}
+             </button>
+             {showSalesPicker==="download" && (
+               <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,zIndex:30,background:"#fff",border:"1px solid #E5E5E5",borderRadius:"8px",boxShadow:"0 6px 18px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"110px"}}>
+                 <button onClick={()=>handleSalesDownload("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.5rem 0.75rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>as PDF</button>
+                 <button onClick={()=>handleSalesDownload("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.5rem 0.75rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>as JPG</button>
++                <button onClick={()=>{setShowSalesPicker("");exportCSV();}} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.5rem 0.75rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>as Excel / CSV</button>
+               </div>
+             )}
+           </div>
+-- 
+2.43.0
+
+
+From ad21579af3f51247fb9914b8da6e8ed8d2507742 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 06:20:18 +0000
+Subject: [PATCH 11/12] fix: blank trailing page on every single PDF export in
+ the app
+
+Confirmed from 6 real PDF samples across invoices, financial reports,
+inventory, and vehicle movements - every single one had a completely
+blank white page appended at the end, regardless of document type or
+length. Root cause: the multi-page pagination loop continued for ANY
+positive remaining height, including negligible floating-point
+remainders far smaller than a single line of text - meaning a whole
+extra (visually blank) page got added even when there was nothing
+meaningful left to draw. Added a 12pt minimum threshold (roughly one
+line of body text) before spawning another page, plus a safety cap
+against runaway loops.
+
+Also fixed why the cash invoice specifically was spilling onto an
+awkward second page for just its signature/footer section in the
+first place: widened the single-page shrink-to-fit tolerance from
+1.15x to 1.4x page height. A real invoice sample showed content just
+over the old threshold triggering the multi-page path instead of
+being shrunk to fit - a slightly more aggressive shrink is a much
+better trade-off than a near-empty trailing page, and content that's
+genuinely long (like the multi-table financial reports, correctly
+still multi-page after this change) is unaffected.
+---
+ lib/documentExport.ts | 25 +++++++++++++++++++------
+ 1 file changed, 19 insertions(+), 6 deletions(-)
+
+diff --git a/lib/documentExport.ts b/lib/documentExport.ts
+index ae1782b..f14c99a 100644
+--- a/lib/documentExport.ts
++++ b/lib/documentExport.ts
+@@ -42,13 +42,16 @@ export async function renderElementToPdfBlob(element: HTMLElement, title = "Docu
+   const naturalImgHeight = (canvas.height * usableWidth) / canvas.width;
+   const imgData = canvas.toDataURL("image/png");
+ 
+-  if (naturalImgHeight <= usableHeight * 1.15) {
+-    // Content is one page's worth, or only slightly over (the common
++  if (naturalImgHeight <= usableHeight * 1.4) {
++    // Content is one page's worth, or reasonably close (the common
+     // case for receipts/invoices/proformas — usually just a little
+     // taller than A4 at full width because of a signature block or
+-    // footer). Rather than spilling that small overflow onto an
+-    // almost-entirely-blank second page, shrink the whole document
+-    // slightly so it fits cleanly on exactly one page.
++    // footer). Rather than spilling that overflow onto an almost-
++    // entirely-blank second page, shrink the whole document so it
++    // fits cleanly on exactly one page. 1.4x (rather than a stricter
++    // 1.15x) was chosen after seeing a real invoice sample spill into
++    // an awkward split at the old threshold — the shrink is a much
++    // better trade-off than a near-empty trailing page.
+     const scale = Math.min(1, usableHeight / naturalImgHeight);
+     const drawWidth = usableWidth * scale;
+     const drawHeight = naturalImgHeight * scale;
+@@ -62,11 +65,21 @@ export async function renderElementToPdfBlob(element: HTMLElement, title = "Docu
+     pdf.addImage(imgData, "PNG", margin, position, usableWidth, naturalImgHeight);
+     heightLeft -= usableHeight;
+ 
+-    while (heightLeft > 0) {
++    // Minimum meaningful remainder before spawning another page - a
++    // real bug this fixes: the previous "> 0" check meant even a
++    // fraction-of-a-point floating-point remainder (nowhere near a
++    // single visible line of text) would trigger a whole extra page,
++    // which then rendered as a totally blank trailing page in every
++    // PDF export in the app. 12pt is roughly one line of body text -
++    // genuinely not worth a whole page below that.
++    const MIN_MEANINGFUL_REMAINDER = 12;
++    let safetyPages = 0;
++    while (heightLeft > MIN_MEANINGFUL_REMAINDER && safetyPages < 50) {
+       position = margin - (naturalImgHeight - heightLeft);
+       pdf.addPage();
+       pdf.addImage(imgData, "PNG", margin, position, usableWidth, naturalImgHeight);
+       heightLeft -= usableHeight;
++      safetyPages += 1;
+     }
+   }
+ 
+-- 
+2.43.0
+
+
+From 8f85e62c86746d94c493ee5610dd0692649c9709 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 06:29:24 +0000
+Subject: [PATCH 12/12] feat: staff page - export (Excel/PDF/JPG), printable ID
+ card generation, delete staff account
+
+Three genuinely new capabilities, all previously completely missing:
+
+1. Export: staff list as Excel, PDF, or JPG, matching the picker
+   pattern used everywhere else in the app. Respects the current
+   search filter.
+
+2. ID card generation: a printable card (photo/initial, name,
+   position, staff ID, phone, email, dealer branding) as a downloadable
+   PDF, per staff member from their detail view.
+
+3. Delete staff account: wired to the backend endpoint enhanced in the
+   companion backend commit. Confirmation step explicitly explains the
+   distinction being made - their own account/notifications get
+   removed, but cars/sales/expenses/records they logged for the
+   dealership stay exactly as they are, since those belong to the
+   dealer's business regardless of which staff member entered them.
+---
+ app/dashboard/dealer/staff/page.tsx | 188 ++++++++++++++++++++++++++--
+ 1 file changed, 180 insertions(+), 8 deletions(-)
+
+diff --git a/app/dashboard/dealer/staff/page.tsx b/app/dashboard/dealer/staff/page.tsx
+index 1db544f..33ff16e 100644
+--- a/app/dashboard/dealer/staff/page.tsx
++++ b/app/dashboard/dealer/staff/page.tsx
+@@ -2,6 +2,8 @@
+ import { useEffect, useState } from "react";
+ import api from "@/lib/api";
+ import PasswordInput from "@/components/ui/PasswordInput";
++import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
++import { useToast } from "@/store/toastStore";
+ 
+ const PERM_GROUPS = [
+   { group:"Inventory",        color:"#F47B20", perms:[
+@@ -93,6 +95,13 @@ export default function DealerStaffPage() {
+   const [msg,      setMsg]      = useState("");
+   const [saving,   setSaving]   = useState(false);
+   const [search,   setSearch]   = useState("");
++  const [dealer,   setDealer]   = useState<any>(null);
++  const showToast = useToast();
++  const [exportBusy, setExportBusy] = useState<""|"pdf"|"jpg"|"excel">("");
++  const [showExportPicker, setShowExportPicker] = useState(false);
++  const [idCardBusy, setIdCardBusy] = useState(false);
++  const [deleting, setDeleting] = useState(false);
++  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+ 
+   //  Every form field is its own useState  no shared object 
+   const [fName,    setFName]    = useState("");
+@@ -112,7 +121,10 @@ export default function DealerStaffPage() {
+     } catch {} finally { setLoading(false); }
+   };
+ 
+-  useEffect(() => { load(); }, []);
++  useEffect(() => {
++    load();
++    api.get("/api/v1/dealers/me").then(r => setDealer(r.data)).catch(() => {});
++  }, []);
+ 
+   const clearForm = () => {
+     setFName(""); setFEmail(""); setFPhone(""); setFWa("");
+@@ -130,6 +142,121 @@ export default function DealerStaffPage() {
+ 
+   const back = () => { setMode("list"); setSelected(null); setMsg(""); };
+ 
++  // ── Export staff list (Excel/PDF/JPG) ──────────────────────────
++  const filteredStaff = () => staff.filter((s: any) =>
++    !search || [s.fullName, s.email, s.position].some(v => (v || "").toLowerCase().includes(search.toLowerCase()))
++  );
++
++  const buildStaffListHtml = () => {
++    const rows = filteredStaff();
++    const now = new Date().toLocaleString("en-NG");
++    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
++      *{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:28px 32px;color:#1A1A1A;font-size:12px}
++      h1{font-size:18px;margin:0 0 4px} .sub{color:#737373;font-size:11px;margin-bottom:16px}
++      table{width:100%;border-collapse:collapse}
++      th{background:#1A1A1A;color:#fff;text-align:left;padding:8px 10px;font-size:10px;letter-spacing:0.05em;text-transform:uppercase}
++      td{padding:7px 10px;border-bottom:1px solid #E5E5E5;font-size:11px}
++      tr:nth-child(even) td{background:#FAFAFA}
++      .footer{margin-top:16px;font-size:9px;color:#A3A3A3;text-align:center}
++      </style></head><body>
++      <h1>Staff — ${dealer?.companyName || "CARSTRIMS"}</h1>
++      <div class="sub">${rows.length} staff member${rows.length !== 1 ? "s" : ""} &bull; Generated ${now}</div>
++      <table><thead><tr><th>Name</th><th>Position</th><th>Email</th><th>Phone</th><th>Status</th><th>Staff ID</th></tr></thead>
++      <tbody>${rows.map((s: any) => `<tr><td>${s.fullName || ""}</td><td>${s.position || ""}</td><td>${s.email || ""}</td><td>${s.phone || ""}</td><td>${s.status || ""}</td><td>${s.staffId || ""}</td></tr>`).join("")}</tbody>
++      </table>
++      <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
++      </body></html>`;
++  };
++
++  const handleStaffExport = async (format: "pdf" | "jpg" | "excel") => {
++    setShowExportPicker(false);
++    setExportBusy(format);
++    try {
++      const filename = `carstrims-staff-${Date.now()}`;
++      if (format === "excel") {
++        const blob = rowsToExcelBlob(filteredStaff().map((s: any) => ({
++          Name: s.fullName || "", Position: s.position || "", Email: s.email || "",
++          Phone: s.phone || "", WhatsApp: s.whatsapp || "", Status: s.status || "",
++          "Staff ID": s.staffId || "", Joined: fmtDate(s.createdAt),
++        })), "Staff");
++        await downloadBlob(blob, `${filename}.xlsx`);
++      } else {
++        const html = buildStaffListHtml();
++        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Staff List");
++        await downloadBlob(blob, `${filename}.${format}`);
++      }
++      showToast("Downloaded", "success");
++    } catch (e: any) {
++      showToast(e?.message || "Export failed", "error");
++    } finally {
++      setExportBusy("");
++    }
++  };
++
++  // ── ID card generation ─────────────────────────────────────────
++  const buildIdCardHtml = (s: any) => {
++    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
++      *{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:40px;background:#F5F5F5;display:flex;justify-content:center}
++      .card{width:340px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.12);border:1px solid #E5E5E5}
++      .band{background:#F47B20;padding:14px 18px;color:#fff}
++      .brand{font-weight:900;font-size:14px;letter-spacing:0.08em}
++      .company{font-size:9px;opacity:0.9;margin-top:1px}
++      .body{padding:20px 18px;text-align:center}
++      .photo{width:96px;height:96px;border-radius:50%;background:#FFF7ED;border:3px solid #F47B20;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:36px;color:#F47B20;font-weight:700;overflow:hidden}
++      .photo img{width:100%;height:100%;object-fit:cover}
++      .name{font-size:17px;font-weight:800;color:#1A1A1A}
++      .pos{font-size:12px;color:#F47B20;font-weight:700;margin-top:2px;text-transform:uppercase;letter-spacing:0.04em}
++      .divider{height:1px;background:#E5E5E5;margin:14px 0}
++      .row{display:flex;justify-content:space-between;font-size:10.5px;padding:4px 0;text-align:left}
++      .rl{color:#A3A3A3;text-transform:uppercase;letter-spacing:0.05em;font-weight:700}
++      .rv{color:#1A1A1A;font-weight:600}
++      .footer{background:#1A1A1A;color:#fff;text-align:center;padding:7px;font-size:8px;letter-spacing:0.05em}
++      </style></head><body>
++      <div class="card">
++        <div class="band"><div class="brand">CARSTRIMS</div><div class="company">${dealer?.companyName || ""}</div></div>
++        <div class="body">
++          <div class="photo">${s.profilePicture ? `<img src="${s.profilePicture}"/>` : (s.fullName || "?").charAt(0).toUpperCase()}</div>
++          <div class="name">${s.fullName || ""}</div>
++          <div class="pos">${s.position || "Staff"}</div>
++          <div class="divider"></div>
++          <div class="row"><span class="rl">Staff ID</span><span class="rv">${s.staffId || ""}</span></div>
++          <div class="row"><span class="rl">Phone</span><span class="rv">${s.phone || ""}</span></div>
++          <div class="row"><span class="rl">Email</span><span class="rv">${s.email || ""}</span></div>
++        </div>
++        <div class="footer">${dealer?.address || ""} ${dealer?.city ? "&bull; " + dealer.city : ""}</div>
++      </div>
++      </body></html>`;
++  };
++
++  const handleGenerateIdCard = async (s: any) => {
++    setIdCardBusy(true);
++    try {
++      const blob = await renderHtmlStringToPdfBlob(buildIdCardHtml(s), `${s.fullName} - ID Card`);
++      await downloadBlob(blob, `carstrims-id-card-${(s.fullName || "staff").toLowerCase().replace(/\s+/g, "-")}.pdf`);
++      showToast("ID card downloaded", "success");
++    } catch (e: any) {
++      showToast(e?.message || "Could not generate ID card", "error");
++    } finally {
++      setIdCardBusy(false);
++    }
++  };
++
++  // ── Delete staff account ───────────────────────────────────────
++  const handleDeleteStaff = async (s: any) => {
++    setDeleting(true);
++    try {
++      await api.delete(`/api/v1/staff/${s._id || s.staffId}`);
++      showToast("Staff account removed", "success");
++      setShowDeleteConfirm(false);
++      back();
++      load();
++    } catch (e: any) {
++      showToast(e?.response?.data?.detail || "Could not remove staff", "error");
++    } finally {
++      setDeleting(false);
++    }
++  };
++
+   const togglePerm = (id: string) =>
+     setFPerms(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
+ 
+@@ -287,12 +414,28 @@ export default function DealerStaffPage() {
+             {staff.length} team member{staff.length!==1?"s":""}  all actions are recorded under your dealership
+           </p>
+         </div>
+-        <button onClick={openCreate}
+-          style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",
+-            padding:"11px 20px",fontFamily:"var(--font-display)",fontSize:"14px",
+-            letterSpacing:"0.08em",cursor:"pointer",fontWeight:700}}>
+-          + Add Staff Member
+-        </button>
++        <div style={{display:"flex",gap:"0.5rem",alignItems:"center"}}>
++          <div style={{position:"relative"}}>
++            <button onClick={()=>setShowExportPicker(v=>!v)} disabled={exportBusy!==""}
++              style={{background:"#F5F5F5",color:"#525252",border:"1.5px solid #E5E5E5",borderRadius:"8px",
++                padding:"11px 16px",fontSize:"13px",cursor:"pointer",fontWeight:600}}>
++              {exportBusy?"Exporting…":"Export"}
++            </button>
++            {showExportPicker && (
++              <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:30,background:"#fff",border:"1.5px solid #E5E5E5",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:"120px"}}>
++                <button onClick={()=>handleStaffExport("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as PDF</button>
++                <button onClick={()=>handleStaffExport("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as JPG Image</button>
++                <button onClick={()=>handleStaffExport("excel")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as Excel</button>
++              </div>
++            )}
++          </div>
++          <button onClick={openCreate}
++            style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",
++              padding:"11px 20px",fontFamily:"var(--font-display)",fontSize:"14px",
++              letterSpacing:"0.08em",cursor:"pointer",fontWeight:700}}>
++            + Add Staff Member
++          </button>
++        </div>
+       </div>
+ 
+       <Msg/>
+@@ -562,7 +705,7 @@ export default function DealerStaffPage() {
+               {selected.status}
+             </span>
+           </div>
+-          <div style={{display:"flex",gap:"8px"}}>
++          <div style={{display:"flex",gap:"8px",flexWrap:"wrap" as const}}>
+             <button onClick={()=>openEdit(selected)}
+               style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",
+                 padding:"8px 16px",fontFamily:"var(--font-display)",
+@@ -576,9 +719,38 @@ export default function DealerStaffPage() {
+                 borderRadius:"8px",padding:"8px 16px",fontSize:"13px",cursor:"pointer",fontWeight:600}}>
+               {selected.status==="active"?"Suspend":"Reactivate"}
+             </button>
++            <button onClick={()=>handleGenerateIdCard(selected)} disabled={idCardBusy}
++              style={{background:"#F5F5F5",border:"1px solid #E5E5E5",color:"#525252",
++                borderRadius:"8px",padding:"8px 16px",fontSize:"13px",cursor:"pointer",fontWeight:600}}>
++              {idCardBusy?"Generating…":"ID Card"}
++            </button>
++            <button onClick={()=>setShowDeleteConfirm(true)}
++              style={{background:"#FEF2F2",border:"1px solid #FECACA",color:"#DC2626",
++                borderRadius:"8px",padding:"8px 16px",fontSize:"13px",cursor:"pointer",fontWeight:600}}>
++              Delete
++            </button>
+           </div>
+         </div>
+ 
++        {showDeleteConfirm && (
++          <div style={{background:"#FEF2F2",border:"1.5px solid #FECACA",borderRadius:"10px",padding:"14px 16px",marginBottom:"20px"}}>
++            <div style={{fontSize:"14px",fontWeight:700,color:"#DC2626",marginBottom:"4px"}}>Remove {selected.fullName}?</div>
++            <p style={{fontSize:"12.5px",color:"#7F1D1D",lineHeight:1.5,margin:"0 0 12px"}}>
++              This removes their account, login access, and their own notifications. Cars, sales, expenses, and other records they logged for your dealership stay exactly as they are.
++            </p>
++            <div style={{display:"flex",gap:"8px"}}>
++              <button onClick={()=>handleDeleteStaff(selected)} disabled={deleting}
++                style={{background:"#DC2626",color:"#fff",border:"none",borderRadius:"7px",padding:"8px 16px",fontSize:"13px",cursor:"pointer",fontWeight:700}}>
++                {deleting?"Removing…":"Yes, Remove Staff"}
++              </button>
++              <button onClick={()=>setShowDeleteConfirm(false)}
++                style={{background:"#fff",border:"1px solid #E5E5E5",color:"#525252",borderRadius:"7px",padding:"8px 16px",fontSize:"13px",cursor:"pointer",fontWeight:600}}>
++                Cancel
++              </button>
++            </div>
++          </div>
++        )}
++
+         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px",marginBottom:"20px"}}>
+           {[["Phone",selected.phone],["WhatsApp",selected.whatsapp],
+             ["Staff ID",selected.staffId],["Joined",fmtDate(selected.createdAt)],
+-- 
+2.43.0
+

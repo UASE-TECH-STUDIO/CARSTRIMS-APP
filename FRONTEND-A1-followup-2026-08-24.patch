@@ -1,0 +1,256 @@
+From 5f70401033a5047e47f502cfd2bda52a807dd8f6 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Tue, 25 Aug 2026 07:20:31 +0000
+Subject: [PATCH] fix: icon alignment, bigger touch targets, and inline comment
+ box on the feed (follow-up to item A.1)
+
+Direct feedback fixes on the icon redesign shipped last batch:
+
+1. Icon alignment bug (root cause): car-info-top used
+   align-items:flex-end, anchoring the icon stack to the bottom of
+   the row - whose height varies by how much detail text a card has
+   (city/state present or not). Icons floated at different heights
+   card to card. Fixed with flex-start, so icons now consistently
+   start at the same line as the car name on every card.
+
+2. Bigger, more tappable icons - increased icon size, added real
+   padding for a proper touch target (32x32px minimum), bumped count
+   text size.
+
+3. Inline comment box, opened from tapping the comment icon - type
+   and post a comment without leaving the feed, plus a 'View N
+   comments' link to jump to the full thread. Real structural issue
+   caught and fixed before this landed: the whole card was a <Link>
+   (renders as <a>), and nesting interactive form elements inside an
+   anchor is invalid HTML and risks the click firing navigation
+   instead of the input. Restructured so the card is now an outer
+   div containing the Link (for navigation) as a sibling to the
+   comment box, not nested inside it.
+
+4. Scroll-to-comments on the detail page: the new 'View comments'
+   link passes ?scrollTo=comments, and the detail page scrolls there
+   automatically once loaded, via a new commentsRef + effect gated
+   on the loading state so it never fires before content is
+   rendered.
+---
+ app/(public)/cars/[carId]/CarDetailClient.tsx | 16 ++-
+ app/feed/page.tsx                             | 98 ++++++++++++++++---
+ 2 files changed, 100 insertions(+), 14 deletions(-)
+
+diff --git a/app/(public)/cars/[carId]/CarDetailClient.tsx b/app/(public)/cars/[carId]/CarDetailClient.tsx
+index 7737ad1..586d983 100644
+--- a/app/(public)/cars/[carId]/CarDetailClient.tsx
++++ b/app/(public)/cars/[carId]/CarDetailClient.tsx
+@@ -1,6 +1,6 @@
+ "use client";
+ import { useEffect, useState, useRef } from "react";
+-import { useParams, useRouter } from "next/navigation";
++import { useParams, useRouter, useSearchParams } from "next/navigation";
+ import api from "@/lib/api";
+ import { useAuthStore, getRoleRedirect } from "@/store/authStore";
+ import { useMessagesStore } from "@/store/messagesStore";
+@@ -15,7 +15,9 @@ import { timeAgoLong } from "@/lib/timeUtils";
+ export default function CarDetailClient() {
+   const params = useParams();
+   const router = useRouter();
++  const searchParams = useSearchParams();
+   const carId = params?.carId as string;
++  const commentsRef = useRef<HTMLDivElement>(null);
+   const { user, isAuthenticated } = useAuthStore();
+   const isAdmin = user?.role === "SYSTEM_ADMIN";
+   const showToast = useToast();
+@@ -136,6 +138,16 @@ export default function CarDetailClient() {
+     load();
+   }, [carId, isAuthenticated, isAdmin]);
+ 
++  // Scroll to the comments section when arriving via the feed's
++  // "View comments" link (?scrollTo=comments) - only fires once
++  // loading has finished, since scrolling before content has
++  // rendered would land on the wrong position.
++  useEffect(() => {
++    if (!loading && searchParams?.get("scrollTo") === "comments" && commentsRef.current) {
++      commentsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
++    }
++  }, [loading, searchParams]);
++
+   const handleLike = async () => {
+     if (!isAuthenticated) { router.push("/login"); return; }
+     try {
+@@ -442,7 +454,7 @@ export default function CarDetailClient() {
+       </div>
+ 
+       {/* Comments */}
+-      <div className="cd-comments">
++      <div className="cd-comments" ref={commentsRef}>
+         <h2 className="cd-comments-title">COMMENTS ({comments.length})</h2>
+         {isAuthenticated ? (
+           <form onSubmit={handleComment} className="cd-comment-form">
+diff --git a/app/feed/page.tsx b/app/feed/page.tsx
+index 1495718..379400b 100644
+--- a/app/feed/page.tsx
++++ b/app/feed/page.tsx
+@@ -362,12 +362,43 @@ export default function FeedPage() {
+   const isAdmin = user?.role === "SYSTEM_ADMIN";
+ 
+   const [shareCar, setShareCar] = useState<Car | null>(null);
++  const [commentBoxFor, setCommentBoxFor] = useState<string | null>(null);
++  const [commentDraft, setCommentDraft] = useState("");
++  const [postingComment, setPostingComment] = useState(false);
+ 
+   const handleShare = (e: React.MouseEvent, car: Car) => {
+     e.preventDefault(); e.stopPropagation();
+     setShareCar(car);
+   };
+ 
++  const handleToggleCommentBox = (e: React.MouseEvent, carId: string) => {
++    e.preventDefault(); e.stopPropagation();
++    if (commentBoxFor === carId) {
++      setCommentBoxFor(null);
++    } else {
++      setCommentBoxFor(carId);
++      setCommentDraft("");
++    }
++  };
++
++  const handlePostQuickComment = async (e: React.MouseEvent, carId: string) => {
++    e.preventDefault(); e.stopPropagation();
++    if (!isAuthenticated) { router.push("/login"); return; }
++    if (!commentDraft.trim()) return;
++    setPostingComment(true);
++    try {
++      await api.post(`/api/v1/public/cars/${carId}/comments`, { text: commentDraft });
++      setCars(p => p.map(c => c.carId === carId ? { ...c, commentCount: (c.commentCount || 0) + 1 } : c));
++      setCommentDraft("");
++      setCommentBoxFor(null);
++      showToast("Comment posted", "success");
++    } catch (err: any) {
++      showToast(err?.response?.data?.detail || "Couldn't post comment", "error");
++    } finally {
++      setPostingComment(false);
++    }
++  };
++
+   const handleAdminDelete = async (e: React.MouseEvent, car: Car) => {
+     e.preventDefault(); e.stopPropagation();
+     if (!(await askConfirm({ message: `Remove "${car.brand} ${car.model}" from the platform?`, danger: true }))) return;
+@@ -723,7 +754,8 @@ export default function FeedPage() {
+         <>
+           <div className="cars-grid">
+             {cars.map((car) => (
+-              <Link key={car._id} href={`/cars/${car.carId}`} className="car-card">
++              <div key={car._id} className="car-card">
++              <Link href={`/cars/${car.carId}`} className="car-card-link">
+                 <div className="car-img-wrap">
+                   {car.images?.[0]
+                     ? <img src={car.images[0]} alt="" loading="lazy"
+@@ -774,10 +806,10 @@ export default function FeedPage() {
+                         <span className="va-icon">{userLikes.includes(car.carId) ? "♥" : "♡"}</span>
+                         <span className="va-count">{car.likeCount||0}</span>
+                       </button>
+-                      <span className="va-btn va-static">
++                      <button className="va-btn" onClick={(e) => handleToggleCommentBox(e, car.carId)}>
+                         <span className="va-icon">💬</span>
+                         <span className="va-count">{car.commentCount||0}</span>
+-                      </span>
++                      </button>
+                       <button className="va-btn" onClick={(e) => handleShare(e, car)}>
+                         <span className="va-icon">⤴</span>
+                       </button>
+@@ -792,6 +824,30 @@ export default function FeedPage() {
+                   </div>
+                 </div>
+               </Link>
++              {commentBoxFor === car.carId && (
++                <div className="inline-comment-box" onClick={(e) => e.stopPropagation()}>
++                  <input
++                    type="text"
++                    className="icb-input"
++                    placeholder={isAuthenticated ? "Write a comment..." : "Log in to comment"}
++                    value={commentDraft}
++                    disabled={!isAuthenticated || postingComment}
++                    onChange={(e) => setCommentDraft(e.target.value)}
++                    onKeyDown={(e) => { if (e.key === "Enter" && !postingComment) handlePostQuickComment(e as any, car.carId); }}
++                  />
++                  {isAuthenticated ? (
++                    <button className="icb-send" disabled={!commentDraft.trim() || postingComment} onClick={(e) => handlePostQuickComment(e, car.carId)}>
++                      {postingComment ? "..." : "Post"}
++                    </button>
++                  ) : (
++                    <button className="icb-send" onClick={() => router.push("/login")}>Log In</button>
++                  )}
++                  <Link href={`/cars/${car.carId}?scrollTo=comments`} className="icb-view">
++                    View {car.commentCount ? `${car.commentCount} ` : ""}comments
++                  </Link>
++                </div>
++              )}
++              </div>
+             ))}
+           </div>
+           {skipRef.current < total && (
+@@ -1058,10 +1114,27 @@ export default function FeedPage() {
+ 
+         .car-card {
+           background:#fff; border:1.5px solid #E5E5E5; border-radius:12px;
+-          overflow:hidden; text-decoration:none; display:flex; flex-direction:column;
+-          transition:all 0.2s; position:relative;
++          overflow:hidden; transition:all 0.2s; position:relative;
+         }
+         .car-card:hover { border-color:#F47B20; transform:translateY(-3px); box-shadow:0 8px 28px rgba(244,123,32,0.1); }
++        .car-card-link { display:flex; flex-direction:column; text-decoration:none; color:inherit; }
++        .inline-comment-box {
++          display:flex; align-items:center; gap:0.4rem; padding:0.6rem 0.75rem;
++          border-top:1px solid #F0F0F0; background:#FAFAFA;
++        }
++        .icb-input {
++          flex:1; min-width:0; border:1.5px solid #E5E5E5; border-radius:8px;
++          padding:0.4rem 0.6rem; font-size:0.78rem; font-family:var(--font-body);
++          outline:none; background:#fff;
++        }
++        .icb-input:focus { border-color:#F47B20; }
++        .icb-send {
++          background:#F47B20; color:#fff; border:none; border-radius:8px;
++          padding:0.4rem 0.7rem; font-size:0.75rem; font-weight:700; cursor:pointer;
++          font-family:var(--font-body); white-space:nowrap; flex-shrink:0;
++        }
++        .icb-send:disabled { opacity:0.5; cursor:not-allowed; }
++        .icb-view { font-size:0.68rem; color:#F47B20; font-weight:600; white-space:nowrap; flex-shrink:0; text-decoration:none; }
+ 
+         .car-img-wrap { position:relative; height:185px; background:#E5E5E5; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+         .car-img-wrap img { width:100%; height:100%; object-fit:cover; transition:transform 0.3s; }
+@@ -1107,7 +1180,7 @@ export default function FeedPage() {
+         .ds-loc { font-size:0.65rem; color:#A3A3A3; white-space:nowrap; }
+ 
+         .car-info { padding:0.875rem; display:flex; flex-direction:column; gap:0.28rem; flex:1; }
+-        .car-info-top { display:flex; align-items:flex-end; justify-content:space-between; gap:0.5rem; }
++        .car-info-top { display:flex; align-items:flex-start; justify-content:space-between; gap:0.5rem; }
+         .car-info-main { display:flex; flex-direction:column; gap:0.28rem; min-width:0; flex:1; }
+         .car-name { font-weight:700; font-size:0.9rem; color:#171717; }
+         .car-sub { font-size:0.7rem; color:#737373; text-transform:capitalize; }
+@@ -1115,17 +1188,18 @@ export default function FeedPage() {
+         .price-row { display:flex; align-items:baseline; gap:0.5rem; margin-top:0.2rem; }
+         .car-price { font-family:var(--font-display); font-size:1.2rem; color:#F47B20; letter-spacing:0.02em; }
+         .car-promo { font-size:0.78rem; color:#16A34A; font-weight:600; }
+-        .card-vactions { display:flex; flex-direction:column; align-items:center; gap:0.4rem; flex-shrink:0; }
++        .card-vactions { display:flex; flex-direction:column; align-items:center; gap:0.5rem; flex-shrink:0; }
+         .va-btn {
+-          display:flex; flex-direction:column; align-items:center; gap:0.05rem;
+-          background:none; border:none; cursor:pointer; padding:0; color:#A3A3A3;
+-          font-family:var(--font-body); line-height:1;
++          display:flex; flex-direction:column; align-items:center; gap:0.1rem;
++          background:none; border:none; cursor:pointer; padding:0.2rem; color:#A3A3A3;
++          font-family:var(--font-body); line-height:1; min-width:32px; min-height:32px;
++          justify-content:center;
+         }
+         .va-btn.va-static { cursor:default; }
+-        .va-icon { font-size:1.05rem; }
++        .va-icon { font-size:1.35rem; }
+         .va-btn.liked .va-icon { color:#DC2626; }
+         .va-btn.faved .va-icon { color:#F47B20; }
+-        .va-count { font-size:0.62rem; font-weight:700; color:#737373; }
++        .va-count { font-size:0.68rem; font-weight:700; color:#737373; }
+         .card-footer {
+           display:flex; align-items:center; justify-content:space-between;
+           margin-top:0.4rem; padding-top:0.4rem; border-top:1px solid #F0F0F0;
+-- 
+2.43.0
+

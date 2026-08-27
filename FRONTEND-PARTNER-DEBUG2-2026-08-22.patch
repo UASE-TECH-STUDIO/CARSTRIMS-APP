@@ -1,0 +1,58 @@
+From 33ff75883cc3454d490a65e16abe2003d0e797c0 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 16:33:12 +0000
+Subject: [PATCH] debug: make the assign-section condition airtight - explicit
+ ternary with a visible marker on both branches
+
+The previous debug panel confirmed effectiveStatus === 'approved' is
+true, computed the exact same way, yet the section still didn't
+render on two separate dealer accounts - genuinely strange for
+standard React behavior with no obvious explanation from code review
+alone.
+
+Converted the && conditional to an explicit ternary: the true branch
+wraps the real assign section in a green-bordered box with 'condition
+was TRUE, rendering assign section now', the false branch shows a
+red box with the exact effectiveStatus value AND its JavaScript type.
+This eliminates any possibility of a stale or separate computation -
+it's the exact same expression, evaluated at the exact point of
+rendering, and something will now definitively render on-screen
+either way. If neither colored box appears at all, that itself is
+new, important information - it would mean this JSX isn't being
+reached during render, which points somewhere else entirely.
+---
+ app/dashboard/dealer/partners/page.tsx | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/app/dashboard/dealer/partners/page.tsx b/app/dashboard/dealer/partners/page.tsx
+index 1c93f3f..92aca5c 100644
+--- a/app/dashboard/dealer/partners/page.tsx
++++ b/app/dashboard/dealer/partners/page.tsx
+@@ -387,7 +387,11 @@ export default function PartnersPage() {
+                   </div>
+ 
+                   {/* Assign vehicles section - only for approved partners */}
+-                  {effectiveStatus==="approved" && (
++                  {effectiveStatus==="approved" ? (
++                    <div style={{border:"3px solid #16A34A"}}>
++                      <div style={{background:"#DCFCE7",padding:"0.4rem 0.75rem",fontSize:"0.7rem",fontFamily:"monospace",color:"#166534"}}>
++                        DEBUG: condition was TRUE, rendering assign section now →
++                      </div>
+                     <div style={{border:"1.5px solid #E5E5E5",borderRadius:"12px",overflow:"hidden"}}>
+                       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0.875rem 1rem",background:"#F5F5F5",borderBottom:"1px solid #E5E5E5"}}>
+                         <div style={{fontFamily:"var(--font-display)",fontSize:"0.72rem",letterSpacing:"0.1em",color:"#525252"}}>
+@@ -461,6 +465,11 @@ export default function PartnersPage() {
+                         </div>
+                       )}
+                     </div>
++                    </div>
++                  ) : (
++                    <div style={{background:"#FEE2E2",border:"3px solid #DC2626",padding:"0.75rem",fontSize:"0.72rem",fontFamily:"monospace",color:"#991B1B"}}>
++                      DEBUG: condition was FALSE. effectiveStatus = {JSON.stringify(effectiveStatus)} (type: {typeof effectiveStatus})
++                    </div>
+                   )}
+ 
+                   {/* Assigned vehicles list */}
+-- 
+2.43.0
+

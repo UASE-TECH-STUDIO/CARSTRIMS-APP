@@ -1,0 +1,58 @@
+From b0b3f8540a14dbe43a585744e6dcb3c249ce0cc3 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 10:08:37 +0000
+Subject: [PATCH] fix: iOS build - Package.resolved was missing transitive
+ dependencies from the camera and geolocation plugins
+
+Progress from the last fix: the error changed from 'file required'
+(missing entirely) to 'out-of-date resolved file... please update the
+file to reflect changes in dependencies' - Xcode Cloud now finds and
+reads the committed file, but two additional dependencies were
+missing: ion-ios-camera and ion-ios-geolocation, pulled in
+transitively by @capacitor/camera and @capacitor/geolocation
+respectively (both ionic-team first-party plugins with their own
+native SPM dependencies, separate from anything declared directly in
+this project's own Package.swift).
+
+Looked up the exact latest tagged commit for each directly from
+GitHub (ion-ios-camera 1.0.5, ion-ios-geolocation 2.1.1) rather than
+guessing - Swift Package Manager's 'from:' version constraints accept
+any newer compatible version, so pinning to the latest available tag
+for each is the safest choice and should satisfy whatever minimum
+version each plugin actually requires.
+---
+ .../xcshareddata/swiftpm/Package.resolved      | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved b/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+index 6634cee..e6dc5f1 100644
+--- a/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
++++ b/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+@@ -8,6 +8,24 @@
+         "revision" : "44ae2505f54a80c5e559533950886d0644fc2fca",
+         "version" : "8.4.0"
+       }
++    },
++    {
++      "identity" : "ion-ios-camera",
++      "kind" : "remoteSourceControl",
++      "location" : "https://github.com/ionic-team/ion-ios-camera.git",
++      "state" : {
++        "revision" : "9068b2cc9584bfa118c185b8032bbebb3a4a2174",
++        "version" : "1.0.5"
++      }
++    },
++    {
++      "identity" : "ion-ios-geolocation",
++      "kind" : "remoteSourceControl",
++      "location" : "https://github.com/ionic-team/ion-ios-geolocation.git",
++      "state" : {
++        "revision" : "db363927d3a954e3ea24d2e72b6e9814769a84be",
++        "version" : "2.1.1"
++      }
+     }
+   ],
+   "version" : 2
+-- 
+2.43.0
+

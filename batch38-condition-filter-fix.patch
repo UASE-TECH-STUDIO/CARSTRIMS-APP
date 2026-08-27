@@ -1,0 +1,36 @@
+From 65ac8940f7c3e393871572ced775a665e1df1e7b Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Thu, 20 Aug 2026 19:08:12 +0000
+Subject: [PATCH] fix: filter dropdown's condition values didn't match what's
+ actually stored in the database
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Sent 'brand_new' (underscore) as the condition filter value, but cars
+are stored with 'brand new' (space) — matching the exact values used
+by the car upload form. A regex search for the underscore version can
+never match the space version, so the condition filter has never
+actually worked. Fixed to send the exact stored values, and added the
+missing 'Salvage' pill (was a valid database value but wasn't offered
+as a filter option at all).
+---
+ components/shared/FeedFilterDropdown.tsx | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/components/shared/FeedFilterDropdown.tsx b/components/shared/FeedFilterDropdown.tsx
+index da936ec..863d31f 100644
+--- a/components/shared/FeedFilterDropdown.tsx
++++ b/components/shared/FeedFilterDropdown.tsx
+@@ -17,7 +17,7 @@ interface Props {
+ }
+ 
+ const BRANDS = ["Toyota","Honda","Mercedes","BMW","Lexus","Ford","Hyundai","Kia","Chevrolet","Audi","Land Rover","Jeep","Volkswagen","Nissan","Mazda","Peugeot","Mitsubishi","Subaru","Volvo","Porsche"];
+-const CONDITIONS = [{v:"brand_new",l:"Brand New"},{v:"foreign_used",l:"Foreign Used"},{v:"locally_used",l:"Locally Used"}];
++const CONDITIONS = [{v:"brand new",l:"Brand New"},{v:"foreign used",l:"Foreign Used"},{v:"locally used",l:"Locally Used"},{v:"salvage",l:"Salvage"}];
+ const TRANSMISSIONS = ["automatic","manual","semi-automatic"];
+ const FUEL_TYPES = ["petrol","diesel","electric","hybrid","gas"];
+ const COLORS = ["Black","White","Silver","Grey","Red","Blue","Green","Gold","Brown","Wine"];
+-- 
+2.43.0
+

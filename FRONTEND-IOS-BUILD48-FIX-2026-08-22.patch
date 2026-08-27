@@ -1,0 +1,46 @@
+From d2f136ed420366bfba159ee61419e4fcbafc2f96 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 10:16:30 +0000
+Subject: [PATCH] fix: iOS build - Package.resolved missing ion-ios-filesystem
+ (build 48's failure)
+
+Same pattern as the camera/geolocation fixes - @capacitor/filesystem
+also pulls in its own transitive native dependency
+(ionic-team/ion-ios-filesystem) that wasn't in the pinned file yet.
+
+Also checked every other installed plugin this time rather than
+waiting for each one to surface as a separate build failure:
+haptics, push-notifications, share, splash-screen, status-bar, and
+app do NOT have their own separate ion-ios-* repos (confirmed - none
+of those repos exist on GitHub), and
+@capacitor-community/speech-recognition's own podspec only declares a
+dependency on 'Capacitor' itself, nothing further. This should be the
+complete set of transitive dependencies for every plugin currently
+installed - no more should surface from this same cause.
+---
+ .../xcshareddata/swiftpm/Package.resolved                | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved b/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+index e6dc5f1..b8b6757 100644
+--- a/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
++++ b/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+@@ -26,6 +26,15 @@
+         "revision" : "db363927d3a954e3ea24d2e72b6e9814769a84be",
+         "version" : "2.1.1"
+       }
++    },
++    {
++      "identity" : "ion-ios-filesystem",
++      "kind" : "remoteSourceControl",
++      "location" : "https://github.com/ionic-team/ion-ios-filesystem.git",
++      "state" : {
++        "revision" : "0d81e26e828ff9582807e2339112cedf2e0fab85",
++        "version" : "1.1.2"
++      }
+     }
+   ],
+   "version" : 2
+-- 
+2.43.0
+

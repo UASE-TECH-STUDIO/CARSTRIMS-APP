@@ -1,0 +1,549 @@
+From 33a931314d284a0fdb373d5ce814d08d8f87afa9 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 06:37:37 +0000
+Subject: [PATCH 1/5] fix: dealer notifications page crash - genuinely missing
+ import, not a mystery bug
+
+Found the definitive root cause this time (previous investigation
+couldn't pin it down without console access): timeAgoLong was called
+on every real notification but never imported anywhere in this file -
+a plain ReferenceError. Checked all 4 role-specific notification
+pages for the same pattern - only the dealer one had it (staff and
+partner correctly import it, super-admin doesn't use it at all).
+
+This also explains 'it was showing before' exactly: with zero
+notifications, the .map() that calls timeAgoLong never executes, so
+the page rendered fine on an empty list. The moment a real
+notification existed to render, it crashed immediately - matching the
+timing of when this started being reported. The error boundary from
+earlier in this engagement caught it correctly and prevented it from
+taking down the whole dashboard, exactly as designed - but this fixes
+the actual underlying crash rather than just containing it.
+---
+ app/dashboard/dealer/notifications/page.tsx | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/app/dashboard/dealer/notifications/page.tsx b/app/dashboard/dealer/notifications/page.tsx
+index 1e51ec6..5379bd2 100644
+--- a/app/dashboard/dealer/notifications/page.tsx
++++ b/app/dashboard/dealer/notifications/page.tsx
+@@ -2,6 +2,7 @@
+ import { useEffect, useState } from "react";
+ import { useRouter } from "next/navigation";
+ import api from "@/lib/api";
++import { timeAgoLong } from "@/lib/timeUtils";
+ 
+ const TYPE_ICON: Record<string,string> = {
+   car_sold:"", dealer_approved:"", dealer_suspended:"",
+-- 
+2.43.0
+
+
+From ca3388fb83a81dd1b863b87673bdebf99953d999 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 04:47:25 +0000
+Subject: [PATCH 2/5] fix: JPG export was broken app-wide - the functions were
+ called everywhere but never actually implemented
+
+Traced the exact error from the screenshot: '(0, a.renderElementToJpgBlob) is not a function'. Confirmed via direct search: renderElementToJpgBlob and renderHtmlStringToJpgBlob were called from 8 different files across the app (dealer cars/sales/movements/expenses/reports, partner cars, admin user detail) but neither function was EVER actually defined in lib/documentExport.ts - only their PDF equivalents (renderElementToPdfBlob, renderHtmlStringToPdfBlob) existed. Every 'Export as JPG' button in the entire app has been silently broken since it was first wired up, throwing this exact crash the moment it's clicked.
+
+Implemented both using the same html2canvas rendering technique already used by the working PDF functions - renderElementToJpgBlob captures a DOM element directly to a JPG blob, renderHtmlStringToJpgBlob uses the same offscreen-iframe technique as its PDF counterpart to render a full HTML template string (used by all the export templates already built for invoices/receipts/reports) to JPG instead. Verified every one of the 8 call sites against the actual function signature built - all call with a single argument, matching exactly.
+
+This single fix resolves 'the jpg export feature function is showing error' across every dealer/partner/admin export surface in the app at once, not just one page.
+---
+ lib/documentExport.ts | 65 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 65 insertions(+)
+
+diff --git a/lib/documentExport.ts b/lib/documentExport.ts
+index 46c550b..f14c99a 100644
+--- a/lib/documentExport.ts
++++ b/lib/documentExport.ts
+@@ -136,6 +136,71 @@ export async function renderHtmlStringToPdfBlob(htmlString: string, title = "Doc
+     document.body.removeChild(iframe);
+   }
+ }
++
++/**
++ * Renders a DOM element to a JPG Blob. These two JPG functions were
++ * called throughout the app (dealer cars/sales/movements/expenses/
++ * reports, partner cars, admin user detail) but never actually
++ * implemented here - every "Export as JPG" button in the app has been
++ * silently broken since it was first wired up, throwing
++ * "renderElementToJpgBlob is not a function" the moment it's clicked.
++ */
++export async function renderElementToJpgBlob(element: HTMLElement, quality = 0.92): Promise<Blob> {
++  const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
++  return new Promise((resolve, reject) => {
++    canvas.toBlob(
++      (blob) => (blob ? resolve(blob) : reject(new Error("Could not generate image"))),
++      "image/jpeg",
++      quality
++    );
++  });
++}
++
++/**
++ * Same idea as renderHtmlStringToPdfBlob, but for JPG - renders a full
++ * standalone HTML document string via a hidden offscreen iframe, then
++ * captures it as a single JPG image instead of assembling a PDF.
++ */
++export async function renderHtmlStringToJpgBlob(htmlString: string): Promise<Blob> {
++  const iframe = document.createElement("iframe");
++  iframe.style.position = "fixed";
++  iframe.style.left = "-99999px";
++  iframe.style.top = "0";
++  iframe.style.width = "800px";
++  iframe.style.height = "1131px";
++  iframe.style.border = "none";
++  document.body.appendChild(iframe);
++
++  try {
++    await new Promise<void>((resolve, reject) => {
++      const doc = iframe.contentDocument;
++      if (!doc) { reject(new Error("Could not prepare document for image export")); return; }
++      doc.open();
++      doc.write(htmlString.replace(/<script>window\.onload=\(\)=>window\.print\(\)<\\\/script>/, ""));
++      doc.close();
++
++      const settle = () => {
++        const imgs = Array.from(doc.images || []);
++        const pending = imgs.filter((img) => !img.complete);
++        if (pending.length === 0) { resolve(); return; }
++        let remaining = pending.length;
++        const done = () => { remaining -= 1; if (remaining <= 0) resolve(); };
++        pending.forEach((img) => { img.onload = done; img.onerror = done; });
++        setTimeout(resolve, 3000);
++      };
++
++      if (doc.readyState === "complete") settle();
++      else iframe.onload = () => settle();
++    });
++
++    const target = iframe.contentDocument?.body;
++    if (!target) throw new Error("Nothing to export yet");
++    return await renderElementToJpgBlob(target);
++  } finally {
++    document.body.removeChild(iframe);
++  }
++}
++
+ export function rowsToExcelBlob(rows: Record<string, any>[], sheetName = "Sheet1"): Blob {
+   const ws = XLSX.utils.json_to_sheet(rows);
+   const wb = XLSX.utils.book_new();
+-- 
+2.43.0
+
+
+From fd2a5c2e64264057fa760b7bf0d9c2b841df7ec6 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 04:52:53 +0000
+Subject: [PATCH 3/5] fix: two messaging systems open simultaneously - the
+ floating widget was redundant on the dedicated messages page
+
+Found the exact cause: MessagesWidget (a small floating 'MSG' bubble)
+is mounted persistently in every dashboard layout across all 5 roles,
+AND app/dashboard/*/messages/page.tsx has its own completely separate,
+independently-built full-page chat implementation (NOT actually
+reusing MessagesWidget, despite a comment claiming otherwise) - both
+active simultaneously whenever someone is on their /messages page.
+
+Clicking 'Message Dealer' from a car detail page makes this
+collision obvious: it sets the shared store that tells MessagesWidget
+to auto-open AND navigates to the dashboard's /messages page, which
+has its own full implementation already showing that same
+conversation - two chat interfaces rendering at once.
+
+Fixed by hiding the floating widget specifically on each role's own
+/messages route, where the full-page implementation already covers
+the same functionality - it stays exactly as before on every other
+page, where it serves as quick-access chat without navigating away.
+Applied to all 5 roles (dealer, partner, user, staff, super-admin).
+---
+ app/dashboard/dealer/layout.tsx      | 2 +-
+ app/dashboard/partner/layout.tsx     | 2 +-
+ app/dashboard/super-admin/layout.tsx | 5 +++--
+ app/dashboard/user/layout.tsx        | 2 +-
+ components/layout/StaffShell.tsx     | 2 +-
+ 5 files changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/app/dashboard/dealer/layout.tsx b/app/dashboard/dealer/layout.tsx
+index 54ffbd5..8fc1b97 100644
+--- a/app/dashboard/dealer/layout.tsx
++++ b/app/dashboard/dealer/layout.tsx
+@@ -115,7 +115,7 @@ function DealerShell({ children }: { children: ReactNode }) {
+         <main className="shell-content">{children}</main>
+       </div>
+ 
+-      <MessagesWidget accentColor="#F47B20"/>
++      {!pathname?.endsWith("/messages") && <MessagesWidget accentColor="#F47B20"/>}
+ 
+       <style>{`
+         .dealer-shell{display:flex;min-height:100vh;background:#F5F5F5;position:relative}
+diff --git a/app/dashboard/partner/layout.tsx b/app/dashboard/partner/layout.tsx
+index 2cd94b3..fa36de9 100644
+--- a/app/dashboard/partner/layout.tsx
++++ b/app/dashboard/partner/layout.tsx
+@@ -104,7 +104,7 @@ export default function PartnerLayout({ children }: { children: ReactNode }) {
+           <main className="partner-content">{children}</main>
+           <footer className="partner-footer">Powered by <strong>UASE TECH STUDIO</strong> for CARSTRIMS 2026</footer>
+         </div>
+-        <MessagesWidget accentColor="#F47B20" />
++        {!pathname?.endsWith("/messages") && <MessagesWidget accentColor="#F47B20" />}
+       </div>
+ 
+       <style>{`
+diff --git a/app/dashboard/super-admin/layout.tsx b/app/dashboard/super-admin/layout.tsx
+index 323ed24..273aed3 100644
+--- a/app/dashboard/super-admin/layout.tsx
++++ b/app/dashboard/super-admin/layout.tsx
+@@ -9,7 +9,7 @@ import MessagesWidget from "@/components/shared/MessagesWidget";
+ import GlobalSearchModal from "@/components/shared/GlobalSearchModal";
+ import { useSidebar } from "@/hooks/useSidebar";
+ import { useAuthStore } from "@/store/authStore";
+-import { useRouter } from "next/navigation";
++import { useRouter, usePathname } from "next/navigation";
+ 
+ function getGreeting() {
+   const h = new Date().getHours();
+@@ -23,6 +23,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
+   const { isOpen, toggle, close } = useSidebar();
+   const { user } = useAuthStore();
+   const router = useRouter();
++  const pathname = usePathname();
+   const [showSearch, setShowSearch] = useState(false);
+ 
+   return (
+@@ -49,7 +50,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
+           {showSearch && <GlobalSearchModal onClose={() => setShowSearch(false)} />}
+           <main className="admin-content">{children}</main>
+         </div>
+-        <MessagesWidget accentColor="#F47B20" />
++        {!pathname?.endsWith("/messages") && <MessagesWidget accentColor="#F47B20" />}
+       </div>
+       <style>{`
+         .admin-shell{display:flex;min-height:100vh;background:#F5F5F5}
+diff --git a/app/dashboard/user/layout.tsx b/app/dashboard/user/layout.tsx
+index 9553976..e4e64a2 100644
+--- a/app/dashboard/user/layout.tsx
++++ b/app/dashboard/user/layout.tsx
+@@ -184,7 +184,7 @@ export default function UserLayout({ children }: { children: ReactNode }) {
+           </div>
+         )}
+ 
+-        <MessagesWidget accentColor="#F47B20"/>
++        {!pathname?.endsWith("/messages") && <MessagesWidget accentColor="#F47B20"/>}
+       </div>
+ 
+       <style>{`
+diff --git a/components/layout/StaffShell.tsx b/components/layout/StaffShell.tsx
+index 18ab7d6..32aa607 100644
+--- a/components/layout/StaffShell.tsx
++++ b/components/layout/StaffShell.tsx
+@@ -193,7 +193,7 @@ export default function StaffShell({ children }: { children: ReactNode }) {
+         <main className="staff-content">{children}</main>
+       </div>
+ 
+-      <MessagesWidget accentColor="#1D9E75"/>
++      {!pathname?.endsWith("/messages") && <MessagesWidget accentColor="#1D9E75"/>}
+ 
+       <style>{`
+         .staff-shell{display:flex;min-height:100vh;background:#F5F5F5;position:relative}
+-- 
+2.43.0
+
+
+From 59ac83e2383952628be2e5dbcfd7438ede9286b4 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 05:48:02 +0000
+Subject: [PATCH 4/5] fix: iOS build - commit an actual Package.resolved
+ instead of trying to generate one during CI
+
+Two previous attempts at generating Package.resolved fresh during
+ci_post_clone.sh both failed to reliably produce a file Xcode's
+archive step would accept (once causing the script itself to fail
+outright, then even after making that non-fatal, the underlying
+resolution still wasn't succeeding - confirmed by the identical
+'Configuration Issues... Package.resolved' error persisting in the
+next build).
+
+Took a fundamentally different approach: committed an actual, correct
+Package.resolved directly to the repo at the exact path Xcode Cloud's
+own error message specified. This project has only ONE real remote
+Swift Package dependency - capacitor-swift-pm, pinned to exact version
+8.4.0 in Package.swift - everything else (CapacitorApp, CapacitorCamera,
+etc.) is a local path dependency under node_modules and doesn't need
+SPM registry resolution at all. Looked up the exact commit hash for
+the 8.4.0 tag directly from GitHub (44ae2505f54a80c5e559533950886d0644fc2fca,
+confirmed via git ls-remote, a lightweight tag with no annotation to
+dereference) and hand-built a valid version-2 Package.resolved pinning
+it precisely.
+
+This sidesteps the CI-generation unreliability entirely - the file is
+just there from the moment Xcode Cloud clones the repo, matching
+exactly what the error message says is required, rather than depending
+on a runtime step to create it correctly. Kept the ci_post_clone.sh
+resolution attempt as a non-fatal defensive backup for if a future
+plugin gets added without this file being updated, but it's no longer
+the primary fix.
+---
+ .../xcshareddata/swiftpm/Package.resolved     | 14 +++++++
+ ios/App/ci_scripts/ci_post_clone.sh           | 40 ++++++++-----------
+ 2 files changed, 31 insertions(+), 23 deletions(-)
+ create mode 100644 ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+
+diff --git a/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved b/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+new file mode 100644
+index 0000000..6634cee
+--- /dev/null
++++ b/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+@@ -0,0 +1,14 @@
++{
++  "pins" : [
++    {
++      "identity" : "capacitor-swift-pm",
++      "kind" : "remoteSourceControl",
++      "location" : "https://github.com/ionic-team/capacitor-swift-pm.git",
++      "state" : {
++        "revision" : "44ae2505f54a80c5e559533950886d0644fc2fca",
++        "version" : "8.4.0"
++      }
++    }
++  ],
++  "version" : 2
++}
+diff --git a/ios/App/ci_scripts/ci_post_clone.sh b/ios/App/ci_scripts/ci_post_clone.sh
+index 3ac4722..f45205f 100644
+--- a/ios/App/ci_scripts/ci_post_clone.sh
++++ b/ios/App/ci_scripts/ci_post_clone.sh
+@@ -14,30 +14,24 @@ npm install
+ 
+ echo "==> Done. node_modules/@capacitor/* should now exist for SPM to resolve."
+ 
+-# Xcode Cloud disables automatic package resolution for reproducible
+-# builds, which means it REQUIRES a Package.resolved file to already
+-# exist and be up to date — it won't just resolve fresh dependencies
+-# on the fly. Since this repo has never had one committed, any time a
+-# new Capacitor plugin gets added (like @capacitor/camera or
+-# @capacitor-community/speech-recognition, both added recently), the
+-# build fails outright with "a resolved file is required... Running
+-# resolver because the following dependencies were added: ...".
++# PRIMARY FIX: a Package.resolved file is now committed directly to
++# the repo (ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/
++# swiftpm/Package.resolved), pinning the one actual remote dependency
++# this project has (capacitor-swift-pm@8.4.0 - everything else is a
++# local path dependency under node_modules, which doesn't need SPM
++# registry resolution). Two earlier attempts at generating this file
++# fresh during ci_post_clone.sh (once fatally, once non-fatally) both
++# failed to reliably produce a file Xcode's own archive step would
++# accept - committing a known-correct one directly sidesteps that
++# unreliability entirely.
+ #
+-# Rather than trying to hand-maintain a committed Package.resolved
+-# (fragile — anyone forgetting to regenerate and commit it after
+-# adding a plugin breaks the next build), this generates one fresh on
+-# Xcode Cloud's own machine, which has real Xcode/xcodebuild and full
+-# network access, right before the build needs it.
+-#
+-# IMPORTANT: this step is intentionally NOT fatal to the script. An
+-# earlier version let a failure here (e.g. a network hiccup resolving
+-# packages from GitHub) crash the whole ci_post_clone.sh script with
+-# its own generic exit-code failure, which masked whatever the real
+-# underlying build error actually was. If resolution fails here, log
+-# it clearly and let the build proceed to Xcode's own archive step,
+-# where the real, actionable error (if any) will surface directly
+-# instead of being hidden behind a script failure.
+-echo "==> Resolving Swift Package dependencies"
++# This resolution step below is now just a DEFENSIVE BACKUP for the
++# future: if a new Capacitor plugin gets added later without someone
++# remembering to regenerate and commit an updated Package.resolved,
++# this at least attempts to patch that gap at build time rather than
++# failing outright - but the committed file above is what actually
++# fixes today's build.
++echo "==> Resolving Swift Package dependencies (defensive backup only - see comment above)"
+ cd "$CI_PRIMARY_REPOSITORY_PATH/ios/App"
+ if xcodebuild -resolvePackageDependencies -workspace App.xcodeproj/project.xcworkspace -scheme App; then
+   echo "==> Package resolution complete."
+-- 
+2.43.0
+
+
+From 65dd8b31961d5e0439bf005999989dd89136f597 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 05:50:38 +0000
+Subject: [PATCH 5/5] fix: search box drag removed (click-to-enlarge instead),
+ hint repositioned, chip bars now consistent
+
+1. Removed the drag-based resize entirely per explicit request -
+   replaced with a simple click-to-toggle between compact (44px) and
+   enlarged (140px, fixed) states. Content inside is completely
+   unaffected by the toggle either way. No more risk of dragging the
+   box to an awkward size or off-screen.
+
+2. Repositioned the 'enlarge' hint to sit clearly above the search bar
+   (rather than immediately below it alongside the other 3 hints),
+   pointing diagonally down-right at the button specifically - it was
+   crowding/overlapping the 'Or speak' hint since both sat in the same
+   area near the right edge. Updated text to 'Click here to enlarge',
+   matching the new click behavior instead of the removed drag one.
+
+3. Both filter chip bars (the structured 'Filtered:' one and the
+   search/voice-derived 'Understood:' one) now have the same pair of
+   actions - Add More Filter and Clear all - instead of each having
+   only one of the two inconsistently.
+---
+ app/feed/page.tsx | 77 +++++++++++++++++++----------------------------
+ 1 file changed, 31 insertions(+), 46 deletions(-)
+
+diff --git a/app/feed/page.tsx b/app/feed/page.tsx
+index aa3b8d9..da08729 100644
+--- a/app/feed/page.tsx
++++ b/app/feed/page.tsx
+@@ -51,41 +51,18 @@ export default function FeedPage() {
+   const feedSeedRef = useRef<string>(Math.random().toString(36).slice(2) + Date.now().toString(36));
+ 
+   const [searchInput, setSearchInput] = useState("");
+-  const [searchBoxHeight, setSearchBoxHeight] = useState(44);
++  // Search box enlarge: a simple click-to-toggle between compact
++  // (44px, single line) and enlarged (a fixed, generous height so
++  // long typed/spoken text is fully visible) - explicitly NOT a drag
++  // gesture, since dragging could push the box off-screen and was
++  // fiddly to use precisely. Content inside is completely unaffected
++  // by the toggle either way - only the box's own height changes.
++  const [searchEnlarged, setSearchEnlarged] = useState(false);
++  const searchBoxHeight = searchEnlarged ? 140 : 44;
+   const filterBtnRef = useRef<HTMLButtonElement>(null);
+   const micBtnRef = useRef<HTMLButtonElement>(null);
+   const resizeHandleRef = useRef<HTMLDivElement>(null);
+   const [hintPositions, setHintPositions] = useState<{filter:number; mic:number; resize:number} | null>(null);
+-  const [isResizingSearch, setIsResizingSearch] = useState(false);
+-  const resizeStartRef = useRef<{ y: number; startHeight: number } | null>(null);
+-
+-  const handleResizeStart = (clientY: number) => {
+-    resizeStartRef.current = { y: clientY, startHeight: searchBoxHeight };
+-    setIsResizingSearch(true);
+-  };
+-  const handleResizeMove = (clientY: number) => {
+-    if (!resizeStartRef.current) return;
+-    const delta = clientY - resizeStartRef.current.y;
+-    const maxHeight = Math.min(280, window.innerHeight * 0.45);
+-    setSearchBoxHeight(Math.max(44, Math.min(maxHeight, resizeStartRef.current.startHeight + delta)));
+-  };
+-  const handleResizeEnd = () => { resizeStartRef.current = null; setIsResizingSearch(false); };
+-
+-  useEffect(() => {
+-    if (!isResizingSearch) return;
+-    const onMouseMove = (e: MouseEvent) => handleResizeMove(e.clientY);
+-    const onTouchMove = (e: TouchEvent) => handleResizeMove(e.touches[0].clientY);
+-    document.addEventListener("mousemove", onMouseMove);
+-    document.addEventListener("mouseup", handleResizeEnd);
+-    document.addEventListener("touchmove", onTouchMove);
+-    document.addEventListener("touchend", handleResizeEnd);
+-    return () => {
+-      document.removeEventListener("mousemove", onMouseMove);
+-      document.removeEventListener("mouseup", handleResizeEnd);
+-      document.removeEventListener("touchmove", onTouchMove);
+-      document.removeEventListener("touchend", handleResizeEnd);
+-    };
+-  }, [isResizingSearch]);
+   const [understoodFilters, setUnderstoodFilters] = useState<{type:string; label:string; matchedText:string}[]>([]);
+   // Shows fresh every time the feed is genuinely opened/returned to
+   // (component remount), and dismisses only for the current viewing
+@@ -537,14 +514,13 @@ export default function FeedPage() {
+             >
+               {listening ? "●" : "🎤"}
+             </button>
+-            <div
++            <button
+               ref={resizeHandleRef}
++              type="button"
+               className="search-resize-handle"
+-              title="Drag to enlarge, double-tap to reset"
+-              onMouseDown={(e) => { e.preventDefault(); handleResizeStart(e.clientY); }}
+-              onTouchStart={(e) => handleResizeStart(e.touches[0].clientY)}
+-              onDoubleClick={() => setSearchBoxHeight(44)}
+-            >⋮⋮</div>
++              title={searchEnlarged ? "Click to shrink back" : "Click to enlarge"}
++              onClick={(e) => { e.stopPropagation(); setSearchEnlarged((v) => !v); }}
++            >{searchEnlarged ? "⌃" : "⌄"}</button>
+           </div>
+ 
+           {showFilter && (
+@@ -623,9 +599,9 @@ export default function FeedPage() {
+                 <div className="hint-bubble">Or speak</div>
+               </div>
+ 
+-              <div className="hint-item" style={{left: hintPositions.resize, transform: "translateX(-50%)", top: "-2.1rem", alignItems: "center" as const}}>
+-                <div className="hint-bubble">Drag to enlarge</div>
+-                <div className="hint-arrow hint-arrow-down">↓</div>
++              <div className="hint-item hint-item-enlarge">
++                <div className="hint-bubble">Click here to enlarge</div>
++                <div className="hint-arrow hint-arrow-down">↘</div>
+               </div>
+             </div>
+           )}
+@@ -655,13 +631,16 @@ export default function FeedPage() {
+           {fTransmission && <span className="af-tag">{fTransmission} <button onClick={() => setFTransmission("")}>x</button></span>}
+           {fFuel && <span className="af-tag">{fFuel} <button onClick={() => setFFuel("")}>x</button></span>}
+           {fColor && <span className="af-tag">{fColor} <button onClick={() => setFColor("")}>x</button></span>}
++          <button className="ab-add" onClick={() => setShowFilter(true)}>+ Add More Filter</button>
+           <button className="ab-clear" onClick={clearAll}>Clear all</button>
+         </div>
+       )}
+ 
+       {/* WHAT THE SEARCH/VOICE UNDERSTOOD — itemized, adjustable, like Jiji.
+           Clicking a chip's label opens the manual filter dropdown so it
+-          can be fine-tuned there; the x removes it directly. */}
++          can be fine-tuned there; the x removes it directly. Same
++          Clear all / Add More Filter pair as the structured filter bar,
++          for consistency between the two. */}
+       {understoodFilters.length > 0 && (
+         <div className="active-bar">
+           <span className="ab-label">Understood:</span>
+@@ -671,7 +650,8 @@ export default function FeedPage() {
+               <button onClick={() => removeUnderstoodFilter(f)}>x</button>
+             </span>
+           ))}
+-          <button className="ab-clear" onClick={() => setShowFilter(true)} style={{marginLeft:"0.25rem"}}>Adjust in Filters</button>
++          <button className="ab-add" onClick={() => setShowFilter(true)}>+ Add More Filter</button>
++          <button className="ab-clear" onClick={clearAll}>Clear all</button>
+         </div>
+       )}
+ 
+@@ -836,6 +816,9 @@ export default function FeedPage() {
+         }
+         .hint-item { position:absolute; display:flex; flex-direction:column; align-items:center; pointer-events:none; }
+         .hint-item-type { left:50%; transform:translateX(-50%); }
++        .hint-item-enlarge {
++          top:-3.6rem; right:2%; left:auto; align-items:flex-end;
++        }
+         .hint-arrow-down { animation:search-hint-bounce-down 1.1s ease-in-out infinite; }
+         @keyframes search-hint-bounce-down { 0%,100%{transform:translateY(0);} 50%{transform:translateY(5px);} }
+         .hint-arrow { font-size:1.15rem; color:#F47B20; line-height:1; animation:search-hint-bounce 1.1s ease-in-out infinite; }
+@@ -873,10 +856,11 @@ export default function FeedPage() {
+         }
+         .search-box:focus-within { border-color:#F47B20; background:#fff; box-shadow:0 0 0 3px rgba(244,123,32,0.12); }
+         .search-resize-handle {
+-          position:absolute; bottom:1px; right:1px; width:18px; height:16px; cursor:ns-resize;
+-          display:flex; align-items:center; justify-content:center; font-size:0.6rem; color:#A3A3A3;
+-          background:#F5F5F5; line-height:1; transform:rotate(90deg); touch-action:none; z-index:2;
++          position:absolute; bottom:1px; right:1px; width:22px; height:20px; cursor:pointer;
++          display:flex; align-items:center; justify-content:center; font-size:0.85rem; color:#737373;
++          background:#F5F5F5; line-height:1; border:none; padding:0; border-radius:4px; z-index:2;
+         }
++        .search-resize-handle:hover { color:#F47B20; }
+         .s-filter-btn {
+           background:#1A1A1A; color:#fff; border:none; font-family:var(--font-display); font-weight:700;
+           font-size:0.85rem; letter-spacing:0.02em; padding:0.7rem 0.9rem; cursor:pointer; flex-shrink:0; align-self:stretch;
+@@ -991,7 +975,8 @@ export default function FeedPage() {
+           border-radius:20px; padding:0.3rem 0.75rem; font-size:0.85rem; font-weight:500;
+         }
+         .af-tag button { background:none; border:none; cursor:pointer; color:#F47B20; font-size:0.78rem; line-height:1; padding:0; font-weight:700; }
+-        .ab-clear { background:transparent; border:none; color:#DC2626; font-size:0.82rem; font-weight:600; cursor:pointer; font-family:var(--font-body); margin-left:auto; white-space:nowrap; }
++        .ab-add { background:#fff; border:1.5px solid #F47B20; color:#F47B20; font-size:0.8rem; font-weight:600; cursor:pointer; font-family:var(--font-body); white-space:nowrap; border-radius:20px; padding:0.3rem 0.75rem; margin-left:auto; }
++        .ab-clear { background:transparent; border:none; color:#DC2626; font-size:0.82rem; font-weight:600; cursor:pointer; font-family:var(--font-body); white-space:nowrap; }
+ 
+         /* BRAND TABS */
+         .brand-scroll { overflow-x:auto; border-bottom:1.5px solid #E5E5E5; background:#fff; }
+-- 
+2.43.0
+

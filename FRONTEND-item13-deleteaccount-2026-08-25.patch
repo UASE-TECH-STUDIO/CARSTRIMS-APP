@@ -1,0 +1,262 @@
+From faa6491a66ec7efce6fd3b1913b0bf22832cb418 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Tue, 25 Aug 2026 08:10:29 +0000
+Subject: [PATCH 1/2] feat: shared Delete Account section (item 13, foundation)
+
+Self-contained, reusable component for the self-service account
+deletion endpoint added on the backend - built once here rather
+than five times across every role's settings/profile page.
+
+Deliberately its own dedicated password-confirmation form rather
+than reusing the app's generic prompt dialog - that dialog's input
+is a plain textarea, not styled or masked as a password field, which
+isn't appropriate for entering a real password. Also requires typing
+DELETE as a second, explicit confirmation - a destructive,
+hard-to-undo-feeling action shouldn't be one accidental tap away.
+
+Logs the person out and redirects to login immediately on success,
+since a self-deleted account's session is no longer valid either way.
+Wiring into each role's actual settings page follows separately.
+---
+ components/shared/DeleteAccountSection.tsx | 109 +++++++++++++++++++++
+ 1 file changed, 109 insertions(+)
+ create mode 100644 components/shared/DeleteAccountSection.tsx
+
+diff --git a/components/shared/DeleteAccountSection.tsx b/components/shared/DeleteAccountSection.tsx
+new file mode 100644
+index 0000000..a401048
+--- /dev/null
++++ b/components/shared/DeleteAccountSection.tsx
+@@ -0,0 +1,109 @@
++"use client";
++import { useState } from "react";
++import { useRouter } from "next/navigation";
++import api from "@/lib/api";
++import { useAuthStore } from "@/store/authStore";
++import { useToast } from "@/store/toastStore";
++
++/**
++ * Self-service "Delete My Account" section (item 13) - shared across
++ * every role's settings/profile page rather than rebuilt five times.
++ *
++ * Deliberately its own dedicated password-confirmation form rather
++ * than reusing the generic prompt dialog (usePrompt) - that dialog's
++ * input is a plain textarea, not styled or masked as a password
++ * field, which isn't appropriate for entering a real password.
++ *
++ * Always calls the soft-delete endpoint (DELETE /api/v1/users/me) -
++ * no data is ever removed by this flow. The account is simply
++ * blocked from logging back in, same as an admin-initiated deletion.
++ * Logs the person out and sends them to the login page immediately
++ * on success, since their session is no longer valid either way.
++ */
++export default function DeleteAccountSection() {
++  const router = useRouter();
++  const logout = useAuthStore((s) => s.logout);
++  const showToast = useToast();
++
++  const [expanded, setExpanded] = useState(false);
++  const [password, setPassword] = useState("");
++  const [confirmText, setConfirmText] = useState("");
++  const [busy, setBusy] = useState(false);
++
++  const canSubmit = password.length > 0 && confirmText.trim().toUpperCase() === "DELETE";
++
++  const handleDelete = async () => {
++    if (!canSubmit || busy) return;
++    setBusy(true);
++    try {
++      await api.delete("/api/v1/users/me", { data: { password } });
++      showToast("Account deleted", "success");
++      logout();
++      router.replace("/login");
++    } catch (err: any) {
++      showToast(err?.response?.data?.detail || "Couldn't delete account — check your password and try again", "error");
++    } finally {
++      setBusy(false);
++    }
++  };
++
++  return (
++    <div className="das-wrap">
++      <div className="das-header">
++        <div>
++          <div className="das-title">Delete Account</div>
++          <p className="das-sub">Permanently blocks your account from logging in. This can't be undone by you — contact support if you change your mind.</p>
++        </div>
++        {!expanded && (
++          <button className="das-open-btn" onClick={() => setExpanded(true)}>Delete My Account</button>
++        )}
++      </div>
++
++      {expanded && (
++        <div className="das-form">
++          <label className="das-label">Enter your password to confirm</label>
++          <input
++            type="password"
++            className="das-input"
++            value={password}
++            onChange={(e) => setPassword(e.target.value)}
++            placeholder="Your current password"
++            autoComplete="current-password"
++          />
++          <label className="das-label">Type DELETE to confirm</label>
++          <input
++            type="text"
++            className="das-input"
++            value={confirmText}
++            onChange={(e) => setConfirmText(e.target.value)}
++            placeholder="DELETE"
++          />
++          <div className="das-actions">
++            <button className="das-cancel" onClick={() => { setExpanded(false); setPassword(""); setConfirmText(""); }} disabled={busy}>
++              Cancel
++            </button>
++            <button className="das-confirm" onClick={handleDelete} disabled={!canSubmit || busy}>
++              {busy ? "Deleting…" : "Permanently Delete My Account"}
++            </button>
++          </div>
++        </div>
++      )}
++
++      <style>{`
++        .das-wrap { border: 1.5px solid #FECACA; border-radius: 12px; padding: 1.25rem; background: #FEF2F2; margin-top: 1.5rem; }
++        .das-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
++        .das-title { font-weight: 700; font-size: 0.95rem; color: #991B1B; }
++        .das-sub { font-size: 0.78rem; color: #B91C1C; margin-top: 0.3rem; max-width: 420px; line-height: 1.5; }
++        .das-open-btn { background: #DC2626; color: #fff; border: none; border-radius: 8px; padding: 0.6rem 1.1rem; font-size: 0.82rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
++        .das-form { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
++        .das-label { font-size: 0.75rem; font-weight: 700; color: #991B1B; margin-top: 0.5rem; }
++        .das-input { border: 1.5px solid #FCA5A5; border-radius: 8px; padding: 0.6rem 0.8rem; font-size: 0.85rem; outline: none; background: #fff; }
++        .das-input:focus { border-color: #DC2626; }
++        .das-actions { display: flex; gap: 0.6rem; margin-top: 0.75rem; }
++        .das-cancel { flex: 1; padding: 0.7rem; border-radius: 8px; border: 1.5px solid #E5E5E5; background: #fff; color: #525252; font-weight: 700; font-size: 0.82rem; cursor: pointer; }
++        .das-confirm { flex: 2; padding: 0.7rem; border-radius: 8px; border: none; background: #DC2626; color: #fff; font-weight: 700; font-size: 0.82rem; cursor: pointer; }
++        .das-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
++      `}</style>
++    </div>
++  );
++}
+-- 
+2.43.0
+
+
+From 83f930a0d50e0c9f66a330446915b7e9866af168 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Tue, 25 Aug 2026 08:14:13 +0000
+Subject: [PATCH 2/2] feat: wire Delete Account into every role's settings page
+ (item 13, complete)
+
+Added the shared DeleteAccountSection to dealer, partner, super-admin
+settings, and user profile. Confirmed staff needed no separate edit
+at all - staff/settings already reuses the exact dealer settings
+component via dynamic import, and no separate staff profile page
+exists, so all 5 roles are now covered with these 4 changes.
+
+Real pre-existing bug found (not caused by this change, left alone
+since it's out of scope here): the user profile page's notifications
+section is duplicated in the file, with one copy incorrectly sitting
+inside the page's loading-spinner return block. Made sure to target
+only the real, second occurrence precisely - using unique surrounding
+context - so the new Delete Account section didn't end up placed
+inside the loading state too.
+
+Item 13 is now fully complete: every role can delete their own
+account from settings, with password + typed confirmation, landing
+on a soft delete that preserves all history for Super Admin per item
+14, then logs the person out immediately.
+---
+ app/dashboard/dealer/settings/page.tsx      | 3 +++
+ app/dashboard/partner/settings/page.tsx     | 3 +++
+ app/dashboard/super-admin/settings/page.tsx | 3 +++
+ app/dashboard/user/profile/page.tsx         | 4 ++++
+ 4 files changed, 13 insertions(+)
+
+diff --git a/app/dashboard/dealer/settings/page.tsx b/app/dashboard/dealer/settings/page.tsx
+index 1ecc456..a5adf9c 100644
+--- a/app/dashboard/dealer/settings/page.tsx
++++ b/app/dashboard/dealer/settings/page.tsx
+@@ -6,6 +6,7 @@ import api from "@/lib/api";
+ import DealerQRCode from "@/components/ui/DealerQRCode";
+ import PasswordInput from "@/components/ui/PasswordInput";
+ import BackgroundRemovalPreview from "@/components/ui/BackgroundRemovalPreview";
++import DeleteAccountSection from "@/components/shared/DeleteAccountSection";
+ 
+ export default function SettingsPage() {
+   const { user } = useAuthStore();
+@@ -430,6 +431,8 @@ export default function SettingsPage() {
+         <NotificationSettings/>
+       </div>
+ 
++      <DeleteAccountSection />
++
+     </div>
+   );
+ }
+diff --git a/app/dashboard/partner/settings/page.tsx b/app/dashboard/partner/settings/page.tsx
+index 5197d33..378d89d 100644
+--- a/app/dashboard/partner/settings/page.tsx
++++ b/app/dashboard/partner/settings/page.tsx
+@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from "react";
+ import { useAuthStore } from "@/store/authStore";
+ import api from "@/lib/api";
+ import { useConfirm } from "@/store/confirmStore";
++import DeleteAccountSection from "@/components/shared/DeleteAccountSection";
+ 
+ export default function PartnerSettingsPage() {
+   const askConfirm = useConfirm();
+@@ -187,6 +188,8 @@ export default function PartnerSettingsPage() {
+         <NotificationSettings/>
+       </div>
+ 
++      <DeleteAccountSection />
++
+     </div>
+   );
+ }
+diff --git a/app/dashboard/super-admin/settings/page.tsx b/app/dashboard/super-admin/settings/page.tsx
+index 23dfe4a..204e7e4 100644
+--- a/app/dashboard/super-admin/settings/page.tsx
++++ b/app/dashboard/super-admin/settings/page.tsx
+@@ -4,6 +4,7 @@ import PasswordInput from "@/components/ui/PasswordInput";
+ import { useState } from "react";
+ import { useAuthStore } from "@/store/authStore";
+ import api from "@/lib/api";
++import DeleteAccountSection from "@/components/shared/DeleteAccountSection";
+ 
+ export default function AdminSettingsPage() {
+   const { user } = useAuthStore();
+@@ -218,6 +219,8 @@ export default function AdminSettingsPage() {
+         <NotificationSettings/>
+       </div>
+ 
++      <DeleteAccountSection />
++
+     </div>
+   );
+ }
+diff --git a/app/dashboard/user/profile/page.tsx b/app/dashboard/user/profile/page.tsx
+index 4f3de22..e031dc5 100644
+--- a/app/dashboard/user/profile/page.tsx
++++ b/app/dashboard/user/profile/page.tsx
+@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
+ import { useAuthStore } from "@/store/authStore";
+ import api from "@/lib/api";
+ import { parseServerDate } from "@/lib/timeUtils";
++import DeleteAccountSection from "@/components/shared/DeleteAccountSection";
+ 
+ const NIGERIAN_STATES = [
+   "Abia","Adamawa","Akwa Ibom","Anambra","Bauchi","Bayelsa","Benue","Borno",
+@@ -263,6 +264,9 @@ export default function UserProfilePage() {
+     <NotificationSettings/>
+   </div>
+ )}
++
++<DeleteAccountSection />
++
+ <style>{`
+         input:focus,select:focus,textarea:focus{border-color:#F47B20!important;background:#fff!important}
+         @media(max-width:640px){
+-- 
+2.43.0
+

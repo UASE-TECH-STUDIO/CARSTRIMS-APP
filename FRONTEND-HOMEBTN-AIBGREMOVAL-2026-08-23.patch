@@ -1,0 +1,391 @@
+From 04810d2046c14ced4112708eaa60f6ed2d1bfd3d Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 23 Aug 2026 20:05:07 +0000
+Subject: [PATCH 1/2] fix: FeedHomeButton wasn't self-explanatory - replaced
+ ambiguous Unicode icon with a real SVG house icon plus an always-visible
+ 'Home' label
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Confirmed the actual problem: every single usage across the app (all
+5 dashboards + car detail page) used the icon-only variant, and the
+icon itself was '⌂' - a Unicode character, not a proper icon, easy to
+miss or misread as decoration rather than a button. No place in the
+app ever showed the 'labeled' variant that did exist.
+
+Rebuilt as one component with a clear house-shaped SVG icon and a
+'Home' text label always shown, not hidden behind hover or a
+tooltip - this is now what renders everywhere automatically, no
+caller changes needed since none passed any props. Label only hides
+on genuinely tiny screens (360px and below) to avoid topbar overflow,
+kept at a narrow breakpoint specifically so it stays visible on the
+vast majority of real devices rather than defeating the whole point
+of the fix.
+---
+ components/shared/FeedHomeButton.tsx | 52 ++++++++++++++--------------
+ 1 file changed, 26 insertions(+), 26 deletions(-)
+
+diff --git a/components/shared/FeedHomeButton.tsx b/components/shared/FeedHomeButton.tsx
+index a5af1d8..543bb86 100644
+--- a/components/shared/FeedHomeButton.tsx
++++ b/components/shared/FeedHomeButton.tsx
+@@ -11,37 +11,37 @@ import Link from "next/link";
+  * correctly with browser back/forward and native app back-gesture
+  * without any extra wiring, and doesn't need client-side JS to know
+  * where "home" is.
++ *
++ * Redesigned to actually be self-explanatory: the previous version
++ * was an icon-only button using "⌂" (a Unicode character, not a real
++ * icon - ambiguous and easy to miss what it means) with no text label
++ * anywhere it was used. Now uses a real house-shaped SVG icon plus a
++ * visible "Home" label at all times, not hidden behind hover/tooltip.
+  */
+-export default function FeedHomeButton({ variant = "icon" }: { variant?: "icon" | "labeled" }) {
+-  if (variant === "labeled") {
+-    return (
+-      <Link href="/feed" className="fhb-labeled" title="Back to Feed" aria-label="Back to Feed">
+-        <span className="fhb-icon">⌂</span>
+-        <span>Feed</span>
+-        <style jsx>{`
+-          .fhb-labeled {
+-            display: flex; align-items: center; gap: 0.4rem;
+-            background: #FFF7ED; border: 1.5px solid #F47B20; color: #F47B20;
+-            border-radius: 8px; padding: 0.5rem 0.85rem; font-size: 0.82rem; font-weight: 700;
+-            text-decoration: none; white-space: nowrap; flex-shrink: 0;
+-          }
+-          .fhb-labeled:hover { background: #F47B20; color: #fff; }
+-          .fhb-icon { font-size: 1rem; line-height: 1; }
+-        `}</style>
+-      </Link>
+-    );
+-  }
++export default function FeedHomeButton({ compact = false }: { compact?: boolean }) {
+   return (
+-    <Link href="/feed" className="fhb-icon-btn" title="Back to Feed" aria-label="Back to Feed">
+-      ⌂
++    <Link href="/feed" className={`fhb ${compact ? "fhb-compact" : ""}`} title="Go to Home" aria-label="Go to Home">
++      <svg className="fhb-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
++        <path d="M3 11.5L12 4L21 11.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
++        <path d="M5.5 9.5V19C5.5 19.5523 5.94772 20 6.5 20H9.5C10.0523 20 10.5 19.5523 10.5 19V15C10.5 14.4477 10.9477 14 11.5 14H12.5C13.0523 14 13.5 14.4477 13.5 15V19C13.5 19.5523 13.9477 20 14.5 20H17.5C18.0523 20 18.5 19.5523 18.5 19V9.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
++      </svg>
++      <span className="fhb-label">Home</span>
+       <style jsx>{`
+-        .fhb-icon-btn {
+-          display: flex; align-items: center; justify-content: center;
+-          width: 36px; height: 36px; border-radius: 8px;
++        .fhb {
++          display: flex; align-items: center; gap: 0.35rem;
+           background: #FFF7ED; border: 1.5px solid #F47B20; color: #F47B20;
+-          font-size: 1.15rem; text-decoration: none; flex-shrink: 0; line-height: 1;
++          border-radius: 8px; padding: 0.45rem 0.75rem; font-size: 0.78rem; font-weight: 700;
++          text-decoration: none; white-space: nowrap; flex-shrink: 0;
++          font-family: var(--font-body, inherit);
++        }
++        .fhb:hover { background: #F47B20; color: #fff; }
++        .fhb-icon { flex-shrink: 0; }
++        .fhb-compact { padding: 0.4rem 0.6rem; gap: 0.3rem; }
++        .fhb-compact .fhb-label { font-size: 0.72rem; }
++        @media (max-width: 360px) {
++          .fhb-label { display: none; }
++          .fhb { padding: 0.45rem; }
+         }
+-        .fhb-icon-btn:hover { background: #F47B20; color: #fff; }
+       `}</style>
+     </Link>
+   );
+-- 
+2.43.0
+
+
+From efcbf41e257a09985a72a5563a4c312387d13496 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Mon, 24 Aug 2026 04:48:05 +0000
+Subject: [PATCH 2/2] feat: replace fake background removal with real AI
+ segmentation - it genuinely wasn't removing anything before
+
+Root cause confirmed: the previous implementation only detected and
+made transparent pixels close to pure white - it was honest about
+this in its own code comments, but that meant it did literally
+nothing for any photo with a real background (a car photo, a logo on
+a colored background, a signature photographed on a desk) - exactly
+matching the 'not removing anything' complaint.
+
+Replaced with @imgly/background-removal - a real neural-network-based
+subject segmentation model (ONNX via WebAssembly), the same category
+of technology behind remove.bg and most 'perfect' background removal
+tools. Runs entirely client-side - no server cost, no API key,
+nothing ever leaves the device, keeping the app's existing zero-cost,
+privacy-preserving approach for this feature.
+
+Researched and confirmed before integrating: the exact required
+onnxruntime-web peer dependency version (an unusual dev-build version
+string, verified consistently across three independent official
+sources rather than guessed), and checked the app's own next.config.js
+for any Content-Security-Policy restrictions that could block WASM
+compilation in production (a real, documented failure mode for this
+exact library elsewhere) - confirmed none exist here, so that risk
+doesn't apply to this app.
+
+Kept the old near-white method as an automatic fallback
+(removeBackgroundSmart) rather than removing it outright - if the AI
+model can't load (offline on first use, restrictive network), the
+person still gets a working result instead of a hard failure, with a
+clear notice explaining what happened and that retrying may give a
+better result. Also lazy-loaded via dynamic import so the ~40-80MB
+model files are never part of the app's normal page-load bundle -
+they only download when someone actually uses this feature.
+
+BackgroundRemovalPreview.tsx updated to show live progress during
+processing (model download / removal progress) instead of a bare
+spinner, and the hint text no longer claims this only works on white
+backgrounds, since that's no longer true.
+---
+ components/ui/BackgroundRemovalPreview.tsx |  28 +++++-
+ lib/backgroundRemoval.ts                   | 105 +++++++++++++++++----
+ package.json                               |   2 +
+ 3 files changed, 111 insertions(+), 24 deletions(-)
+
+diff --git a/components/ui/BackgroundRemovalPreview.tsx b/components/ui/BackgroundRemovalPreview.tsx
+index b220dbd..6f3a1f5 100644
+--- a/components/ui/BackgroundRemovalPreview.tsx
++++ b/components/ui/BackgroundRemovalPreview.tsx
+@@ -1,6 +1,6 @@
+ "use client";
+ import { useState, useEffect } from "react";
+-import { removeNearWhiteBackground } from "@/lib/backgroundRemoval";
++import { removeBackgroundSmart, BgRemovalProgress } from "@/lib/backgroundRemoval";
+ 
+ interface Props {
+   file: File;
+@@ -21,6 +21,8 @@ export default function BackgroundRemovalPreview({ file, onConfirm, onCancel, la
+   const [processedUrl, setProcessedUrl] = useState<string>("");
+   const [processedFile, setProcessedFile] = useState<File | null>(null);
+   const [processing, setProcessing] = useState(false);
++  const [progress, setProgress] = useState<BgRemovalProgress | null>(null);
++  const [usedFallback, setUsedFallback] = useState(false);
+   const [error, setError] = useState("");
+ 
+   useEffect(() => {
+@@ -32,14 +34,17 @@ export default function BackgroundRemovalPreview({ file, onConfirm, onCancel, la
+   const handleRemoveBackground = async () => {
+     setProcessing(true);
+     setError("");
++    setProgress(null);
+     try {
+-      const result = await removeNearWhiteBackground(file);
++      const result = await removeBackgroundSmart(file, setProgress);
+       setProcessedUrl(result.previewUrl);
+       setProcessedFile(result.file);
++      setUsedFallback(result.usedFallback);
+     } catch (e: any) {
+       setError(e?.message || "Couldn't process this image");
+     } finally {
+       setProcessing(false);
++      setProgress(null);
+     }
+   };
+ 
+@@ -48,7 +53,7 @@ export default function BackgroundRemovalPreview({ file, onConfirm, onCancel, la
+       <div className="bgr-panel" onClick={(e) => e.stopPropagation()}>
+         <h3 className="bgr-title">{label}</h3>
+         <p className="bgr-hint">
+-          Works best when the background is plain white — a scanned signature or a logo exported on a white canvas.
++          Uses AI to detect and remove the background automatically — works with any photo, not just plain white backgrounds. The first time may take a little longer while the model loads.
+         </p>
+ 
+         <div className="bgr-preview-row">
+@@ -62,7 +67,14 @@ export default function BackgroundRemovalPreview({ file, onConfirm, onCancel, la
+             <div className="bgr-label">Background Removed</div>
+             <div className="bgr-preview-box bgr-checkered">
+               {processing ? (
+-                <div className="bgr-spinner" />
++                <div className="bgr-progress">
++                  <div className="bgr-spinner" />
++                  {progress && (
++                    <span className="bgr-progress-label">
++                      {progress.label}{progress.percent != null ? ` ${progress.percent}%` : ""}
++                    </span>
++                  )}
++                </div>
+               ) : processedUrl ? (
+                 <img src={processedUrl} alt="Background removed" />
+               ) : (
+@@ -73,6 +85,11 @@ export default function BackgroundRemovalPreview({ file, onConfirm, onCancel, la
+         </div>
+ 
+         {error && <div className="bgr-error">{error}</div>}
++        {usedFallback && !error && (
++          <div className="bgr-notice">
++            AI background removal wasn't available right now, so a simpler method was used instead — it works best on plain white backgrounds. Try again for AI-quality results on any background.
++          </div>
++        )}
+ 
+         <div className="bgr-actions">
+           {!processedFile ? (
+@@ -106,6 +123,9 @@ export default function BackgroundRemovalPreview({ file, onConfirm, onCancel, la
+           .bgr-placeholder { font-size: 0.72rem; color: #A3A3A3; text-align: center; padding: 1rem; }
+           .bgr-spinner { width: 24px; height: 24px; border: 2.5px solid #E5E5E5; border-top-color: #F47B20; border-radius: 50%; animation: bgr-spin 0.8s linear infinite; }
+           @keyframes bgr-spin { to { transform: rotate(360deg); } }
++          .bgr-progress { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }
++          .bgr-progress-label { font-size: 0.68rem; color: #A3A3A3; text-align: center; padding: 0 0.5rem; }
++          .bgr-notice { background: #FFF7ED; color: #C4621A; border: 1px solid rgba(244,123,32,0.3); border-radius: 8px; padding: 0.6rem 0.875rem; font-size: 0.78rem; line-height: 1.5; margin-bottom: 1rem; }
+           .bgr-error { background: #FEF2F2; color: #DC2626; border: 1px solid #FCA5A5; border-radius: 8px; padding: 0.6rem 0.875rem; font-size: 0.8rem; margin-bottom: 1rem; }
+           .bgr-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+           .bgr-btn { flex: 1; min-width: 120px; border: none; border-radius: 8px; padding: 0.7rem 1rem; font-size: 0.85rem; font-weight: 700; cursor: pointer; font-family: var(--font-body, inherit); }
+diff --git a/lib/backgroundRemoval.ts b/lib/backgroundRemoval.ts
+index 6068876..2fce82c 100644
+--- a/lib/backgroundRemoval.ts
++++ b/lib/backgroundRemoval.ts
+@@ -1,20 +1,23 @@
+ /**
+- * Client-side background removal for logos and signatures.
++ * AI-powered client-side background removal for logos, signatures,
++ * and other images uploaded across the app.
+  *
+- * This is NOT full AI-based subject segmentation (that needs either a
+- * paid API or a server-side ML model, neither of which this app has
+- * set up) — it's a targeted, zero-cost approach for the actual use
+- * case: logos and signatures are almost always uploaded on a plain
+- * white or near-white background (a scan, a photo of paper, a logo
+- * exported with a white canvas). This detects pixels close to that
+- * background color and makes them transparent, with edge feathering
+- * so the result doesn't look jagged/cut-out.
++ * Uses @imgly/background-removal - a real neural-network-based subject
++ * segmentation model (ONNX, running via WebAssembly), the same
++ * underlying technology behind most "perfect" background removal
++ * tools. Runs entirely in the browser/WebView - no server cost, no
++ * API key, no images ever leave the device.
+  *
+- * Works well for: white-background logos, black-ink signatures on
+- * white paper. Does NOT work for: photos with complex/non-white
+- * backgrounds, logos that are themselves white/very light colored
+- * (those would get removed too) — which is why this is offered as an
+- * optional, previewable step, not applied automatically.
++ * This replaces the previous approach, which only detected and
++ * removed near-white pixels - it worked for a logo scanned on plain
++ * white paper, but did nothing at all for anything with a real,
++ * complex background (a car photo, a logo on a colored background,
++ * a signature photographed on a desk), which is exactly the
++ * "isn't removing anything" complaint this replaces.
++ *
++ * The AI model files (~40-80MB) download on first use and are cached
++ * by the browser afterward - the first run on a given device will be
++ * noticeably slower than every run after.
+  */
+ 
+ export interface BgRemovalResult {
+@@ -22,6 +25,53 @@ export interface BgRemovalResult {
+   previewUrl: string;
+ }
+ 
++export interface BgRemovalProgress {
++  /** 0-100, or null while still in an indeterminate phase (e.g. warming up) */
++  percent: number | null;
++  label: string;
++}
++
++/**
++ * Removes the background from any image using real AI subject
++ * segmentation. Works for logos, signatures, product photos, and
++ * general images with any background - not just plain white ones.
++ */
++export async function removeBackgroundAI(
++  file: File,
++  onProgress?: (progress: BgRemovalProgress) => void
++): Promise<BgRemovalResult> {
++  onProgress?.({ percent: null, label: "Loading AI model…" });
++
++  // Lazy-loaded - this library and its model files are large, so we
++  // only ever pull them in when someone actually uses this feature,
++  // not as part of the app's normal page-load bundle.
++  const { default: removeBackground } = await import("@imgly/background-removal");
++
++  const blob = await removeBackground(file, {
++    progress: (key: string, current: number, total: number) => {
++      if (!onProgress) return;
++      const pct = total > 0 ? Math.round((current / total) * 100) : null;
++      const label = key.includes("fetch")
++        ? "Downloading AI model…"
++        : "Removing background…";
++      onProgress({ percent: pct, label });
++    },
++  });
++
++  onProgress?.({ percent: 100, label: "Done" });
++
++  const outFile = new File([blob], renameToPng(file.name), { type: "image/png" });
++  return { file: outFile, previewUrl: URL.createObjectURL(blob) };
++}
++
++/**
++ * Fallback: the original near-white-background removal approach.
++ * Kept available for two cases: (1) the AI model fails to load
++ * (offline first-use, restrictive network, unsupported WebView
++ * configuration) and (2) documents that genuinely are just a plain
++ * white-background scan, where this simpler method is instant with
++ * no model download at all.
++ */
+ export async function removeNearWhiteBackground(
+   file: File,
+   options: { threshold?: number; feather?: number } = {}
+@@ -41,15 +91,10 @@ export async function removeNearWhiteBackground(
+ 
+   for (let i = 0; i < data.length; i += 4) {
+     const r = data[i], g = data[i + 1], b = data[i + 2];
+-    // How close this pixel is to white, on a 0 (not white at all) to
+-    // 255 (pure white) scale, using the darkest channel as the
+-    // limiting factor so colored-but-light pixels aren't over-removed.
+     const brightness = Math.min(r, g, b);
+     if (brightness >= threshold) {
+-      data[i + 3] = 0; // fully transparent
++      data[i + 3] = 0;
+     } else if (brightness >= threshold - feather) {
+-      // Feathered edge: smoothly ramp alpha down instead of a hard
+-      // cutoff, so the boundary doesn't look jagged.
+       const t = (brightness - (threshold - feather)) / feather;
+       data[i + 3] = Math.round(data[i + 3] * (1 - t));
+     }
+@@ -65,6 +110,26 @@ export async function removeNearWhiteBackground(
+   return { file: outFile, previewUrl: URL.createObjectURL(blob) };
+ }
+ 
++/**
++ * Tries the real AI removal first; if it fails for any reason (model
++ * couldn't load, unsupported environment, network issue on first
++ * use), falls back to the near-white method rather than leaving the
++ * person with a hard error and no result at all.
++ */
++export async function removeBackgroundSmart(
++  file: File,
++  onProgress?: (progress: BgRemovalProgress) => void
++): Promise<BgRemovalResult & { usedFallback: boolean }> {
++  try {
++    const result = await removeBackgroundAI(file, onProgress);
++    return { ...result, usedFallback: false };
++  } catch (e) {
++    onProgress?.({ percent: null, label: "AI model unavailable, using basic removal…" });
++    const result = await removeNearWhiteBackground(file);
++    return { ...result, usedFallback: true };
++  }
++}
++
+ function loadImage(file: File): Promise<HTMLImageElement> {
+   return new Promise((resolve, reject) => {
+     const img = new Image();
+diff --git a/package.json b/package.json
+index 5f45d52..fd7502f 100644
+--- a/package.json
++++ b/package.json
+@@ -9,6 +9,8 @@
+         "lint": "next lint"
+     },
+     "dependencies": {
++        "@imgly/background-removal": "^1.7.0",
++        "onnxruntime-web": "1.21.0-dev.20250206-d981b153d3",
+         "@capacitor/android": "^8.4.0",
+         "@capacitor-community/speech-recognition": "^7.0.1",
+         "@capacitor/app": "^8.0.2",
+-- 
+2.43.0
+

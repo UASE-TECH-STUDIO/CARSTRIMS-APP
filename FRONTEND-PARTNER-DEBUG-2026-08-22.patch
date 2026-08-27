@@ -1,0 +1,49 @@
+From c07ac09fd6094962d5715032dac0753b2220ef3f Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 15:39:45 +0000
+Subject: [PATCH] debug: temporary diagnostic panel for the assign-button
+ mystery
+
+Reviewed this code three separate times now and it's structurally
+correct - the assign button and status display use the exact same
+effectiveStatus variable, gated the same way, and this section has
+existed since very early in the project's history. With Vercel
+confirmed up to date and the code confirmed correct, guessing at more
+speculative fixes isn't productive anymore.
+
+Added a clearly-labeled, temporary yellow debug panel showing the
+exact raw values driving this decision - detailData?.link?.status,
+showDetail?.status, the computed effectiveStatus, the literal
+comparison result, and the cars array/count - directly in the modal.
+This will show us definitively what's actually happening at runtime
+on the real device instead of continuing to speculate from code
+review alone. Remove once diagnosed.
+---
+ app/dashboard/dealer/partners/page.tsx | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/app/dashboard/dealer/partners/page.tsx b/app/dashboard/dealer/partners/page.tsx
+index d0cc68b..1c93f3f 100644
+--- a/app/dashboard/dealer/partners/page.tsx
++++ b/app/dashboard/dealer/partners/page.tsx
+@@ -358,6 +358,17 @@ export default function PartnersPage() {
+                 </div>
+               ) : detailData ? (
+                 <>
++                  {/* TEMPORARY DEBUG - remove once we've diagnosed the assign-button issue */}
++                  <div style={{background:"#FEF3C7",border:"2px solid #F59E0B",borderRadius:"8px",padding:"0.75rem",fontSize:"0.72rem",fontFamily:"monospace",color:"#78350F"}}>
++                    <div style={{fontWeight:700,marginBottom:"0.3rem"}}>DEBUG (screenshot this and send back):</div>
++                    <div>detailData?.link?.status = {JSON.stringify(detailData?.link?.status)}</div>
++                    <div>showDetail?.status = {JSON.stringify(showDetail?.status)}</div>
++                    <div>effectiveStatus = {JSON.stringify(effectiveStatus)}</div>
++                    <div>effectiveStatus === "approved" → {String(effectiveStatus === "approved")}</div>
++                    <div>detailData?.cars = {JSON.stringify(detailData?.cars)}</div>
++                    <div>detailData?.totalCars = {JSON.stringify(detailData?.totalCars)}</div>
++                  </div>
++
+                   {/* Partner info */}
+                   <div style={{background:"#FAFAFA",borderRadius:"10px",padding:"1rem",display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:"0.625rem"}}>
+                     {[
+-- 
+2.43.0
+

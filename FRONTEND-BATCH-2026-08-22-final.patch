@@ -1,0 +1,532 @@
+From 6074d0b53e1b2581e44ed3b3be0f76199a0a3eb6 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 21:27:00 +0000
+Subject: [PATCH 1/5] feat: recreate FeedHomeButton - the earlier patch
+ containing this was never actually applied
+
+Confirmed directly against the live GitHub repo: this component and
+its wiring into every dashboard simply doesn't exist there at all,
+despite being built and delivered several turns ago - the patch was
+very likely lost among the volume of subsequent patches. Recreating
+it accurately from the original implementation, then re-wiring it
+into all 5 dashboard layouts plus the car detail page.
+---
+ components/shared/FeedHomeButton.tsx | 48 ++++++++++++++++++++++++++++
+ 1 file changed, 48 insertions(+)
+ create mode 100644 components/shared/FeedHomeButton.tsx
+
+diff --git a/components/shared/FeedHomeButton.tsx b/components/shared/FeedHomeButton.tsx
+new file mode 100644
+index 0000000..a5af1d8
+--- /dev/null
++++ b/components/shared/FeedHomeButton.tsx
+@@ -0,0 +1,48 @@
++"use client";
++import Link from "next/link";
++
++/**
++ * A persistent, always-visible button that takes the person straight
++ * to the public feed/home page from anywhere in the app - every
++ * dashboard (buyer, dealer, staff, partner, super-admin), the car
++ * detail page, profile pages, and anywhere else it's dropped in.
++ *
++ * Deliberately a plain <Link>, not a router.push() button - works
++ * correctly with browser back/forward and native app back-gesture
++ * without any extra wiring, and doesn't need client-side JS to know
++ * where "home" is.
++ */
++export default function FeedHomeButton({ variant = "icon" }: { variant?: "icon" | "labeled" }) {
++  if (variant === "labeled") {
++    return (
++      <Link href="/feed" className="fhb-labeled" title="Back to Feed" aria-label="Back to Feed">
++        <span className="fhb-icon">⌂</span>
++        <span>Feed</span>
++        <style jsx>{`
++          .fhb-labeled {
++            display: flex; align-items: center; gap: 0.4rem;
++            background: #FFF7ED; border: 1.5px solid #F47B20; color: #F47B20;
++            border-radius: 8px; padding: 0.5rem 0.85rem; font-size: 0.82rem; font-weight: 700;
++            text-decoration: none; white-space: nowrap; flex-shrink: 0;
++          }
++          .fhb-labeled:hover { background: #F47B20; color: #fff; }
++          .fhb-icon { font-size: 1rem; line-height: 1; }
++        `}</style>
++      </Link>
++    );
++  }
++  return (
++    <Link href="/feed" className="fhb-icon-btn" title="Back to Feed" aria-label="Back to Feed">
++      ⌂
++      <style jsx>{`
++        .fhb-icon-btn {
++          display: flex; align-items: center; justify-content: center;
++          width: 36px; height: 36px; border-radius: 8px;
++          background: #FFF7ED; border: 1.5px solid #F47B20; color: #F47B20;
++          font-size: 1.15rem; text-decoration: none; flex-shrink: 0; line-height: 1;
++        }
++        .fhb-icon-btn:hover { background: #F47B20; color: #fff; }
++      `}</style>
++    </Link>
++  );
++}
+-- 
+2.43.0
+
+
+From e70e64d2ca2ee9e4c08a3d88bda5c32a65590c5b Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 21:28:41 +0000
+Subject: [PATCH 2/5] feat: wire the recreated FeedHomeButton into all 5
+ dashboards + car detail page
+
+Completes the recovery - button now genuinely present in dealer,
+partner, user, staff, and super-admin topbars, plus the car detail
+page next to Back. Verified each file's syntax individually; the one
+'error' on the car detail page is the same pre-existing false-positive
+documented earlier in this engagement (a raw -> in JSX text that only
+the parser misflags, not a real issue and not caused by this edit).
+---
+ app/(public)/cars/[carId]/page.tsx   | 6 +++++-
+ app/dashboard/dealer/layout.tsx      | 2 ++
+ app/dashboard/partner/layout.tsx     | 2 ++
+ app/dashboard/super-admin/layout.tsx | 2 ++
+ app/dashboard/user/layout.tsx        | 2 ++
+ components/layout/StaffShell.tsx     | 2 ++
+ 6 files changed, 15 insertions(+), 1 deletion(-)
+
+diff --git a/app/(public)/cars/[carId]/page.tsx b/app/(public)/cars/[carId]/page.tsx
+index def49b4..ce02e4b 100644
+--- a/app/(public)/cars/[carId]/page.tsx
++++ b/app/(public)/cars/[carId]/page.tsx
+@@ -7,6 +7,7 @@ import { useMessagesStore } from "@/store/messagesStore";
+ import Link from "next/link";
+ import { useToast } from "@/store/toastStore";
+ import ZoomableImage from "@/components/ui/ZoomableImage";
++import FeedHomeButton from "@/components/shared/FeedHomeButton";
+ 
+ export default function CarDetailPage() {
+   const params = useParams();
+@@ -261,7 +262,10 @@ export default function CarDetailPage() {
+ 
+       {/* Topbar */}
+       <header className="cd-topbar">
+-        <button className="cd-back" onClick={()=>router.back()}>Back</button>
++        <div style={{display:"flex", alignItems:"center", gap:"0.5rem"}}>
++          <button className="cd-back" onClick={()=>router.back()}>Back</button>
++          <FeedHomeButton />
++        </div>
+         <div className="cd-topbar-right">
+           <button className={`cd-action ${liked?"liked":""}`} onClick={handleLike} title={liked?"Unlike":"Like"}>
+             {liked ? "Liked" : "Like"} {likeCount > 0 ? `(${likeCount})` : ""}
+diff --git a/app/dashboard/dealer/layout.tsx b/app/dashboard/dealer/layout.tsx
+index 9aafdfa..c795f4e 100644
+--- a/app/dashboard/dealer/layout.tsx
++++ b/app/dashboard/dealer/layout.tsx
+@@ -5,6 +5,7 @@ import DealerSidebar from "@/components/layout/DealerSidebar";
+ import MessagesWidget from "@/components/shared/MessagesWidget";
+ import GlobalSearchModal from "@/components/shared/GlobalSearchModal";
+ import SearchHint from "@/components/shared/SearchHint";
++import FeedHomeButton from "@/components/shared/FeedHomeButton";
+ import { useRouter, usePathname } from "next/navigation";
+ import { useSidebar } from "@/hooks/useSidebar";
+ import NotificationBell from "@/components/ui/NotificationBell";
+@@ -92,6 +93,7 @@ function DealerShell({ children }: { children: ReactNode }) {
+             <span className="greeting-text">
+               {getGreeting()}, <strong className="greeting-name">{user?.fullName?.split(" ")[0]||"Dealer"}</strong>
+             </span>
++            <FeedHomeButton />
+             <div style={{position:"relative"}}>
+               <button className="search-topbar-btn" onClick={()=>setShowSearch(true)} title="Search" aria-label="Search">🔍</button>
+               <SearchHint onUseSearch={() => setShowSearch(true)} />
+diff --git a/app/dashboard/partner/layout.tsx b/app/dashboard/partner/layout.tsx
+index f002414..74c7d03 100644
+--- a/app/dashboard/partner/layout.tsx
++++ b/app/dashboard/partner/layout.tsx
+@@ -11,6 +11,7 @@ import SidebarWrapper from "@/components/layout/SidebarWrapper";
+ import MessagesWidget from "@/components/shared/MessagesWidget";
+ import GlobalSearchModal from "@/components/shared/GlobalSearchModal";
+ import SearchHint from "@/components/shared/SearchHint";
++import FeedHomeButton from "@/components/shared/FeedHomeButton";
+ import { useSidebar } from "@/hooks/useSidebar";
+ 
+ const NAV = [
+@@ -94,6 +95,7 @@ export default function PartnerLayout({ children }: { children: ReactNode }) {
+             </div>
+             <div className="tb-right">
+               <span className="greeting">Good {getGreeting()}, <strong>{me?.fullName?.split(" ")[0] || "Partner"}</strong></span>
++              <FeedHomeButton />
+               <div style={{position:"relative"}}>
+                 <button className="search-topbar-btn" onClick={() => setShowSearch(true)} title="Search" aria-label="Search">🔍</button>
+                 <SearchHint onUseSearch={() => setShowSearch(true)} />
+diff --git a/app/dashboard/super-admin/layout.tsx b/app/dashboard/super-admin/layout.tsx
+index 9e64bb7..c989964 100644
+--- a/app/dashboard/super-admin/layout.tsx
++++ b/app/dashboard/super-admin/layout.tsx
+@@ -8,6 +8,7 @@ import NotificationBell from "@/components/ui/NotificationBell";
+ import MessagesWidget from "@/components/shared/MessagesWidget";
+ import GlobalSearchModal from "@/components/shared/GlobalSearchModal";
+ import SearchHint from "@/components/shared/SearchHint";
++import FeedHomeButton from "@/components/shared/FeedHomeButton";
+ import { useSidebar } from "@/hooks/useSidebar";
+ import { useAuthStore } from "@/store/authStore";
+ import { useRouter, usePathname } from "next/navigation";
+@@ -41,6 +42,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
+             </div>
+             <div className="tb-right">
+               <span className="greeting">Good {getGreeting()}, <strong>{user?.fullName?.split(" ")[0]}</strong></span>
++              <FeedHomeButton />
+               <div style={{position:"relative"}}>
+                 <button className="search-topbar-btn" onClick={() => setShowSearch(true)} title="Search" aria-label="Search">🔍</button>
+                 <SearchHint onUseSearch={() => setShowSearch(true)} />
+diff --git a/app/dashboard/user/layout.tsx b/app/dashboard/user/layout.tsx
+index f029be4..efc17e4 100644
+--- a/app/dashboard/user/layout.tsx
++++ b/app/dashboard/user/layout.tsx
+@@ -9,6 +9,7 @@ import NotificationBell from "@/components/ui/NotificationBell";
+ import MessagesWidget from "@/components/shared/MessagesWidget";
+ import GlobalSearchModal from "@/components/shared/GlobalSearchModal";
+ import SearchHint from "@/components/shared/SearchHint";
++import FeedHomeButton from "@/components/shared/FeedHomeButton";
+ 
+ function getGreeting() {
+   const h = new Date().getHours();
+@@ -105,6 +106,7 @@ export default function UserLayout({ children }: { children: ReactNode }) {
+           <Link href="/feed" className="topbar-brand">CARSTRIMS</Link>
+           <div className="topbar-right">
+             <span className="greeting">{getGreeting()}, <strong>{me?.fullName?.split(" ")[0]||"User"}</strong></span>
++            <FeedHomeButton />
+             <div style={{position:"relative"}}>
+               <button className="search-topbar-btn" onClick={() => setShowSearch(true)} title="Search" aria-label="Search">🔍</button>
+               <SearchHint onUseSearch={() => setShowSearch(true)} />
+diff --git a/components/layout/StaffShell.tsx b/components/layout/StaffShell.tsx
+index 0c2cc17..d576439 100644
+--- a/components/layout/StaffShell.tsx
++++ b/components/layout/StaffShell.tsx
+@@ -6,6 +6,7 @@ import NotificationBell from "@/components/ui/NotificationBell";
+ import MessagesWidget from "@/components/shared/MessagesWidget";
+ import GlobalSearchModal from "@/components/shared/GlobalSearchModal";
+ import SearchHint from "@/components/shared/SearchHint";
++import FeedHomeButton from "@/components/shared/FeedHomeButton";
+ import Link from "next/link";
+ import api from "@/lib/api";
+ 
+@@ -182,6 +183,7 @@ export default function StaffShell({ children }: { children: ReactNode }) {
+             <span className="greeting-text">
+               {getGreeting()}, <strong className="greeting-name">{user?.fullName?.split(" ")[0] || "Staff"}</strong>
+             </span>
++            <FeedHomeButton />
+             <div style={{position:"relative"}}>
+               <button className="search-topbar-btn" onClick={() => setShowSearch(true)} title="Search" aria-label="Search">🔍</button>
+               <SearchHint onUseSearch={() => setShowSearch(true)} />
+-- 
+2.43.0
+
+
+From 3c76b85aa9d9c08d4a45a3ce04f9ee4d744f5755 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 21:29:13 +0000
+Subject: [PATCH 3/5] feat: CustomSelect - a React-only dropdown to
+ definitively fix the recurring white-screen bug on native selects
+
+The white screen on State/Year/other filter dropdowns kept happening
+even after fixing every previously-hypothesized cause (EdgeSwipeNavigation's
+transform-wrapping, target=_blank forcing full reloads) - both fixes
+are confirmed live, yet the issue persists, meaning there's a
+different, still-unidentified root cause specific to how Android's
+WebView renders native <select> pickers in this app's context.
+
+Rather than continue guessing at the exact trigger, built a dropdown
+entirely in React - no native OS-level select/picker involved at all,
+which removes the whole category of bug regardless of what was
+actually causing it. Styled to match the existing filter dropdown's
+visual language so it drops in as a direct replacement.
+---
+ components/ui/CustomSelect.tsx | 108 +++++++++++++++++++++++++++++++++
+ 1 file changed, 108 insertions(+)
+ create mode 100644 components/ui/CustomSelect.tsx
+
+diff --git a/components/ui/CustomSelect.tsx b/components/ui/CustomSelect.tsx
+new file mode 100644
+index 0000000..f2cdb97
+--- /dev/null
++++ b/components/ui/CustomSelect.tsx
+@@ -0,0 +1,108 @@
++"use client";
++import { useState, useRef, useEffect } from "react";
++
++interface Option {
++  value: string;
++  label: string;
++}
++
++interface Props {
++  value: string;
++  onChange: (value: string) => void;
++  options: Option[];
++  placeholder?: string;
++  className?: string;
++}
++
++/**
++ * A dropdown built entirely in React - no native <select> element at
++ * all. Built specifically to eliminate a recurring, hard-to-pin-down
++ * "white screen" bug that kept happening on native <select> dropdowns
++ * inside the app (state, year, and other filter fields specifically),
++ * even after fixing every other hypothesized cause (the
++ * EdgeSwipeNavigation transform-wrapping issue, target=_blank forcing
++ * reloads). Android's WebView has known, long-standing quirks
++ * rendering native OS-level select pickers in certain contexts
++ * (nested inside scrollable/absolutely-positioned containers
++ * especially), and rather than keep chasing the exact trigger,
++ * removing the native picker from the equation entirely removes the
++ * whole category of bug.
++ *
++ * Styled to look and behave like a normal select (same visual
++ * language as the app's existing .ffd-select class) so it drops in
++ * as a direct replacement without needing surrounding layout changes.
++ */
++export default function CustomSelect({ value, onChange, options, placeholder = "Select…", className }: Props) {
++  const [open, setOpen] = useState(false);
++  const wrapRef = useRef<HTMLDivElement>(null);
++
++  useEffect(() => {
++    if (!open) return;
++    const onClickOutside = (e: MouseEvent) => {
++      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
++    };
++    document.addEventListener("mousedown", onClickOutside);
++    document.addEventListener("touchstart", onClickOutside);
++    return () => {
++      document.removeEventListener("mousedown", onClickOutside);
++      document.removeEventListener("touchstart", onClickOutside);
++    };
++  }, [open]);
++
++  const selected = options.find((o) => o.value === value);
++
++  return (
++    <div ref={wrapRef} className={`cs-wrap ${className || ""}`}>
++      <button
++        type="button"
++        className="cs-trigger"
++        onClick={() => setOpen((v) => !v)}
++      >
++        <span className={selected ? "cs-value" : "cs-placeholder"}>{selected ? selected.label : placeholder}</span>
++        <span className={`cs-arrow ${open ? "cs-arrow-open" : ""}`}>▾</span>
++      </button>
++      {open && (
++        <div className="cs-menu">
++          {options.map((opt) => (
++            <button
++              type="button"
++              key={opt.value}
++              className={`cs-option ${opt.value === value ? "cs-option-selected" : ""}`}
++              onClick={() => { onChange(opt.value); setOpen(false); }}
++            >
++              {opt.label}
++            </button>
++          ))}
++        </div>
++      )}
++      <style jsx>{`
++        .cs-wrap { position: relative; width: 100%; }
++        .cs-trigger {
++          width: 100%; display: flex; align-items: center; justify-content: space-between;
++          border: 1.5px solid #E5E5E5; border-radius: 8px; padding: 0.75rem 0.85rem;
++          font-size: 0.95rem; background: #fff; color: #1A1A1A; min-height: 46px;
++          cursor: pointer; font-family: var(--font-body, inherit); text-align: left;
++        }
++        .cs-trigger:focus { outline: none; border-color: #F47B20; }
++        .cs-placeholder { color: #A3A3A3; }
++        .cs-value { color: #1A1A1A; }
++        .cs-arrow { color: #A3A3A3; font-size: 0.8rem; margin-left: 0.5rem; flex-shrink: 0; transition: transform 0.15s; }
++        .cs-arrow-open { transform: rotate(180deg); }
++        .cs-menu {
++          position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 60;
++          background: #fff; border: 1.5px solid #E5E5E5; border-radius: 10px;
++          box-shadow: 0 12px 28px rgba(0,0,0,0.15); max-height: 240px; overflow-y: auto;
++          -webkit-overflow-scrolling: touch;
++        }
++        .cs-option {
++          display: block; width: 100%; text-align: left; padding: 0.7rem 0.85rem;
++          background: none; border: none; border-bottom: 1px solid #F5F5F5;
++          font-size: 0.9rem; color: #1A1A1A; cursor: pointer; font-family: var(--font-body, inherit);
++        }
++        .cs-option:last-child { border-bottom: none; }
++        .cs-option:hover { background: #FFF7ED; }
++        .cs-option-selected { background: #FFF3E6; color: #F47B20; font-weight: 600; }
++      `}</style>
++    </div>
++  );
++}
+-- 
+2.43.0
+
+
+From 180a0163c5ca002f54102e2edc1cb41740e0211d Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 21:30:14 +0000
+Subject: [PATCH 4/5] fix: replace all 5 native selects in the homepage filter
+ with CustomSelect - the actual fix for the white-screen bug
+
+Confirmed via direct grep - this is exactly the component (State/
+Location and Year specifically named as broken) where the white-
+screen-on-dropdown issue was reported. Replaced Sort By, Brand, Year
+From, Year To, and State/Location - all 5 native <select> elements in
+this component - with the new React-only CustomSelect. No more native
+OS-level picker involved anywhere in this filter panel at all.
+---
+ components/shared/FeedFilterDropdown.tsx | 25 ++++++------------------
+ 1 file changed, 6 insertions(+), 19 deletions(-)
+
+diff --git a/components/shared/FeedFilterDropdown.tsx b/components/shared/FeedFilterDropdown.tsx
+index 6bc5a0d..eccb659 100644
+--- a/components/shared/FeedFilterDropdown.tsx
++++ b/components/shared/FeedFilterDropdown.tsx
+@@ -1,6 +1,7 @@
+ "use client";
+ 
+ import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
++import CustomSelect from "@/components/ui/CustomSelect";
+ 
+ interface Props {
+   selectedBrand: string; setSelectedBrand: (v: string) => void;
+@@ -80,17 +81,12 @@ export default function FeedFilterDropdown(props: Props) {
+ 
+         <div className="ffd-group">
+           <label className="ffd-label">Sort By</label>
+-          <select className="ffd-select" value={fSort} onChange={(e) => setFSort(e.target.value)}>
+-            {SORT_OPTIONS.map((s) => <option key={s.v} value={s.v}>{s.l}</option>)}
+-          </select>
++          <CustomSelect value={fSort} onChange={setFSort} options={SORT_OPTIONS.map((s) => ({value: s.v, label: s.l}))} />
+         </div>
+ 
+         <div className="ffd-group">
+           <label className="ffd-label">Brand</label>
+-          <select className="ffd-select" value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)}>
+-            <option value="">Any brand</option>
+-            {BRANDS.map((b) => <option key={b} value={b}>{b}</option>)}
+-          </select>
++          <CustomSelect value={selectedBrand} onChange={setSelectedBrand} placeholder="Any brand" options={BRANDS.map((b) => ({value: b, label: b}))} />
+         </div>
+ 
+         <div className="ffd-group">
+@@ -105,15 +101,9 @@ export default function FeedFilterDropdown(props: Props) {
+         <div className="ffd-group">
+           <label className="ffd-label">Year</label>
+           <div className="ffd-row">
+-            <select className="ffd-select" value={fYearFrom} onChange={(e) => setFYearFrom(e.target.value)}>
+-              <option value="">From</option>
+-              {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
+-            </select>
++            <CustomSelect value={fYearFrom} onChange={setFYearFrom} placeholder="From" options={YEARS.map((y) => ({value: y, label: y}))} />
+             <span className="ffd-sep">–</span>
+-            <select className="ffd-select" value={fYearTo} onChange={(e) => setFYearTo(e.target.value)}>
+-              <option value="">To</option>
+-              {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
+-            </select>
++            <CustomSelect value={fYearTo} onChange={setFYearTo} placeholder="To" options={YEARS.map((y) => ({value: y, label: y}))} />
+           </div>
+         </div>
+ 
+@@ -159,10 +149,7 @@ export default function FeedFilterDropdown(props: Props) {
+ 
+         <div className="ffd-group">
+           <label className="ffd-label">Location</label>
+-          <select className="ffd-select" value={fState} onChange={(e) => setFState(e.target.value)}>
+-            <option value="">Any state</option>
+-            {STATES_NG.map((s) => <option key={s} value={s}>{s}</option>)}
+-          </select>
++          <CustomSelect value={fState} onChange={setFState} placeholder="Any state" options={STATES_NG.map((s) => ({value: s, label: s}))} />
+         </div>
+ 
+         <div className="ffd-group">
+-- 
+2.43.0
+
+
+From da2e792907f0b32c66eff620105191546e676e63 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sat, 22 Aug 2026 22:09:16 +0000
+Subject: [PATCH 5/5] fix: filter panel too slim - converted to a full-screen
+ overlay matching the search modal's prominence
+
+Direct comparison confirmed the gap: search modal uses max-width:640px
+with no viewport cap and is a true position:fixed overlay; the filter
+panel was position:absolute anchored to the search form itself
+(which doesn't span the full screen width), capped at a much smaller
+min(480px, 96vw).
+
+Converted the filter to the same approach as the search modal - a
+position:fixed backdrop (dark overlay, tap to close) with the panel
+centered in it, widened to match (max-width:640px). No longer
+anchored to wherever the search form happens to sit, so it
+consistently occupies the screen properly regardless of screen size
+or where the filter button is positioned. Also removed the now-
+redundant mobile-specific width override since fixed positioning
+handles centering uniformly at every screen size already.
+---
+ components/shared/FeedFilterDropdown.tsx | 24 ++++++++++++++++--------
+ 1 file changed, 16 insertions(+), 8 deletions(-)
+
+diff --git a/components/shared/FeedFilterDropdown.tsx b/components/shared/FeedFilterDropdown.tsx
+index eccb659..7c6f36e 100644
+--- a/components/shared/FeedFilterDropdown.tsx
++++ b/components/shared/FeedFilterDropdown.tsx
+@@ -62,10 +62,11 @@ export default function FeedFilterDropdown(props: Props) {
+   } = props;
+ 
+   return (
+-    <div className="ffd-panel" onClick={(e) => e.stopPropagation()}>
+-      <div className="ffd-header">
+-        <span>Filter Vehicles</span>
+-        <button type="button" className="ffd-close" onClick={onClose} aria-label="Close filters">✕</button>
++    <div className="ffd-backdrop" onClick={onClose}>
++      <div className="ffd-panel" onClick={(e) => e.stopPropagation()}>
++        <div className="ffd-header">
++          <span>Filter Vehicles</span>
++          <button type="button" className="ffd-close" onClick={onClose} aria-label="Close filters">✕</button>
+       </div>
+ 
+       <div className="ffd-body">
+@@ -181,11 +182,18 @@ export default function FeedFilterDropdown(props: Props) {
+       </div>
+ 
+       <style jsx>{`
++        .ffd-backdrop {
++          position: fixed; inset: 0; z-index: 65;
++          background: rgba(0,0,0,0.35);
++          display: flex; align-items: flex-start; justify-content: center;
++          padding: 4.5rem 0.75rem 1rem;
++          overflow-y: auto; -webkit-overflow-scrolling: touch;
++        }
+         .ffd-panel {
+-          position: absolute; top: calc(100% + 8px); left: 0;
+-          width: 100%; max-width: min(480px, 96vw);
++          width: 100%; max-width: 640px;
+           background: #fff; border: 1.5px solid #E5E5E5; border-radius: 14px;
+-          box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden; z-index: 70;
++          box-shadow: 0 20px 60px rgba(0,0,0,0.25); overflow: hidden; z-index: 70;
++          margin: auto;
+         }
+         .ffd-header { display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1.1rem; border-bottom: 1px solid #F0F0F0; font-family: var(--font-display, inherit); font-size: 0.95rem; font-weight: 700; color: #1A1A1A; }
+         .ffd-close { background: none; border: none; font-size: 1rem; color: #A3A3A3; cursor: pointer; padding: 0.25rem; }
+@@ -215,7 +223,6 @@ export default function FeedFilterDropdown(props: Props) {
+         .ffd-apply { flex: 1; background: #F47B20; border: none; border-radius: 8px; padding: 0.7rem; font-size: 0.85rem; font-weight: 700; color: #fff; cursor: pointer; }
+ 
+         @media (max-width: 640px) {
+-          .ffd-panel { max-width: calc(100vw - 1rem); left: 50%; transform: translateX(-50%); }
+           .ffd-body { padding: 1.1rem 1.2rem; gap: 1.3rem; }
+           .ffd-label { font-size: 0.76rem; }
+           .ffd-select, .ffd-input { font-size: 1rem; padding: 0.8rem 0.9rem; min-height: 48px; }
+@@ -224,6 +231,7 @@ export default function FeedFilterDropdown(props: Props) {
+           .ffd-clear, .ffd-apply { padding: 0.85rem; font-size: 0.9rem; }
+         }
+       `}</style>
++      </div>
+     </div>
+   );
+ }
+-- 
+2.43.0
+

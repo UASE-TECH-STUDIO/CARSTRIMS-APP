@@ -8,9 +8,13 @@ set -e
 echo "==> Installing Node.js (Xcode Cloud images don't include it by default)"
 brew install node
 
-echo "==> Installing npm dependencies at repo root"
+echo "==> Installing npm dependencies at repo root (including devDependencies)"
 cd "$CI_PRIMARY_REPOSITORY_PATH"
-npm install
+# --include=dev is required here: capacitor.config.ts is TypeScript, and the
+# Capacitor CLI needs typescript/ts-node (usually devDependencies) to read it.
+# Xcode Cloud can default to a production-style install that skips devDependencies,
+# which silently breaks `npx cap copy` below with no clear error.
+npm install --include=dev
 
 echo "==> Done. node_modules/@capacitor/* should now exist for SPM to resolve."
 
@@ -37,9 +41,37 @@ cat > "$CI_PRIMARY_REPOSITORY_PATH/out/index.html" << 'HTMLEOF'
 <html><head><meta charset="utf-8"><title>CARSTRIMS</title></head>
 <body>Loading CARSTRIMS...</body></html>
 HTMLEOF
-npx cap copy ios || echo "==> WARNING: npx cap copy failed, will verify/create the folder directly below"
 
-# Verify the folder Xcode actually needs exists, regardless of
+# PREVIOUSLY: this line swallowed any failure from `cap copy` with a bare
+# warning, meaning a broken config.ts parse (e.g. from missing devDependencies)
+# would fail silently and ship a stale/incorrect capacitor.config.json to
+# production with no build-time indication anything was wrong. That's the
+# actual root cause of the app going black after being approved and updated:
+# the native config never reflected the latest server.url / allowNavigation
+# settings from the repo.
+#
+# NOW: cap copy is allowed to fail loudly (no `|| echo ...` swallow), and we
+# explicitly verify its most important output below.
+echo "==> Running npx cap copy ios"
+npx cap copy ios
+
+echo "==> Verifying capacitor.config.json was generated"
+CONFIG_JSON="$CI_PRIMARY_REPOSITORY_PATH/ios/App/App/capacitor.config.json"
+if [ ! -f "$CONFIG_JSON" ]; then
+  echo "==> FATAL: capacitor.config.json missing after cap copy — native app would run a stale/incorrect config."
+  exit 1
+fi
+
+echo "==> Verifying capacitor.config.json contains the expected server URL"
+if ! grep -q "www.carstrims.com" "$CONFIG_JSON"; then
+  echo "==> FATAL: capacitor.config.json does not contain expected server URL (www.carstrims.com)."
+  echo "==> Contents of capacitor.config.json for debugging:"
+  cat "$CONFIG_JSON"
+  exit 1
+fi
+echo "==> capacitor.config.json verified OK."
+
+# Verify the public folder Xcode actually needs exists, regardless of
 # whether the cap copy step above fully succeeded - this is the one
 # thing that must not be missing, so don't rely solely on a single
 # external command working perfectly.

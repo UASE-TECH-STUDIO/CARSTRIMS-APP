@@ -1,0 +1,48 @@
+From dfa1409e454da9396beed3eea8841a40911f8653 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 23 Aug 2026 18:50:42 +0000
+Subject: [PATCH] fix: bump app version 1.0 -> 1.0.1 - Apple rejected build 73
+ with ITMS-90062/90186
+
+App Store Connect rejected the upload with a clear, standard error:
+version '1.0' has already been approved by Apple (from an earlier
+submission around July 8th), and Apple never allows a second build
+under an already-approved version number - the '1.0' release train is
+now permanently closed for new submissions.
+
+Bumped MARKETING_VERSION from 1.0 to 1.0.1 in both build
+configurations (Debug and Release) in the Xcode project file.
+CURRENT_PROJECT_VERSION (the build number) is left as-is - Xcode
+Cloud auto-increments this per build during CI regardless of what's
+statically in the project file, and the actual error was specifically
+about CFBundleShortVersionString (the marketing version), not the
+build number.
+---
+ ios/App/App.xcodeproj/project.pbxproj | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/ios/App/App.xcodeproj/project.pbxproj b/ios/App/App.xcodeproj/project.pbxproj
+index d3b4d5c..6fdaa5d 100644
+--- a/ios/App/App.xcodeproj/project.pbxproj
++++ b/ios/App/App.xcodeproj/project.pbxproj
+@@ -308,7 +308,7 @@
+ 					"$(inherited)",
+ 					"@executable_path/Frameworks",
+ 				);
+-				MARKETING_VERSION = 1.0;
++				MARKETING_VERSION = 1.0.1;
+ 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
+ 				PRODUCT_BUNDLE_IDENTIFIER = com.uasetechstudio.carstrims;
+ 				PRODUCT_NAME = "$(TARGET_NAME)";
+@@ -331,7 +331,7 @@
+ 					"$(inherited)",
+ 					"@executable_path/Frameworks",
+ 				);
+-				MARKETING_VERSION = 1.0;
++				MARKETING_VERSION = 1.0.1;
+ 				PRODUCT_BUNDLE_IDENTIFIER = com.uasetechstudio.carstrims;
+ 				PRODUCT_NAME = "$(TARGET_NAME)";
+ 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
+-- 
+2.43.0
+
