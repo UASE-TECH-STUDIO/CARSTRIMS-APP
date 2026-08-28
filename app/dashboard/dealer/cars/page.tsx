@@ -178,6 +178,15 @@ export default function DealerCarsPage() {
       // every time, and so it doesn't look like a permanent bookmark.
       window.history.replaceState({}, "", window.location.pathname);
     }
+    // Deep link support for the dashboard's stats cards (e.g. the
+    // "Available" card links to ?status=available) - was a real,
+    // silent mismatch before this: the link passed the param but
+    // this page never read it, so clicking that specific card always
+    // showed every car instead of filtering to just that status.
+    const statusParam = searchParams.get("status");
+    if (statusParam && STATUSES.includes(statusParam)) {
+      setStatusFilter(statusParam);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const openEdit = (car:Car)=>{
