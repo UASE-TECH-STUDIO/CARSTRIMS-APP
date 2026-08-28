@@ -6,7 +6,7 @@ import CustomSelect from "@/components/ui/CustomSelect";
 import { useToast } from "@/store/toastStore";
 import { useConfirm } from "@/store/confirmStore";
 import { parseServerDate } from "@/lib/timeUtils";
-import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, downloadBlob } from "@/lib/documentExport";
+import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 
 const CATEGORIES = [
   "repairs","maintenance","fuel","insurance","registration",
@@ -177,6 +177,21 @@ export default function ExpensesPage() {
     }
   };
 
+  const handleExpensesShare = async (format: "pdf" | "jpg") => {
+    setShowExportPicker(false);
+    setExportBusy("share");
+    try {
+      const filename = `carstrims-expenses-${catFilter}-${Date.now()}`;
+      const html = buildExpensesHtml();
+      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Expenses");
+      await shareBlob(blob, `${filename}.${format}`, "Expenses");
+    } catch (e: any) {
+      showErr(e?.message || "Share failed");
+    } finally {
+      setExportBusy("");
+    }
+  };
+
 
   const fmt = (n: number) => `NGN ${(n || 0).toLocaleString()}`;
   const fmtDate = (iso: string) => iso ? (parseServerDate(iso)?.toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })||"-") : "-";
@@ -224,6 +239,9 @@ export default function ExpensesPage() {
                 <button onClick={()=>handleExpensesExport("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as PDF</button>
                 <button onClick={()=>handleExpensesExport("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as JPG Image</button>
                 <button onClick={()=>handleExpensesExport("excel")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as Excel</button>
+                <div style={{padding:"0.4rem 0.9rem 0.2rem",fontSize:"0.65rem",fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase" as const,color:"#A3A3A3",borderTop:"1.5px solid #E5E5E5",marginTop:"0.2rem"}}>Share</div>
+                <button onClick={()=>handleExpensesShare("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.8rem",fontWeight:600,color:"#16A34A"}}>{exportBusy==="share"?"Sharing…":"as PDF"}</button>
+                <button onClick={()=>handleExpensesShare("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600,color:"#16A34A"}}>{exportBusy==="share"?"Sharing…":"as JPG Image"}</button>
               </div>
             )}
           </div>
