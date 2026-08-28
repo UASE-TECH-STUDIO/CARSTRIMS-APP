@@ -165,6 +165,16 @@ export async function renderHtmlStringToPdfBlob(htmlString: string, title = "Doc
       else iframe.onload = () => settle();
     });
 
+    // Same fix as renderHtmlStringToJpgBlob - resize to the real
+    // content height before capture, so any template using vh/%-
+    // relative CSS resolves against the actual document size rather
+    // than the fixed placeholder height set above.
+    const doc = iframe.contentDocument;
+    if (doc?.body) {
+      const fullHeight = Math.max(doc.body.scrollHeight, doc.documentElement?.scrollHeight || 0);
+      if (fullHeight > 0) iframe.style.height = `${fullHeight}px`;
+    }
+
     const target = iframe.contentDocument?.body;
     if (!target) throw new Error("Nothing to export yet");
     return await renderElementToPdfBlob(target, title);
@@ -203,6 +213,10 @@ export async function renderHtmlStringToJpgBlob(htmlString: string): Promise<Blo
   iframe.style.left = "-99999px";
   iframe.style.top = "0";
   iframe.style.width = "800px";
+  // Starting height is just a reasonable placeholder for layout to
+  // begin against - it gets corrected below to the real content
+  // height before anything is captured, so this initial guess never
+  // actually constrains the final image.
   iframe.style.height = "1131px";
   iframe.style.border = "none";
   document.body.appendChild(iframe);
@@ -228,6 +242,19 @@ export async function renderHtmlStringToJpgBlob(htmlString: string): Promise<Blo
       if (doc.readyState === "complete") settle();
       else iframe.onload = () => settle();
     });
+
+    // Real fix for JPG sizing/cutoff: resize the iframe to the
+    // document's actual full content height (not the fixed 1131px
+    // starting guess) before capturing - otherwise any document
+    // genuinely taller than one A4 page, or any template using
+    // vh/%-relative sizing that resolves against the iframe's own
+    // box rather than its content, would be clipped or laid out
+    // against the wrong height.
+    const doc = iframe.contentDocument;
+    if (doc?.body) {
+      const fullHeight = Math.max(doc.body.scrollHeight, doc.documentElement?.scrollHeight || 0);
+      if (fullHeight > 0) iframe.style.height = `${fullHeight}px`;
+    }
 
     const target = iframe.contentDocument?.body;
     if (!target) throw new Error("Nothing to export yet");
