@@ -2,8 +2,11 @@
 import { useAuthStore } from "@/store/authStore";
 import { usePathname, useRouter } from "next/navigation";
 import NotificationBell from "@/components/ui/NotificationBell";
+import FeedHomeButton from "@/components/shared/FeedHomeButton";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
+
+const IconSignout = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>;
 
 const PAGE_TITLES: Record<string, string> = {
   "/dashboard/dealer": "Overview",
@@ -32,7 +35,7 @@ function getGreeting() {
 export default function DealerTopbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const [dealer, setDealer] = useState<any>(null);
   const title = PAGE_TITLES[pathname] || "Dashboard";
 
@@ -51,6 +54,7 @@ export default function DealerTopbar() {
         <p className="page-date">{today}</p>
       </div>
       <div className="topbar-right">
+        <FeedHomeButton compact />
         <div className="greeting">
           {getGreeting()}, <span className="greeting-name">{user?.fullName?.split(" ")[0] || "Dealer"}</span>
         </div>
@@ -60,6 +64,9 @@ export default function DealerTopbar() {
             ? <img src={dealer.logo} alt="" className="avatar-img" />
             : <span className="avatar-letter">{user?.fullName?.charAt(0).toUpperCase() || "D"}</span>
           }
+        </button>
+        <button className="logout-topbar-btn" onClick={() => { logout(); router.push("/login"); }} title="Sign Out">
+          <IconSignout/>
         </button>
       </div>
       <style>{`
@@ -74,6 +81,8 @@ export default function DealerTopbar() {
         .avatar-btn:hover{border-color:#FF9340;transform:scale(1.05)}
         .avatar-img{width:100%;height:100%;object-fit:cover}
         .avatar-letter{font-family:var(--font-display);font-size:1rem;color:#F47B20;font-weight:600}
+        .logout-topbar-btn{background:none;border:1px solid #E5E5E5;border-radius:6px;color:#AAA;cursor:pointer;padding:0.3rem 0.5rem;transition:all 0.2s;display:flex;align-items:center;justify-content:center}
+        .logout-topbar-btn:hover{color:#DC2626;border-color:#FCA5A5;background:#FEF2F2}
         @media(max-width:640px){.greeting{display:none}.page-date{display:none}.topbar{padding:0 1rem}}
       `}</style>
     </header>
