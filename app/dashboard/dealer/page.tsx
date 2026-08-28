@@ -49,6 +49,16 @@ function getLinkForActivity(n: any): string {
   return "/dashboard/dealer/notifications";
 }
 
+const verbMap: Record<string,string> = {
+  car_liked:"liked your", like:"liked your",
+  car_commented:"commented on your", comment:"commented on your",
+  follow:"started following your dealership", new_follower:"started following your dealership",
+  car_request:"sent a request about your", request:"sent a request about your",
+  car_sold:"purchased your", new_message:"sent you a message about",
+  general:"interacted with your dealership", announcement:"posted an announcement",
+  dealer_approved:"approved your dealer account",
+};
+
 export default function DealerOverviewPage() {
   const { user } = useAuthStore();
   const showToast = useToast();
