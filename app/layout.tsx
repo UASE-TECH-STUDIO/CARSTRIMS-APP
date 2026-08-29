@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import SWRegistrar from "@/components/shared/SWRegistrar";
+import SplashScreenController from "@/components/shared/SplashScreenController";
 import PlatformClass from "@/components/shared/PlatformClass";
 import CapacitorPush from "@/components/shared/CapacitorPush";
 import DailyGreeting from "@/components/shared/DailyGreeting";
@@ -165,6 +166,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <SWRegistrar />
+        <SplashScreenController />
         <PlatformClass />
         <CapacitorPush />
         <DailyGreeting />
