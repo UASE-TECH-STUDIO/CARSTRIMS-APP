@@ -8,6 +8,7 @@ import CustomSelect from "@/components/ui/CustomSelect";
 import {
   LETTERHEAD_DESIGNS, PROFORMA_DESIGNS, RECEIPT_DESIGNS, BusinessDocData,
 } from "@/components/design-studio/BusinessDocDesigns";
+import { ColorScheme, COLOR_SCHEMES } from "@/components/design-studio/colorSchemes";
 
 type DocType = "letterhead" | "proforma" | "receipt";
 
@@ -20,6 +21,8 @@ export default function BusinessDocsPage() {
 
   const [docType, setDocType] = useState<DocType | null>(null);
   const [designId, setDesignId] = useState<string | null>(null);
+  const [colorSchemeId, setColorSchemeId] = useState(COLOR_SCHEMES[0].id);
+  const colorScheme: ColorScheme = COLOR_SCHEMES.find(c => c.id === colorSchemeId) || COLOR_SCHEMES[0];
   const [downloading, setDownloading] = useState<"jpg" | "pdf" | null>(null);
 
   // Proforma/Receipt form fields
@@ -201,10 +204,37 @@ export default function BusinessDocsPage() {
               <button key={d.id} onClick={() => setDesignId(d.id)} style={designThumbStyle(designId === d.id)}>
                 <div style={{ width: "80px", height: "113px", overflow: "hidden" }}>
                   <div style={{ transform: "scale(0.1)", transformOrigin: "top left", pointerEvents: "none" }}>
-                    {docData && <d.Component data={docData} />}
+                    {docData && <d.Component data={docData} colorScheme={colorScheme} />}
                   </div>
                 </div>
                 <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#525252", marginTop: "0.3rem" }}>{d.name}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Step 3.5: color-combo picker - lets a dealer keep a design's layout but match it to their own branding colors */}
+      {docType && formReady && designId && (
+        <div style={{ marginBottom: "1.5rem" }}>
+          <div style={stepLabelStyle}>Pick a color combo</div>
+          <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+            {COLOR_SCHEMES.map(cs => (
+              <button
+                key={cs.id}
+                onClick={() => setColorSchemeId(cs.id)}
+                style={{
+                  display: "flex", alignItems: "center", gap: "0.4rem",
+                  padding: "0.4rem 0.7rem", borderRadius: "8px",
+                  border: colorSchemeId === cs.id ? "2px solid #F47B20" : "1.5px solid #E5E5E5",
+                  background: "#fff", cursor: "pointer",
+                }}
+              >
+                <span style={{ display: "flex", borderRadius: "50%", overflow: "hidden", width: "18px", height: "18px", border: "1px solid #E5E5E5" }}>
+                  <span style={{ flex: 1, background: cs.accent }} />
+                  <span style={{ flex: 1, background: cs.text }} />
+                </span>
+                <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#525252" }}>{cs.name}</span>
               </button>
             ))}
           </div>
@@ -218,7 +248,7 @@ export default function BusinessDocsPage() {
           <div style={{ display: "flex", justifyContent: "center", marginBottom: "1.25rem", padding: "1.5rem", background: "#FAFAFA", borderRadius: "12px", overflowX: "auto" }}>
             <div style={{ transform: "scale(0.55)", transformOrigin: "top center" }}>
               <div ref={docRef}>
-                <activeDesign.Component data={docData} />
+                <activeDesign.Component data={docData} colorScheme={colorScheme} />
               </div>
             </div>
           </div>
