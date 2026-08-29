@@ -227,8 +227,8 @@ export default function MarketingPage() {
         </div>
       )}
 
-      {/* Step 3.5: color-combo picker - only shown for the customizable design */}
-      {docData && (activeDesign as any)?.customizable && (
+      {/* Step 3.5: color-combo picker - available for every design, so a dealer who likes a design's layout can still match it to their own branding colors */}
+      {docData && isCardFormat && (
         <div style={{ marginBottom: "1.5rem" }}>
           <div style={stepLabelStyle}>Pick a color combo</div>
           <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>

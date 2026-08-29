@@ -12,6 +12,8 @@
  * CSS classes during capture.
  */
 
+import type { ColorScheme } from "./colorSchemes";
+
 export interface ComplimentaryCardData {
   companyName: string;
   companyLogo: string | null;
@@ -44,29 +46,8 @@ export interface FlyerCarData {
   headline?: string;
 }
 
-export interface ColorScheme {
-  id: string;
-  name: string;
-  accent: string;
-  text: string;
-}
-
-/**
- * Preset color-combo picker (item I) - a curated set of paired
- * colors rather than a freeform color wheel, so every combination a
- * dealer can pick still looks intentional and professional. Applies
- * to ComplimentaryCardCustom below; other designs keep their own
- * fixed palette, matching how the rest of Design Studio already
- * works (each design has its own deliberate look).
- */
-export const COLOR_SCHEMES: ColorScheme[] = [
-  { id: "orange",   name: "Orange & Charcoal", accent: "#F47B20", text: "#1A1A1A" },
-  { id: "navy",     name: "Navy & Gold",       accent: "#1E3A5F", text: "#C9A84C" },
-  { id: "green",    name: "Forest & Cream",    accent: "#1D5C3A", text: "#F5F0E6" },
-  { id: "burgundy", name: "Burgundy & Cream",  accent: "#7A1F2B", text: "#F5F0E6" },
-  { id: "black",    name: "Black & Orange",    accent: "#111111", text: "#F47B20" },
-  { id: "teal",     name: "Teal & White",      accent: "#0F6E6E", text: "#FFFFFF" },
-];
+export type { ColorScheme } from "./colorSchemes";
+export { COLOR_SCHEMES } from "./colorSchemes";
 
 const CARD_W = 337.5;
 const CARD_H = 212.5;
@@ -97,9 +78,11 @@ const poweredByPage = (dark: boolean) => (
 
 // ── Complimentary Cards ──────────────────────────────────────────
 
-export function ComplimentaryCardOrange({ data }: { data: ComplimentaryCardData }) {
+export function ComplimentaryCardOrange({ data, colorScheme }: { data: ComplimentaryCardData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#F47B20";
+  const text = colorScheme?.text || "rgba(255,255,255,0.85)";
   return (
-    <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: "#F47B20", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.2)", borderRadius: 8 }}>
+    <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: accent, fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.2)", borderRadius: 8 }}>
       <div style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0, background: "linear-gradient(135deg, rgba(255,255,255,0.08), transparent)" }} />
       <div style={{ position: "absolute", left: 20, top: 20, display: "flex", alignItems: "center", gap: 8 }}>
         {data.companyLogo && <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 26, height: 26, objectFit: "contain" }} />}
@@ -108,7 +91,7 @@ export function ComplimentaryCardOrange({ data }: { data: ComplimentaryCardData 
       {data.personName && (
         <div style={{ position: "absolute", left: 20, top: 90 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{data.personName}</div>
-          {data.personRole && <div style={{ fontSize: 8, color: "rgba(255,255,255,0.85)", marginTop: 2, textTransform: "uppercase", letterSpacing: "0.06em" }}>{data.personRole}</div>}
+          {data.personRole && <div style={{ fontSize: 8, color: text, marginTop: 2, textTransform: "uppercase", letterSpacing: "0.06em" }}>{data.personRole}</div>}
         </div>
       )}
       <div style={{ position: "absolute", left: 20, bottom: 22, fontSize: 7.5, color: "#fff", lineHeight: 1.7 }}>
@@ -125,10 +108,11 @@ export function ComplimentaryCardOrange({ data }: { data: ComplimentaryCardData 
   );
 }
 
-export function ComplimentaryCardWhite({ data }: { data: ComplimentaryCardData }) {
+export function ComplimentaryCardWhite({ data, colorScheme }: { data: ComplimentaryCardData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#F47B20";
   return (
     <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: "#ffffff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.15)", borderRadius: 8, border: "1px solid #E5E5E5" }}>
-      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 8, background: "#F47B20" }} />
+      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 8, background: accent }} />
       <div style={{ position: "absolute", left: 26, top: 22, display: "flex", alignItems: "center", gap: 8 }}>
         {data.companyLogo && <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 24, height: 24, objectFit: "contain" }} />}
         <div style={{ fontSize: 11, fontWeight: 700, color: "#1A1A1A" }}>{data.companyName}</div>
@@ -136,7 +120,7 @@ export function ComplimentaryCardWhite({ data }: { data: ComplimentaryCardData }
       {data.personName && (
         <div style={{ position: "absolute", left: 26, top: 92 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: "#1A1A1A" }}>{data.personName}</div>
-          {data.personRole && <div style={{ fontSize: 8, color: "#F47B20", marginTop: 2, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>{data.personRole}</div>}
+          {data.personRole && <div style={{ fontSize: 8, color: accent, marginTop: 2, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>{data.personRole}</div>}
         </div>
       )}
       <div style={{ position: "absolute", left: 26, bottom: 22, fontSize: 7.5, color: "#737373", lineHeight: 1.7 }}>
@@ -152,10 +136,12 @@ export function ComplimentaryCardWhite({ data }: { data: ComplimentaryCardData }
   );
 }
 
-export function ComplimentaryCardDarkGold({ data }: { data: ComplimentaryCardData }) {
+export function ComplimentaryCardDarkGold({ data, colorScheme }: { data: ComplimentaryCardData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#F47B20";
+  const text = colorScheme?.text || "#C9A84C";
   return (
     <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: "#1A1A1A", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.25)", borderRadius: 8 }}>
-      <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 3, background: "linear-gradient(90deg, #F47B20, #C9A84C)" }} />
+      <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 3, background: `linear-gradient(90deg, ${accent}, ${text})` }} />
       <div style={{ position: "absolute", left: 20, top: 20, display: "flex", alignItems: "center", gap: 8 }}>
         {data.companyLogo && <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 24, height: 24, objectFit: "contain" }} />}
         <div style={{ fontSize: 11, fontWeight: 700, color: "#fff" }}>{data.companyName}</div>
@@ -163,7 +149,7 @@ export function ComplimentaryCardDarkGold({ data }: { data: ComplimentaryCardDat
       {data.personName && (
         <div style={{ position: "absolute", left: 20, top: 90 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{data.personName}</div>
-          {data.personRole && <div style={{ fontSize: 8, color: "#C9A84C", marginTop: 2, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>{data.personRole}</div>}
+          {data.personRole && <div style={{ fontSize: 8, color: text, marginTop: 2, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>{data.personRole}</div>}
         </div>
       )}
       <div style={{ position: "absolute", left: 20, bottom: 22, fontSize: 7.5, color: "rgba(255,255,255,0.6)", lineHeight: 1.7 }}>
@@ -179,7 +165,8 @@ export function ComplimentaryCardDarkGold({ data }: { data: ComplimentaryCardDat
   );
 }
 
-export function ComplimentaryCardMinimalLine({ data }: { data: ComplimentaryCardData }) {
+export function ComplimentaryCardMinimalLine({ data, colorScheme }: { data: ComplimentaryCardData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#525252";
   return (
     <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: "#ffffff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.15)", borderRadius: 4 }}>
       <div style={{ position: "absolute", left: 22, top: 22, display: "flex", alignItems: "center", gap: 6 }}>
@@ -190,7 +177,7 @@ export function ComplimentaryCardMinimalLine({ data }: { data: ComplimentaryCard
       {data.personName && (
         <div style={{ position: "absolute", left: 22, top: 90 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: "#1A1A1A" }}>{data.personName}</div>
-          {data.personRole && <div style={{ fontSize: 8, color: "#525252", marginTop: 3 }}>{data.personRole}</div>}
+          {data.personRole && <div style={{ fontSize: 8, color: accent, marginTop: 3, fontWeight: 700 }}>{data.personRole}</div>}
         </div>
       )}
       <div style={{ position: "absolute", left: 22, bottom: 22, fontSize: 7, color: "#A3A3A3", lineHeight: 1.7 }}>
@@ -206,10 +193,11 @@ export function ComplimentaryCardMinimalLine({ data }: { data: ComplimentaryCard
   );
 }
 
-export function ComplimentaryCardSplit({ data }: { data: ComplimentaryCardData }) {
+export function ComplimentaryCardSplit({ data, colorScheme }: { data: ComplimentaryCardData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#F47B20";
   return (
     <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: "#ffffff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.15)", borderRadius: 8 }}>
-      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: "38%", background: "#F47B20", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: "38%", background: accent, display: "flex", alignItems: "center", justifyContent: "center" }}>
         {data.companyLogo && <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 36, height: 36, objectFit: "contain" }} />}
       </div>
       <div style={{ position: "absolute", left: "42%", top: 18, right: 16 }}>
@@ -217,7 +205,7 @@ export function ComplimentaryCardSplit({ data }: { data: ComplimentaryCardData }
         {data.personName && (
           <>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#1A1A1A", marginTop: 16 }}>{data.personName}</div>
-            {data.personRole && <div style={{ fontSize: 7.5, color: "#F47B20", marginTop: 2, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 700 }}>{data.personRole}</div>}
+            {data.personRole && <div style={{ fontSize: 7.5, color: accent, marginTop: 2, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 700 }}>{data.personRole}</div>}
           </>
         )}
       </div>
