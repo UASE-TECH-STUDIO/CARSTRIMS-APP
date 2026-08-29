@@ -7,6 +7,7 @@ import { useToast } from "@/store/toastStore";
 import { renderElementToCardPdfBlob, renderElementToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { ID_CARD_DESIGNS, IdCardData } from "@/components/design-studio/IdCardDesigns";
 import { ColorScheme, COLOR_SCHEMES } from "@/components/design-studio/colorSchemes";
+import DocumentPreviewLightbox from "@/components/shared/DocumentPreviewLightbox";
 
 type Subject = "dealer" | "staff";
 
@@ -250,6 +251,7 @@ export default function IdCardsPage() {
       {cardData && activeDesign && (
         <div>
           <div style={stepLabelStyle}>{subject === "staff" ? "5" : "4"}. Preview & download</div>
+          <DocumentPreviewLightbox getElements={() => [cardRef.current, cardBackRef.current]}>
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "1.5rem", marginBottom: "1.25rem", padding: "1.5rem", background: "#FAFAFA", borderRadius: "12px" }}>
             <div>
               <div style={{ fontSize: "0.68rem", fontWeight: 700, color: "#A3A3A3", textAlign: "center", marginBottom: "0.4rem" }}>FRONT</div>
@@ -264,6 +266,7 @@ export default function IdCardsPage() {
               </div>
             </div>
           </div>
+          </DocumentPreviewLightbox>
           <div style={{ display: "flex", gap: "0.75rem" }}>
             <button onClick={() => handleDownload("jpg")} disabled={downloading !== null} style={downloadButtonStyle(false)}>
               {downloading === "jpg" ? "Generating…" : "Download JPG"}
