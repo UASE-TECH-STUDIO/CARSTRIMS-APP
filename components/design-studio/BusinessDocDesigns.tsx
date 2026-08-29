@@ -1,5 +1,7 @@
 "use client";
 
+import type { ColorScheme } from "./colorSchemes";
+
 /**
  * Business document templates: Letterhead, Proforma Invoice, Receipt.
  * A4-proportioned (unlike the card-sized ID cards) - rendered at
@@ -53,10 +55,11 @@ function itemsSubtotal(items?: { qty: number; unitPrice: number }[]) {
 
 // ── Letterhead ───────────────────────────────────────────────────
 
-export function LetterheadClassic({ data }: { data: BusinessDocData }) {
+export function LetterheadClassic({ data, colorScheme }: { data: BusinessDocData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#F47B20";
   return (
     <div style={{ width: PAGE_W, height: PAGE_H, position: "relative", background: "#fff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
-      <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 6, background: "#F47B20" }} />
+      <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 6, background: accent }} />
       <div style={{ position: "absolute", left: 60, top: 40, right: 60, display: "flex", alignItems: "center", gap: 16 }}>
         {data.companyLogo && <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 56, height: 56, objectFit: "contain" }} />}
         <div>
@@ -71,13 +74,14 @@ export function LetterheadClassic({ data }: { data: BusinessDocData }) {
         {data.qrCode && <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: 48, height: 48, objectFit: "contain", marginLeft: "auto" }} />}
       </div>
       <div style={{ position: "absolute", left: 60, right: 60, top: 130, height: 1.5, background: "#1A1A1A" }} />
-      <div style={{ position: "absolute", left: 0, right: 0, bottom: 60, height: 4, background: "#F47B20" }} />
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: 60, height: 4, background: accent }} />
       {poweredByFooter(false)}
     </div>
   );
 }
 
-export function LetterheadMinimal({ data }: { data: BusinessDocData }) {
+export function LetterheadMinimal({ data, colorScheme }: { data: BusinessDocData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#E5E5E5";
   return (
     <div style={{ width: PAGE_W, height: PAGE_H, position: "relative", background: "#fff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
       <div style={{ position: "absolute", left: 60, top: 60, display: "flex", flexDirection: "column", gap: 4 }}>
@@ -87,7 +91,7 @@ export function LetterheadMinimal({ data }: { data: BusinessDocData }) {
           {[data.companyAddress, [data.companyCity, data.companyState].filter(Boolean).join(", "), data.companyPhone, data.companyEmail].filter(Boolean).join("   ")}
         </div>
       </div>
-      <div style={{ position: "absolute", left: 60, right: 60, top: 150, height: 1, background: "#E5E5E5" }} />
+      <div style={{ position: "absolute", left: 60, right: 60, top: 150, height: 1.5, background: accent }} />
       {data.qrCode && (
         <div style={{ position: "absolute", right: 60, bottom: 60, width: 50, height: 50 }}>
           <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
@@ -98,7 +102,9 @@ export function LetterheadMinimal({ data }: { data: BusinessDocData }) {
   );
 }
 
-export function LetterheadDark({ data }: { data: BusinessDocData }) {
+export function LetterheadDark({ data, colorScheme }: { data: BusinessDocData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#F47B20";
+  const text = colorScheme?.text || "#C9A84C";
   return (
     <div style={{ width: PAGE_W, height: PAGE_H, position: "relative", background: "#fff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
       <div style={{ background: "#1A1A1A", padding: "40px 60px", display: "flex", alignItems: "center", gap: 16 }}>
@@ -111,16 +117,17 @@ export function LetterheadDark({ data }: { data: BusinessDocData }) {
         </div>
         {data.qrCode && <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: 44, height: 44, objectFit: "contain", marginLeft: "auto" }} />}
       </div>
-      <div style={{ position: "absolute", left: 0, right: 0, top: 122, height: 4, background: "linear-gradient(90deg, #F47B20, #C9A84C)" }} />
+      <div style={{ position: "absolute", left: 0, right: 0, top: 122, height: 4, background: `linear-gradient(90deg, ${accent}, ${text})` }} />
       {poweredByFooter(false)}
     </div>
   );
 }
 
-export function LetterheadSidebar({ data }: { data: BusinessDocData }) {
+export function LetterheadSidebar({ data, colorScheme }: { data: BusinessDocData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#F47B20";
   return (
     <div style={{ width: PAGE_W, height: PAGE_H, position: "relative", background: "#fff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
-      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 14, background: "#F47B20" }} />
+      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 14, background: accent }} />
       <div style={{ position: "absolute", left: 50, top: 50, display: "flex", flexDirection: "column", gap: 6 }}>
         {data.companyLogo && <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 44, height: 44, objectFit: "contain" }} />}
         <div style={{ fontSize: 19, fontWeight: 700, color: "#1A1A1A", marginTop: 6 }}>{data.companyName}</div>
@@ -141,14 +148,16 @@ export function LetterheadSidebar({ data }: { data: BusinessDocData }) {
   );
 }
 
-export function LetterheadElegantGold({ data }: { data: BusinessDocData }) {
+export function LetterheadElegantGold({ data, colorScheme }: { data: BusinessDocData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#C9A84C";
+  const text = colorScheme?.text || "#8A7539";
   return (
     <div style={{ width: PAGE_W, height: PAGE_H, position: "relative", background: "#FCFCFB", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
       <div style={{ position: "absolute", left: 0, right: 0, top: 0, display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 44 }}>
         {data.companyLogo && <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 46, height: 46, objectFit: "contain" }} />}
         <div style={{ fontSize: 18, fontWeight: 700, color: "#1A1A1A", letterSpacing: "0.08em", textTransform: "uppercase", marginTop: 8 }}>{data.companyName}</div>
-        <div style={{ width: 40, height: 1.5, background: "#C9A84C", marginTop: 8 }} />
-        <div style={{ fontSize: 9, color: "#8A7539", marginTop: 8 }}>
+        <div style={{ width: 40, height: 1.5, background: accent, marginTop: 8 }} />
+        <div style={{ fontSize: 9, color: text, marginTop: 8 }}>
           {[data.companyAddress, [data.companyCity, data.companyState].filter(Boolean).join(", "), data.companyPhone, data.companyEmail].filter(Boolean).join("   ·   ")}
         </div>
       </div>
