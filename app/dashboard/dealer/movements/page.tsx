@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useRef, useCallback } from "react";
 import api from "@/lib/api";
-import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, downloadBlob } from "@/lib/documentExport";
+import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { parseServerDate } from "@/lib/timeUtils";
@@ -219,6 +219,21 @@ export default function MovementsPage() {
     }
   };
 
+  const handleMovementsShare = async (format: "pdf" | "jpg") => {
+    setShowExportPicker(false);
+    setExportBusy("share");
+    try {
+      const filename = `carstrims-movements-${Date.now()}`;
+      const html = buildMovementsHtml();
+      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Vehicle Movements");
+      await shareBlob(blob, `${filename}.${format}`, "Vehicle Movements");
+    } catch (e: any) {
+      showToast(e?.message || "Share failed", "error");
+    } finally {
+      setExportBusy("");
+    }
+  };
+
   // Toggle an approver in the multi-select list
   const toggleApprover = (uid: string) => {
     setForm(f => ({
@@ -267,6 +282,9 @@ export default function MovementsPage() {
                 <button onClick={()=>handleMovementsExport("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as PDF</button>
                 <button onClick={()=>handleMovementsExport("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as JPG Image</button>
                 <button onClick={()=>handleMovementsExport("excel")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>as Excel</button>
+                <div style={{padding:"0.4rem 0.9rem 0.2rem",fontSize:"0.65rem",fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase" as const,color:"#A3A3A3",borderTop:"1.5px solid #E5E5E5",marginTop:"0.2rem"}}>Share</div>
+                <button onClick={()=>handleMovementsShare("pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.8rem",fontWeight:600,color:"#16A34A"}}>{exportBusy==="share"?"Sharing…":"as PDF"}</button>
+                <button onClick={()=>handleMovementsShare("jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.8rem",fontWeight:600,color:"#16A34A"}}>{exportBusy==="share"?"Sharing…":"as JPG Image"}</button>
               </div>
             )}
           </div>
