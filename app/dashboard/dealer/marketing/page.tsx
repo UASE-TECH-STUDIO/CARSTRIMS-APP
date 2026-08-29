@@ -8,6 +8,7 @@ import {
   COMPLIMENTARY_CARD_DESIGNS, FLYER_DESIGNS, ComplimentaryCardData, FlyerCarData,
   ColorScheme, COLOR_SCHEMES,
 } from "@/components/design-studio/MarketingDesigns";
+import DocumentPreviewLightbox from "@/components/shared/DocumentPreviewLightbox";
 
 type MaterialType = "complimentary-card" | "flyer";
 
@@ -258,6 +259,7 @@ export default function MarketingPage() {
       {docData && activeDesign && (
         <div>
           <div style={stepLabelStyle}>4. Preview & download</div>
+          <DocumentPreviewLightbox getElements={() => hasBack ? [docRef.current, docBackRef.current] : [docRef.current]}>
           <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "1rem", marginBottom: "1.25rem", padding: "1.5rem", background: "#FAFAFA", borderRadius: "12px", overflowX: "auto" }}>
             <div style={{ transform: isCardFormat ? "none" : "scale(0.55)", transformOrigin: "top center" }}>
               <div ref={docRef}>
@@ -275,6 +277,7 @@ export default function MarketingPage() {
               </div>
             )}
           </div>
+          </DocumentPreviewLightbox>
           <div style={{ display: "flex", gap: "0.75rem" }}>
             <button onClick={() => handleDownload("jpg")} disabled={downloading !== null} style={downloadButtonStyle(false)}>
               {downloading === "jpg" ? "Generating…" : "Download JPG"}
