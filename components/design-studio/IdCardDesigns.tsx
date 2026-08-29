@@ -14,6 +14,8 @@
  * correctly.
  */
 
+import type { ColorScheme } from "./colorSchemes";
+
 export interface IdCardData {
   companyName: string;
   companyLogo: string | null;
@@ -50,14 +52,15 @@ const initials = (name: string) =>
  * logo + name top, circular photo, QR bottom-right for scanning to
  * the dealer's page at any time.
  */
-export function IdCardExecutive({ data }: { data: IdCardData }) {
+export function IdCardExecutive({ data, colorScheme }: { data: IdCardData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#F47B20";
   return (
     <div style={{
       width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden",
       background: "#ffffff", fontFamily: "Arial, sans-serif",
       boxShadow: "0 1px 4px rgba(0,0,0,0.15)", borderRadius: 8,
     }}>
-      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 10, background: "#F47B20" }} />
+      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 10, background: accent }} />
 
       <div style={{ position: "absolute", left: 24, top: 14, right: 16, display: "flex", alignItems: "center", gap: 8 }}>
         {data.companyLogo && (
@@ -68,7 +71,7 @@ export function IdCardExecutive({ data }: { data: IdCardData }) {
         </div>
       </div>
 
-      <div style={{ position: "absolute", left: 24, top: 56, width: 62, height: 62, borderRadius: "50%", overflow: "hidden", background: "#F5F5F5", border: "2px solid #F47B20", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ position: "absolute", left: 24, top: 56, width: 62, height: 62, borderRadius: "50%", overflow: "hidden", background: "#F5F5F5", border: `2px solid ${accent}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
         {data.personPhoto ? (
           <img src={data.personPhoto} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (
@@ -78,7 +81,7 @@ export function IdCardExecutive({ data }: { data: IdCardData }) {
 
       <div style={{ position: "absolute", left: 98, top: 62, right: 90 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: "#1A1A1A", lineHeight: 1.25 }}>{data.personName}</div>
-        <div style={{ fontSize: 8, fontWeight: 700, color: "#F47B20", letterSpacing: "0.08em", textTransform: "uppercase", marginTop: 3 }}>
+        <div style={{ fontSize: 8, fontWeight: 700, color: accent, letterSpacing: "0.08em", textTransform: "uppercase", marginTop: 3 }}>
           {data.personRole}
         </div>
         <div style={{ fontSize: 7, color: "#737373", marginTop: 6 }}>ID: {data.personId}</div>
@@ -105,14 +108,16 @@ export function IdCardExecutive({ data }: { data: IdCardData }) {
  * app's own brand aesthetic, gold/orange accents, centered logo,
  * photo with accent ring.
  */
-export function IdCardCorporateDark({ data }: { data: IdCardData }) {
+export function IdCardCorporateDark({ data, colorScheme }: { data: IdCardData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#F47B20";
+  const text = colorScheme?.text || "#C9A84C";
   return (
     <div style={{
       width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden",
       background: "#1A1A1A", fontFamily: "Arial, sans-serif",
       boxShadow: "0 1px 4px rgba(0,0,0,0.3)", borderRadius: 8,
     }}>
-      <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 4, background: "linear-gradient(90deg, #F47B20, #C9A84C)" }} />
+      <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 4, background: `linear-gradient(90deg, ${accent}, ${text})` }} />
 
       <div style={{ position: "absolute", left: 0, right: 0, top: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
         {data.companyLogo && (
@@ -123,17 +128,17 @@ export function IdCardCorporateDark({ data }: { data: IdCardData }) {
         </div>
       </div>
 
-      <div style={{ position: "absolute", left: 20, top: 62, width: 58, height: 58, borderRadius: "50%", overflow: "hidden", background: "#2A2A2A", border: "2px solid #C9A84C", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ position: "absolute", left: 20, top: 62, width: 58, height: 58, borderRadius: "50%", overflow: "hidden", background: "#2A2A2A", border: `2px solid ${text}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
         {data.personPhoto ? (
           <img src={data.personPhoto} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (
-          <span style={{ fontSize: 18, fontWeight: 700, color: "#C9A84C" }}>{initials(data.personName)}</span>
+          <span style={{ fontSize: 18, fontWeight: 700, color: text }}>{initials(data.personName)}</span>
         )}
       </div>
 
       <div style={{ position: "absolute", left: 90, top: 66, right: 88 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: "#fff", lineHeight: 1.25 }}>{data.personName}</div>
-        <div style={{ fontSize: 7.5, fontWeight: 700, color: "#C9A84C", letterSpacing: "0.08em", textTransform: "uppercase", marginTop: 3 }}>
+        <div style={{ fontSize: 7.5, fontWeight: 700, color: text, letterSpacing: "0.08em", textTransform: "uppercase", marginTop: 3 }}>
           {data.personRole}
         </div>
         <div style={{ fontSize: 6.5, color: "rgba(255,255,255,0.5)", marginTop: 6 }}>ID: {data.personId}</div>
@@ -156,7 +161,8 @@ export function IdCardCorporateDark({ data }: { data: IdCardData }) {
  * single accent color. A more understated, modern-minimal look than
  * Executive.
  */
-export function IdCardMinimalist({ data }: { data: IdCardData }) {
+export function IdCardMinimalist({ data, colorScheme }: { data: IdCardData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#1A1A1A";
   return (
     <div style={{
       width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden",
@@ -173,7 +179,7 @@ export function IdCardMinimalist({ data }: { data: IdCardData }) {
           {data.companyName}
         </div>
       </div>
-      <div style={{ position: "absolute", left: 0, right: 24, top: 38, height: 2, background: "#1A1A1A" }} />
+      <div style={{ position: "absolute", left: 0, right: 24, top: 38, height: 2, background: accent }} />
 
       <div style={{ position: "absolute", left: 24, top: 56, width: 54, height: 54, background: "#F5F5F5", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
         {data.personPhoto ? (
@@ -206,14 +212,15 @@ export function IdCardMinimalist({ data }: { data: IdCardData }) {
  * Design 4: "Two-Tone Split" - bold horizontal split background,
  * photo overlapping the split line for a dynamic, contemporary look.
  */
-export function IdCardTwoTone({ data }: { data: IdCardData }) {
+export function IdCardTwoTone({ data, colorScheme }: { data: IdCardData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#F47B20";
   return (
     <div style={{
       width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden",
       background: "#ffffff", fontFamily: "Arial, sans-serif",
       boxShadow: "0 1px 4px rgba(0,0,0,0.15)", borderRadius: 8,
     }}>
-      <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 78, background: "#F47B20" }} />
+      <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 78, background: accent }} />
 
       <div style={{ position: "absolute", left: 18, top: 12, display: "flex", alignItems: "center", gap: 6 }}>
         {data.companyLogo && (
@@ -228,13 +235,13 @@ export function IdCardTwoTone({ data }: { data: IdCardData }) {
         {data.personPhoto ? (
           <img src={data.personPhoto} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (
-          <span style={{ fontSize: 18, fontWeight: 700, color: "#F47B20" }}>{initials(data.personName)}</span>
+          <span style={{ fontSize: 18, fontWeight: 700, color: accent }}>{initials(data.personName)}</span>
         )}
       </div>
 
       <div style={{ position: "absolute", left: 86, top: 88, right: 90 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: "#1A1A1A", lineHeight: 1.25 }}>{data.personName}</div>
-        <div style={{ fontSize: 7.5, fontWeight: 700, color: "#F47B20", letterSpacing: "0.06em", textTransform: "uppercase", marginTop: 3 }}>
+        <div style={{ fontSize: 7.5, fontWeight: 700, color: accent, letterSpacing: "0.06em", textTransform: "uppercase", marginTop: 3 }}>
           {data.personRole}
         </div>
       </div>
@@ -259,15 +266,17 @@ export function IdCardTwoTone({ data }: { data: IdCardData }) {
  * bordered frame and centered layout, suited to more conservative
  * dealerships.
  */
-export function IdCardClassic({ data }: { data: IdCardData }) {
+export function IdCardClassic({ data, colorScheme }: { data: IdCardData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#C9A84C";
+  const text = colorScheme?.text || "#8A7539";
   return (
     <div style={{
       width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden",
       background: "#FCFCFB", fontFamily: "Arial, sans-serif",
       boxShadow: "0 1px 4px rgba(0,0,0,0.15)", borderRadius: 6,
-      border: "1px solid #D4C9A8",
+      border: `1px solid ${accent}`,
     }}>
-      <div style={{ position: "absolute", left: 6, right: 6, top: 6, bottom: 6, border: "1px solid #C9A84C" }} />
+      <div style={{ position: "absolute", left: 6, right: 6, top: 6, bottom: 6, border: `1px solid ${accent}` }} />
 
       <div style={{ position: "absolute", left: 0, right: 0, top: 16, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
         {data.companyLogo && (
@@ -276,19 +285,19 @@ export function IdCardClassic({ data }: { data: IdCardData }) {
         <div style={{ fontSize: 9, fontWeight: 700, color: "#1A1A1A", letterSpacing: "0.06em", textTransform: "uppercase" }}>
           {data.companyName}
         </div>
-        <div style={{ width: 30, height: 1.5, background: "#C9A84C", marginTop: 2 }} />
+        <div style={{ width: 30, height: 1.5, background: accent, marginTop: 2 }} />
       </div>
 
       <div style={{ position: "absolute", left: 0, right: 0, top: 56, display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <div style={{ width: 52, height: 52, borderRadius: "50%", overflow: "hidden", background: "#F5F5F0", border: "2px solid #C9A84C", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 52, height: 52, borderRadius: "50%", overflow: "hidden", background: "#F5F5F0", border: `2px solid ${accent}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
           {data.personPhoto ? (
             <img src={data.personPhoto} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
-            <span style={{ fontSize: 16, fontWeight: 700, color: "#C9A84C" }}>{initials(data.personName)}</span>
+            <span style={{ fontSize: 16, fontWeight: 700, color: accent }}>{initials(data.personName)}</span>
           )}
         </div>
         <div style={{ fontSize: 11.5, fontWeight: 700, color: "#1A1A1A", marginTop: 6 }}>{data.personName}</div>
-        <div style={{ fontSize: 7.5, fontWeight: 600, color: "#8A7539", letterSpacing: "0.06em", textTransform: "uppercase", marginTop: 2 }}>
+        <div style={{ fontSize: 7.5, fontWeight: 600, color: text, letterSpacing: "0.06em", textTransform: "uppercase", marginTop: 2 }}>
           {data.personRole}
         </div>
       </div>
@@ -298,7 +307,7 @@ export function IdCardClassic({ data }: { data: IdCardData }) {
       </div>
 
       {data.qrCode && (
-        <div style={{ position: "absolute", right: 16, bottom: 16, width: 34, height: 34, background: "#fff", padding: 2, border: "1px solid #C9A84C", borderRadius: 3 }}>
+        <div style={{ position: "absolute", right: 16, bottom: 16, width: 34, height: 34, background: "#fff", padding: 2, border: `1px solid ${accent}`, borderRadius: 3 }}>
           <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
         </div>
       )}
