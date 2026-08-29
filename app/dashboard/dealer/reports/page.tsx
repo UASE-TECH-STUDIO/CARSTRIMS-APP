@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import api from "@/lib/api";
 import CarFinancialReport from "@/components/dealer/CarFinancialReport";
-import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlobs, downloadBlob, downloadBlobs, shareBlob, shareBlobs } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
 
 //  Period presets 
@@ -307,8 +307,13 @@ export default function ReportsPage() {
     setShowExportPicker(""); setExportBusy(format);
     try {
       const html = buildReportHtml();
-      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Financial Report");
-      await downloadBlob(blob, `${reportExportFilename()}.${format}`);
+      if (format === "jpg") {
+        const blobs = await renderHtmlStringToJpgBlobs(html);
+        await downloadBlobs(blobs, `${reportExportFilename()}.jpg`);
+      } else {
+        const blob = await renderHtmlStringToPdfBlob(html, "Financial Report");
+        await downloadBlob(blob, `${reportExportFilename()}.pdf`);
+      }
     } catch (e: any) { showToast(e?.message || "Export failed", "error"); }
     finally { setExportBusy(""); }
   };
@@ -317,8 +322,14 @@ export default function ReportsPage() {
     setShowExportPicker(""); setExportBusy("share");
     try {
       const html = buildReportHtml();
-      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Financial Report");
-      await shareBlob(blob, `${reportExportFilename()}.${format}`, "Financial Report");
+      if (format === "jpg") {
+        const blobs = await renderHtmlStringToJpgBlobs(html);
+        const { note } = await shareBlobs(blobs, `${reportExportFilename()}.jpg`, "Financial Report");
+        if (note) showToast(note, "info");
+      } else {
+        const blob = await renderHtmlStringToPdfBlob(html, "Financial Report");
+        await shareBlob(blob, `${reportExportFilename()}.pdf`, "Financial Report");
+      }
     } catch (e: any) { showToast(e?.message || "Share failed", "error"); }
     finally { setExportBusy(""); }
   };
