@@ -332,10 +332,11 @@ function BackContactBlock({ data, textColor, mutedColor }: { data: IdCardData; t
   );
 }
 
-export function IdCardExecutiveBack({ data }: { data: IdCardData }) {
+export function IdCardExecutiveBack({ data, colorScheme }: { data: IdCardData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#F47B20";
   return (
     <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: "#ffffff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.15)", borderRadius: 8 }}>
-      <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 6, background: "#F47B20" }} />
+      <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 6, background: accent }} />
       <div style={{ position: "absolute", left: 20, top: 16, right: 20 }}>
         <div style={{ fontSize: 7.5, fontWeight: 700, color: "#1A1A1A", marginBottom: 6 }}>If found, please return to:</div>
         <BackContactBlock data={data} textColor="#1A1A1A" mutedColor="#737373" />
@@ -358,12 +359,14 @@ export function IdCardExecutiveBack({ data }: { data: IdCardData }) {
   );
 }
 
-export function IdCardCorporateDarkBack({ data }: { data: IdCardData }) {
+export function IdCardCorporateDarkBack({ data, colorScheme }: { data: IdCardData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#F47B20";
+  const text = colorScheme?.text || "#C9A84C";
   return (
     <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: "#1A1A1A", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.3)", borderRadius: 8 }}>
-      <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 4, background: "linear-gradient(90deg, #F47B20, #C9A84C)" }} />
+      <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 4, background: `linear-gradient(90deg, ${accent}, ${text})` }} />
       <div style={{ position: "absolute", left: 20, top: 16, right: 20 }}>
-        <div style={{ fontSize: 7.5, fontWeight: 700, color: "#C9A84C", marginBottom: 6 }}>If found, please return to:</div>
+        <div style={{ fontSize: 7.5, fontWeight: 700, color: text, marginBottom: 6 }}>If found, please return to:</div>
         <BackContactBlock data={data} textColor="#fff" mutedColor="rgba(255,255,255,0.55)" />
       </div>
       <div style={{ position: "absolute", left: 20, right: 20, top: 100, borderTop: "1px solid rgba(255,255,255,0.15)" }} />
@@ -384,14 +387,15 @@ export function IdCardCorporateDarkBack({ data }: { data: IdCardData }) {
   );
 }
 
-export function IdCardMinimalistBack({ data }: { data: IdCardData }) {
+export function IdCardMinimalistBack({ data, colorScheme }: { data: IdCardData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#1A1A1A";
   return (
     <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: "#ffffff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.15)", borderRadius: 4 }}>
       <div style={{ position: "absolute", left: 24, top: 20, right: 24 }}>
         <div style={{ fontSize: 7, fontWeight: 700, color: "#1A1A1A", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Return If Found</div>
         <BackContactBlock data={data} textColor="#1A1A1A" mutedColor="#A3A3A3" />
       </div>
-      <div style={{ position: "absolute", left: 24, right: 24, top: 100, height: 1.5, background: "#1A1A1A" }} />
+      <div style={{ position: "absolute", left: 24, right: 24, top: 100, height: 1.5, background: accent }} />
       <div style={{ position: "absolute", left: 24, top: 110, right: 100, fontSize: 6, color: "#A3A3A3", lineHeight: 1.5 }}>
         Property of {data.companyName}. Must be returned if lost or upon termination.
       </div>
@@ -409,12 +413,13 @@ export function IdCardMinimalistBack({ data }: { data: IdCardData }) {
   );
 }
 
-export function IdCardTwoToneBack({ data }: { data: IdCardData }) {
+export function IdCardTwoToneBack({ data, colorScheme }: { data: IdCardData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#F47B20";
   return (
     <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: "#ffffff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.15)", borderRadius: 8 }}>
-      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 30, background: "#F47B20" }} />
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 30, background: accent }} />
       <div style={{ position: "absolute", left: 18, top: 16, right: 18 }}>
-        <div style={{ fontSize: 7.5, fontWeight: 700, color: "#F47B20", marginBottom: 6 }}>If found, return to:</div>
+        <div style={{ fontSize: 7.5, fontWeight: 700, color: accent, marginBottom: 6 }}>If found, return to:</div>
         <BackContactBlock data={data} textColor="#1A1A1A" mutedColor="#737373" />
       </div>
       <div style={{ position: "absolute", left: 18, top: 96, right: 18, fontSize: 6, color: "#A3A3A3", lineHeight: 1.5 }}>
@@ -434,12 +439,14 @@ export function IdCardTwoToneBack({ data }: { data: IdCardData }) {
   );
 }
 
-export function IdCardClassicBack({ data }: { data: IdCardData }) {
+export function IdCardClassicBack({ data, colorScheme }: { data: IdCardData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#C9A84C";
+  const text = colorScheme?.text || "#8A7539";
   return (
-    <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: "#FCFCFB", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.15)", borderRadius: 6, border: "1px solid #D4C9A8" }}>
-      <div style={{ position: "absolute", left: 6, right: 6, top: 6, bottom: 6, border: "1px solid #C9A84C" }} />
+    <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: "#FCFCFB", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.15)", borderRadius: 6, border: `1px solid ${accent}` }}>
+      <div style={{ position: "absolute", left: 6, right: 6, top: 6, bottom: 6, border: `1px solid ${accent}` }} />
       <div style={{ position: "absolute", left: 22, top: 20, right: 22, textAlign: "center" }}>
-        <div style={{ fontSize: 7.5, fontWeight: 700, color: "#8A7539", letterSpacing: "0.05em", marginBottom: 8 }}>IF FOUND, PLEASE RETURN TO</div>
+        <div style={{ fontSize: 7.5, fontWeight: 700, color: text, letterSpacing: "0.05em", marginBottom: 8 }}>IF FOUND, PLEASE RETURN TO</div>
         <div style={{ fontSize: 7, color: "#525252", lineHeight: 1.6 }}>
           <div style={{ fontWeight: 700, color: "#1A1A1A" }}>{data.companyAddress}</div>
           <div>{[data.companyCity, data.companyState].filter(Boolean).join(", ")}</div>
@@ -447,11 +454,11 @@ export function IdCardClassicBack({ data }: { data: IdCardData }) {
         </div>
       </div>
       <div style={{ position: "absolute", left: 40, bottom: 34, right: 40 }}>
-        <div style={{ borderBottom: "1px solid #C9A84C", height: 14 }} />
+        <div style={{ borderBottom: `1px solid ${accent}`, height: 14 }} />
         <div style={{ fontSize: 6, color: "#A3A3A3", marginTop: 3, textAlign: "center" }}>Authorized Signature</div>
       </div>
       {data.qrCode && (
-        <div style={{ position: "absolute", right: 16, bottom: 16, width: 30, height: 30, background: "#fff", padding: 1.5, border: "1px solid #C9A84C", borderRadius: 3 }}>
+        <div style={{ position: "absolute", right: 16, bottom: 16, width: 30, height: 30, background: "#fff", padding: 1.5, border: `1px solid ${accent}`, borderRadius: 3 }}>
           <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
         </div>
       )}
