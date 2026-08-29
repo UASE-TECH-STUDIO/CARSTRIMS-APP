@@ -108,6 +108,34 @@ export function ComplimentaryCardOrange({ data, colorScheme }: { data: Complimen
   );
 }
 
+export function ComplimentaryCardOrangeBack({ data, colorScheme }: { data: ComplimentaryCardData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#F47B20";
+  return (
+    <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: accent, fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.2)", borderRadius: 8 }}>
+      <div style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0, background: "linear-gradient(135deg, rgba(255,255,255,0.08), transparent)" }} />
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10 }}>
+        {data.companyLogo
+          ? <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 50, height: 50, objectFit: "contain" }} />
+          : <div style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>{data.companyName}</div>
+        }
+        <div style={{ fontSize: 8, color: "rgba(255,255,255,0.85)", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 700 }}>
+          Buy &bull; Sell &bull; Trust
+        </div>
+        {(data.companyCity || data.companyState) && (
+          <div style={{ fontSize: 7.5, color: "rgba(255,255,255,0.7)" }}>{[data.companyCity, data.companyState].filter(Boolean).join(", ")}</div>
+        )}
+      </div>
+      {data.qrCode && (
+        <div style={{ position: "absolute", right: 16, bottom: 16, width: 40, height: 40, background: "#fff", padding: 3, borderRadius: 4 }}>
+          <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
+      )}
+      {poweredByCard(true)}
+    </div>
+  );
+}
+
+
 export function ComplimentaryCardWhite({ data, colorScheme }: { data: ComplimentaryCardData; colorScheme?: ColorScheme }) {
   const accent = colorScheme?.accent || "#F47B20";
   return (
@@ -128,6 +156,30 @@ export function ComplimentaryCardWhite({ data, colorScheme }: { data: Compliment
       </div>
       {data.qrCode && (
         <div style={{ position: "absolute", right: 16, bottom: 16, width: 42, height: 42, border: "1px solid #E5E5E5", borderRadius: 4, padding: 2 }}>
+          <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
+      )}
+      {poweredByCard(false)}
+    </div>
+  );
+}
+
+export function ComplimentaryCardWhiteBack({ data, colorScheme }: { data: ComplimentaryCardData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#F47B20";
+  return (
+    <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: "#ffffff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.15)", borderRadius: 8, border: "1px solid #E5E5E5" }}>
+      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 8, background: accent }} />
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, paddingLeft: 8 }}>
+        {data.companyLogo
+          ? <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 44, height: 44, objectFit: "contain" }} />
+          : <div style={{ fontSize: 15, fontWeight: 700, color: "#1A1A1A" }}>{data.companyName}</div>
+        }
+        <div style={{ fontSize: 7.5, color: accent, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 700 }}>
+          Buy &bull; Sell &bull; Trust
+        </div>
+      </div>
+      {data.qrCode && (
+        <div style={{ position: "absolute", right: 16, bottom: 16, width: 40, height: 40, border: "1px solid #E5E5E5", borderRadius: 4, padding: 2 }}>
           <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
         </div>
       )}
@@ -165,6 +217,31 @@ export function ComplimentaryCardDarkGold({ data, colorScheme }: { data: Complim
   );
 }
 
+export function ComplimentaryCardDarkGoldBack({ data, colorScheme }: { data: ComplimentaryCardData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#F47B20";
+  const text = colorScheme?.text || "#C9A84C";
+  return (
+    <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: "#1A1A1A", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.25)", borderRadius: 8 }}>
+      <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 3, background: `linear-gradient(90deg, ${accent}, ${text})` }} />
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10 }}>
+        {data.companyLogo
+          ? <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 48, height: 48, objectFit: "contain" }} />
+          : <div style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>{data.companyName}</div>
+        }
+        <div style={{ fontSize: 8, color: text, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 700 }}>
+          Buy &bull; Sell &bull; Trust
+        </div>
+      </div>
+      {data.qrCode && (
+        <div style={{ position: "absolute", right: 16, bottom: 16, width: 40, height: 40, background: "#fff", padding: 3, borderRadius: 4 }}>
+          <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
+      )}
+      {poweredByCard(true)}
+    </div>
+  );
+}
+
 export function ComplimentaryCardMinimalLine({ data, colorScheme }: { data: ComplimentaryCardData; colorScheme?: ColorScheme }) {
   const accent = colorScheme?.accent || "#525252";
   return (
@@ -193,6 +270,30 @@ export function ComplimentaryCardMinimalLine({ data, colorScheme }: { data: Comp
   );
 }
 
+export function ComplimentaryCardMinimalLineBack({ data, colorScheme }: { data: ComplimentaryCardData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#525252";
+  return (
+    <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: "#ffffff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.15)", borderRadius: 4 }}>
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10 }}>
+        {data.companyLogo
+          ? <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 32, height: 32, objectFit: "contain" }} />
+          : <div style={{ fontSize: 12, fontWeight: 700, color: "#1A1A1A", letterSpacing: "0.1em", textTransform: "uppercase" }}>{data.companyName}</div>
+        }
+        <div style={{ width: 30, height: 1, background: "#E5E5E5" }} />
+        <div style={{ fontSize: 7, color: accent, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 700 }}>
+          Buy &bull; Sell &bull; Trust
+        </div>
+      </div>
+      {data.qrCode && (
+        <div style={{ position: "absolute", right: 22, bottom: 22, width: 34, height: 34 }}>
+          <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
+      )}
+      {poweredByCard(false)}
+    </div>
+  );
+}
+
 export function ComplimentaryCardSplit({ data, colorScheme }: { data: ComplimentaryCardData; colorScheme?: ColorScheme }) {
   const accent = colorScheme?.accent || "#F47B20";
   return (
@@ -211,6 +312,27 @@ export function ComplimentaryCardSplit({ data, colorScheme }: { data: Compliment
       </div>
       <div style={{ position: "absolute", left: "42%", bottom: 20, fontSize: 7, color: "#737373", lineHeight: 1.6 }}>
         {[data.companyPhone, data.companyEmail].filter(Boolean).map((l, i) => <div key={i}>{l}</div>)}
+      </div>
+      {data.qrCode && (
+        <div style={{ position: "absolute", right: 14, bottom: 14, width: 36, height: 36 }}>
+          <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
+      )}
+      {poweredByCard(false)}
+    </div>
+  );
+}
+
+export function ComplimentaryCardSplitBack({ data, colorScheme }: { data: ComplimentaryCardData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#F47B20";
+  return (
+    <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: "#ffffff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.15)", borderRadius: 8 }}>
+      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: "38%", background: accent, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {data.companyLogo && <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 40, height: 40, objectFit: "contain" }} />}
+      </div>
+      <div style={{ position: "absolute", left: "42%", top: 0, bottom: 0, right: 16, display: "flex", flexDirection: "column", justifyContent: "center", gap: 6 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#1A1A1A" }}>{data.companyName}</div>
+        <div style={{ fontSize: 7.5, color: accent, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 700 }}>Buy &bull; Sell &bull; Trust</div>
       </div>
       {data.qrCode && (
         <div style={{ position: "absolute", right: 14, bottom: 14, width: 36, height: 36 }}>
