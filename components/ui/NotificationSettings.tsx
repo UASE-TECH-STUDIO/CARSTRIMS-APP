@@ -20,6 +20,7 @@ type Flavor = "success"|"error"|"info";
 
 export default function NotificationSettings() {
   const [perm,     setPerm]     = useState("loading");
+  const [isNative, setIsNative] = useState(false);
   const [subbed,   setSubbed]   = useState(false);
   const [sound,    setSound]    = useState<Sound>("music");
   const [dnd,      setDnd]      = useState(false);
@@ -34,12 +35,43 @@ export default function NotificationSettings() {
       setSound(p.soundType || (p.sound===false?"beep":"music"));
       setDnd(!!p.dnd);
     } catch {}
-    if (!("Notification" in window)) { setPerm("unsupported"); return; }
-    setPerm(Notification.permission);
-    if ("serviceWorker" in navigator)
-      navigator.serviceWorker.ready
-        .then(r => r.pushManager.getSubscription().then(s => setSubbed(!!s)))
-        .catch(()=>{});
+
+    const native = typeof (window as any).Capacitor !== "undefined" &&
+                   (window as any).Capacitor?.isNativePlatform?.();
+    setIsNative(!!native);
+
+    if (native) {
+      // Real fix (item F.30): this component previously always
+      // checked the web Notification.permission and pushManager
+      // subscription state, regardless of platform - neither
+      // reflects the actual native push permission at all inside a
+      // Capacitor WebView, so the toggle showed the wrong state and
+      // its buttons drove a web push flow that doesn't meaningfully
+      // work in this context in the first place. Query the real
+      // native permission instead.
+      import("@capacitor/push-notifications").then(({ PushNotifications }) => {
+        PushNotifications.checkPermissions()
+          .then((res) => {
+            const granted = res.receive === "granted";
+            setPerm(granted ? "granted" : res.receive === "denied" ? "denied" : "default");
+            setSubbed(granted);
+          })
+          .catch(() => setPerm("unsupported"));
+      }).catch(() => setPerm("unsupported"));
+    } else if (!("Notification" in window)) {
+      setPerm("unsupported");
+    } else {
+      setPerm(Notification.permission);
+      if ("serviceWorker" in navigator)
+        navigator.serviceWorker.ready
+          .then(r => r.pushManager.getSubscription().then(s => setSubbed(!!s)))
+          .catch(()=>{});
+    }
+
+    // Geolocation permission checking is unrelated to push - runs
+    // the same way regardless of platform, since navigator.geolocation
+    // and navigator.permissions are both still available inside a
+    // Capacitor WebView.
     if (navigator.permissions)
       navigator.permissions.query({name:"geolocation"})
         .then(r => { setLocPerm(r.state); r.onchange=()=>setLocPerm(r.state); })
@@ -92,9 +124,31 @@ export default function NotificationSettings() {
   };
 
   const enablePush = async () => {
-    if (!("Notification" in window)) { flash("Push not supported in this browser.","error"); return; }
     setBusy(true);
     try {
+      if (isNative) {
+        // Real fix (item F.30): previously this always ran the web
+        // serviceWorker/pushManager flow below, even inside the
+        // native app - which either does nothing meaningful or fails
+        // silently there, since that's not how push permission or
+        // registration works in a Capacitor WebView. Drive the
+        // actual native plugin instead.
+        const { PushNotifications } = await import("@capacitor/push-notifications");
+        const res = await PushNotifications.requestPermissions();
+        if (res.receive !== "granted") {
+          setPerm(res.receive === "denied" ? "denied" : "default");
+          flash("Notifications are blocked. Enable them for this app in your device's Settings.", "error");
+          return;
+        }
+        await PushNotifications.register();
+        setPerm("granted");
+        setSubbed(true);
+        save({pushOn:true});
+        flash("Push notifications enabled on this device!", "success");
+        return;
+      }
+
+      if (!("Notification" in window)) { flash("Push not supported in this browser.","error"); return; }
       let p = Notification.permission;
       if (p==="default") { p=await Notification.requestPermission(); setPerm(p); }
       if (p==="denied") { flash("Notifications are blocked. Click the lock icon in your browser address bar, set Notifications to Allow, then refresh.","error"); return; }
@@ -115,12 +169,33 @@ export default function NotificationSettings() {
   };
 
   const disablePush = async () => {
+    if (isNative) {
+      // Real platform limitation, not a bug to work around: there is
+      // no reliable, silent way to programmatically revoke push
+      // permission from inside the app on iOS or Android - the
+      // permission lives at the OS level once granted. Directing
+      // people to their device's own notification settings is the
+      // standard, correct pattern virtually every native app uses
+      // for this, not a workaround.
+      flash("To turn off notifications for CARSTRIMS, use your device's Settings app for this app's notification permission.", "info");
+      return;
+    }
     setBusy(true);
     try { await unsubscribe(); save({pushOn:false}); flash("Push notifications disabled on this device.","info"); }
     catch {} finally { setBusy(false); }
   };
 
   const refreshPush = async () => {
+    if (isNative) {
+      setBusy(true);
+      try {
+        const { PushNotifications } = await import("@capacitor/push-notifications");
+        await PushNotifications.register();
+        flash("Registration refreshed.", "info");
+      } catch { flash("Refresh failed.", "error"); }
+      finally { setBusy(false); }
+      return;
+    }
     setBusy(true);
     try {
       await unsubscribe();
@@ -215,7 +290,7 @@ export default function NotificationSettings() {
         {perm==="unsupported"&&(
           <div style={{background:"#FFF7ED",border:"1px solid rgba(244,123,32,.3)",borderRadius:"7px",
             padding:"0.875rem",fontSize:"0.82rem",color:"#C4621A",lineHeight:1.5}}>
-            Push notifications not supported in this browser. Use Chrome, Edge, or Firefox.
+            {isNative ? "Push notifications aren't available on this device." : "Push notifications not supported in this browser. Use Chrome, Edge, or Firefox."}
           </div>
         )}
 
@@ -223,7 +298,9 @@ export default function NotificationSettings() {
           <div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:"7px",
             padding:"0.875rem",fontSize:"0.82rem",color:"#DC2626",lineHeight:1.6}}>
             <strong>Notifications are blocked.</strong><br/>
-            Click the lock icon in your browser address bar &rarr; Notifications &rarr; Allow &rarr; then refresh this page.
+            {isNative
+              ? "Open your device's Settings app, find CARSTRIMS, and turn Notifications on."
+              : <>Click the lock icon in your browser address bar &rarr; Notifications &rarr; Allow &rarr; then refresh this page.</>}
           </div>
         )}
 
