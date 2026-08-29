@@ -70,6 +70,7 @@ export default function DocumentViewer({ doc: initialDoc, onClose }: Props) {
   const designChoices = isProforma ? PROFORMA_DESIGNS : RECEIPT_DESIGNS;
   const [designId, setDesignId] = useState<string>("original");
   const newDesignRef = useRef<HTMLDivElement>(null);
+  const [previewIframeHeight, setPreviewIframeHeight] = useState(600);
   const activeNewDesign = designId !== "original" ? designChoices.find(d => d.id === designId) : null;
 
   const businessDocData: BusinessDocData = {
@@ -457,56 +458,28 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
                 </div>
               </div>
             ) : (
-          <div style={{ background: "#fff", padding: "20px", maxHeight: "75vh", overflowY: "auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "3px solid #F47B20", paddingBottom: "12px", marginBottom: "16px", gap: "12px", flexWrap: "wrap" }}>
-              <div>
-                {initialDoc?.dealer?.logo && <img src={initialDoc.dealer.logo} alt="" style={{ display: "block", maxHeight: "56px", maxWidth: "160px", objectFit: "contain", marginBottom: "6px" }} />}
-                <div style={{ fontSize: "16px", fontWeight: 700, color: "#1A1A1A" }}>{dealerName || "Dealer"}</div>
-                {dealerAddress && <div style={{ fontSize: "10px", color: "#737373" }}>{dealerAddress}</div>}
-                {dealerPhone && <div style={{ fontSize: "10px", color: "#737373" }}>Tel: {dealerPhone}</div>}
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: "20px", fontWeight: 700, color: "#F47B20", letterSpacing: "0.06em" }}>{docTitle}</div>
-                <div style={{ fontSize: "10px", color: "#737373", marginTop: "5px", lineHeight: 1.7 }}>
-                  No: <strong>{docNumber || ""}</strong><br />
-                  Date: <strong>{fmtD((docDate || "") + "T00:00:00Z") || fmtD(initialDoc?.issuedAt) || ""}</strong>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "14px" }}>
-              {[
-                { title: "Bill From (Seller)", name: dealerName, sub: dealerAddress, phone: dealerPhone },
-                { title: "Bill To (Customer)", name: buyerName, sub: buyerAddress, phone: buyerPhone, warn: !buyerName },
-              ].map((b, i) => (
-                <div key={i} style={{ background: "#F5F5F5", borderRadius: "6px", padding: "10px" }}>
-                  <div style={{ fontSize: "8px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: "#A3A3A3", marginBottom: "5px" }}>{b.title}</div>
-                  <div style={{ fontSize: "13px", fontWeight: 700, color: b.warn ? "#EF4444" : "#1A1A1A" }}>{b.name || "Not filled yet"}</div>
-                  <div style={{ fontSize: "10px", color: b.warn && !b.sub ? "#EF4444" : "#737373" }}>{b.sub || (b.warn ? "Address missing" : "")}</div>
-                  {b.phone && <div style={{ fontSize: "10px", color: "#737373" }}>Tel: {b.phone}</div>}
-                </div>
-              ))}
-            </div>
-
-            <div style={{ background: "#FFF7ED", border: "1px solid rgba(244,123,32,0.2)", borderRadius: "7px", padding: "10px", marginBottom: "12px", display: "flex", gap: "10px" }}>
-              {initialDoc?.car?.image && <img src={initialDoc.car.image} alt="" style={{ width: "80px", height: "60px", objectFit: "cover", borderRadius: "5px", flexShrink: 0 }} />}
-              <div>
-                <div style={{ fontSize: "8px", fontWeight: 700, textTransform: "uppercase" as const, color: "#F47B20", marginBottom: "3px" }}>Vehicle</div>
-                <div style={{ fontSize: "14px", fontWeight: 700, color: "#1A1A1A" }}>{carBrand} {carModel} {carYear}</div>
-                <div style={{ fontSize: "9px", color: "#737373" }}>{[carColor, initialDoc?.car?.condition].filter(Boolean).join("  ")}</div>
-                {carVin && <div style={{ fontSize: "8px", color: "#A3A3A3", fontFamily: "monospace" }}>VIN: {carVin}</div>}
-              </div>
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "10px" }}>
-              <div style={{ borderTop: "2px solid #1A1A1A", paddingTop: "5px", display: "flex", justifyContent: "space-between", width: "240px", fontSize: "14px", fontWeight: 700 }}>
-                <span>{isReceipt ? "Amount Paid" : "Total Due"}</span>
-                <span style={{ color: "#F47B20" }}>{fmtN(totalAmt)}</span>
-              </div>
-            </div>
+          <div style={{ background: "#fff", padding: "12px", maxHeight: "75vh", overflowY: "auto" }}>
+                {(() => {
+                  const html = buildHtml();
+                  return (
+                    <iframe
+                      key={html}
+                      srcDoc={html}
+                      title="Document preview"
+                      style={{ width: "100%", height: `${previewIframeHeight}px`, border: "none", display: "block" }}
+                      onLoad={(e) => {
+                        try {
+                          const doc = (e.target as HTMLIFrameElement).contentDocument;
+                          const h = Math.max(doc?.body?.scrollHeight || 0, doc?.documentElement?.scrollHeight || 0);
+                          if (h > 0) setPreviewIframeHeight(h);
+                        } catch {}
+                      }}
+                    />
+                  );
+                })()}
 
             {!buyerName && (
-              <div style={{ background: "#FEF2F2", border: "1.5px solid #FECACA", borderRadius: "8px", padding: "10px 14px", fontSize: "13px", color: "#DC2626", fontWeight: 600 }}>
+              <div style={{ background: "#FEF2F2", border: "1.5px solid #FECACA", borderRadius: "8px", padding: "10px 14px", fontSize: "13px", color: "#DC2626", fontWeight: 600, margin: "12px 0 0" }}>
                 Customer name and address are empty. Tap <strong>Edit Fields</strong> to fill them before printing.
               </div>
             )}
