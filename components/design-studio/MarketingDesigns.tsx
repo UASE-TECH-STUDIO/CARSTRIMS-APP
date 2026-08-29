@@ -44,6 +44,30 @@ export interface FlyerCarData {
   headline?: string;
 }
 
+export interface ColorScheme {
+  id: string;
+  name: string;
+  accent: string;
+  text: string;
+}
+
+/**
+ * Preset color-combo picker (item I) - a curated set of paired
+ * colors rather than a freeform color wheel, so every combination a
+ * dealer can pick still looks intentional and professional. Applies
+ * to ComplimentaryCardCustom below; other designs keep their own
+ * fixed palette, matching how the rest of Design Studio already
+ * works (each design has its own deliberate look).
+ */
+export const COLOR_SCHEMES: ColorScheme[] = [
+  { id: "orange",   name: "Orange & Charcoal", accent: "#F47B20", text: "#1A1A1A" },
+  { id: "navy",     name: "Navy & Gold",       accent: "#1E3A5F", text: "#C9A84C" },
+  { id: "green",    name: "Forest & Cream",    accent: "#1D5C3A", text: "#F5F0E6" },
+  { id: "burgundy", name: "Burgundy & Cream",  accent: "#7A1F2B", text: "#F5F0E6" },
+  { id: "black",    name: "Black & Orange",    accent: "#111111", text: "#F47B20" },
+  { id: "teal",     name: "Teal & White",      accent: "#0F6E6E", text: "#FFFFFF" },
+];
+
 const CARD_W = 337.5;
 const CARD_H = 212.5;
 const PAGE_W = 794;
@@ -210,12 +234,68 @@ export function ComplimentaryCardSplit({ data }: { data: ComplimentaryCardData }
   );
 }
 
+// ── Customizable (color-combo picker) front + back ─────────────────
+
+export function ComplimentaryCardCustom({ data, colorScheme }: { data: ComplimentaryCardData; colorScheme: ColorScheme }) {
+  const { accent, text } = colorScheme;
+  return (
+    <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: accent, fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.2)", borderRadius: 8 }}>
+      <div style={{ position: "absolute", left: 0, top: 0, right: 0, height: 4, background: text }} />
+      <div style={{ position: "absolute", left: 20, top: 24, display: "flex", alignItems: "center", gap: 8 }}>
+        {data.companyLogo && <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 26, height: 26, objectFit: "contain" }} />}
+        <div style={{ fontSize: 12, fontWeight: 700, color: text }}>{data.companyName}</div>
+      </div>
+      {data.personName && (
+        <div style={{ position: "absolute", left: 20, top: 94 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{data.personName}</div>
+          {data.personRole && <div style={{ fontSize: 8, color: text, marginTop: 2, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>{data.personRole}</div>}
+        </div>
+      )}
+      <div style={{ position: "absolute", left: 20, bottom: 22, fontSize: 7.5, color: "#fff", lineHeight: 1.7 }}>
+        {[data.companyPhone, data.companyEmail].filter(Boolean).map((l, i) => <div key={i}>{l}</div>)}
+        {(data.companyCity || data.companyState) && <div>{[data.companyCity, data.companyState].filter(Boolean).join(", ")}</div>}
+      </div>
+      {data.qrCode && (
+        <div style={{ position: "absolute", right: 16, bottom: 16, width: 44, height: 44, background: "#fff", padding: 3, borderRadius: 4 }}>
+          <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
+      )}
+      {poweredByCard(true)}
+    </div>
+  );
+}
+
+export function ComplimentaryCardCustomBack({ data, colorScheme }: { data: ComplimentaryCardData; colorScheme: ColorScheme }) {
+  const { accent, text } = colorScheme;
+  return (
+    <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: "#ffffff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.15)", borderRadius: 8, border: `1.5px solid ${accent}` }}>
+      <div style={{ position: "absolute", left: 0, top: 0, right: 0, height: 6, background: accent }} />
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10 }}>
+        {data.companyLogo
+          ? <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 52, height: 52, objectFit: "contain" }} />
+          : <div style={{ fontSize: 18, fontWeight: 700, color: accent }}>{data.companyName}</div>
+        }
+        <div style={{ fontSize: 8.5, color: "#525252", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 700 }}>
+          Buy &bull; Sell &bull; Trust
+        </div>
+      </div>
+      {data.qrCode && (
+        <div style={{ position: "absolute", right: 16, bottom: 16, width: 36, height: 36 }}>
+          <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
+      )}
+      {poweredByCard(false)}
+    </div>
+  );
+}
+
 export const COMPLIMENTARY_CARD_DESIGNS = [
   { id: "orange", name: "Orange", Component: ComplimentaryCardOrange },
   { id: "white", name: "White", Component: ComplimentaryCardWhite },
   { id: "dark-gold", name: "Dark Gold", Component: ComplimentaryCardDarkGold },
   { id: "minimal-line", name: "Minimal Line", Component: ComplimentaryCardMinimalLine },
   { id: "split", name: "Split", Component: ComplimentaryCardSplit },
+  { id: "custom", name: "Custom Colors", Component: ComplimentaryCardCustom, customizable: true, hasBack: true },
 ];
 
 // ── Flyers ────────────────────────────────────────────────────────

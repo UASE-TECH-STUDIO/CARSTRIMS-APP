@@ -6,6 +6,7 @@ import { useToast } from "@/store/toastStore";
 import { renderElementToPdfBlob, renderElementToJpgBlob, renderElementToCardPdfBlob, downloadBlob } from "@/lib/documentExport";
 import {
   COMPLIMENTARY_CARD_DESIGNS, FLYER_DESIGNS, ComplimentaryCardData, FlyerCarData,
+  ColorScheme, COLOR_SCHEMES, ComplimentaryCardCustomBack,
 } from "@/components/design-studio/MarketingDesigns";
 
 type MaterialType = "complimentary-card" | "flyer";
@@ -29,6 +30,9 @@ export default function MarketingPage() {
   const [headline, setHeadline] = useState("");
 
   const docRef = useRef<HTMLDivElement>(null);
+  const docBackRef = useRef<HTMLDivElement>(null);
+  const [colorSchemeId, setColorSchemeId] = useState(COLOR_SCHEMES[0].id);
+  const colorScheme: ColorScheme = COLOR_SCHEMES.find(c => c.id === colorSchemeId) || COLOR_SCHEMES[0];
 
   useEffect(() => {
     (async () => {
@@ -103,8 +107,11 @@ export default function MarketingPage() {
 
   const isCardFormat = materialType === "complimentary-card";
 
+  const hasBack = !!(activeDesign as any)?.hasBack;
+
   const handleDownload = async (format: "jpg" | "pdf") => {
     if (!docRef.current || !docData) return;
+    if (hasBack && !docBackRef.current) return;
     setDownloading(format);
     try {
       const labelPart = materialType === "flyer"
@@ -112,10 +119,25 @@ export default function MarketingPage() {
         : "complimentary-card";
       const filenameBase = `${dealer.companyName || materialType}-${labelPart}`.replace(/\s+/g, "-").toLowerCase();
       if (format === "jpg") {
-        const blob = await renderElementToJpgBlob(docRef.current, 0.95);
-        await downloadBlob(blob, `${filenameBase}.jpg`);
+        if (hasBack) {
+          const [frontBlob, backBlob] = await Promise.all([
+            renderElementToJpgBlob(docRef.current, 0.95),
+            renderElementToJpgBlob(docBackRef.current!, 0.95),
+          ]);
+          await downloadBlob(frontBlob, `${filenameBase}-front.jpg`);
+          // Same short gap used on the id-cards page - two downloads
+          // triggered in the same tick risk the second being
+          // silently blocked by some browsers/WebViews.
+          await new Promise(resolve => setTimeout(resolve, 400));
+          await downloadBlob(backBlob, `${filenameBase}-back.jpg`);
+        } else {
+          const blob = await renderElementToJpgBlob(docRef.current, 0.95);
+          await downloadBlob(blob, `${filenameBase}.jpg`);
+        }
       } else {
-        const blob = isCardFormat
+        const blob = hasBack
+          ? await renderElementToCardPdfBlob([docRef.current, docBackRef.current!], "Complimentary Card")
+          : isCardFormat
           ? await renderElementToCardPdfBlob(docRef.current, "Complimentary Card")
           : await renderElementToPdfBlob(docRef.current, `${(docData as FlyerCarData).carBrand} ${(docData as FlyerCarData).carModel} Flyer`);
         await downloadBlob(blob, `${filenameBase}.pdf`);
@@ -195,10 +217,37 @@ export default function MarketingPage() {
               <button key={d.id} onClick={() => setDesignId(d.id)} style={designThumbStyle(designId === d.id, isCardFormat)}>
                 <div style={{ width: isCardFormat ? "94px" : "80px", height: isCardFormat ? "59px" : "113px", overflow: "hidden" }}>
                   <div style={{ transform: isCardFormat ? "scale(0.28)" : "scale(0.1)", transformOrigin: "top left", pointerEvents: "none" }}>
-                    <d.Component data={docData as any} />
+                    <d.Component data={docData as any} colorScheme={colorScheme} />
                   </div>
                 </div>
                 <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#525252", marginTop: "0.3rem" }}>{d.name}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Step 3.5: color-combo picker - only shown for the customizable design */}
+      {docData && (activeDesign as any)?.customizable && (
+        <div style={{ marginBottom: "1.5rem" }}>
+          <div style={stepLabelStyle}>Pick a color combo</div>
+          <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+            {COLOR_SCHEMES.map(cs => (
+              <button
+                key={cs.id}
+                onClick={() => setColorSchemeId(cs.id)}
+                style={{
+                  display: "flex", alignItems: "center", gap: "0.4rem",
+                  padding: "0.4rem 0.7rem", borderRadius: "8px",
+                  border: colorSchemeId === cs.id ? "2px solid #F47B20" : "1.5px solid #E5E5E5",
+                  background: "#fff", cursor: "pointer",
+                }}
+              >
+                <span style={{ display: "flex", borderRadius: "50%", overflow: "hidden", width: "18px", height: "18px", border: "1px solid #E5E5E5" }}>
+                  <span style={{ flex: 1, background: cs.accent }} />
+                  <span style={{ flex: 1, background: cs.text }} />
+                </span>
+                <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#525252" }}>{cs.name}</span>
               </button>
             ))}
           </div>
@@ -209,12 +258,19 @@ export default function MarketingPage() {
       {docData && activeDesign && (
         <div>
           <div style={stepLabelStyle}>4. Preview & download</div>
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: "1.25rem", padding: "1.5rem", background: "#FAFAFA", borderRadius: "12px", overflowX: "auto" }}>
+          <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "1rem", marginBottom: "1.25rem", padding: "1.5rem", background: "#FAFAFA", borderRadius: "12px", overflowX: "auto" }}>
             <div style={{ transform: isCardFormat ? "none" : "scale(0.55)", transformOrigin: "top center" }}>
               <div ref={docRef}>
-                <activeDesign.Component data={docData as any} />
+                <activeDesign.Component data={docData as any} colorScheme={colorScheme} />
               </div>
             </div>
+            {hasBack && (
+              <div style={{ transform: isCardFormat ? "none" : "scale(0.55)", transformOrigin: "top center" }}>
+                <div ref={docBackRef}>
+                  <ComplimentaryCardCustomBack data={docData as ComplimentaryCardData} colorScheme={colorScheme} />
+                </div>
+              </div>
+            )}
           </div>
           <div style={{ display: "flex", gap: "0.75rem" }}>
             <button onClick={() => handleDownload("jpg")} disabled={downloading !== null} style={downloadButtonStyle(false)}>
