@@ -6,6 +6,7 @@ import FeedHomeButton from "@/components/shared/FeedHomeButton";
 import { useToast } from "@/store/toastStore";
 import { renderElementToCardPdfBlob, renderElementToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { ID_CARD_DESIGNS, IdCardData } from "@/components/design-studio/IdCardDesigns";
+import { ColorScheme, COLOR_SCHEMES } from "@/components/design-studio/colorSchemes";
 
 type Subject = "dealer" | "staff";
 
@@ -23,6 +24,8 @@ export default function IdCardsPage() {
 
   const cardRef = useRef<HTMLDivElement>(null);
   const cardBackRef = useRef<HTMLDivElement>(null);
+  const [colorSchemeId, setColorSchemeId] = useState(COLOR_SCHEMES[0].id);
+  const colorScheme: ColorScheme = COLOR_SCHEMES.find(c => c.id === colorSchemeId) || COLOR_SCHEMES[0];
 
   useEffect(() => {
     (async () => {
@@ -200,12 +203,12 @@ export default function IdCardsPage() {
                 <div style={{ display: "flex", gap: "0.2rem" }}>
                   <div style={{ width: "81px", height: "51px", overflow: "hidden", flexShrink: 0 }}>
                     <div style={{ transform: "scale(0.24)", transformOrigin: "top left", pointerEvents: "none" }}>
-                      <d.Component data={cardData} />
+                      <d.Component data={cardData} colorScheme={colorScheme} />
                     </div>
                   </div>
                   <div style={{ width: "81px", height: "51px", overflow: "hidden", flexShrink: 0 }}>
                     <div style={{ transform: "scale(0.24)", transformOrigin: "top left", pointerEvents: "none" }}>
-                      <d.BackComponent data={cardData} />
+                      <d.BackComponent data={cardData} colorScheme={colorScheme} />
                     </div>
                   </div>
                 </div>
@@ -216,21 +219,48 @@ export default function IdCardsPage() {
         </div>
       )}
 
+      {/* Step 3.5: color-combo picker - lets a dealer keep a design's layout but match it to their own branding colors */}
+      {cardData && activeDesign && (
+        <div style={{ marginBottom: "1.5rem" }}>
+          <div style={stepLabelStyle}>Pick a color combo</div>
+          <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+            {COLOR_SCHEMES.map(cs => (
+              <button
+                key={cs.id}
+                onClick={() => setColorSchemeId(cs.id)}
+                style={{
+                  display: "flex", alignItems: "center", gap: "0.4rem",
+                  padding: "0.4rem 0.7rem", borderRadius: "8px",
+                  border: colorSchemeId === cs.id ? "2px solid #F47B20" : "1.5px solid #E5E5E5",
+                  background: "#fff", cursor: "pointer",
+                }}
+              >
+                <span style={{ display: "flex", borderRadius: "50%", overflow: "hidden", width: "18px", height: "18px", border: "1px solid #E5E5E5" }}>
+                  <span style={{ flex: 1, background: cs.accent }} />
+                  <span style={{ flex: 1, background: cs.text }} />
+                </span>
+                <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#525252" }}>{cs.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Step 4: preview + download */}
       {cardData && activeDesign && (
         <div>
-          <div style={stepLabelStyle}>{subject === "staff" ? "4" : "3"}. Preview & download</div>
+          <div style={stepLabelStyle}>{subject === "staff" ? "5" : "4"}. Preview & download</div>
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "1.5rem", marginBottom: "1.25rem", padding: "1.5rem", background: "#FAFAFA", borderRadius: "12px" }}>
             <div>
               <div style={{ fontSize: "0.68rem", fontWeight: 700, color: "#A3A3A3", textAlign: "center", marginBottom: "0.4rem" }}>FRONT</div>
               <div ref={cardRef}>
-                <activeDesign.Component data={cardData} />
+                <activeDesign.Component data={cardData} colorScheme={colorScheme} />
               </div>
             </div>
             <div>
               <div style={{ fontSize: "0.68rem", fontWeight: 700, color: "#A3A3A3", textAlign: "center", marginBottom: "0.4rem" }}>BACK</div>
               <div ref={cardBackRef}>
-                <activeDesign.BackComponent data={cardData} />
+                <activeDesign.BackComponent data={cardData} colorScheme={colorScheme} />
               </div>
             </div>
           </div>
