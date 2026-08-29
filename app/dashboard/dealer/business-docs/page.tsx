@@ -9,6 +9,7 @@ import {
   LETTERHEAD_DESIGNS, PROFORMA_DESIGNS, RECEIPT_DESIGNS, BusinessDocData,
 } from "@/components/design-studio/BusinessDocDesigns";
 import { ColorScheme, COLOR_SCHEMES } from "@/components/design-studio/colorSchemes";
+import DocumentPreviewLightbox from "@/components/shared/DocumentPreviewLightbox";
 
 type DocType = "letterhead" | "proforma" | "receipt";
 
@@ -245,6 +246,7 @@ export default function BusinessDocsPage() {
       {docData && activeDesign && (
         <div>
           <div style={stepLabelStyle}>{needsForm ? "4" : "3"}. Preview & download</div>
+          <DocumentPreviewLightbox getElements={() => [docRef.current]}>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: "1.25rem", padding: "1.5rem", background: "#FAFAFA", borderRadius: "12px", overflowX: "auto" }}>
             <div style={{ transform: "scale(0.55)", transformOrigin: "top center" }}>
               <div ref={docRef}>
@@ -252,6 +254,7 @@ export default function BusinessDocsPage() {
               </div>
             </div>
           </div>
+          </DocumentPreviewLightbox>
           <div style={{ display: "flex", gap: "0.75rem" }}>
             <button onClick={() => handleDownload("jpg")} disabled={downloading !== null} style={downloadButtonStyle(false)}>
               {downloading === "jpg" ? "Generating…" : "Download JPG"}
