@@ -429,6 +429,28 @@ export function ComplimentaryCardDiagonal({ data, colorScheme }: { data: Complim
   );
 }
 
+export function ComplimentaryCardDiagonalBack({ data, colorScheme }: { data: ComplimentaryCardData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#F47B20";
+  return (
+    <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: "#ffffff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.15)", borderRadius: 8 }}>
+      <div style={{ position: "absolute", right: -60, bottom: -20, width: 220, height: CARD_H + 80, background: accent, transform: "rotate(-9deg)", transformOrigin: "bottom right" }} />
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "center", gap: 8, paddingLeft: 24 }}>
+        {data.companyLogo
+          ? <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 40, height: 40, objectFit: "contain" }} />
+          : <div style={{ fontSize: 13, fontWeight: 700, color: "#1A1A1A" }}>{data.companyName}</div>
+        }
+        <div style={{ fontSize: 7.5, color: accent, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>Buy &bull; Sell &bull; Trust</div>
+      </div>
+      {data.qrCode && (
+        <div style={{ position: "absolute", left: 14, bottom: 14, width: 34, height: 34 }}>
+          <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
+      )}
+      {poweredByCard(false)}
+    </div>
+  );
+}
+
 export function ComplimentaryCardBottomBanner({ data, colorScheme }: { data: ComplimentaryCardData; colorScheme?: ColorScheme }) {
   const accent = colorScheme?.accent || "#F47B20";
   return (
@@ -449,6 +471,29 @@ export function ComplimentaryCardBottomBanner({ data, colorScheme }: { data: Com
         </div>
         {data.qrCode && (
           <div style={{ width: 34, height: 34, background: "#fff", padding: 2, borderRadius: 3, flexShrink: 0 }}>
+            <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+          </div>
+        )}
+      </div>
+      {poweredByCard(true)}
+    </div>
+  );
+}
+
+export function ComplimentaryCardBottomBannerBack({ data, colorScheme }: { data: ComplimentaryCardData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#F47B20";
+  return (
+    <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: "#ffffff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.15)", borderRadius: 8 }}>
+      <div style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 46, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
+        {data.companyLogo
+          ? <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 40, height: 40, objectFit: "contain" }} />
+          : <div style={{ fontSize: 14, fontWeight: 700, color: "#1A1A1A" }}>{data.companyName}</div>
+        }
+        <div style={{ fontSize: 7.5, color: accent, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>Buy &bull; Sell &bull; Trust</div>
+      </div>
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 46, background: accent, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {data.qrCode && (
+          <div style={{ width: 34, height: 34, background: "#fff", padding: 2, borderRadius: 3 }}>
             <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
           </div>
         )}
@@ -490,6 +535,30 @@ export function ComplimentaryCardCenteredBadge({ data, colorScheme }: { data: Co
   );
 }
 
+export function ComplimentaryCardCenteredBadgeBack({ data, colorScheme }: { data: ComplimentaryCardData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#1A1A1A";
+  return (
+    <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: "#ffffff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.15)", borderRadius: 8, border: `1px solid ${accent}` }}>
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, padding: "0 20px" }}>
+        {data.companyLogo ? (
+          <div style={{ width: 44, height: 44, borderRadius: "50%", border: `2px solid ${accent}`, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+            <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: "80%", height: "80%", objectFit: "contain" }} />
+          </div>
+        ) : (
+          <div style={{ fontSize: 13, fontWeight: 700, color: accent }}>{data.companyName}</div>
+        )}
+        <div style={{ fontSize: 7.5, color: accent, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700 }}>Buy &bull; Sell &bull; Trust</div>
+      </div>
+      {data.qrCode && (
+        <div style={{ position: "absolute", right: 12, bottom: 12, width: 30, height: 30 }}>
+          <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
+      )}
+      {poweredByCard(false)}
+    </div>
+  );
+}
+
 export function ComplimentaryCardCornerAccent({ data, colorScheme }: { data: ComplimentaryCardData; colorScheme?: ColorScheme }) {
   const accent = colorScheme?.accent || "#F47B20";
   return (
@@ -518,17 +587,39 @@ export function ComplimentaryCardCornerAccent({ data, colorScheme }: { data: Com
   );
 }
 
+export function ComplimentaryCardCornerAccentBack({ data, colorScheme }: { data: ComplimentaryCardData; colorScheme?: ColorScheme }) {
+  const accent = colorScheme?.accent || "#F47B20";
+  return (
+    <div style={{ width: CARD_W, height: CARD_H, position: "relative", overflow: "hidden", background: "#ffffff", fontFamily: "Arial, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.15)", borderRadius: 8 }}>
+      <div style={{ position: "absolute", left: -45, bottom: -45, width: 90, height: 90, background: accent, transform: "rotate(45deg)" }} />
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
+        {data.companyLogo
+          ? <img src={data.companyLogo} alt="" crossOrigin="anonymous" style={{ width: 40, height: 40, objectFit: "contain" }} />
+          : <div style={{ fontSize: 13, fontWeight: 700, color: "#1A1A1A" }}>{data.companyName}</div>
+        }
+        <div style={{ fontSize: 7.5, color: accent, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>Buy &bull; Sell &bull; Trust</div>
+      </div>
+      {data.qrCode && (
+        <div style={{ position: "absolute", right: 10, top: 10, width: 26, height: 26 }}>
+          <img src={data.qrCode} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
+      )}
+      {poweredByCard(false)}
+    </div>
+  );
+}
+
 export const COMPLIMENTARY_CARD_DESIGNS = [
-  { id: "orange", name: "Orange", Component: ComplimentaryCardOrange },
-  { id: "white", name: "White", Component: ComplimentaryCardWhite },
-  { id: "dark-gold", name: "Dark Gold", Component: ComplimentaryCardDarkGold },
-  { id: "minimal-line", name: "Minimal Line", Component: ComplimentaryCardMinimalLine },
-  { id: "split", name: "Split", Component: ComplimentaryCardSplit },
-  { id: "diagonal", name: "Diagonal Cut", Component: ComplimentaryCardDiagonal },
-  { id: "bottom-banner", name: "Bottom Banner", Component: ComplimentaryCardBottomBanner },
-  { id: "centered-badge", name: "Centered Badge", Component: ComplimentaryCardCenteredBadge },
-  { id: "corner-accent", name: "Corner Accent", Component: ComplimentaryCardCornerAccent },
-  { id: "custom", name: "Custom Colors", Component: ComplimentaryCardCustom, customizable: true, hasBack: true },
+  { id: "orange", name: "Orange", Component: ComplimentaryCardOrange, BackComponent: ComplimentaryCardOrangeBack, hasBack: true },
+  { id: "white", name: "White", Component: ComplimentaryCardWhite, BackComponent: ComplimentaryCardWhiteBack, hasBack: true },
+  { id: "dark-gold", name: "Dark Gold", Component: ComplimentaryCardDarkGold, BackComponent: ComplimentaryCardDarkGoldBack, hasBack: true },
+  { id: "minimal-line", name: "Minimal Line", Component: ComplimentaryCardMinimalLine, BackComponent: ComplimentaryCardMinimalLineBack, hasBack: true },
+  { id: "split", name: "Split", Component: ComplimentaryCardSplit, BackComponent: ComplimentaryCardSplitBack, hasBack: true },
+  { id: "diagonal", name: "Diagonal Cut", Component: ComplimentaryCardDiagonal, BackComponent: ComplimentaryCardDiagonalBack, hasBack: true },
+  { id: "bottom-banner", name: "Bottom Banner", Component: ComplimentaryCardBottomBanner, BackComponent: ComplimentaryCardBottomBannerBack, hasBack: true },
+  { id: "centered-badge", name: "Centered Badge", Component: ComplimentaryCardCenteredBadge, BackComponent: ComplimentaryCardCenteredBadgeBack, hasBack: true },
+  { id: "corner-accent", name: "Corner Accent", Component: ComplimentaryCardCornerAccent, BackComponent: ComplimentaryCardCornerAccentBack, hasBack: true },
+  { id: "custom", name: "Custom Colors", Component: ComplimentaryCardCustom, customizable: true, BackComponent: ComplimentaryCardCustomBack, hasBack: true },
 ];
 
 // ── Flyers ────────────────────────────────────────────────────────

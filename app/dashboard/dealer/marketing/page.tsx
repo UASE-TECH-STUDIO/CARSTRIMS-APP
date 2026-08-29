@@ -6,7 +6,7 @@ import { useToast } from "@/store/toastStore";
 import { renderElementToPdfBlob, renderElementToJpgBlob, renderElementToCardPdfBlob, downloadBlob } from "@/lib/documentExport";
 import {
   COMPLIMENTARY_CARD_DESIGNS, FLYER_DESIGNS, ComplimentaryCardData, FlyerCarData,
-  ColorScheme, COLOR_SCHEMES, ComplimentaryCardCustomBack,
+  ColorScheme, COLOR_SCHEMES,
 } from "@/components/design-studio/MarketingDesigns";
 
 type MaterialType = "complimentary-card" | "flyer";
@@ -264,10 +264,13 @@ export default function MarketingPage() {
                 <activeDesign.Component data={docData as any} colorScheme={colorScheme} />
               </div>
             </div>
-            {hasBack && (
+            {hasBack && activeDesign && (
               <div style={{ transform: isCardFormat ? "none" : "scale(0.55)", transformOrigin: "top center" }}>
                 <div ref={docBackRef}>
-                  <ComplimentaryCardCustomBack data={docData as ComplimentaryCardData} colorScheme={colorScheme} />
+                  {(() => {
+                    const BackComp = (activeDesign as any).BackComponent;
+                    return BackComp ? <BackComp data={docData as ComplimentaryCardData} colorScheme={colorScheme} /> : null;
+                  })()}
                 </div>
               </div>
             )}
