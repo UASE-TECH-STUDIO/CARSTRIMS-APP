@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import Link from "next/link";
-import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob } from "@/lib/documentExport";
+import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { parseServerDate } from "@/lib/timeUtils";
 
 const STILL_ATTENDING_APT = ["pending", "pending_buyer"];
@@ -148,6 +148,21 @@ export default function DealerAppointmentsPage() {
     }
   };
 
+  const handleAptShare = async (cat: "still"|"attended"|"all", format: "pdf"|"jpg") => {
+    setShowAptExportCategory(false); setAptExportCategory("");
+    setAptExportBusy(`${cat}-share`);
+    try {
+      const filename = `carstrims-appointments-${cat}-${Date.now()}`;
+      const html = buildAppointmentsHtml(cat);
+      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Appointments");
+      await shareBlob(blob, `${filename}.${format}`, "Appointments");
+    } catch (e: any) {
+      setMsg("Share failed: " + (e?.message || "please try again"));
+    } finally {
+      setAptExportBusy("");
+    }
+  };
+
   const today    = appointments.filter(a => {
     const d = a.scheduledAt ? parseServerDate(a.scheduledAt) : null;
     const n = new Date();
@@ -185,6 +200,9 @@ export default function DealerAppointmentsPage() {
               <button onClick={()=>handleAptExport(aptExportCategory,"pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>as PDF</button>
               <button onClick={()=>handleAptExport(aptExportCategory,"jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>as JPG Image</button>
               <button onClick={()=>handleAptExport(aptExportCategory,"excel")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>as Excel</button>
+              <div style={{padding:"0.4rem 0.9rem 0.2rem",fontSize:"0.65rem",fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase" as const,color:"#A3A3A3",borderTop:"1.5px solid #E5E5E5",marginTop:"0.2rem"}}>Share</div>
+              <button onClick={()=>handleAptShare(aptExportCategory,"pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.78rem",fontWeight:600,color:"#16A34A"}}>{aptExportBusy===`${aptExportCategory}-share`?"Sharing…":"as PDF"}</button>
+              <button onClick={()=>handleAptShare(aptExportCategory,"jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.78rem",fontWeight:600,color:"#16A34A"}}>{aptExportBusy===`${aptExportCategory}-share`?"Sharing…":"as JPG Image"}</button>
             </div>
           )}
         </div>
