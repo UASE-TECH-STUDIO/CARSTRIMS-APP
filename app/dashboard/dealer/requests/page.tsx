@@ -4,7 +4,7 @@ import api from "@/lib/api";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { useToast } from "@/store/toastStore";
-import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob } from "@/lib/documentExport";
+import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { parseServerDate } from "@/lib/timeUtils";
 
 // "Still attending to" = awaiting further action from either side.
@@ -232,6 +232,21 @@ export default function DealerRequestsPage() {
     }
   };
 
+  const handleRequestsShare = async (cat: "still"|"attended"|"all", format: "pdf"|"jpg") => {
+    setShowExportCategory(false); setExportCategory("");
+    setReqExportBusy(`${cat}-share`);
+    try {
+      const filename = `carstrims-requests-${cat}-${Date.now()}`;
+      const html = buildRequestsHtml(cat);
+      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Customer Requests");
+      await shareBlob(blob, `${filename}.${format}`, "Customer Requests");
+    } catch (e: any) {
+      showToast(e?.message || "Share failed", "error");
+    } finally {
+      setReqExportBusy("");
+    }
+  };
+
   const canRespond   = selected?.status === "pending";
   const journeyActive= selected && ["accepted_by_dealer","accepted","completed"].includes(selected.status);
   const paymentActive= selected && ["accepted_by_dealer","accepted"].includes(selected.status);
@@ -286,6 +301,9 @@ export default function DealerRequestsPage() {
                 <button onClick={()=>handleRequestsExport(exportCategory,"pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>as PDF</button>
                 <button onClick={()=>handleRequestsExport(exportCategory,"jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>as JPG Image</button>
                 <button onClick={()=>handleRequestsExport(exportCategory,"excel")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>as Excel</button>
+                <div style={{padding:"0.4rem 0.9rem 0.2rem",fontSize:"0.65rem",fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase" as const,color:"#A3A3A3",borderTop:"1.5px solid #E5E5E5",marginTop:"0.2rem"}}>Share</div>
+                <button onClick={()=>handleRequestsShare(exportCategory,"pdf")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",cursor:"pointer",fontSize:"0.78rem",fontWeight:600,color:"#16A34A"}}>{reqExportBusy===`${exportCategory}-share`?"Sharing…":"as PDF"}</button>
+                <button onClick={()=>handleRequestsShare(exportCategory,"jpg")} style={{display:"block",width:"100%",textAlign:"left" as const,padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #F5F5F5",cursor:"pointer",fontSize:"0.78rem",fontWeight:600,color:"#16A34A"}}>{reqExportBusy===`${exportCategory}-share`?"Sharing…":"as JPG Image"}</button>
               </div>
             )}
           </div>
