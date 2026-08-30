@@ -773,11 +773,6 @@ export default function FeedPage() {
                   {car.promoPrice > 0 && car.promoPrice < car.sellingPrice && (
                     <div className="promo-tag">PROMO</div>
                   )}
-                  {isAdmin && (
-                    <div className="card-actions">
-                      <button className="ca-btn ca-admin-del" onClick={(e) => handleAdminDelete(e, car)}>DELETE</button>
-                    </div>
-                  )}
                 </div>
 
                 {car.dealerName && (
@@ -824,6 +819,11 @@ export default function FeedPage() {
                   </div>
                 </div>
               </Link>
+              {isAdmin && (
+                <button className="feed-admin-del-btn" onClick={(e) => handleAdminDelete(e, car)}>
+                  Delete Listing
+                </button>
+              )}
               </div>
             ))}
           </div>
@@ -1170,19 +1170,13 @@ export default function FeedPage() {
           background:#DC2626; color:#fff; padding:0.2rem 0.5rem;
           border-radius:4px; font-size:0.6rem; font-weight:700; letter-spacing:0.08em;
         }
-        .card-actions {
-          position:absolute; bottom:0; left:0; right:0;
-          display:flex; gap:0.25rem; padding:0.5rem;
-          background:linear-gradient(transparent,rgba(23,23,23,0.6));
+        .feed-admin-del-btn {
+          display:block; width:100%; margin-top:0.35rem; background:#FEF2F2;
+          border:1px solid #FCA5A5; color:#DC2626; border-radius:6px;
+          padding:0.35rem; font-size:0.68rem; font-weight:700; cursor:pointer;
+          font-family:var(--font-body);
         }
-        .ca-btn {
-          flex:1; background:rgba(23,23,23,0.55); backdrop-filter:blur(4px); border:none;
-          border-radius:5px; padding:0.3rem; font-size:0.65rem; font-weight:700;
-          cursor:pointer; color:#fff; transition:background 0.15s; text-align:center;
-          letter-spacing:0.04em; font-family:var(--font-body);
-        }
-        .ca-btn:hover { background:rgba(23,23,23,0.8); }
-        .ca-admin-del { background:rgba(220,38,38,0.9)!important; }
+        .feed-admin-del-btn:hover { background:#FEE2E2; }
 
         .dealer-strip {
           display:flex; align-items:center; gap:0.4rem;
