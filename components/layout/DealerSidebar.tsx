@@ -23,14 +23,6 @@ const NAV_GROUPS: { label: string; items: { href: string; label: string; icon: s
     ],
   },
   {
-    label: "Design Studio",
-    items: [
-      { href:"/dashboard/dealer/id-cards", label:"ID Cards", icon:"" },
-      { href:"/dashboard/dealer/business-docs", label:"Business Documents", icon:"" },
-      { href:"/dashboard/dealer/marketing", label:"Marketing Materials", icon:"" },
-    ],
-  },
-  {
     label: "Operations",
     items: [
       { href:"/dashboard/dealer/requests", label:"Requests", icon:"" },
