@@ -8,6 +8,8 @@ import GlobalSearchModal from "@/components/shared/GlobalSearchModal";
 import SearchHint from "@/components/shared/SearchHint";
 import FeedHomeButton from "@/components/shared/FeedHomeButton";
 import Link from "next/link";
+
+const IconSignout = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>;
 import api from "@/lib/api";
 
 const PAGE_TITLES: Record<string,string> = {
@@ -192,6 +194,9 @@ export default function StaffShell({ children }: { children: ReactNode }) {
             <div className="avatar-circle" style={{background:"#1D9E75"}}>
               {user?.fullName?.charAt(0).toUpperCase() || "S"}
             </div>
+            <button className="logout-topbar-btn" onClick={() => { logout(); router.push("/login"); }} title="Sign Out">
+              <IconSignout/>
+            </button>
           </div>
         </header>
         {showSearch && <GlobalSearchModal onClose={() => setShowSearch(false)} role="staff" />}
@@ -263,6 +268,8 @@ export default function StaffShell({ children }: { children: ReactNode }) {
         .greeting-text{font-size:0.8rem;color:#888;white-space:nowrap}
         .greeting-name{color:#1D9E75;font-weight:600}
         .avatar-circle{width:34px;height:34px;border-radius:50%;color:#fff;font-family:var(--font-display);font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .logout-topbar-btn{background:none;border:1px solid #E5E5E5;border-radius:6px;color:#AAA;cursor:pointer;padding:0.3rem 0.5rem;transition:all 0.2s;display:flex;align-items:center;justify-content:center}
+        .logout-topbar-btn:hover{color:#DC2626;border-color:#FCA5A5;background:#FEF2F2}
         .staff-content{flex:1;padding:1.75rem;width:100%;box-sizing:border-box}
 
         /* Mobile */
