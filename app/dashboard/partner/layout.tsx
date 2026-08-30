@@ -14,6 +14,8 @@ import SearchHint from "@/components/shared/SearchHint";
 import FeedHomeButton from "@/components/shared/FeedHomeButton";
 import { useSidebar } from "@/hooks/useSidebar";
 
+const IconSignout = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>;
+
 const NAV = [
   { href:"/dashboard/partner", label:"Overview", icon:"home", exact:true },
   { href:"/dashboard/partner/cars", label:"My Vehicles", icon:"car" },
@@ -104,6 +106,9 @@ export default function PartnerLayout({ children }: { children: ReactNode }) {
               <button className="av-btn" onClick={() => router.push("/dashboard/partner/settings")}>
                 {me?.profilePicture ? <img src={me.profilePicture} alt="" className="av-img" /> : <span>{user?.fullName?.charAt(0).toUpperCase() || "P"}</span>}
               </button>
+              <button className="logout-topbar-btn" onClick={() => { logout(); router.push("/login"); }} title="Sign Out">
+                <IconSignout/>
+              </button>
             </div>
           </header>
           {showSearch && <GlobalSearchModal onClose={() => setShowSearch(false)} role="partner" />}
@@ -123,6 +128,8 @@ export default function PartnerLayout({ children }: { children: ReactNode }) {
         .partner-badge:hover{background:#FFEDD5}
         .pb-avatar{width:36px;height:36px;border-radius:50%;background:#F47B20;color:#fff;font-family:var(--font-display);font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;border:2px solid #F47B20}
         .pb-avatar img{width:100%;height:100%;object-fit:cover}
+        .logout-topbar-btn{background:none;border:1px solid #E5E5E5;border-radius:6px;color:#AAA;cursor:pointer;padding:0.3rem 0.5rem;transition:all 0.2s;display:flex;align-items:center;justify-content:center}
+        .logout-topbar-btn:hover{color:#DC2626;border-color:#FCA5A5;background:#FEF2F2}
         .pb-info{display:flex;flex-direction:column;gap:0.1rem;overflow:hidden}
         .pb-name{font-size:0.82rem;font-weight:600;color:#1A1A1A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .pb-role{font-size:0.68rem;color:#F47B20}
