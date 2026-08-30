@@ -13,6 +13,8 @@ import { useSidebar } from "@/hooks/useSidebar";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter, usePathname } from "next/navigation";
 
+const IconSignout = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>;
+
 function getGreeting() {
   const h = new Date().getHours();
   if (h >= 5 && h < 12) return "Morning";
@@ -23,7 +25,7 @@ function getGreeting() {
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const { isOpen, toggle, close } = useSidebar();
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
   const [showSearch, setShowSearch] = useState(false);
@@ -51,6 +53,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               <button className="av-btn" onClick={() => router.push("/dashboard/super-admin/settings")}>
                 A
               </button>
+              <button className="logout-topbar-btn" onClick={() => { logout(); router.push("/login"); }} title="Sign Out">
+                <IconSignout/>
+              </button>
             </div>
           </header>
           {showSearch && <GlobalSearchModal onClose={() => setShowSearch(false)} role="super-admin" />}
@@ -69,6 +74,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         .greeting{font-size:0.78rem;color:#888;white-space:nowrap}
         .greeting strong{color:#DC2626}
         .av-btn{width:34px;height:34px;border-radius:50%;border:2px solid #DC2626;background:#FEF2F2;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:0.9rem;color:#DC2626;font-weight:700}
+        .logout-topbar-btn{background:none;border:1px solid #E5E5E5;border-radius:6px;color:#AAA;cursor:pointer;padding:0.3rem 0.5rem;transition:all 0.2s;display:flex;align-items:center;justify-content:center}
+        .logout-topbar-btn:hover{color:#DC2626;border-color:#FCA5A5;background:#FEF2F2}
         .admin-content{flex:1;padding:1.75rem;max-width:1400px;width:100%}
         @media(max-width:767px){.admin-main{margin-left:0}.admin-content{padding:1rem}}
         @media(max-width:640px){.greeting{display:none}}
