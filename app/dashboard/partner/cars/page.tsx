@@ -41,8 +41,6 @@ export default function PartnerCarsPage() {
           "Vehicle ID": c.carId, Vehicle: `${c.brand} ${c.model} ${c.year}`,
           Dealer: c.dealerName || "", Status: c.status,
           "Selling Price (NGN)": c.sellingPrice || 0,
-          "Total Expenses (NGN)": c.totalExpenses || 0,
-          "Profit (NGN)": c.status==="sold" ? (c.actualProfit||c.estimatedProfit||0) : "",
         })), "My Assigned Vehicles");
         await downloadBlob(blob, `${filename}.xlsx`);
       } else {
@@ -58,8 +56,8 @@ export default function PartnerCarsPage() {
           </style></head><body>
           <h1>My Assigned Vehicles</h1>
           <div class="sub">${filtered.length} vehicle${filtered.length!==1?"s":""} &bull; Generated ${now}</div>
-          <table><thead><tr><th>Vehicle</th><th>Dealer</th><th>Status</th><th>Price</th><th>Expenses</th><th>Profit</th></tr></thead>
-          <tbody>${filtered.map((c:any)=>`<tr><td>${c.brand} ${c.model} ${c.year}<br/><span style="color:#A3A3A3;font-size:9px">${c.carId}</span></td><td>${c.dealerName||""}</td><td>${c.status}</td><td>${fmt(c.sellingPrice)}</td><td>${fmt(c.totalExpenses)}</td><td>${c.status==="sold"?fmt(c.actualProfit||c.estimatedProfit||0):"-"}</td></tr>`).join("")}</tbody>
+          <table><thead><tr><th>Vehicle</th><th>Dealer</th><th>Status</th><th>Price</th></tr></thead>
+          <tbody>${filtered.map((c:any)=>`<tr><td>${c.brand} ${c.model} ${c.year}<br/><span style="color:#A3A3A3;font-size:9px">${c.carId}</span></td><td>${c.dealerName||""}</td><td>${c.status}</td><td>${fmt(c.sellingPrice)}</td></tr>`).join("")}</tbody>
           </table>
           <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
           </body></html>`;
@@ -127,13 +125,6 @@ export default function PartnerCarsPage() {
                 <div className="car-title">{c.brand} {c.model} {c.year}</div>
                 <div className="car-meta">{c.color}  {c.transmission}</div>
                 <div className="car-price">{fmt(c.sellingPrice)}</div>
-                {c.totalExpenses > 0 && <div className="car-meta" style={{color:"#DC2626"}}>Expenses: {fmt(c.totalExpenses)}</div>}
-                {c.status === "sold" && (
-                  <div className="profit-row">
-                    <span className="profit-label">Profit:</span>
-                    <span className="profit-val">+{fmt(c.actualProfit||c.estimatedProfit||0)}</span>
-                  </div>
-                )}
               </div>
             </div>
           ))}

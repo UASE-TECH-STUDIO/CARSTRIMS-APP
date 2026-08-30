@@ -44,8 +44,8 @@ export default function PartnerEarningsPage() {
         <div class="stat"><div class="l">Total Revenue</div><div class="v">NGN ${fmt(data?.totalRevenue||0)}</div></div>
         <div class="stat"><div class="l">Total Sales</div><div class="v">${data?.totalSales||0}</div></div>
       </div>
-      <table><thead><tr><th>Vehicle ID</th><th>Selling Price</th><th>Profit</th><th>Date</th></tr></thead>
-      <tbody>${sales.map((s:any) => `<tr><td>${s.carId||""}</td><td>NGN ${fmt(s.sellingPrice)}</td><td>+NGN ${fmt(s.profit)}</td><td>${fmtDate(s.soldAt)}</td></tr>`).join("")}</tbody>
+      <table><thead><tr><th>Vehicle ID</th><th>Selling Price</th><th>Your Share</th><th>Date</th></tr></thead>
+      <tbody>${sales.map((s:any) => `<tr><td>${s.carId||""}</td><td>NGN ${fmt(s.sellingPrice)}</td><td>${s.partnerShare!=null?`+NGN ${fmt(s.partnerShare)}`:"—"}</td><td>${fmtDate(s.soldAt)}</td></tr>`).join("")}</tbody>
       </table>
       <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
       </body></html>`;
@@ -59,7 +59,7 @@ export default function PartnerEarningsPage() {
       if (format === "excel") {
         const blob = rowsToExcelBlob((data?.recentSales||[]).map((s:any) => ({
           "Vehicle ID": s.carId || "", "Selling Price": s.sellingPrice || 0,
-          Profit: s.profit || 0, Date: fmtDate(s.soldAt),
+          "Your Share": s.partnerShare ?? "", Date: fmtDate(s.soldAt),
         })), "Earnings");
         await downloadBlob(blob, `${filename}.xlsx`);
       } else {
@@ -132,13 +132,13 @@ export default function PartnerEarningsPage() {
           <div className="sales-title">RECENT SALES</div>
           <div className="sales-table-wrap">
             <table className="sales-table">
-              <thead><tr><th>Vehicle ID</th><th>Selling Price</th><th>Profit</th><th>Date</th></tr></thead>
+              <thead><tr><th>Vehicle ID</th><th>Selling Price</th><th>Your Share</th><th>Date</th></tr></thead>
               <tbody>
                 {data.recentSales.map((s: any) => (
                   <tr key={s._id}>
                     <td><span className="mono">{s.carId}</span></td>
                     <td className="price-cell">{fmt(s.sellingPrice)}</td>
-                    <td className="profit-cell">+{fmt(s.profit)}</td>
+                    <td className="profit-cell">{s.partnerShare != null ? `+${fmt(s.partnerShare)}` : "—"}</td>
                     <td className="date-cell">{fmtDate(s.soldAt)}</td>
                   </tr>
                 ))}
