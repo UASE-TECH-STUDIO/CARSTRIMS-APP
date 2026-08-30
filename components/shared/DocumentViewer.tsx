@@ -23,6 +23,17 @@ const DOC_TITLES: Record<string, string> = {
   CASH_INVOICE: "CASH INVOICE",
 };
 
+// Real transaction receipts/invoices/proforma go back to only the
+// single original template for now, per direction - the alternate
+// Design Studio designs (and the whole Design Studio feature they
+// come from) are being spun out into their own separate app. Nothing
+// below was removed: designId already defaults to "original" and can
+// only ever change via the picker UI hidden behind this flag, so
+// flipping this back to true is the entire re-enable step once
+// there's something worth connecting it to (an id/API bridge to the
+// new app, as planned).
+const DESIGN_PICKER_ENABLED = false;
+
 export default function DocumentViewer({ doc: initialDoc, onClose }: Props) {
   const [step, setStep] = useState<"view" | "edit">("view");
 
@@ -436,6 +447,7 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
         {/*  PREVIEW  */}
         {step === "view" && (
           <>
+            {DESIGN_PICKER_ENABLED && (
             <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", padding: "12px 20px 0" }}>
               <button onClick={() => setDesignId("original")}
                 style={{ padding: "6px 12px", borderRadius: "6px", border: designId === "original" ? "1.5px solid #F47B20" : "1.5px solid #E5E5E5", background: designId === "original" ? "#FFF7ED" : "#fff", color: designId === "original" ? "#F47B20" : "#525252", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>
@@ -448,6 +460,7 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
                 </button>
               ))}
             </div>
+            )}
 
             {activeNewDesign ? (
               <div style={{ background: "#FAFAFA", padding: "20px", maxHeight: "75vh", overflowY: "auto", display: "flex", justifyContent: "center" }}>
