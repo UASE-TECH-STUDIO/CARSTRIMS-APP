@@ -12,6 +12,8 @@ import NotificationBell from "@/components/ui/NotificationBell";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
 
+const IconSignout = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>;
+
 const PAGE_TITLES: Record<string,string> = {
   "/dashboard/dealer":"Overview",
   "/dashboard/dealer/cars":"Vehicles & Inventory",
@@ -40,7 +42,7 @@ function DealerShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { isOpen, toggle, close } = useSidebar();
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const [ready, setReady] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [dealerStatus, setDealerStatus] = useState<string|null>(null);
@@ -105,6 +107,9 @@ function DealerShell({ children }: { children: ReactNode }) {
                 : <span className="avatar-letter">{user?.fullName?.charAt(0).toUpperCase()||"D"}</span>
               }
             </button>
+            <button className="logout-topbar-btn" onClick={() => { logout(); router.push("/login"); }} title="Sign Out">
+              <IconSignout/>
+            </button>
           </div>
         </header>
         {showSearch && <GlobalSearchModal onClose={() => setShowSearch(false)} role="dealer" />}
@@ -142,6 +147,8 @@ function DealerShell({ children }: { children: ReactNode }) {
         .avatar-btn:hover{border-color:#FF9340;transform:scale(1.05)}
         .avatar-img{width:100%;height:100%;object-fit:cover}
         .avatar-letter{font-family:var(--font-display);font-size:1rem;color:#F47B20;font-weight:600}
+        .logout-topbar-btn{background:none;border:1px solid #E5E5E5;border-radius:6px;color:#AAA;cursor:pointer;padding:0.3rem 0.5rem;transition:all 0.2s;display:flex;align-items:center;justify-content:center}
+        .logout-topbar-btn:hover{color:#DC2626;border-color:#FCA5A5;background:#FEF2F2}
         .pending-notice{background:#FFF7ED;border-bottom:2px solid rgba(244,123,32,0.3);padding:0.6rem 1.75rem;font-size:0.8rem;color:#C4621A;display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;flex-shrink:0}
         .pending-notice strong{color:#F47B20}
         .shell-content{flex:1;padding:1.75rem;width:100%;box-sizing:border-box}
