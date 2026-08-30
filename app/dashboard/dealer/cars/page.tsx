@@ -246,6 +246,7 @@ export default function DealerCarsPage() {
   const handleSave = async()=>{
     if(!form.model.trim()){showErr("Vehicle model is required");return;}
     if(!form.sellingPrice){showErr("Selling price is required");return;}
+    if(images.length===0){showErr("Add at least one photo before posting this vehicle");return;}
     setSaving(true);setErr("");
     try {
       const payload={...form,year:Number(form.year),sellingPrice:Number(form.sellingPrice),purchasePrice:Number(form.purchasePrice)||0,promoPrice:Number(form.promoPrice)||0,mileage:Number(form.mileage)||0};
