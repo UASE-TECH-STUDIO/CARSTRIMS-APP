@@ -42,7 +42,7 @@ interface Car {
   color:string; sellingPrice:number; promoPrice?:number; status:string;
   images:string[]; viewCount:number; likeCount:number; commentCount?:number;
   city?:string; state?:string; transmission?:string; fuelType?:string;
-  dealerName?:string; dealerLogo?:string; condition?:string;
+  dealerName?:string; dealerLogo?:string; dealerId?:string; condition?:string;
 }
 
 export default function FeedPage() {
@@ -776,7 +776,11 @@ export default function FeedPage() {
                 </div>
 
                 {car.dealerName && (
-                  <div className="dealer-strip">
+                  <div
+                    className="dealer-strip"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (car.dealerId) router.push(`/dealers/${car.dealerId}`); }}
+                    style={{ cursor: car.dealerId ? "pointer" : "default" }}
+                  >
                     <div className="ds-logo">{car.dealerLogo?<img src={car.dealerLogo} alt=""/>:car.dealerName?.charAt(0)||"D"}</div>
                     <span className="ds-name">{car.dealerName}</span>
                     {car.state && <span className="ds-loc">{car.state}</span>}
