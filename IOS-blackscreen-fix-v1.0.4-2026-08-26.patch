@@ -1,0 +1,183 @@
+From 80435730319b4b61bc96cd7aad357708b316f172 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 30 Aug 2026 09:35:51 +0000
+Subject: [PATCH 1/2] fix: iOS black screen - no App Transport Security config
+ at all for a remotely-loaded app
+
+Real, concrete asymmetry found: Android has an explicit
+network_security_config.xml declaring every domain this app connects
+to (carstrims.com, onrender.com, cloudinary.com) - iOS's Info.plist
+had no NSAppTransportSecurity entry whatsoever.
+
+This app's entire UI loads remotely via capacitor.config.ts's
+server.url (there is no meaningful local bundle) - every screen the
+person sees depends on this WKWebView successfully reaching
+carstrims.com, its backend on onrender.com, and images on
+cloudinary.com. With zero ATS configuration, iOS falls back to its
+strictest default policy for all three. If any of them doesn't
+perfectly satisfy Apple's default requirements (certain TLS/cipher
+specifics, forward secrecy expectations that not every server
+enables), iOS silently blocks the request at the network layer - no
+error surfaces to the WebView or the person, just an empty page that
+never paints anything. That reads as a stuck black screen, and the
+existing splash-hide fix (already in this repo, hides the splash once
+a real frame paints, with a 12s safety-net fallback) can't help here
+either way: if the page never loads, the safety timer just reveals
+the same empty black WebView 12 seconds later instead of immediately.
+
+This exactly matches the reported symptom pattern - web and Android
+both work, only iPhone shows this - since ATS is an iOS-only
+enforcement mechanism with no equivalent on the other two platforms.
+
+Added an NSExceptionDomains block for the three domains this app
+actually depends on, mirroring Android's explicit domain list rather
+than disabling ATS broadly (NSAllowsArbitraryLoads) - that keeps
+HTTPS required and TLS 1.2 minimum for all three, just relaxes the
+forward-secrecy requirement specifically, since that's the most
+common way a legitimate, properly-secured server still fails Apple's
+strictest default without actually being insecure.
+
+Important caveat, stated plainly rather than promised as certain:
+this is the most concrete, verifiable gap found for an iOS-only
+black-screen symptom on a WKWebView-loaded remote app, and directly
+explains the reported pattern - but confirming it's the actual root
+cause (versus a contributing factor alongside something in the CI
+build pipeline) requires a fresh TestFlight/production build with
+this fix included, tested on a real device.
+---
+ ios/App/App/Info.plist | 39 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
+
+diff --git a/ios/App/App/Info.plist b/ios/App/App/Info.plist
+index 2bb4d37..6db6077 100644
+--- a/ios/App/App/Info.plist
++++ b/ios/App/App/Info.plist
+@@ -61,5 +61,44 @@
+ 	<string>CARSTRIMS uses your location to show nearby dealers and vehicles, and to fill in your state and city when setting up your dealership or listing a vehicle.</string>
+ 	<key>UIViewControllerBasedStatusBarAppearance</key>
+ 	<true/>
++	<key>NSAppTransportSecurity</key>
++	<dict>
++		<key>NSExceptionDomains</key>
++		<dict>
++			<key>carstrims.com</key>
++			<dict>
++				<key>NSIncludesSubdomains</key>
++				<true/>
++				<key>NSExceptionAllowsInsecureHTTPLoads</key>
++				<false/>
++				<key>NSExceptionMinimumTLSVersion</key>
++				<string>TLSv1.2</string>
++				<key>NSExceptionRequiresForwardSecrecy</key>
++				<false/>
++			</dict>
++			<key>onrender.com</key>
++			<dict>
++				<key>NSIncludesSubdomains</key>
++				<true/>
++				<key>NSExceptionAllowsInsecureHTTPLoads</key>
++				<false/>
++				<key>NSExceptionMinimumTLSVersion</key>
++				<string>TLSv1.2</string>
++				<key>NSExceptionRequiresForwardSecrecy</key>
++				<false/>
++			</dict>
++			<key>cloudinary.com</key>
++			<dict>
++				<key>NSIncludesSubdomains</key>
++				<true/>
++				<key>NSExceptionAllowsInsecureHTTPLoads</key>
++				<false/>
++				<key>NSExceptionMinimumTLSVersion</key>
++				<string>TLSv1.2</string>
++				<key>NSExceptionRequiresForwardSecrecy</key>
++				<false/>
++			</dict>
++		</dict>
++	</dict>
+ </dict>
+ </plist>
+-- 
+2.43.0
+
+
+From 8701ce6ecba371cb623bbc78f813c4fdabb4ebac Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 30 Aug 2026 09:41:29 +0000
+Subject: [PATCH 2/2] chore: bump iOS version 1.0.3 (2) -> 1.0.4 (3) for the
+ black-screen fix build
+
+Bumped MARKETING_VERSION and CURRENT_PROJECT_VERSION consistently in
+both the Debug and Release build configurations, so this doesn't
+reintroduce the exact Debug/Release version mismatch already fixed
+earlier in this project's history.
+
+Before bumping, did a full sweep for other plausible black-screen
+causes beyond the ATS fix already committed, to make sure nothing
+else was still silently broken:
+- WKAppBoundDomains: not present, ruled out
+- Native Swift files (AppDelegate.swift, ViewController.swift):
+  standard boilerplate plus one intentional back-gesture addition,
+  nothing that could block or interfere with loading
+- Content-Security-Policy: none configured in next.config.js, ruled
+  out as a WKWebView-specific blocker
+- Service worker (public/sw.js): already correctly skips
+  navigation/document requests entirely, so it cannot serve stale
+  cached HTML after an update - already fixed in this project's
+  history for a related but distinct white-screen-on-refresh bug,
+  verified still correct
+- capacitor.config.json / config.xml: confirmed properly gitignored
+  (ios/.gitignore), so there's no stale committed copy that could
+  undermine the CI script's fresh generation of these files on every
+  build
+- Package.resolved: confirmed present, valid JSON, matches the fix
+  already documented in ci_post_clone.sh
+
+Nothing else found. The ATS fix (previous commit) remains the one
+concrete, verified gap for an iOS-only black screen on this kind of
+remotely-loaded app.
+---
+ ios/App/App.xcodeproj/project.pbxproj | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/ios/App/App.xcodeproj/project.pbxproj b/ios/App/App.xcodeproj/project.pbxproj
+index 668e464..b158d40 100644
+--- a/ios/App/App.xcodeproj/project.pbxproj
++++ b/ios/App/App.xcodeproj/project.pbxproj
+@@ -301,14 +301,14 @@
+ 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+ 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
+ 				CODE_SIGN_STYLE = Automatic;
+-				CURRENT_PROJECT_VERSION = 2;
++				CURRENT_PROJECT_VERSION = 3;
+ 				INFOPLIST_FILE = App/Info.plist;
+ 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+ 				LD_RUNPATH_SEARCH_PATHS = (
+ 					"$(inherited)",
+ 					"@executable_path/Frameworks",
+ 				);
+-				MARKETING_VERSION = 1.0.3;
++				MARKETING_VERSION = 1.0.4;
+ 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
+ 				PRODUCT_BUNDLE_IDENTIFIER = com.uasetechstudio.carstrims;
+ 				PRODUCT_NAME = "$(TARGET_NAME)";
+@@ -324,14 +324,14 @@
+ 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+ 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
+ 				CODE_SIGN_STYLE = Automatic;
+-				CURRENT_PROJECT_VERSION = 2;
++				CURRENT_PROJECT_VERSION = 3;
+ 				INFOPLIST_FILE = App/Info.plist;
+ 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+ 				LD_RUNPATH_SEARCH_PATHS = (
+ 					"$(inherited)",
+ 					"@executable_path/Frameworks",
+ 				);
+-				MARKETING_VERSION = 1.0.3;
++				MARKETING_VERSION = 1.0.4;
+ 				PRODUCT_BUNDLE_IDENTIFIER = com.uasetechstudio.carstrims;
+ 				PRODUCT_NAME = "$(TARGET_NAME)";
+ 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
+-- 
+2.43.0
+

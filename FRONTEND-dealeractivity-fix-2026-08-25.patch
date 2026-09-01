@@ -1,0 +1,47 @@
+From 54262d651653e180bd5b6c12efc281af1d542632 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Fri, 28 Aug 2026 17:50:50 +0000
+Subject: [PATCH] fix: dealer dashboard Recent Activity widget crashing
+ silently on every load (dealer Recent Activity fix, part 2/2)
+
+Real, severe bug found: verbMap was referenced (verbMap[n.type]) but
+never actually defined anywhere in this file, or imported from
+anywhere. This threw a ReferenceError on every single dashboard load
+- silently swallowed by the surrounding try/catch, meaning
+setActivity() never ran and the widget stayed permanently empty
+regardless of whether any real activity existed. dealer/stats/
+requests still loaded fine since those calls happen earlier in the
+same try block, before the crash - only the activity feed was
+affected.
+
+Defined verbMap covering the exact same set of notification types
+already handled by the neighboring getActivityIcon/getLinkForActivity
+functions, so all three stay consistent.
+---
+ app/dashboard/dealer/page.tsx | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/app/dashboard/dealer/page.tsx b/app/dashboard/dealer/page.tsx
+index 93f866f..ada8f7b 100644
+--- a/app/dashboard/dealer/page.tsx
++++ b/app/dashboard/dealer/page.tsx
+@@ -49,6 +49,16 @@ function getLinkForActivity(n: any): string {
+   return "/dashboard/dealer/notifications";
+ }
+ 
++const verbMap: Record<string,string> = {
++  car_liked:"liked your", like:"liked your",
++  car_commented:"commented on your", comment:"commented on your",
++  follow:"started following your dealership", new_follower:"started following your dealership",
++  car_request:"sent a request about your", request:"sent a request about your",
++  car_sold:"purchased your", new_message:"sent you a message about",
++  general:"interacted with your dealership", announcement:"posted an announcement",
++  dealer_approved:"approved your dealer account",
++};
++
+ export default function DealerOverviewPage() {
+   const { user } = useAuthStore();
+   const showToast = useToast();
+-- 
+2.43.0
+

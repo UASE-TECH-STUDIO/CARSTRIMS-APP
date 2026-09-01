@@ -1,0 +1,307 @@
+From 7c2425224dd2ad8609e6cd3671d9f16421f54993 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 30 Aug 2026 10:07:33 +0000
+Subject: [PATCH 1/4] fix: Super Admin's feed delete button was a wide overlay
+ bar - now small, fitted below car details (checklist item 4)
+
+Real UI problem confirmed directly in code: the delete button was
+absolutely positioned as a full-width bar overlaying the bottom of
+the car's image (position:absolute; bottom:0; left:0; right:0; with
+flex:1 on the button itself) - exactly the 'wide and ugly' look
+reported.
+
+Moved it out of the image overlay entirely and out of the card's
+clickable <Link> (same reasoning as the earlier inline-comment-box
+fix - an interactive element has no business being nested inside an
+anchor). Now renders as its own small, normal-flow button directly
+below the whole card (title, price, icons, footer - everything),
+so it naturally sits 'at the bottom after the car details' as
+requested, instead of floating over the photo.
+
+Already confirmed super-admin-only (isAdmin checks user.role ===
+'SYSTEM_ADMIN', unchanged).
+
+Checked the car detail page's own admin delete button while I was in
+there - it already exists (isAdmin && <button ... cd-del>), already
+small and inline alongside Like/Save/Share rather than a wide bar,
+so no change was needed there - it already satisfies 'keep it on
+the car details page'.
+---
+ app/feed/page.tsx | 28 +++++++++++-----------------
+ 1 file changed, 11 insertions(+), 17 deletions(-)
+
+diff --git a/app/feed/page.tsx b/app/feed/page.tsx
+index 40afc71..fafde02 100644
+--- a/app/feed/page.tsx
++++ b/app/feed/page.tsx
+@@ -773,11 +773,6 @@ export default function FeedPage() {
+                   {car.promoPrice > 0 && car.promoPrice < car.sellingPrice && (
+                     <div className="promo-tag">PROMO</div>
+                   )}
+-                  {isAdmin && (
+-                    <div className="card-actions">
+-                      <button className="ca-btn ca-admin-del" onClick={(e) => handleAdminDelete(e, car)}>DELETE</button>
+-                    </div>
+-                  )}
+                 </div>
+ 
+                 {car.dealerName && (
+@@ -824,6 +819,11 @@ export default function FeedPage() {
+                   </div>
+                 </div>
+               </Link>
++              {isAdmin && (
++                <button className="feed-admin-del-btn" onClick={(e) => handleAdminDelete(e, car)}>
++                  Delete Listing
++                </button>
++              )}
+               </div>
+             ))}
+           </div>
+@@ -1170,19 +1170,13 @@ export default function FeedPage() {
+           background:#DC2626; color:#fff; padding:0.2rem 0.5rem;
+           border-radius:4px; font-size:0.6rem; font-weight:700; letter-spacing:0.08em;
+         }
+-        .card-actions {
+-          position:absolute; bottom:0; left:0; right:0;
+-          display:flex; gap:0.25rem; padding:0.5rem;
+-          background:linear-gradient(transparent,rgba(23,23,23,0.6));
+-        }
+-        .ca-btn {
+-          flex:1; background:rgba(23,23,23,0.55); backdrop-filter:blur(4px); border:none;
+-          border-radius:5px; padding:0.3rem; font-size:0.65rem; font-weight:700;
+-          cursor:pointer; color:#fff; transition:background 0.15s; text-align:center;
+-          letter-spacing:0.04em; font-family:var(--font-body);
++        .feed-admin-del-btn {
++          display:block; width:100%; margin-top:0.35rem; background:#FEF2F2;
++          border:1px solid #FCA5A5; color:#DC2626; border-radius:6px;
++          padding:0.35rem; font-size:0.68rem; font-weight:700; cursor:pointer;
++          font-family:var(--font-body);
+         }
+-        .ca-btn:hover { background:rgba(23,23,23,0.8); }
+-        .ca-admin-del { background:rgba(220,38,38,0.9)!important; }
++        .feed-admin-del-btn:hover { background:#FEE2E2; }
+ 
+         .dealer-strip {
+           display:flex; align-items:center; gap:0.4rem;
+-- 
+2.43.0
+
+
+From 8c345f83da5eb9b6d2117901e706b691d4bd9c96 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 30 Aug 2026 15:00:00 +0000
+Subject: [PATCH 2/4] fix: partner pages updated to match the backend financial
+ privacy fix (checklist item 5, frontend)
+
+Companion to the backend fix removing dealer purchasePrice/profit/
+totalExpenses/totalRevenue from partner-facing endpoints - these
+fields no longer exist in the API response, so every place these two
+pages referenced them (on-screen tables, Excel exports, PDF exports)
+needed updating too, or they'd have shown misleading zeros/blanks
+instead of the removed data.
+
+partner/cars/page.tsx: removed the Expenses and Profit
+columns/display entirely from the on-screen card, the Excel export,
+and the PDF export - there's no partner-specific share computed for
+this endpoint's car list (only for actual completed sales via
+my-earnings), so showing nothing here is more honest than inventing
+a number.
+
+partner/earnings/page.tsx: replaced every reference to the old raw
+profit field with the new partnerShare figure the backend now
+computes (the partner's own earned amount from their agreed revenue
+share, not the dealer's raw profit) - relabeled from 'Profit' to
+'Your Share' across the on-screen table, Excel export, and PDF
+export to accurately describe what the figure actually represents
+now. Shows an em dash when no revenue share percentage is set for
+that dealer link, rather than a misleading 0.
+---
+ app/dashboard/partner/cars/page.tsx     | 13 ++-----------
+ app/dashboard/partner/earnings/page.tsx | 10 +++++-----
+ 2 files changed, 7 insertions(+), 16 deletions(-)
+
+diff --git a/app/dashboard/partner/cars/page.tsx b/app/dashboard/partner/cars/page.tsx
+index 9860ab8..b41fe1f 100644
+--- a/app/dashboard/partner/cars/page.tsx
++++ b/app/dashboard/partner/cars/page.tsx
+@@ -41,8 +41,6 @@ export default function PartnerCarsPage() {
+           "Vehicle ID": c.carId, Vehicle: `${c.brand} ${c.model} ${c.year}`,
+           Dealer: c.dealerName || "", Status: c.status,
+           "Selling Price (NGN)": c.sellingPrice || 0,
+-          "Total Expenses (NGN)": c.totalExpenses || 0,
+-          "Profit (NGN)": c.status==="sold" ? (c.actualProfit||c.estimatedProfit||0) : "",
+         })), "My Assigned Vehicles");
+         await downloadBlob(blob, `${filename}.xlsx`);
+       } else {
+@@ -58,8 +56,8 @@ export default function PartnerCarsPage() {
+           </style></head><body>
+           <h1>My Assigned Vehicles</h1>
+           <div class="sub">${filtered.length} vehicle${filtered.length!==1?"s":""} &bull; Generated ${now}</div>
+-          <table><thead><tr><th>Vehicle</th><th>Dealer</th><th>Status</th><th>Price</th><th>Expenses</th><th>Profit</th></tr></thead>
+-          <tbody>${filtered.map((c:any)=>`<tr><td>${c.brand} ${c.model} ${c.year}<br/><span style="color:#A3A3A3;font-size:9px">${c.carId}</span></td><td>${c.dealerName||""}</td><td>${c.status}</td><td>${fmt(c.sellingPrice)}</td><td>${fmt(c.totalExpenses)}</td><td>${c.status==="sold"?fmt(c.actualProfit||c.estimatedProfit||0):"-"}</td></tr>`).join("")}</tbody>
++          <table><thead><tr><th>Vehicle</th><th>Dealer</th><th>Status</th><th>Price</th></tr></thead>
++          <tbody>${filtered.map((c:any)=>`<tr><td>${c.brand} ${c.model} ${c.year}<br/><span style="color:#A3A3A3;font-size:9px">${c.carId}</span></td><td>${c.dealerName||""}</td><td>${c.status}</td><td>${fmt(c.sellingPrice)}</td></tr>`).join("")}</tbody>
+           </table>
+           <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
+           </body></html>`;
+@@ -127,13 +125,6 @@ export default function PartnerCarsPage() {
+                 <div className="car-title">{c.brand} {c.model} {c.year}</div>
+                 <div className="car-meta">{c.color}  {c.transmission}</div>
+                 <div className="car-price">{fmt(c.sellingPrice)}</div>
+-                {c.totalExpenses > 0 && <div className="car-meta" style={{color:"#DC2626"}}>Expenses: {fmt(c.totalExpenses)}</div>}
+-                {c.status === "sold" && (
+-                  <div className="profit-row">
+-                    <span className="profit-label">Profit:</span>
+-                    <span className="profit-val">+{fmt(c.actualProfit||c.estimatedProfit||0)}</span>
+-                  </div>
+-                )}
+               </div>
+             </div>
+           ))}
+diff --git a/app/dashboard/partner/earnings/page.tsx b/app/dashboard/partner/earnings/page.tsx
+index 66024a3..ca2be06 100644
+--- a/app/dashboard/partner/earnings/page.tsx
++++ b/app/dashboard/partner/earnings/page.tsx
+@@ -44,8 +44,8 @@ export default function PartnerEarningsPage() {
+         <div class="stat"><div class="l">Total Revenue</div><div class="v">NGN ${fmt(data?.totalRevenue||0)}</div></div>
+         <div class="stat"><div class="l">Total Sales</div><div class="v">${data?.totalSales||0}</div></div>
+       </div>
+-      <table><thead><tr><th>Vehicle ID</th><th>Selling Price</th><th>Profit</th><th>Date</th></tr></thead>
+-      <tbody>${sales.map((s:any) => `<tr><td>${s.carId||""}</td><td>NGN ${fmt(s.sellingPrice)}</td><td>+NGN ${fmt(s.profit)}</td><td>${fmtDate(s.soldAt)}</td></tr>`).join("")}</tbody>
++      <table><thead><tr><th>Vehicle ID</th><th>Selling Price</th><th>Your Share</th><th>Date</th></tr></thead>
++      <tbody>${sales.map((s:any) => `<tr><td>${s.carId||""}</td><td>NGN ${fmt(s.sellingPrice)}</td><td>${s.partnerShare!=null?`+NGN ${fmt(s.partnerShare)}`:"—"}</td><td>${fmtDate(s.soldAt)}</td></tr>`).join("")}</tbody>
+       </table>
+       <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
+       </body></html>`;
+@@ -59,7 +59,7 @@ export default function PartnerEarningsPage() {
+       if (format === "excel") {
+         const blob = rowsToExcelBlob((data?.recentSales||[]).map((s:any) => ({
+           "Vehicle ID": s.carId || "", "Selling Price": s.sellingPrice || 0,
+-          Profit: s.profit || 0, Date: fmtDate(s.soldAt),
++          "Your Share": s.partnerShare ?? "", Date: fmtDate(s.soldAt),
+         })), "Earnings");
+         await downloadBlob(blob, `${filename}.xlsx`);
+       } else {
+@@ -132,13 +132,13 @@ export default function PartnerEarningsPage() {
+           <div className="sales-title">RECENT SALES</div>
+           <div className="sales-table-wrap">
+             <table className="sales-table">
+-              <thead><tr><th>Vehicle ID</th><th>Selling Price</th><th>Profit</th><th>Date</th></tr></thead>
++              <thead><tr><th>Vehicle ID</th><th>Selling Price</th><th>Your Share</th><th>Date</th></tr></thead>
+               <tbody>
+                 {data.recentSales.map((s: any) => (
+                   <tr key={s._id}>
+                     <td><span className="mono">{s.carId}</span></td>
+                     <td className="price-cell">{fmt(s.sellingPrice)}</td>
+-                    <td className="profit-cell">+{fmt(s.profit)}</td>
++                    <td className="profit-cell">{s.partnerShare != null ? `+${fmt(s.partnerShare)}` : "—"}</td>
+                     <td className="date-cell">{fmtDate(s.soldAt)}</td>
+                   </tr>
+                 ))}
+-- 
+2.43.0
+
+
+From e10d969a73a4d9ccf41c281b5a4b0588b09cf372 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 30 Aug 2026 16:16:40 +0000
+Subject: [PATCH 3/4] fix: block car listing submission without at least one
+ photo (checklist item 6, frontend)
+
+The primary fix for the two-step creation flow gap (car record
+created first, photos uploaded separately after) - handleSave now
+checks images.length===0 alongside the existing model/price checks,
+with a clear message, before it will call the create or update
+endpoint. Applied uniformly to both adding a new car and editing an
+existing one, so removing every photo during an edit and trying to
+save is blocked the same way.
+
+Staff needed no separate change - staff/inventory/page.tsx already
+dynamically imports this exact same dealer page, so the fix covers
+both roles automatically.
+
+Backend commit alongside this one adds the matching server-side
+safety net on the public-facing endpoints, in case anything ever
+bypasses this client-side check.
+---
+ app/dashboard/dealer/cars/page.tsx | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/app/dashboard/dealer/cars/page.tsx b/app/dashboard/dealer/cars/page.tsx
+index da3d351..4cf0672 100644
+--- a/app/dashboard/dealer/cars/page.tsx
++++ b/app/dashboard/dealer/cars/page.tsx
+@@ -246,6 +246,7 @@ export default function DealerCarsPage() {
+   const handleSave = async()=>{
+     if(!form.model.trim()){showErr("Vehicle model is required");return;}
+     if(!form.sellingPrice){showErr("Selling price is required");return;}
++    if(images.length===0){showErr("Add at least one photo before posting this vehicle");return;}
+     setSaving(true);setErr("");
+     try {
+       const payload={...form,year:Number(form.year),sellingPrice:Number(form.sellingPrice),purchasePrice:Number(form.purchasePrice)||0,promoPrice:Number(form.promoPrice)||0,mileage:Number(form.mileage)||0};
+-- 
+2.43.0
+
+
+From 77e1283d66b24bb356d8eb2452c2b85a63df7ce5 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 30 Aug 2026 16:27:32 +0000
+Subject: [PATCH 4/4] fix: dealer name on feed cards now links to their profile
+ page (checklist item 9)
+
+Real gap confirmed: the dealer-strip shown on every car card (logo +
+company name) was a plain, non-clickable div, despite the same
+information on the car detail page already correctly linking to the
+dealer's profile.
+
+Added dealerId to the Car interface - the backend already sends it
+on every car (serialize_doc passes every field through generically,
+confirmed the field is genuinely stored on each car document), it
+just wasn't declared in this type. Made the strip clickable via
+stopPropagation + router.push rather than a nested Link, since the
+whole card is already an anchor and nesting interactive elements
+inside one is invalid HTML - same reasoning already applied
+elsewhere this session (the inline comment box, the admin delete
+button).
+
+Confirmed the car detail page's own dealer name display already
+correctly links to the profile via a real Link (safe there, since
+it isn't nested inside another anchor) - no change needed there.
+
+Item 7 (search by dealer ID) and item 8 (company-name search
+surfaces that dealer's cars) already landed in separate commits -
+this completes the full dealer search request (items 7, 8, 9).
+---
+ app/feed/page.tsx | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/app/feed/page.tsx b/app/feed/page.tsx
+index fafde02..6513d49 100644
+--- a/app/feed/page.tsx
++++ b/app/feed/page.tsx
+@@ -42,7 +42,7 @@ interface Car {
+   color:string; sellingPrice:number; promoPrice?:number; status:string;
+   images:string[]; viewCount:number; likeCount:number; commentCount?:number;
+   city?:string; state?:string; transmission?:string; fuelType?:string;
+-  dealerName?:string; dealerLogo?:string; condition?:string;
++  dealerName?:string; dealerLogo?:string; dealerId?:string; condition?:string;
+ }
+ 
+ export default function FeedPage() {
+@@ -776,7 +776,11 @@ export default function FeedPage() {
+                 </div>
+ 
+                 {car.dealerName && (
+-                  <div className="dealer-strip">
++                  <div
++                    className="dealer-strip"
++                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (car.dealerId) router.push(`/dealers/${car.dealerId}`); }}
++                    style={{ cursor: car.dealerId ? "pointer" : "default" }}
++                  >
+                     <div className="ds-logo">{car.dealerLogo?<img src={car.dealerLogo} alt=""/>:car.dealerName?.charAt(0)||"D"}</div>
+                     <span className="ds-name">{car.dealerName}</span>
+                     {car.state && <span className="ds-loc">{car.state}</span>}
+-- 
+2.43.0
+
