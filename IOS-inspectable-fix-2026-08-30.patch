@@ -1,0 +1,54 @@
+From 151277d7579f82ebba883e5f6f5588995b54c663 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Mon, 31 Aug 2026 18:44:07 +0000
+Subject: [PATCH] fix: WKWebView was never made inspectable in Release builds -
+ explains "no inspectable applications" in Safari
+
+Real, concrete cause found while live-debugging the black screen with
+a connected device: Safari's Develop menu showed "no inspectable
+applications" despite Web Inspector and Developer Mode both being
+correctly enabled on the phone. Since iOS 16.4, a WKWebView must
+explicitly set isInspectable = true to be inspectable in a Release-
+configuration build (App Store, TestFlight, and Xcode's own Release
+scheme) - a Debug build run directly from Xcode is automatically
+inspectable, but this app's actual production build never had this
+set anywhere, so Safari genuinely could not see it no matter how
+correctly everything else was configured.
+
+This fix alone doesn't resolve the black screen itself - it only
+unblocks being able to see what's actually happening inside it. That
+diagnosis is the immediate next step once this is built and running
+on the connected device.
+---
+ ios/App/App/ViewController.swift | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/ios/App/App/ViewController.swift b/ios/App/App/ViewController.swift
+index 1137236..a22fa9d 100644
+--- a/ios/App/App/ViewController.swift
++++ b/ios/App/App/ViewController.swift
+@@ -7,5 +7,21 @@ class ViewController: CAPBridgeViewController {
+         // WebView, matching how every other native iOS app behaves.
+         // Capacitor does not turn this on by default.
+         self.webView?.allowsBackForwardNavigationGestures = true
++
++        // Real, concrete fix for "no inspectable applications" in
++        // Safari's Web Inspector: since iOS 16.4, a WKWebView must
++        // explicitly opt in to being inspectable for Release-
++        // configuration builds (App Store, TestFlight, and Xcode's
++        // own Release scheme) - a Debug build run directly from
++        // Xcode is automatically inspectable, but this app's actual
++        // production build never had this set, so Safari genuinely
++        // could not see it at all, no matter how correctly Web
++        // Inspector or Developer Mode were configured on the device
++        // side. Guarded with an availability check since this
++        // property only exists on iOS 16.4+, and this app's own
++        // deployment target is iOS 15 (Package.swift).
++        if #available(iOS 16.4, *) {
++            self.webView?.isInspectable = true
++        }
+     }
+ }
+-- 
+2.43.0
+
