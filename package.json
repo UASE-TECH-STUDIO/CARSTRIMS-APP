@@ -6,7 +6,8 @@
         "dev": "next dev",
         "build": "next build",
         "start": "next start",
-        "lint": "next lint"
+        "lint": "next lint",
+        "postinstall": "node scripts/patch-speech-recognition-spm.js"
     },
     "dependencies": {
         "@capacitor/android": "^8.4.0",
