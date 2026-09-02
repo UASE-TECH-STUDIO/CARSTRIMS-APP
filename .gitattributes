@@ -1,0 +1,10 @@
+# Real recurring problem in this project's history: the ios/ folder
+# was repeatedly broken by Windows-style line endings/paths creeping
+# into files that macOS/Xcode Cloud need in Unix form to execute or
+# resolve correctly (shell scripts, Swift package manifests). This
+# guarantees the files that actually matter for that always keep
+# Unix line endings, regardless of core.autocrlf or any other local
+# Git setting on whichever machine (Windows or Mac) commits them.
+*.sh text eol=lf
+ios/App/ci_scripts/* text eol=lf
+Package.swift text eol=lf
