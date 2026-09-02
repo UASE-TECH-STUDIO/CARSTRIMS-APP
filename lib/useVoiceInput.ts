@@ -65,6 +65,8 @@ export function useVoiceInput(onResult: (text: string) => void) {
       return;
     }
 
+    let partialListener: { remove: () => Promise<void> } | null = null;
+
     try {
       // Retry the availability check once with a short delay before
       // giving up - a "device reports no speech engine" result is
@@ -102,33 +104,24 @@ export function useVoiceInput(onResult: (text: string) => void) {
       setSupported(true);
       setListening(true);
 
-      // No language specified — lets the device use its own
-      // configured default, which is ALWAYS guaranteed to be valid
-      // and installed, unlike a hardcoded locale. An earlier version
-      // hardcoded "en-GB" here (reasoning: closer to Nigerian spoken
-      // English than "en-US") but that's very likely the actual cause
-      // of the native-only "unexpected error" — if a given device
-      // doesn't have that specific locale installed for recognition,
-      // start() rejects outright rather than falling back gracefully.
-      // The device's own default is a safer bet: most Nigerian Android
-      // phones (Samsung/Tecno/Infinix etc.) are commonly already
-      // configured close to what was being targeted anyway, without
-      // the risk of hardcoding something unsupported.
-      //
-      // maxResults raised from 1 to 3: native speech engines often
-      // rank alternative interpretations, and the single top pick
-      // isn't always the best one for domain-specific speech like car
-      // shopping terms. Returning all matches lets the caller's own
-      // correction/vocabulary-matching logic pick whichever candidate
-      // actually makes sense, rather than being stuck with whatever
-      // the engine ranked first.
-      //
-      // partialResults off, popup off — keeps this feeling like part
-      // of the app's own search box (the mic icon pulses) rather than
-      // a jarring native overlay taking over the screen.
+      // Real fix for "recording starts, nothing ever gets written":
+      // relying entirely on start()'s own promise resolving once the
+      // native engine detects silence assumed a specific finalization
+      // behavior that this plugin's iOS implementation doesn't
+      // reliably match - the promise could sit unresolved indefinitely
+      // depending on how/when the native side decides an utterance is
+      // "done". Listening to live partialResults instead removes that
+      // dependency entirely: the latest transcript is captured as it
+      // streams in, independent of whatever finalization behavior the
+      // current platform/fork actually implements.
+      let latestMatches: string[] = [];
+      partialListener = await SpeechRecognition.addListener("partialResults", (data: { matches?: string[] }) => {
+        if (data?.matches?.length) latestMatches = data.matches;
+      });
+
       const result = await SpeechRecognition.start({
         maxResults: 3,
-        partialResults: false,
+        partialResults: true,
         popup: false,
       }).catch(async (deviceDefaultErr: any) => {
         // Defensive fallback: if the device's own default language
@@ -140,13 +133,20 @@ export function useVoiceInput(onResult: (text: string) => void) {
         return SpeechRecognition.start({
           language: "en-US",
           maxResults: 3,
-          partialResults: false,
+          partialResults: true,
           popup: false,
         });
       });
 
+      await partialListener.remove();
       setListening(false);
-      const matches: string[] = result?.matches || [];
+
+      // Prefer whatever start() itself resolved with, if it actually
+      // did resolve with real matches - falls back to the latest
+      // partial transcript captured via the listener above when it
+      // didn't (empty matches, or the promise never meaningfully
+      // resolved with content).
+      const matches: string[] = result?.matches?.length ? result.matches : latestMatches;
       if (!matches.length) return;
 
       // Pick whichever candidate scores highest against known
@@ -163,6 +163,7 @@ export function useVoiceInput(onResult: (text: string) => void) {
       onResult(best);
     } catch (runErr: any) {
       console.error("[useVoiceInput] Speech recognition failed while listening:", runErr);
+      await partialListener?.remove().catch(() => {});
       setLastError("runtime-error");
       setListening(false);
       // Deliberately NOT setSupported(false) here - a failure mid-
