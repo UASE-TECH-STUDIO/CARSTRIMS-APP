@@ -10,7 +10,7 @@
     },
     "dependencies": {
         "@capacitor/android": "^8.4.0",
-        "@capgo/capacitor-speech-recognition": "^8.0.0",
+        "@capgo/capacitor-speech-recognition": "8.1.11",
         "@capacitor/app": "^8.0.2",
         "@capacitor/camera": "^8.2.0",
         "@capacitor/cli": "^8.4.0",
