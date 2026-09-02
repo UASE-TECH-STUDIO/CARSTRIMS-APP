@@ -6,12 +6,11 @@
         "dev": "next dev",
         "build": "next build",
         "start": "next start",
-        "lint": "next lint",
-        "postinstall": "node scripts/patch-speech-recognition-spm.js"
+        "lint": "next lint"
     },
     "dependencies": {
         "@capacitor/android": "^8.4.0",
-        "@capacitor-community/speech-recognition": "^7.0.1",
+        "@capgo/capacitor-speech-recognition": "^8.0.0",
         "@capacitor/app": "^8.0.2",
         "@capacitor/camera": "^8.2.0",
         "@capacitor/cli": "^8.4.0",

@@ -19,7 +19,7 @@ function scoreTranscript(text: string): number {
 /**
  * Voice-to-text with two paths:
  *
- * - Native (Android/iOS app): uses @capacitor-community/speech-recognition,
+ * - Native (Android/iOS app): uses @capgo/capacitor-speech-recognition,
  *   a real native plugin backed by the device's own speech engine
  *   (Google's on Android, Apple's on iOS). This is necessary because
  *   the browser-standard Web Speech API (SpeechRecognition) generally
@@ -49,7 +49,7 @@ export function useVoiceInput(onResult: (text: string) => void) {
     setLastError(null);
     let SpeechRecognition: any;
     try {
-      ({ SpeechRecognition } = await import("@capacitor-community/speech-recognition"));
+      ({ SpeechRecognition } = await import("@capgo/capacitor-speech-recognition"));
     } catch (importErr: any) {
       // This specific failure means the plugin's JS bridge never got
       // bundled into the app at all — almost always because `npm
@@ -176,7 +176,7 @@ export function useVoiceInput(onResult: (text: string) => void) {
 
   const stopNative = useCallback(async () => {
     try {
-      const { SpeechRecognition } = await import("@capacitor-community/speech-recognition");
+      const { SpeechRecognition } = await import("@capgo/capacitor-speech-recognition");
       await SpeechRecognition.stop();
     } catch {}
     setListening(false);
