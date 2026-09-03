@@ -101,6 +101,26 @@ export function useVoiceInput(onResult: (text: string) => void) {
         return;
       }
 
+      // iOS 26+ has a newer on-device recognition path (SpeechAnalyzer)
+      // that this plugin only uses when explicitly requested -
+      // otherwise it falls back to the older SFSpeechRecognizer API.
+      // That automatic fallback is new, less battle-tested code on a
+      // very recently released OS version, and a very plausible
+      // explanation for "recording visibly starts, nothing ever gets
+      // written": explicitly opting into the path actually built and
+      // tested for this specific OS generation, when the device
+      // reports it's genuinely available, rather than relying on the
+      // plugin's own fallback logic working correctly on day-one
+      // support for a brand new OS release.
+      let useOnDevice = false;
+      try {
+        const onDeviceCheck = await SpeechRecognition.isOnDeviceRecognitionAvailable?.({ language: "en-US" });
+        useOnDevice = !!onDeviceCheck?.available;
+      } catch {
+        // Method may not exist on this platform/version - safe to
+        // just fall through with useOnDevice left false.
+      }
+
       setSupported(true);
       setListening(true);
 
@@ -153,6 +173,7 @@ export function useVoiceInput(onResult: (text: string) => void) {
         maxResults: 3,
         partialResults: true,
         popup: false,
+        useOnDeviceRecognition: useOnDevice,
       }).catch(async (deviceDefaultErr: any) => {
         // Defensive fallback: if the device's own default language
         // somehow still fails to start recognition, retry once with
@@ -165,6 +186,7 @@ export function useVoiceInput(onResult: (text: string) => void) {
           maxResults: 3,
           partialResults: true,
           popup: false,
+          useOnDeviceRecognition: useOnDevice,
         });
       });
 
