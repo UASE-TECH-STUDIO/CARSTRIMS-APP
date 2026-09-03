@@ -102,6 +102,22 @@ export function useVoiceInput(onResult: (text: string) => void) {
       }
 
       setSupported(true);
+
+      // Real fix for "Speech recognition is already running": a
+      // previous session interrupted at any point (app backgrounded
+      // mid-recording, an earlier failed attempt, anything) can leave
+      // the native plugin's own internal state stuck thinking a
+      // session is still active - every subsequent start() then fails
+      // immediately with this exact error, no matter how many times
+      // the mic is tapped, until the app is fully force-closed and
+      // reopened. Unconditionally stopping any lingering session
+      // before every new attempt clears this regardless of how it got
+      // stuck in the first place - a stop() call when nothing is
+      // actually running is a harmless no-op, so this is always safe
+      // to do defensively rather than only reactively after seeing
+      // the error.
+      await SpeechRecognition.stop().catch(() => {});
+
       setListening(true);
 
       // Real fix for "recording starts, nothing ever gets written":
@@ -130,6 +146,7 @@ export function useVoiceInput(onResult: (text: string) => void) {
         // locale on Android, present on virtually every device
         // regardless of region settings.
         console.warn("[useVoiceInput] Device-default language failed, retrying with en-US:", deviceDefaultErr);
+        await SpeechRecognition.stop().catch(() => {});
         return SpeechRecognition.start({
           language: "en-US",
           maxResults: 3,
@@ -164,6 +181,7 @@ export function useVoiceInput(onResult: (text: string) => void) {
     } catch (runErr: any) {
       console.error("[useVoiceInput] Speech recognition failed while listening:", runErr);
       await partialListener?.remove().catch(() => {});
+      await SpeechRecognition.stop().catch(() => {});
       setLastError("runtime-error");
       setListening(false);
       // Deliberately NOT setSupported(false) here - a failure mid-
