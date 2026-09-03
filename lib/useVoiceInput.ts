@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { correctVoiceTranscript, CAR_VOCABULARY } from "./voiceCarCorrection";
 
 const VOCAB_LOWER = new Set(CAR_VOCABULARY.map((v) => v.toLowerCase()));
@@ -45,8 +45,40 @@ export function useVoiceInput(onResult: (text: string) => void) {
     typeof window !== "undefined" &&
     (window as any).Capacitor?.isNativePlatform?.();
 
+  const isIOSNative = () =>
+    typeof window !== "undefined" &&
+    (window as any).Capacitor?.getPlatform?.() === "ios";
+
+  // Proactively hides the mic button on iOS from the very first
+  // render, rather than only after the user taps it once and gets a
+  // failed attempt - matches "iPhone users shouldn't see a mic button
+  // at all for now" rather than "the mic button silently stops
+  // working after one try."
+  useEffect(() => {
+    if (isIOSNative()) setSupported(false);
+  }, []);
+
   const startNative = useCallback(async () => {
     setLastError(null);
+
+    // Voice search is disabled on iOS specifically for now - every
+    // attempt to make the native speech plugin work reliably there
+    // (the plugin's own SPM incompatibility, a wrong installed
+    // version, a stuck native "already running" state, and finally
+    // the recognizer accepting a session but never producing a
+    // transcript) surfaced a new, different problem each time, with
+    // the most recent attempt causing an outright app crash on both
+    // platforms. Android and web voice search are confirmed working
+    // and unaffected by this - this only turns the mic off on iOS,
+    // where typing remains the only input method until this is
+    // revisited properly, without time pressure, rather than risking
+    // another attempt that could break something working again.
+    if (isIOSNative()) {
+      setSupported(false);
+      setLastError("device-unavailable");
+      return;
+    }
+
     let SpeechRecognition: any;
     try {
       ({ SpeechRecognition } = await import("@capgo/capacitor-speech-recognition"));
@@ -229,5 +261,5 @@ export function useVoiceInput(onResult: (text: string) => void) {
     else stopWeb();
   }, [stopNative, stopWeb]);
 
-  return { listening, supported, lastError, start, stop };
+  return { listening, supported, lastError, start, stop, voiceDisabledOnThisPlatform: isIOSNative() };
 }

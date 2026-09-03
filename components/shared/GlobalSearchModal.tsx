@@ -38,7 +38,7 @@ export default function GlobalSearchModal({ onClose, role }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { listening, supported: voiceSupported, lastError: voiceError, start: startVoice, stop: stopVoice } = useVoiceInput((transcript) => {
+  const { listening, supported: voiceSupported, lastError: voiceError, start: startVoice, stop: stopVoice, voiceDisabledOnThisPlatform } = useVoiceInput((transcript) => {
     setQ(correctNavigationTranscript(transcript, role));
   });
 
@@ -134,6 +134,7 @@ export default function GlobalSearchModal({ onClose, role }: Props) {
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
+          {!voiceDisabledOnThisPlatform && (
           <button
             type="button"
             className={`gs-mic ${listening ? "gs-mic-active" : ""}`}
@@ -145,6 +146,7 @@ export default function GlobalSearchModal({ onClose, role }: Props) {
           >
             {listening ? "●" : "🎤"}
           </button>
+          )}
           {q && <button className="gs-clear" onClick={() => setQ("")}>×</button>}
           <button className="gs-cancel" onClick={onClose}>Cancel</button>
         </div>

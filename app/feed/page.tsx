@@ -103,7 +103,7 @@ export default function FeedPage() {
     window.addEventListener("resize", measure);
     return () => { clearTimeout(t); window.removeEventListener("resize", measure); };
   }, [showSearchHint]);
-  const { listening, supported: voiceSupported, lastError: voiceError, start: startVoice, stop: stopVoice } = useVoiceInput((transcript) => {
+  const { listening, supported: voiceSupported, lastError: voiceError, start: startVoice, stop: stopVoice, voiceDisabledOnThisPlatform } = useVoiceInput((transcript) => {
     setSearchInput(correctVoiceTranscript(transcript));
   });
   const [search, setSearch] = useState("");
@@ -533,6 +533,7 @@ export default function FeedPage() {
               }}
             />
             {searchInput && <button type="button" className="s-clear" onClick={() => { setSearchInput(""); setSearch(""); setShowPeopleDropdown(false); }}>✕</button>}
+            {!voiceDisabledOnThisPlatform && (
             <button
               ref={micBtnRef}
               type="button"
@@ -566,6 +567,7 @@ export default function FeedPage() {
             >
               {listening ? "●" : "🎤"}
             </button>
+            )}
             <button
               ref={resizeHandleRef}
               type="button"
