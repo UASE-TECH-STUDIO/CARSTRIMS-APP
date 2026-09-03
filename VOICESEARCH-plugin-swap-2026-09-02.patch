@@ -1,0 +1,171 @@
+From e89c23a49f05468ff47bef374095a5484fa50c76 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Wed, 2 Sep 2026 16:06:48 +0000
+Subject: [PATCH] fix: properly resolve iOS voice search - switch to a plugin
+ that actually supports SPM, rather than patching around the incompatible one
+
+The previous attempt (hand-writing a Package.swift for
+@capacitor-community/speech-recognition) hit a real, hard Swift
+Package Manager limitation confirmed on the actual Xcode Cloud build:
+'target ... contains mixed language source files; feature not
+supported'. The plugin's ios/Plugin folder mixes Swift and
+Objective-C source files together, and SPM fundamentally cannot
+compile a single target containing both - this is exactly why the
+official plugin never shipped a Package.swift in the first place,
+not an oversight fixable with a simple added file. Properly fixing
+that would mean splitting the plugin's own source into separate
+Swift and Objective-C targets, which isn't safe to do blind without
+being able to see its exact file layout directly.
+
+Instead, switched to @capgo/capacitor-speech-recognition - an
+actively maintained fork of the same plugin, explicitly built with
+full SPM support from the ground up (confirmed: 'same conventions as
+all Capgo plugins (SPM, Podspec, workflows...)'), and explicitly
+documented as a 'drop-in migration' with TypeScript definitions
+compatible with the original - confirmed directly against its own
+docs that requestPermissions() returns the same
+{ speechRecognition: ... } shape this app's code already expects.
+
+Removed the postinstall patch script and its wiring entirely - not
+needed anymore, since this plugin properly ships its own working
+Package.swift rather than needing one hand-written and re-injected
+on every install.
+
+Updated lib/useVoiceInput.ts's two import paths (start and stop) and
+its doc comment to reference the new package. No other code changes
+needed - the API surface this hook actually calls (available(),
+requestPermissions(), start(), stop()) is confirmed compatible.
+Android needs no separate change either - Capacitor auto-discovers
+plugins from node_modules on both platforms, the same way the
+working Android voice search already does today with no manual
+MainActivity registration.
+---
+ lib/useVoiceInput.ts                    |  6 +--
+ package.json                            |  5 +-
+ scripts/patch-speech-recognition-spm.js | 64 -------------------------
+ 3 files changed, 5 insertions(+), 70 deletions(-)
+ delete mode 100644 scripts/patch-speech-recognition-spm.js
+
+diff --git a/lib/useVoiceInput.ts b/lib/useVoiceInput.ts
+index 3526d44..d565827 100644
+--- a/lib/useVoiceInput.ts
++++ b/lib/useVoiceInput.ts
+@@ -19,7 +19,7 @@ function scoreTranscript(text: string): number {
+ /**
+  * Voice-to-text with two paths:
+  *
+- * - Native (Android/iOS app): uses @capacitor-community/speech-recognition,
++ * - Native (Android/iOS app): uses @capgo/capacitor-speech-recognition,
+  *   a real native plugin backed by the device's own speech engine
+  *   (Google's on Android, Apple's on iOS). This is necessary because
+  *   the browser-standard Web Speech API (SpeechRecognition) generally
+@@ -49,7 +49,7 @@ export function useVoiceInput(onResult: (text: string) => void) {
+     setLastError(null);
+     let SpeechRecognition: any;
+     try {
+-      ({ SpeechRecognition } = await import("@capacitor-community/speech-recognition"));
++      ({ SpeechRecognition } = await import("@capgo/capacitor-speech-recognition"));
+     } catch (importErr: any) {
+       // This specific failure means the plugin's JS bridge never got
+       // bundled into the app at all — almost always because `npm
+@@ -176,7 +176,7 @@ export function useVoiceInput(onResult: (text: string) => void) {
+ 
+   const stopNative = useCallback(async () => {
+     try {
+-      const { SpeechRecognition } = await import("@capacitor-community/speech-recognition");
++      const { SpeechRecognition } = await import("@capgo/capacitor-speech-recognition");
+       await SpeechRecognition.stop();
+     } catch {}
+     setListening(false);
+diff --git a/package.json b/package.json
+index 90c296f..e44a5e1 100644
+--- a/package.json
++++ b/package.json
+@@ -6,12 +6,11 @@
+         "dev": "next dev",
+         "build": "next build",
+         "start": "next start",
+-        "lint": "next lint",
+-        "postinstall": "node scripts/patch-speech-recognition-spm.js"
++        "lint": "next lint"
+     },
+     "dependencies": {
+         "@capacitor/android": "^8.4.0",
+-        "@capacitor-community/speech-recognition": "^7.0.1",
++        "@capgo/capacitor-speech-recognition": "^8.0.0",
+         "@capacitor/app": "^8.0.2",
+         "@capacitor/camera": "^8.2.0",
+         "@capacitor/cli": "^8.4.0",
+diff --git a/scripts/patch-speech-recognition-spm.js b/scripts/patch-speech-recognition-spm.js
+deleted file mode 100644
+index cabfd19..0000000
+--- a/scripts/patch-speech-recognition-spm.js
++++ /dev/null
+@@ -1,64 +0,0 @@
+-/**
+- * Real, confirmed cause of iOS voice search silently doing nothing
+- * (no permission popup, no entry in Settings, generic "hiccup" error
+- * on tap): @capacitor-community/speech-recognition@7.0.1 ships no
+- * Package.swift at all - it predates Capacitor 8's shift to Swift
+- * Package Manager as the default, and was never migrated. This
+- * project's iOS folder is 100% SPM (confirmed - no CocoaPods/Podfile
+- * anywhere), so this plugin's native Swift implementation was never
+- * actually being linked into the app at all - only its JS bridge
+- * was. Every call into it (available(), requestPermissions(),
+- * start()) had no real native code to reach, which is why iOS never
+- * even got as far as asking for microphone/speech permission.
+- *
+- * node_modules is never committed to git (regenerated by every
+- * fresh `npm install`, on Xcode Cloud and locally alike), so this
+- * can't be fixed by hand-editing a file there once - it has to be
+- * regenerated every time. Wired into package.json's "postinstall"
+- * script so it runs automatically after every npm install,
+- * regardless of environment (Xcode Cloud's ci_post_clone.sh, or
+- * anyone running npm install locally to test).
+- */
+-const fs = require("fs");
+-const path = require("path");
+-
+-const pluginDir = path.join(__dirname, "..", "node_modules", "@capacitor-community", "speech-recognition");
+-const packageSwiftPath = path.join(pluginDir, "Package.swift");
+-
+-if (!fs.existsSync(pluginDir)) {
+-  // Plugin isn't installed at all in this environment - nothing to patch.
+-  process.exit(0);
+-}
+-
+-// Matches the source layout Capacitor's own plugins use, and the
+-// plugin's own actual source location confirmed from its podspec
+-// (s.source_files = 'ios/Plugin/**/*.{swift,h,m,c,cc,mm,cpp}') and
+-// its declared deployment target (s.ios.deployment_target = '14.0').
+-const packageSwiftContent = `// swift-tools-version: 5.9
+-import PackageDescription
+-
+-let package = Package(
+-    name: "CapacitorCommunitySpeechRecognition",
+-    platforms: [.iOS(.v14)],
+-    products: [
+-        .library(
+-            name: "CapacitorCommunitySpeechRecognition",
+-            targets: ["CapacitorCommunitySpeechRecognitionPlugin"])
+-    ],
+-    dependencies: [
+-        .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", from: "7.0.0")
+-    ],
+-    targets: [
+-        .target(
+-            name: "CapacitorCommunitySpeechRecognitionPlugin",
+-            dependencies: [
+-                .product(name: "Capacitor", package: "capacitor-swift-pm"),
+-                .product(name: "Cordova", package: "capacitor-swift-pm")
+-            ],
+-            path: "ios/Plugin")
+-    ]
+-)
+-`;
+-
+-fs.writeFileSync(packageSwiftPath, packageSwiftContent, "utf8");
+-console.log("[patch-speech-recognition-spm] Wrote Package.swift for @capacitor-community/speech-recognition (missing from the published package, needed for this project's SPM-only iOS build).");
+-- 
+2.43.0
+
