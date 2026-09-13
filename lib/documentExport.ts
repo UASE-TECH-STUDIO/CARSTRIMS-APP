@@ -530,3 +530,76 @@ async function importFileOpenerSafely(): Promise<{ FileOpener: any }> {
     return { FileOpener: null };
   }
 }
+
+/**
+ * Consolidated, single entry point for downloading a rendered DOM
+ * element as either PDF or JPG - real fix for receipts, invoices,
+ * and reports across the app all having their own separate,
+ * hand-rolled download logic that each needed the same fixes
+ * applied individually (page-splitting, the multi-download browser
+ * block, the front/back-vs-zip threshold). Every caller that used
+ * to write its own handleDownload now goes through this one
+ * function instead - a fix made here automatically applies
+ * everywhere, rather than needing to be repeated across dozens of
+ * call sites and inevitably missing some of them.
+ */
+export async function downloadDocument(
+  element: HTMLElement,
+  filenameBase: string,
+  format: "pdf" | "jpg"
+): Promise<void> {
+  if (format === "pdf") {
+    const blob = await renderElementToPdfBlob(element, filenameBase);
+    await downloadBlob(blob, `${filenameBase}.pdf`);
+  } else {
+    const blobs = await renderElementToJpgBlobs(element);
+    await downloadBlobs(blobs, `${filenameBase}.jpg`);
+  }
+}
+
+/** Same consolidation as downloadDocument, for an HTML string instead of a live element. */
+export async function downloadHtmlDocument(
+  htmlString: string,
+  filenameBase: string,
+  format: "pdf" | "jpg"
+): Promise<void> {
+  if (format === "pdf") {
+    const blob = await renderHtmlStringToPdfBlob(htmlString, filenameBase);
+    await downloadBlob(blob, `${filenameBase}.pdf`);
+  } else {
+    const blobs = await renderHtmlStringToJpgBlobs(htmlString);
+    await downloadBlobs(blobs, `${filenameBase}.jpg`);
+  }
+}
+
+/** Consolidated share, matching downloadDocument - see that function's comment for why this exists. */
+export async function shareDocument(
+  element: HTMLElement,
+  filenameBase: string,
+  format: "pdf" | "jpg",
+  title: string
+): Promise<{ note?: string }> {
+  if (format === "pdf") {
+    const blob = await renderElementToPdfBlob(element, filenameBase);
+    await shareBlob(blob, `${filenameBase}.pdf`, title);
+    return {};
+  }
+  const blobs = await renderElementToJpgBlobs(element);
+  return shareBlobs(blobs, `${filenameBase}.jpg`, title);
+}
+
+/** Same consolidation as shareDocument, for an HTML string instead of a live element. */
+export async function shareHtmlDocument(
+  htmlString: string,
+  filenameBase: string,
+  format: "pdf" | "jpg",
+  title: string
+): Promise<{ note?: string }> {
+  if (format === "pdf") {
+    const blob = await renderHtmlStringToPdfBlob(htmlString, filenameBase);
+    await shareBlob(blob, `${filenameBase}.pdf`, title);
+    return {};
+  }
+  const blobs = await renderHtmlStringToJpgBlobs(htmlString);
+  return shareBlobs(blobs, `${filenameBase}.jpg`, title);
+}
