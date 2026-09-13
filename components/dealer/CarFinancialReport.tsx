@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
-import { renderElementToPdfBlob, downloadBlob, shareBlob, rowsToExcelBlob } from "@/lib/documentExport";
+import { downloadDocument, shareDocument, downloadBlob, rowsToExcelBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
 import { parseServerDate } from "@/lib/timeUtils";
 
@@ -47,8 +47,7 @@ export default function CarFinancialReport({ carId, onClose }: Props) {
         await downloadBlob(blob, `${reportFilename()}.xlsx`);
       } else {
         if (!printRef.current) throw new Error("Report isn't ready yet");
-        const blob = await renderElementToPdfBlob(printRef.current, `Vehicle Financial Report - ${carId}`);
-        await downloadBlob(blob, `${reportFilename()}.pdf`);
+        await downloadDocument(printRef.current, reportFilename(), "pdf");
       }
       showToast("Downloaded", "success");
     } catch (e: any) {
@@ -62,8 +61,7 @@ export default function CarFinancialReport({ carId, onClose }: Props) {
     setBusy("share");
     try {
       if (!printRef.current) throw new Error("Report isn't ready yet");
-      const blob = await renderElementToPdfBlob(printRef.current, `Vehicle Financial Report - ${carId}`);
-      await shareBlob(blob, `${reportFilename()}.pdf`, `Vehicle Financial Report - ${carId}`);
+      await shareDocument(printRef.current, reportFilename(), "pdf", `Vehicle Financial Report - ${carId}`);
     } catch (e: any) {
       showToast(e?.message || "Share failed", "error");
     } finally {
