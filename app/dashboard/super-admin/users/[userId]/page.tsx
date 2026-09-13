@@ -5,7 +5,7 @@ import api from "@/lib/api";
 import Link from "next/link";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { useConfirm } from "@/store/confirmStore";
-import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+import { downloadHtmlDocument, shareHtmlDocument } from "@/lib/documentExport";
 import { parseServerDate } from "@/lib/timeUtils";
 
 const ROLE_C: Record<string,string> = {DEALER_ADMIN:"#F47B20",DEALER_STAFF:"#D97706",PARTNER_USER:"#7B68EE",SYSTEM_ADMIN:"#DC2626",PUBLIC_USER:"#16A34A"};
@@ -196,8 +196,8 @@ export default function SuperAdminUserDetail() {
     setShowDocPicker(""); setDocExportBusy(format);
     try {
       const html = buildDocHtml();
-      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, profile?.fullName || "User Summary");
-      await downloadBlob(blob, `${(profile?.fullName || userId).replace(/\s+/g, "_")}_CARSTRIMS.${format}`);
+      const filenameBase = `${(profile?.fullName || userId).replace(/\s+/g, "_")}_CARSTRIMS`;
+      await downloadHtmlDocument(html, filenameBase, format);
     } catch (e: any) { setBanner(e?.message || "Download failed"); }
     finally { setDocExportBusy(""); }
   };
@@ -206,8 +206,9 @@ export default function SuperAdminUserDetail() {
     setShowDocPicker(""); setDocExportBusy("share");
     try {
       const html = buildDocHtml();
-      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, profile?.fullName || "User Summary");
-      await shareBlob(blob, `${(profile?.fullName || userId).replace(/\s+/g, "_")}_CARSTRIMS.${format}`, profile?.fullName || "User Summary");
+      const filenameBase = `${(profile?.fullName || userId).replace(/\s+/g, "_")}_CARSTRIMS`;
+      const { note } = await shareHtmlDocument(html, filenameBase, format, profile?.fullName || "User Summary");
+      if (note) setBanner(note);
     } catch (e: any) { setBanner(e?.message || "Share failed"); }
     finally { setDocExportBusy(""); }
   };
