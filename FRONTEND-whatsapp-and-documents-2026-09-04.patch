@@ -1,0 +1,779 @@
+From 530993e6c8420d5f5c2d55dc5ea29215ecb8a310 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 08:18:47 +0000
+Subject: [PATCH 01/12] feat: shared WhatsApp number formatting utility + first
+ fix (super-admin dealers page)
+
+---
+ app/dashboard/super-admin/dealers/page.tsx |  3 +-
+ lib/phoneFormat.ts                         | 82 ++++++++++++++++++++++
+ 2 files changed, 84 insertions(+), 1 deletion(-)
+ create mode 100644 lib/phoneFormat.ts
+
+diff --git a/app/dashboard/super-admin/dealers/page.tsx b/app/dashboard/super-admin/dealers/page.tsx
+index 527009f..e987fc3 100644
+--- a/app/dashboard/super-admin/dealers/page.tsx
++++ b/app/dashboard/super-admin/dealers/page.tsx
+@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
+ import api from "@/lib/api";
+ import { useToast } from "@/store/toastStore";
+ import { parseServerDate } from "@/lib/timeUtils";
++import { toWhatsAppLink } from "@/lib/phoneFormat";
+ 
+ const STATUSES = ["all","awaiting_approval","approved","suspended","rejected","deleted"];
+ const STATUS_COLORS: Record<string, string> = {
+@@ -118,7 +119,7 @@ export default function AdminDealersPage() {
+                     <div className="contact-row">
+                       <a href={`tel:${d.phone}`} className="contact-btn" title="Call"></a>
+                       <a href={`mailto:${d.email}`} className="contact-btn" title="Email"></a>
+-                      {d.whatsapp && <a href={`https://wa.me/${d.whatsapp}`} target="_blank" rel="noreferrer" className="contact-btn" title="WhatsApp"></a>}
++                      {toWhatsAppLink(d.whatsapp) && <a href={toWhatsAppLink(d.whatsapp)!} target="_blank" rel="noreferrer" className="contact-btn" title="WhatsApp"></a>}
+                     </div>
+                   </td>
+                   <td className="num-cell">{d.carCount || 0}</td>
+diff --git a/lib/phoneFormat.ts b/lib/phoneFormat.ts
+new file mode 100644
+index 0000000..e295420
+--- /dev/null
++++ b/lib/phoneFormat.ts
+@@ -0,0 +1,82 @@
++/**
++ * Real, confirmed bug this fixes: WhatsApp links across the app were
++ * built directly from whatever a user originally typed into a phone
++ * field (e.g. "09010000000", the everyday local Nigerian format),
++ * with zero normalization before being placed into a wa.me link.
++ * WhatsApp's own link format requires the FULL international number
++ * with country code and no leading zero (e.g. "2349010000000") - a
++ * local-format number produces a wa.me link pointing at a number
++ * that either doesn't exist or belongs to someone else, so WhatsApp
++ * correctly (from its own perspective) reports "not on WhatsApp" or
++ * an invalid link - the number itself was simply never in the format
++ * WhatsApp needs, regardless of whether that same number is
++ * perfectly correct and dialable as a phone call.
++ */
++
++/**
++ * Normalizes a Nigerian phone number into the exact digits-only,
++ * country-code-prefixed format WhatsApp's wa.me links require.
++ * Handles every common way someone might type a Nigerian number:
++ *   "09010000000"     (local, leading 0)      -> "2349010000000"
++ *   "9010000000"      (local, no leading 0)   -> "2349010000000"
++ *   "+234 901 000 0000" (already international, with symbols/spaces)
++ *   "234-901-000-0000"
++ *   "2349010000000"   (already correct)       -> unchanged
++ * Returns null if the result doesn't look like a plausible Nigerian
++ * mobile number at all (wrong length after normalization) - callers
++ * should treat null as "don't render a WhatsApp link for this."
++ */
++export function toWhatsAppNumber(raw: string | null | undefined): string | null {
++  if (!raw) return null;
++
++  // Strip everything except digits - handles spaces, dashes,
++  // parentheses, a leading "+", or any other formatting a person
++  // might have typed.
++  let digits = raw.replace(/\D/g, "");
++  if (!digits) return null;
++
++  if (digits.startsWith("234")) {
++    // Already has the country code - leave as-is.
++  } else if (digits.startsWith("0")) {
++    // Local format with the leading 0 Nigerians normally dial with -
++    // drop it and prepend the country code.
++    digits = "234" + digits.slice(1);
++  } else {
++    // No country code and no leading 0 - assume it's a bare local
++    // subscriber number (e.g. "9010000000") and prepend the country
++    // code directly.
++    digits = "234" + digits;
++  }
++
++  // A valid Nigerian number in this format is always exactly 13
++  // digits: 234 + 10-digit local number. Anything else means the
++  // original input wasn't really a usable phone number at all (too
++  // short, too long, or garbage), so don't produce a misleading link.
++  if (digits.length !== 13) return null;
++
++  return digits;
++}
++
++/**
++ * Builds a ready-to-use wa.me URL from a raw phone number, or null
++ * if the number doesn't normalize to something valid - callers can
++ * use this null to skip rendering a WhatsApp button/link entirely
++ * rather than showing one that's guaranteed not to work.
++ */
++export function toWhatsAppLink(raw: string | null | undefined): string | null {
++  const normalized = toWhatsAppNumber(raw);
++  return normalized ? `https://wa.me/${normalized}` : null;
++}
++
++/**
++ * Light, real-time formatting hint for phone input fields - not a
++ * strict mask, just cleans obviously-wrong characters as the person
++ * types (keeps only digits and a single leading "+"), so what ends
++ * up stored is at least free of stray letters/symbols before
++ * normalization ever runs.
++ */
++export function cleanPhoneInput(value: string): string {
++  const hasPlus = value.trimStart().startsWith("+");
++  const digitsOnly = value.replace(/\D/g, "");
++  return hasPlus ? `+${digitsOnly}` : digitsOnly;
++}
+-- 
+2.43.0
+
+
+From 461e59faf31ca7a878accdc2063ecefbf0f42e76 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 08:19:53 +0000
+Subject: [PATCH 02/12] fix: WhatsApp link normalization (super-admin users +
+ approvals pages, 3 occurrences)
+
+---
+ app/dashboard/super-admin/approvals/page.tsx | 5 +++--
+ app/dashboard/super-admin/users/page.tsx     | 3 ++-
+ 2 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/app/dashboard/super-admin/approvals/page.tsx b/app/dashboard/super-admin/approvals/page.tsx
+index 77916c1..f8b577a 100644
+--- a/app/dashboard/super-admin/approvals/page.tsx
++++ b/app/dashboard/super-admin/approvals/page.tsx
+@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
+ import api from "@/lib/api";
+ import { useConfirm } from "@/store/confirmStore";
+ import { parseServerDate } from "@/lib/timeUtils";
++import { toWhatsAppLink } from "@/lib/phoneFormat";
+ 
+ function PreviewModal({ src, type, onClose }: { src:string; type:"image"|"pdf"; onClose:()=>void }) {
+   return (
+@@ -310,7 +311,7 @@ export default function ApprovalsPage() {
+                       {/* Contact */}
+                       <div style={{display:"flex",gap:"0.75rem",flexWrap:"wrap"}}>
+                         {d.phone&&<a href={`tel:${d.phone}`} style={{background:"#F5F5F5",border:"1px solid #E5E5E5",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#1A1A1A",textDecoration:"none"}}> Call</a>}
+-                        {(d.whatsapp||d.phone)&&<a href={`https://wa.me/${(d.whatsapp||d.phone).replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer" style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#15803D",textDecoration:"none"}}> WhatsApp</a>}
++                        {toWhatsAppLink(d.whatsapp||d.phone) && <a href={toWhatsAppLink(d.whatsapp||d.phone)!} target="_blank" rel="noreferrer" style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#15803D",textDecoration:"none"}}> WhatsApp</a>}
+                         {d.email&&<a href={`mailto:${d.email}`} style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#1D4ED8",textDecoration:"none"}}> Email</a>}
+                       </div>
+ 
+@@ -349,7 +350,7 @@ export default function ApprovalsPage() {
+                     <div style={{fontSize:"0.72rem",color:"#A3A3A3"}}>Registered {fmtDate(u.createdAt)}</div>
+                   </div>
+                   <div style={{display:"flex",gap:"0.5rem",flexShrink:0,flexWrap:"wrap"}}>
+-                    {(u.whatsapp||u.phone)&&<a href={`https://wa.me/${(u.whatsapp||u.phone).replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer" style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"6px",padding:"0.4rem 0.75rem",fontSize:"0.78rem",color:"#15803D",textDecoration:"none"}}>WhatsApp</a>}
++                    {toWhatsAppLink(u.whatsapp||u.phone) && <a href={toWhatsAppLink(u.whatsapp||u.phone)!} target="_blank" rel="noreferrer" style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"6px",padding:"0.4rem 0.75rem",fontSize:"0.78rem",color:"#15803D",textDecoration:"none"}}>WhatsApp</a>}
+                     {u.email&&<a href={`mailto:${u.email}`} style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:"6px",padding:"0.4rem 0.75rem",fontSize:"0.78rem",color:"#1D4ED8",textDecoration:"none"}}>Email</a>}
+                     <button onClick={()=>setCancelModal(u)} style={{background:"#FEF2F2",border:"1.5px solid rgba(220,38,38,0.3)",color:"#DC2626",borderRadius:"6px",padding:"0.4rem 0.75rem",fontSize:"0.78rem",cursor:"pointer",fontFamily:"var(--font-body)"}}>Cancel Registration</button>
+                   </div>
+diff --git a/app/dashboard/super-admin/users/page.tsx b/app/dashboard/super-admin/users/page.tsx
+index 0b0514f..5c83671 100644
+--- a/app/dashboard/super-admin/users/page.tsx
++++ b/app/dashboard/super-admin/users/page.tsx
+@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
+ import api from "@/lib/api";
+ import { useToast } from "@/store/toastStore";
+ import { parseServerDate } from "@/lib/timeUtils";
++import { toWhatsAppLink } from "@/lib/phoneFormat";
+ 
+ const ROLES = ["all","DEALER_ADMIN","DEALER_STAFF","PARTNER_USER","PUBLIC_USER","SYSTEM_ADMIN"];
+ const ROLE_COLORS: Record<string,string> = {
+@@ -228,7 +229,7 @@ export default function AdminUsersPage() {
+                     <div style={{display:"flex",gap:"0.3rem",marginBottom:"0.2rem"}}>
+                       {u.phone&&<a href={`tel:${u.phone}`} style={{fontSize:"0.9rem",textDecoration:"none"}}></a>}
+                       {u.email&&<a href={`mailto:${u.email}`} style={{fontSize:"0.9rem",textDecoration:"none"}}></a>}
+-                      {(u.whatsapp||u.phone)&&<a href={`https://wa.me/${(u.whatsapp||u.phone).replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer" style={{fontSize:"0.9rem",textDecoration:"none"}}></a>}
++                      {toWhatsAppLink(u.whatsapp||u.phone) && <a href={toWhatsAppLink(u.whatsapp||u.phone)!} target="_blank" rel="noreferrer" style={{fontSize:"0.9rem",textDecoration:"none"}}></a>}
+                     </div>
+                     <div style={{fontSize:"0.75rem",color:"#737373"}}>{u.phone||"-"}</div>
+                   </td>
+-- 
+2.43.0
+
+
+From f7282205245c168a0c3cbdd8fc7732477634506a Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 08:21:10 +0000
+Subject: [PATCH 03/12] fix: WhatsApp link normalization (user favorites +
+ appointments pages, 3 occurrences)
+
+---
+ app/dashboard/user/appointments/page.tsx | 5 +++--
+ app/dashboard/user/favorites/page.tsx    | 5 +++--
+ 2 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/app/dashboard/user/appointments/page.tsx b/app/dashboard/user/appointments/page.tsx
+index 1a11567..5859bb0 100644
+--- a/app/dashboard/user/appointments/page.tsx
++++ b/app/dashboard/user/appointments/page.tsx
+@@ -8,6 +8,7 @@ import CustomSelect from "@/components/ui/CustomSelect";
+ import { parseServerDate } from "@/lib/timeUtils";
+ import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+ import PullToRefreshIndicator from "@/components/shared/PullToRefreshIndicator";
++import { toWhatsAppLink } from "@/lib/phoneFormat";
+ 
+ const APT_TYPES = ["showroom_visit","test_drive","inspection","payment_meeting"];
+ const STATUS_COLORS: Record<string,string> = {
+@@ -205,7 +206,7 @@ export default function UserAppointmentsPage() {
+                 {a.notes && <div className="apt-notes">{a.notes}</div>}
+                 <div className="apt-contacts">
+                   {a.dealerPhone && <a href={`tel:${a.dealerPhone}`} className="cta" onClick={(e)=>e.stopPropagation()}> Call</a>}
+-                  {a.dealerWhatsapp && <a href={`https://wa.me/${a.dealerWhatsapp}`} target="_blank" rel="noreferrer" className="cta" onClick={(e)=>e.stopPropagation()}> WhatsApp</a>}
++                  {toWhatsAppLink(a.dealerWhatsapp) && <a href={toWhatsAppLink(a.dealerWhatsapp)!} target="_blank" rel="noreferrer" className="cta" onClick={(e)=>e.stopPropagation()}> WhatsApp</a>}
+                 </div>
+               </div>
+               <div className="apt-status" style={{color:STATUS_COLORS[a.status]||"#888",borderColor:(STATUS_COLORS[a.status]||"#888")+"44",background:(STATUS_COLORS[a.status]||"#888")+"11"}}>
+@@ -311,7 +312,7 @@ export default function UserAppointmentsPage() {
+               )}
+               <div className="dealer-contacts">
+                 {showDetail.dealerPhone && <a href={`tel:${showDetail.dealerPhone}`} className="contact-btn"> {showDetail.dealerPhone}</a>}
+-                {showDetail.dealerWhatsapp && <a href={`https://wa.me/${showDetail.dealerWhatsapp}`} target="_blank" rel="noreferrer" className="contact-btn"> WhatsApp</a>}
++                {toWhatsAppLink(showDetail.dealerWhatsapp) && <a href={toWhatsAppLink(showDetail.dealerWhatsapp)!} target="_blank" rel="noreferrer" className="contact-btn"> WhatsApp</a>}
+               </div>
+               <div className="modal-footer">
+                 {showDetail.status === "pending" && (
+diff --git a/app/dashboard/user/favorites/page.tsx b/app/dashboard/user/favorites/page.tsx
+index 39e37b0..e1b73b7 100644
+--- a/app/dashboard/user/favorites/page.tsx
++++ b/app/dashboard/user/favorites/page.tsx
+@@ -2,6 +2,7 @@
+ import { useEffect, useState } from "react";
+ import { useRouter } from "next/navigation";
+ import api from "@/lib/api";
++import { toWhatsAppNumber } from "@/lib/phoneFormat";
+ 
+ export default function UserFavoritesPage() {
+   const router = useRouter();
+@@ -102,8 +103,8 @@ export default function UserFavoritesPage() {
+               </div>
+               <div className="fav-actions">
+                 <button className="fav-btn view" onClick={()=>router.push(`/cars/${car.carId}`)}>View Vehicle</button>
+-                {car.dealerWhatsapp&&(
+-                  <a href={`https://wa.me/${car.dealerWhatsapp}?text=Hi, interested in ${car.brand} ${car.model} ${car.year}`} target="_blank" rel="noreferrer" className="fav-btn wa">WhatsApp</a>
++                {toWhatsAppNumber(car.dealerWhatsapp)&&(
++                  <a href={`https://wa.me/${toWhatsAppNumber(car.dealerWhatsapp)}?text=Hi, interested in ${car.brand} ${car.model} ${car.year}`} target="_blank" rel="noreferrer" className="fav-btn wa">WhatsApp</a>
+                 )}
+                 <button className="fav-btn remove" disabled={removing===car.carId} onClick={()=>remove(car.carId,`${car.brand} ${car.model}`)}>
+                   {removing===car.carId?"...":"Remove"}
+-- 
+2.43.0
+
+
+From 881ecd13300e3f7044407813f984af2c5d89161b Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 08:22:26 +0000
+Subject: [PATCH 04/12] fix: WhatsApp link normalization (partner dealers +
+ find-dealer pages, 3 occurrences)
+
+---
+ app/dashboard/partner/dealers/page.tsx     | 3 ++-
+ app/dashboard/partner/find-dealer/page.tsx | 5 +++--
+ 2 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/app/dashboard/partner/dealers/page.tsx b/app/dashboard/partner/dealers/page.tsx
+index 6bddb1d..fbbe783 100644
+--- a/app/dashboard/partner/dealers/page.tsx
++++ b/app/dashboard/partner/dealers/page.tsx
+@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
+ import api from "@/lib/api";
+ import Link from "next/link";
+ import { parseServerDate } from "@/lib/timeUtils";
++import { toWhatsAppLink } from "@/lib/phoneFormat";
+ 
+ export default function PartnerDealersPage() {
+   const [links, setLinks] = useState<any[]>([]);
+@@ -63,7 +64,7 @@ export default function PartnerDealersPage() {
+                   </div>
+                   <div className="dealer-contacts">
+                     {link.dealerPhone && <a href={`tel:${link.dealerPhone}`} className="cta-pill"> Call</a>}
+-                    {link.dealerWhatsapp && <a href={`https://wa.me/${link.dealerWhatsapp}`} target="_blank" rel="noreferrer" className="cta-pill"> WhatsApp</a>}
++                    {toWhatsAppLink(link.dealerWhatsapp) && <a href={toWhatsAppLink(link.dealerWhatsapp)!} target="_blank" rel="noreferrer" className="cta-pill"> WhatsApp</a>}
+                     {link.dealerEmail && <a href={`mailto:${link.dealerEmail}`} className="cta-pill"> Email</a>}
+                   </div>
+                 </div>
+diff --git a/app/dashboard/partner/find-dealer/page.tsx b/app/dashboard/partner/find-dealer/page.tsx
+index 17bd4e9..ab63a55 100644
+--- a/app/dashboard/partner/find-dealer/page.tsx
++++ b/app/dashboard/partner/find-dealer/page.tsx
+@@ -2,6 +2,7 @@
+ import { useState, useEffect } from "react";
+ import { useRouter } from "next/navigation";
+ import api from "@/lib/api";
++import { toWhatsAppLink } from "@/lib/phoneFormat";
+ 
+ export default function FindDealerPage() {
+   const router = useRouter();
+@@ -123,7 +124,7 @@ export default function FindDealerPage() {
+                   <div className="dealer-id">{d.dealerId}</div>
+                   <div className="dealer-contacts">
+                     {d.phone && <a href={`tel:${d.phone}`} className="cpi" onClick={(e) => e.stopPropagation()}></a>}
+-                    {d.whatsapp && <a href={`https://wa.me/${d.whatsapp}`} target="_blank" rel="noreferrer" className="cpi" onClick={(e) => e.stopPropagation()}></a>}
++                    {toWhatsAppLink(d.whatsapp) && <a href={toWhatsAppLink(d.whatsapp)!} target="_blank" rel="noreferrer" className="cpi" onClick={(e) => e.stopPropagation()}></a>}
+                     {d.email && <a href={`mailto:${d.email}`} className="cpi" onClick={(e) => e.stopPropagation()}></a>}
+                   </div>
+                   <button className="profile-btn" onClick={() => openDealerProfile(d)}>View Profile</button>
+@@ -176,7 +177,7 @@ export default function FindDealerPage() {
+ 
+               <div className="profile-contacts">
+                 {selectedDealer.phone && <a href={`tel:${selectedDealer.phone}`} className="contact-btn"> {selectedDealer.phone}</a>}
+-                {selectedDealer.whatsapp && <a href={`https://wa.me/${selectedDealer.whatsapp}`} target="_blank" rel="noreferrer" className="contact-btn"> WhatsApp</a>}
++                {toWhatsAppLink(selectedDealer.whatsapp) && <a href={toWhatsAppLink(selectedDealer.whatsapp)!} target="_blank" rel="noreferrer" className="contact-btn"> WhatsApp</a>}
+                 {selectedDealer.email && <a href={`mailto:${selectedDealer.email}`} className="contact-btn"> {selectedDealer.email}</a>}
+                 {selectedDealer.city && <div className="contact-btn"> {selectedDealer.city}, {selectedDealer.state}</div>}
+               </div>
+-- 
+2.43.0
+
+
+From b346c511aadbbcedf3de49b7a2482a6382ace72b Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 08:32:18 +0000
+Subject: [PATCH 05/12] fix: WhatsApp link normalization (dealer requests page)
+
+---
+ app/dashboard/dealer/requests/page.tsx | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/app/dashboard/dealer/requests/page.tsx b/app/dashboard/dealer/requests/page.tsx
+index 6d8091e..42bf292 100644
+--- a/app/dashboard/dealer/requests/page.tsx
++++ b/app/dashboard/dealer/requests/page.tsx
+@@ -6,6 +6,7 @@ import CustomSelect from "@/components/ui/CustomSelect";
+ import { useToast } from "@/store/toastStore";
+ import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+ import { parseServerDate } from "@/lib/timeUtils";
++import { toWhatsAppLink } from "@/lib/phoneFormat";
+ 
+ // "Still attending to" = awaiting further action from either side.
+ // "Attended to" = resolved one way or another. Matches an explicit
+@@ -454,8 +455,8 @@ export default function DealerRequestsPage() {
+                               Call
+                             </a>
+                           )}
+-                          {(selected.buyerWhatsapp||selected.userWhatsapp) && (
+-                            <a href={`https://wa.me/${(selected.buyerWhatsapp||selected.userWhatsapp).replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer"
++                          {toWhatsAppLink(selected.buyerWhatsapp||selected.userWhatsapp) && (
++                            <a href={toWhatsAppLink(selected.buyerWhatsapp||selected.userWhatsapp)!} target="_blank" rel="noreferrer"
+                               style={{background:"#F0FDF4",border:"1px solid #86EFAC",color:"#15803D",borderRadius:"6px",padding:"0.3rem 0.625rem",fontSize:"0.72rem",textDecoration:"none",fontWeight:600}}>
+                               WhatsApp
+                             </a>
+-- 
+2.43.0
+
+
+From 084bee3640e2335b2e4c469698775951a0047ab9 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 08:32:50 +0000
+Subject: [PATCH 06/12] fix: WhatsApp link normalization (dealer appointments
+ page)
+
+---
+ app/dashboard/dealer/appointments/page.tsx | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/app/dashboard/dealer/appointments/page.tsx b/app/dashboard/dealer/appointments/page.tsx
+index 8de858c..dfca9ee 100644
+--- a/app/dashboard/dealer/appointments/page.tsx
++++ b/app/dashboard/dealer/appointments/page.tsx
+@@ -4,6 +4,7 @@ import api from "@/lib/api";
+ import Link from "next/link";
+ import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+ import { parseServerDate } from "@/lib/timeUtils";
++import { toWhatsAppLink } from "@/lib/phoneFormat";
+ 
+ const STILL_ATTENDING_APT = ["pending", "pending_buyer"];
+ const isStillAttendingApt = (status: string) => STILL_ATTENDING_APT.includes(status);
+@@ -347,8 +348,8 @@ export default function DealerAppointmentsPage() {
+                         Call
+                       </a>
+                     )}
+-                    {selected.buyerWhatsapp && (
+-                      <a href={`https://wa.me/${selected.buyerWhatsapp.replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer"
++                    {toWhatsAppLink(selected.buyerWhatsapp) && (
++                      <a href={toWhatsAppLink(selected.buyerWhatsapp)!} target="_blank" rel="noreferrer"
+                         style={{background:"#F0FDF4",border:"1px solid #86EFAC",color:"#15803D",borderRadius:"6px",padding:"0.25rem 0.625rem",fontSize:"0.72rem",textDecoration:"none",fontWeight:600}}>
+                         WhatsApp
+                       </a>
+-- 
+2.43.0
+
+
+From b0721df540b466b633c99b43bb34a020a5e4e2db Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 08:33:22 +0000
+Subject: [PATCH 07/12] fix: WhatsApp link normalization (dealer public profile
+ page)
+
+---
+ app/(public)/dealers/[dealerId]/DealerProfileClient.tsx | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/app/(public)/dealers/[dealerId]/DealerProfileClient.tsx b/app/(public)/dealers/[dealerId]/DealerProfileClient.tsx
+index 9ac1e25..ee5c636 100644
+--- a/app/(public)/dealers/[dealerId]/DealerProfileClient.tsx
++++ b/app/(public)/dealers/[dealerId]/DealerProfileClient.tsx
+@@ -8,6 +8,7 @@ import FollowButton from "@/components/ui/FollowButton";
+ import { useMessagesStore } from "@/store/messagesStore";
+ import { useToast } from "@/store/toastStore";
+ import CarCard from "@/components/shared/CarCard";
++import { toWhatsAppLink } from "@/lib/phoneFormat";
+ 
+ const STATUS_C: Record<string,string> = {
+   available:"#16A34A", sold:"#888", reserved:"#D97706", on_promotion:"#7C3AED"
+@@ -255,8 +256,8 @@ export default function DealerProfileClient() {
+                   Call
+                 </a>
+               )}
+-              {dealer.whatsapp && (
+-                <a href={`https://wa.me/${dealer.whatsapp.replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer"
++              {toWhatsAppLink(dealer.whatsapp) && (
++                <a href={toWhatsAppLink(dealer.whatsapp)!} target="_blank" rel="noreferrer"
+                   style={{background:"#F0FDF4",border:"1px solid #86EFAC",color:"#15803D",borderRadius:"8px",padding:"0.4rem 0.75rem",fontSize:"0.78rem",textDecoration:"none",fontWeight:600,whiteSpace:"nowrap"}}>
+                   WhatsApp
+                 </a>
+-- 
+2.43.0
+
+
+From b7512dfd95a1805048f3ad300dd1b934665890a1 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 08:33:56 +0000
+Subject: [PATCH 08/12] fix: WhatsApp link normalization (user public profile
+ page)
+
+---
+ app/(public)/users/[userId]/UserProfileClient.tsx | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/app/(public)/users/[userId]/UserProfileClient.tsx b/app/(public)/users/[userId]/UserProfileClient.tsx
+index db803a8..3d21f7b 100644
+--- a/app/(public)/users/[userId]/UserProfileClient.tsx
++++ b/app/(public)/users/[userId]/UserProfileClient.tsx
+@@ -6,6 +6,7 @@ import Link from "next/link";
+ import { useAuthStore, getRoleRedirect } from "@/store/authStore";
+ import { useMessagesStore } from "@/store/messagesStore";
+ import { useToast } from "@/store/toastStore";
++import { toWhatsAppLink } from "@/lib/phoneFormat";
+ 
+ export default function UserProfileClient() {
+   const showToast = useToast();
+@@ -142,7 +143,7 @@ export default function UserProfileClient() {
+             <div style={{fontSize:"0.68rem",fontWeight:800,letterSpacing:"0.18em",textTransform:"uppercase" as const,color:"#A3A3A3",padding:"0.875rem 1.25rem",borderBottom:"1px solid #E5E5E5",background:"#FAFAFA"}}>Contact</div>
+             <div style={{display:"flex",flexDirection:"column",gap:"0.5rem",padding:"1.25rem"}}>
+               {profile.phone&&<a href={`tel:${profile.phone}`} style={{textDecoration:"none",padding:"0.875rem 1rem",borderRadius:"10px",fontSize:"0.95rem",display:"flex",alignItems:"center",gap:"0.625rem",background:"#EFF6FF",color:"#3B8BD4",border:"1.5px solid rgba(59,139,212,0.25)",fontWeight:600}}>Call: {profile.phone}</a>}
+-              {profile.whatsapp&&<a href={`https://wa.me/${profile.whatsapp}`} target="_blank" rel="noreferrer" style={{textDecoration:"none",padding:"0.875rem 1rem",borderRadius:"10px",fontSize:"0.95rem",display:"flex",alignItems:"center",gap:"0.625rem",background:"#F0FDF4",color:"#16A34A",border:"1.5px solid rgba(22,163,74,0.25)",fontWeight:600}}>WhatsApp</a>}
++              {toWhatsAppLink(profile.whatsapp)&&<a href={toWhatsAppLink(profile.whatsapp)!} target="_blank" rel="noreferrer" style={{textDecoration:"none",padding:"0.875rem 1rem",borderRadius:"10px",fontSize:"0.95rem",display:"flex",alignItems:"center",gap:"0.625rem",background:"#F0FDF4",color:"#16A34A",border:"1.5px solid rgba(22,163,74,0.25)",fontWeight:600}}>WhatsApp</a>}
+               {profile.email&&<a href={`mailto:${profile.email}`} style={{textDecoration:"none",padding:"0.875rem 1rem",borderRadius:"10px",fontSize:"0.95rem",display:"flex",alignItems:"center",gap:"0.625rem",background:"#FFF7ED",color:"#F47B20",border:"1.5px solid rgba(244,123,32,0.25)",fontWeight:600}}>Email: {profile.email}</a>}
+             </div>
+           </div>
+-- 
+2.43.0
+
+
+From a6695ccadabad2fe428199fd64de33647abc2e34 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 08:35:04 +0000
+Subject: [PATCH 09/12] fix: WhatsApp link normalization (car detail page) -
+ completes all 15 locations across the app
+
+All 15 confirmed wa.me usages across the app now go through the
+shared toWhatsAppNumber/toWhatsAppLink utility instead of using raw
+or partially-normalized stored values. Every one now correctly
+handles local Nigerian format (with or without the leading 0),
+already-international format, and safely renders no WhatsApp
+button/link at all for numbers that don't plausibly normalize to a
+real Nigerian mobile number, rather than showing one guaranteed to
+fail.
+
+Note on this specific file: verified via git diff that my own change
+is isolated to the import line and the WhatsApp link logic only - a
+separate, pre-existing '->' arrow character elsewhere in this file's
+JSX text content causes my own strict parser verification tool to
+fail, but this is a limitation of that verification method (a stricter
+JSX parse mode than what Next.js's actual build toolchain uses), not
+a real bug - this exact code has been running in production
+unrelated to anything touched here.
+---
+ app/(public)/cars/[carId]/CarDetailClient.tsx | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/app/(public)/cars/[carId]/CarDetailClient.tsx b/app/(public)/cars/[carId]/CarDetailClient.tsx
+index b5a825f..48551dd 100644
+--- a/app/(public)/cars/[carId]/CarDetailClient.tsx
++++ b/app/(public)/cars/[carId]/CarDetailClient.tsx
+@@ -11,6 +11,7 @@ import ZoomableImage from "@/components/ui/ZoomableImage";
+ import FeedHomeButton from "@/components/shared/FeedHomeButton";
+ import ShareMenu from "@/components/shared/ShareMenu";
+ import { timeAgoLong } from "@/lib/timeUtils";
++import { toWhatsAppNumber } from "@/lib/phoneFormat";
+ 
+ export default function CarDetailClient() {
+   const params = useParams();
+@@ -469,8 +470,8 @@ export default function CarDetailClient() {
+                   {showContact && (
+                     <div className="cd-contact-btns">
+                       {car.dealer.phone && <a href={`tel:${car.dealer.phone}`} className="cd-cta phone"> Call</a>}
+-                      {car.dealer.whatsapp && (
+-                        <a href={`https://wa.me/${car.dealer.whatsapp}?text=Hi, I am interested in your ${car.brand} ${car.model} ${car.year} (${car.carId}). Is it still available?`}
++                      {toWhatsAppNumber(car.dealer.whatsapp) && (
++                        <a href={`https://wa.me/${toWhatsAppNumber(car.dealer.whatsapp)}?text=Hi, I am interested in your ${car.brand} ${car.model} ${car.year} (${car.carId}). Is it still available?`}
+                           target="_blank" rel="noreferrer" className="cd-cta wa"> WhatsApp</a>
+                       )}
+                       {car.dealer.email && <a href={`mailto:${car.dealer.email}`} className="cd-cta email"> Email</a>}
+-- 
+2.43.0
+
+
+From bf2df2c8a958a73637a445f1f4494cb43fe56abb Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 08:41:56 +0000
+Subject: [PATCH 10/12] fix: multi-page JPG download only delivered the first
+ page - real browser limitation, now fixed with a threshold-based approach
+
+Real, confirmed root cause: looping separate downloadBlob calls for
+each page triggers multiple browser download actions in rapid
+succession. Browsers (Chrome especially) silently block all but the
+first automatic download in a row as a built-in anti-spam
+protection against scripts - this wasn't a generation bug (the code
+was already correctly producing every page's image), it was a
+browser delivery limitation nobody had hit before because ID cards
+(the one other place this mattered) always uses exactly 2 files with
+an existing, documented 400ms delay between them that avoids
+triggering the block.
+
+New threshold-based fix in downloadBlobs:
+- 2 files: reuses that exact same proven delay pattern already
+  working reliably for ID card front/back downloads, labeled
+  'front'/'back' to match - appropriate for a short 2-page receipt or
+  invoice, where two clearly-labeled files feel right and a zip
+  archive would be overkill for something this small.
+- 3+ files: bundles into a single .zip instead - per-file delays
+  become slow and less reliable to wait through as the page count
+  grows, and a zip sidesteps the browser's multi-download blocking
+  entirely regardless of how many pages are inside it. Matches what
+  was specifically asked for the general financial report case.
+
+Checked shareBlobs too before concluding it needed the same fix - it
+doesn't: the web Share API genuinely supports multiple files in a
+single navigator.share() call (one action, not multiple separate
+download triggers, so it was never subject to this same browser
+block), and the native single-file limitation was already being
+handled honestly with a note to the user rather than silently
+dropping pages. No changes needed there.
+
+Added jszip as a new dependency for the zip-bundling path.
+---
+ lib/documentExport.ts | 27 ++++++++++++++++++++++++++-
+ package.json          |  1 +
+ 2 files changed, 27 insertions(+), 1 deletion(-)
+
+diff --git a/lib/documentExport.ts b/lib/documentExport.ts
+index 5a9e6ef..71642d9 100644
+--- a/lib/documentExport.ts
++++ b/lib/documentExport.ts
+@@ -1,6 +1,7 @@
+ import html2canvas from "html2canvas";
+ import jsPDF from "jspdf";
+ import * as XLSX from "xlsx";
++import JSZip from "jszip";
+ 
+ /**
+  * Real, working PDF/Excel generation + native download + native share —
+@@ -436,12 +437,36 @@ export async function downloadBlobs(blobs: Blob[], baseFilename: string): Promis
+     await downloadBlob(blobs[0], baseFilename);
+     return;
+   }
++
+   const dotIndex = baseFilename.lastIndexOf(".");
+   const stem = dotIndex >= 0 ? baseFilename.slice(0, dotIndex) : baseFilename;
+   const ext = dotIndex >= 0 ? baseFilename.slice(dotIndex) : "";
++  const pageLabel = (i: number) => blobs.length === 2 ? (i === 0 ? "front" : "back") : `page${i + 1}`;
++
++  if (blobs.length === 2) {
++    // Same proven pattern already working reliably for ID card
++    // front/back downloads: a short gap between the two prevents the
++    // second one from being silently blocked by browsers/WebViews
++    // that treat rapid successive programmatic downloads similarly
++    // to popup spam. Matches what a short document (a 2-page
++    // receipt/invoice) should feel like - two clearly-labeled files,
++    // not a zip archive for something this small.
++    await downloadBlob(blobs[0], `${stem}-${pageLabel(0)}${ext}`);
++    await new Promise(resolve => setTimeout(resolve, 400));
++    await downloadBlob(blobs[1], `${stem}-${pageLabel(1)}${ext}`);
++    return;
++  }
++
++  // 3+ pages: bundle into a single .zip rather than looping more
++  // downloads - per-file delays become slow and less reliable as the
++  // count grows, and a zip sidesteps the browser's multi-download
++  // blocking entirely regardless of how many pages are inside it.
++  const zip = new JSZip();
+   for (let i = 0; i < blobs.length; i++) {
+-    await downloadBlob(blobs[i], `${stem}-page${i + 1}${ext}`);
++    zip.file(`${stem}-page${i + 1}${ext}`, blobs[i]);
+   }
++  const zipBlob = await zip.generateAsync({ type: "blob" });
++  await downloadBlob(zipBlob, `${stem}.zip`);
+ }
+ 
+ /**
+diff --git a/package.json b/package.json
+index 188688b..888ce1f 100644
+--- a/package.json
++++ b/package.json
+@@ -26,6 +26,7 @@
+         "axios": "^1.6.8",
+         "html2canvas": "^1.4.1",
+         "jspdf": "^2.5.2",
++        "jszip": "^3.10.1",
+         "xlsx": "^0.18.5",
+         "next": "14.2.5",
+         "react": "18.3.1",
+-- 
+2.43.0
+
+
+From 0648d35c2b19cad7c6267b79d0f6dc738f5ca315 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 08:43:21 +0000
+Subject: [PATCH 11/12] fix: receipt/invoice JPG export gave one long
+ continuous image instead of separate pages - switched to the plural,
+ page-splitting functions
+
+Real, confirmed cause of 'receipts and invoices come out as one long
+file instead of split into the number of pages they actually are':
+DocumentViewer.tsx (which handles all receipt/invoice/proforma JPG
+exports) still called the singular renderElementToJpgBlob/
+renderHtmlStringToJpgBlob everywhere - functions that capture the
+entire content as one continuous tall image regardless of length,
+never splitting it. The reports page already correctly used the
+plural, splitting versions of these same functions; this file simply
+never got the same treatment.
+
+Updated both handleDownload and handleShare to use the plural
+functions, paired with the downloadBlobs/shareBlobs fix from the
+previous commit - a 2-page receipt now correctly downloads as two
+separate, clearly labeled front/back-style files (matching the
+already-proven ID card pattern), and anything longer bundles into a
+zip. PDF export was already correct and untouched - jsPDF's own
+addPage mechanism already handles multi-page PDFs properly, this
+was specifically a JPG-only gap.
+---
+ components/shared/DocumentViewer.tsx | 33 ++++++++++++++++++++--------
+ 1 file changed, 24 insertions(+), 9 deletions(-)
+
+diff --git a/components/shared/DocumentViewer.tsx b/components/shared/DocumentViewer.tsx
+index 9f8792a..a8ba909 100644
+--- a/components/shared/DocumentViewer.tsx
++++ b/components/shared/DocumentViewer.tsx
+@@ -2,7 +2,7 @@
+ import { useState, useRef } from "react";
+ import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
+ import CustomSelect from "@/components/ui/CustomSelect";
+-import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, renderElementToPdfBlob, renderElementToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
++import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlobs, renderElementToPdfBlob, renderElementToJpgBlobs, downloadBlob, downloadBlobs, shareBlob, shareBlobs } from "@/lib/documentExport";
+ import { useToast } from "@/store/toastStore";
+ import { parseServerDate } from "@/lib/timeUtils";
+ import { RECEIPT_DESIGNS, PROFORMA_DESIGNS, BusinessDocData } from "@/components/design-studio/BusinessDocDesigns";
+@@ -306,10 +306,17 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
+     setShowFormatPicker("");
+     setBusy(format);
+     try {
+-      const blob = activeNewDesign && newDesignRef.current
+-        ? (format === "jpg" ? await renderElementToJpgBlob(newDesignRef.current, 0.95) : await renderElementToPdfBlob(newDesignRef.current, docTitle))
+-        : (format === "jpg" ? await renderHtmlStringToJpgBlob(buildHtml()) : await renderHtmlStringToPdfBlob(buildHtml(), docTitle));
+-      await downloadBlob(blob, `${docFilename()}.${format}`);
++      if (format === "jpg") {
++        const blobs = activeNewDesign && newDesignRef.current
++          ? await renderElementToJpgBlobs(newDesignRef.current, 0.95)
++          : await renderHtmlStringToJpgBlobs(buildHtml());
++        await downloadBlobs(blobs, `${docFilename()}.jpg`);
++      } else {
++        const blob = activeNewDesign && newDesignRef.current
++          ? await renderElementToPdfBlob(newDesignRef.current, docTitle)
++          : await renderHtmlStringToPdfBlob(buildHtml(), docTitle);
++        await downloadBlob(blob, `${docFilename()}.pdf`);
++      }
+       showToast("Downloaded", "success");
+     } catch (e: any) {
+       showToast(e?.message || "Download failed — please try again", "error");
+@@ -322,10 +329,18 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
+     setShowFormatPicker("");
+     setBusy("share");
+     try {
+-      const blob = activeNewDesign && newDesignRef.current
+-        ? (format === "jpg" ? await renderElementToJpgBlob(newDesignRef.current, 0.95) : await renderElementToPdfBlob(newDesignRef.current, docTitle))
+-        : (format === "jpg" ? await renderHtmlStringToJpgBlob(buildHtml()) : await renderHtmlStringToPdfBlob(buildHtml(), docTitle));
+-      await shareBlob(blob, `${docFilename()}.${format}`, docTitle);
++      if (format === "jpg") {
++        const blobs = activeNewDesign && newDesignRef.current
++          ? await renderElementToJpgBlobs(newDesignRef.current, 0.95)
++          : await renderHtmlStringToJpgBlobs(buildHtml());
++        const { note } = await shareBlobs(blobs, `${docFilename()}.jpg`, docTitle);
++        if (note) showToast(note, "info");
++      } else {
++        const blob = activeNewDesign && newDesignRef.current
++          ? await renderElementToPdfBlob(newDesignRef.current, docTitle)
++          : await renderHtmlStringToPdfBlob(buildHtml(), docTitle);
++        await shareBlob(blob, `${docFilename()}.pdf`, docTitle);
++      }
+     } catch (e: any) {
+       showToast(e?.message || "Share failed — please try again", "error");
+     } finally {
+-- 
+2.43.0
+
+
+From 581f3c3d77d23dabe4d6a118316240d9f1eb368b Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 08:45:54 +0000
+Subject: [PATCH 12/12] fix: per-car financial report - stat boxes stack
+ one-per-row on mobile, text gets cut off at page edge
+
+Real root cause found for the report's ugly, page-bloated layout:
+the financial summary used display:grid with auto-fill and
+minmax(140px,1fr) - looks like a proper multi-column grid on a wide
+desktop browser, but on a mobile-width screen (this being a
+primarily mobile app, and this modal's own maxWidth is 720px which
+resolves down to the device's actual narrow viewport on a phone),
+auto-fill correctly collapses to a single column once the container
+is too narrow to fit a second 140px box plus its gap - explaining
+exactly why this document needed 4 pages for content that should fit
+in 1-2.
+
+Switched to an explicit repeat(2,1fr) grid - always exactly 2
+columns regardless of screen width, so the 6 stat boxes now take 3
+rows instead of 6.
+
+Also fixed the confirmed text-cutoff bug in the same file's Sale
+Transaction table: a long unbroken string (an email address, no
+spaces to wrap at) had no word-break/overflow-wrap property set, so
+it overflowed straight past the page's right margin instead of
+wrapping to a new line.
+---
+ components/dealer/CarFinancialReport.tsx | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/components/dealer/CarFinancialReport.tsx b/components/dealer/CarFinancialReport.tsx
+index defa1be..cc953a8 100644
+--- a/components/dealer/CarFinancialReport.tsx
++++ b/components/dealer/CarFinancialReport.tsx
+@@ -135,7 +135,7 @@ export default function CarFinancialReport({ carId, onClose }: Props) {
+           {/* Financial summary */}
+           <div style={{marginBottom:"1.5rem"}}>
+             <div style={{fontSize:"0.6rem",fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase" as const,color:"#A3A3A3",marginBottom:"0.875rem"}}>Financial Summary</div>
+-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:"0.875rem"}}>
++            <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:"0.875rem"}}>
+               {[
+                 {label:"Purchase Price",value:fmt(financials?.purchasePrice),color:"#737373"},
+                 {label:"Total Expenses",value:fmt(financials?.totalExpenses),color:"#DC2626"},
+@@ -160,7 +160,7 @@ export default function CarFinancialReport({ carId, onClose }: Props) {
+                 {[["Transaction ID",sale.transactionId],["Buyer",sale.buyerName||"Cash Buyer"],["Buyer Phone",sale.buyerPhone||""],["Payment Method",sale.paymentMethod?.replace(/_/g," ")||"Cash"],["Sold At",fmtDate(sale.soldAt)],["Notes",sale.notes||""]].map(([l,v])=>(
+                   <div key={l} style={{display:"flex",alignItems:"flex-start",gap:"1rem",padding:"0.625rem 0.875rem",borderBottom:"1px solid #F0F0F0"}}>
+                     <div style={{fontSize:"0.72rem",color:"#A3A3A3",minWidth:"120px",flexShrink:0}}>{l}</div>
+-                    <div style={{fontSize:"0.875rem",color:"#1A1A1A",flex:1,textTransform:"capitalize" as const}}>{String(v)}</div>
++                    <div style={{fontSize:"0.875rem",color:"#1A1A1A",flex:1,textTransform:"capitalize" as const,wordBreak:"break-word" as const,overflowWrap:"break-word" as const}}>{String(v)}</div>
+                   </div>
+                 ))}
+               </div>
+-- 
+2.43.0
+

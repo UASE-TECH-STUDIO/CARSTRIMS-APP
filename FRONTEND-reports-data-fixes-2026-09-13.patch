@@ -1,0 +1,180 @@
+From f1744650226e9635f1f04b205ba8e52e5bbd5ce4 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 16:10:53 +0000
+Subject: [PATCH 1/2] fix: '1/2 vehicles sold' mismatch - actually fixable from
+ the frontend after all, using the already-reliable data instead of the buggy
+ field
+
+Real fix, not just a workaround: reconsidered this earlier-flagged
+backend bug and found it's actually fixable from the frontend after
+all. The summary card's s.soldCars field disagreed with every other
+section of the same report (the monthly breakdown's own Sales
+column total, the Top Brands Sold table, and the Staff Performance
+table all consistently show the correct count, cross-validating each
+other) - but data.monthlySales itself (the array all of those other,
+correct sections are already derived from) is reliable. Rather than
+trusting the one inconsistent field, now derives the displayed count
+by summing data.monthlySales[].count directly - the same reliable
+source already powering the sections that were correct all along.
+
+Replaced all 4 usages consistently (the PDF/JPG export HTML, the
+Excel export row, the on-screen summary card, and the average-
+profit-per-sale calculation, which needed the same corrected value
+as its divisor to stay consistent with the corrected numerator
+elsewhere on the same report) - confirmed zero remaining references
+to the old field afterward.
+
+Also fixed the 'PER-CAR REPORT' title awkwardly wrapping across two
+lines in components/dealer/CarFinancialReport.tsx - same root cause
+as the earlier stat-box grid fix (a flex layout squeezing content on
+a narrow mobile-width capture), fixed with white-space:nowrap and a
+slightly reduced font size so it reliably fits on one line.
+
+Honest note on what's still a genuine backend limitation: the
+expenses-not-appearing-per-month bug is different from this one -
+the backend's monthlySales response itself has no per-month expense
+breakdown at all (not a display bug, the underlying data genuinely
+isn't grouped by month), so there's no equivalent frontend-only fix
+available for that one.
+---
+ app/dashboard/dealer/reports/page.tsx    | 11 +++++++----
+ components/dealer/CarFinancialReport.tsx |  2 +-
+ 2 files changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/app/dashboard/dealer/reports/page.tsx b/app/dashboard/dealer/reports/page.tsx
+index b40be98..209decc 100644
+--- a/app/dashboard/dealer/reports/page.tsx
++++ b/app/dashboard/dealer/reports/page.tsx
+@@ -87,6 +87,7 @@ export default function ReportsPage() {
+   const buildReportHtml = (): string => {
+     if (!data) return "";
+     const s        = data.summary;
++    const actualVehiclesSold = (data.monthlySales||[]).reduce((a:number,m:any)=>a+(m.count||0),0);
+     const cogs     = (s?.totalRevenue||0) - (s?.totalProfit||0);
+     const netProfit = calcNetProfit(s);
+     const netMargin = calcNetMargin(s);
+@@ -115,7 +116,7 @@ export default function ReportsPage() {
+       <div class="grid3" style="margin-top:8px">
+         <div class="card red">  <div class="cv">${fmtN(s?.totalExpenses||0)}</div><div class="cl">Total Expenses</div></div>
+         <div class="card ${netProfit>=0?"green":"red"}"><div class="cv">${fmtN(netProfit)}</div><div class="cl">Net Profit (After Expenses)</div></div>
+-        <div class="card blue"><div class="cv">${s?.soldCars||0} / ${s?.totalCars||0}</div><div class="cl">Vehicles Sold / Listed</div></div>
++        <div class="card blue"><div class="cv">${actualVehiclesSold} / ${s?.totalCars||0}</div><div class="cl">Vehicles Sold / Listed</div></div>
+       </div>
+ 
+       <div class="section" style="margin-top:14px">PROFITABILITY RATIOS</div>
+@@ -327,6 +328,7 @@ export default function ReportsPage() {
+   const exportCSV = () => {
+     if (!data) return;
+     const s        = data.summary;
++    const actualVehiclesSold = (data.monthlySales||[]).reduce((a:number,m:any)=>a+(m.count||0),0);
+     const netProfit = calcNetProfit(s);
+     const netMargin = calcNetMargin(s);
+     const grossMargin = calcGrossMargin(s);
+@@ -344,7 +346,7 @@ export default function ReportsPage() {
+       ["Total Expenses",             s?.totalExpenses||0],
+       ["Net Profit (After Expenses)", netProfit],
+       ["Net Profit Margin",          `${netMargin}%`],
+-      ["Vehicles Sold",              s?.soldCars||0],
++      ["Vehicles Sold",              actualVehiclesSold],
+       ["Vehicles Listed",            s?.totalCars||0],
+       [],
+       ["MONTHLY BREAKDOWN"],
+@@ -395,6 +397,7 @@ export default function ReportsPage() {
+   if (!data) return <div style={{padding:"2rem",color:"#888"}}>Could not load reports.</div>;
+ 
+   const s          = data.summary;
++  const actualVehiclesSold = (data.monthlySales||[]).reduce((a:number,m:any)=>a+(m.count||0),0);
+   const netProfit  = calcNetProfit(s);
+   const netMargin  = calcNetMargin(s);
+   const grossMargin = calcGrossMargin(s);
+@@ -513,7 +516,7 @@ export default function ReportsPage() {
+             { label:"Gross Profit",              val:fmtN(s?.totalProfit||0),                                    cls:"green",   sub:`${grossMargin}% gross margin` },
+             { label:"Total Expenses",            val:fmtN(s?.totalExpenses||0),                                  cls:"red",     sub:"Operational costs" },
+             { label:"Net Profit",                val:fmtN(netProfit),                                            cls:netProfit>=0?"green":"red", sub:`${netMargin}% net margin` },
+-            { label:"Vehicles Sold / Listed",    val:`${s?.soldCars||0} / ${s?.totalCars||0}`,                   cls:"",        sub:"Inventory turnover" },
++            { label:"Vehicles Sold / Listed",    val:`${actualVehiclesSold} / ${s?.totalCars||0}`,                   cls:"",        sub:"Inventory turnover" },
+           ].map(card=>(
+             <div key={card.label} className={`sum-card ${card.cls}`}>
+               <div className="sc-val">{card.val}</div>
+@@ -538,7 +541,7 @@ export default function ReportsPage() {
+           <div style={{flex:1,minWidth:"160px",background:"#EFF6FF",border:"1.5px solid #BFDBFE",borderRadius:"10px",padding:"0.875rem 1rem"}}>
+             <div style={{fontSize:"0.62rem",color:"#A3A3A3",fontWeight:700,textTransform:"uppercase" as const,letterSpacing:"0.06em",marginBottom:"0.25rem"}}>Avg. Profit Per Vehicle</div>
+             <div style={{fontFamily:"var(--font-display)",fontSize:"1.5rem",color:"#3B8BD4"}}>
+-              {s?.soldCars > 0 ? fmtN(Math.round(netProfit / s.soldCars)) : "NGN 0"}
++              {actualVehiclesSold > 0 ? fmtN(Math.round(netProfit / actualVehiclesSold)) : "NGN 0"}
+             </div>
+             <div style={{fontSize:"0.7rem",color:"#737373",marginTop:"2px"}}>Net Profit ÷ Vehicles Sold</div>
+           </div>
+diff --git a/components/dealer/CarFinancialReport.tsx b/components/dealer/CarFinancialReport.tsx
+index d4e5d39..3028e82 100644
+--- a/components/dealer/CarFinancialReport.tsx
++++ b/components/dealer/CarFinancialReport.tsx
+@@ -115,7 +115,7 @@ export default function CarFinancialReport({ carId, onClose }: Props) {
+               </div>
+             </div>
+             <div style={{textAlign:"right" as const}}>
+-              <div style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",color:"#F47B20",fontWeight:700}}>PER-CAR REPORT</div>
++              <div style={{fontFamily:"Georgia,serif",fontSize:"0.95rem",color:"#F47B20",fontWeight:700,whiteSpace:"nowrap" as const}}>PER-CAR REPORT</div>
+               <div style={{fontSize:"0.72rem",color:"#737373"}}>{data.generatedAt ? (parseServerDate(data.generatedAt)?.toLocaleString("en-NG")||"") : ""}</div>
+             </div>
+           </div>
+-- 
+2.43.0
+
+
+From 7209c61a120cbc552eeda8cf6329f92269f6ae44 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 16:12:48 +0000
+Subject: [PATCH 2/2] fix: monthly breakdown TOTAL row showed NGN 0 expenses
+ despite the correct total being known elsewhere in the same report
+
+Honest, partial fix for the expenses-per-month bug: the per-month
+breakdown genuinely can't be fixed from the frontend (the backend's
+response has no per-month expense grouping at all, not a display
+bug), but the TOTAL row specifically was showing a definitely-wrong
+NGN 0 when the correct total (s.totalExpenses) was already available
+and correctly used elsewhere in this exact same report (the top
+summary card, the Expenses by Category table). Summing across
+individual months that are each incorrectly 0 will always produce 0,
+regardless of what the real total actually is.
+
+Fixed the TOTAL row's Expenses and Net Profit columns in both the
+PDF/JPG export HTML and the on-screen table to use the already-
+correct s.totalExpenses and the existing calcNetProfit(s) helper
+instead of summing the broken per-month field. Individual month rows
+are deliberately left unchanged - fabricating a per-month split that
+doesn't exist in the underlying data would be dishonest, even though
+it would make the table look more complete.
+---
+ app/dashboard/dealer/reports/page.tsx | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/app/dashboard/dealer/reports/page.tsx b/app/dashboard/dealer/reports/page.tsx
+index 209decc..8038c04 100644
+--- a/app/dashboard/dealer/reports/page.tsx
++++ b/app/dashboard/dealer/reports/page.tsx
+@@ -158,8 +158,8 @@ export default function ReportsPage() {
+           <td>${fmtN((data.monthlySales||[]).reduce((a:number,m:any)=>a+(m.revenue-m.profit),0))}</td>
+           <td>${fmtN((data.monthlySales||[]).reduce((a:number,m:any)=>a+m.profit,0))}</td>
+           <td></td>
+-          <td>${fmtN((data.monthlySales||[]).reduce((a:number,m:any)=>a+(m.expenses||0),0))}</td>
+-          <td>${fmtN((data.monthlySales||[]).reduce((a:number,m:any)=>a+(m.profit-(m.expenses||0)),0))}</td>
++          <td>${fmtN(s?.totalExpenses||0)}</td>
++          <td>${fmtN(netProfit)}</td>
+           <td></td>
+           <td>${(data.monthlySales||[]).reduce((a:number,m:any)=>a+m.count,0)}</td>
+         </tr>
+@@ -615,8 +615,8 @@ export default function ReportsPage() {
+                   <td style={{padding:"7px 10px",color:"#DC2626"}}>{fmtN((data.monthlySales||[]).reduce((a:number,m:any)=>a+(m.revenue-m.profit),0))}</td>
+                   <td style={{padding:"7px 10px",color:"#16A34A"}}>{fmtN((data.monthlySales||[]).reduce((a:number,m:any)=>a+m.profit,0))}</td>
+                   <td style={{padding:"7px 10px"}}></td>
+-                  <td style={{padding:"7px 10px",color:"#DC2626"}}>{fmtN((data.monthlySales||[]).reduce((a:number,m:any)=>a+(m.expenses||0),0))}</td>
+-                  <td style={{padding:"7px 10px",color:"#16A34A"}}>{fmtN((data.monthlySales||[]).reduce((a:number,m:any)=>a+(m.profit-(m.expenses||0)),0))}</td>
++                  <td style={{padding:"7px 10px",color:"#DC2626"}}>{fmtN(s?.totalExpenses||0)}</td>
++                  <td style={{padding:"7px 10px",color:"#16A34A"}}>{fmtN(netProfit)}</td>
+                   <td style={{padding:"7px 10px"}}></td>
+                   <td style={{padding:"7px 10px"}}>{(data.monthlySales||[]).reduce((a:number,m:any)=>a+m.count,0)}</td>
+                 </tr>
+-- 
+2.43.0
+

@@ -1,0 +1,1004 @@
+From edbc418d91ef02a36eb79242a3acc3e6612fe366 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 09:12:10 +0000
+Subject: [PATCH 01/20] feat: consolidated downloadDocument/shareDocument
+ functions - foundation for fixing every receipt/invoice/report export
+ consistently
+
+Real, confirmed scope of the problem: 23 different files across the
+app each have their own separate, hand-rolled download/share logic
+that directly calls the low-level render*/download*/share*
+functions. Every fix so far (page-splitting, the multi-download
+browser block, the front/back-vs-zip threshold) had to be applied to
+each file individually, and inevitably missed most of them - this is
+exactly why fixing DocumentViewer.tsx and the reports page didn't
+show up when testing other receipts/invoices/reports elsewhere in
+the app, since those are separate, unfixed call sites.
+
+Added four consolidated functions - downloadDocument/
+shareDocument (for a live rendered element) and
+downloadHtmlDocument/shareHtmlDocument (for an HTML string) - that
+internally handle the correct choice of single vs multi-page export
+and the correct download/share strategy for however many pages
+result. Every one of the 23 call sites will be switched to use these
+instead of their own separate logic, so that a fix made once here
+takes effect everywhere automatically going forward, instead of
+needing to be repeated and inevitably missing files.
+---
+ lib/documentExport.ts | 73 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 73 insertions(+)
+
+diff --git a/lib/documentExport.ts b/lib/documentExport.ts
+index 71642d9..8e2f8bd 100644
+--- a/lib/documentExport.ts
++++ b/lib/documentExport.ts
+@@ -530,3 +530,76 @@ async function importFileOpenerSafely(): Promise<{ FileOpener: any }> {
+     return { FileOpener: null };
+   }
+ }
++
++/**
++ * Consolidated, single entry point for downloading a rendered DOM
++ * element as either PDF or JPG - real fix for receipts, invoices,
++ * and reports across the app all having their own separate,
++ * hand-rolled download logic that each needed the same fixes
++ * applied individually (page-splitting, the multi-download browser
++ * block, the front/back-vs-zip threshold). Every caller that used
++ * to write its own handleDownload now goes through this one
++ * function instead - a fix made here automatically applies
++ * everywhere, rather than needing to be repeated across dozens of
++ * call sites and inevitably missing some of them.
++ */
++export async function downloadDocument(
++  element: HTMLElement,
++  filenameBase: string,
++  format: "pdf" | "jpg"
++): Promise<void> {
++  if (format === "pdf") {
++    const blob = await renderElementToPdfBlob(element, filenameBase);
++    await downloadBlob(blob, `${filenameBase}.pdf`);
++  } else {
++    const blobs = await renderElementToJpgBlobs(element);
++    await downloadBlobs(blobs, `${filenameBase}.jpg`);
++  }
++}
++
++/** Same consolidation as downloadDocument, for an HTML string instead of a live element. */
++export async function downloadHtmlDocument(
++  htmlString: string,
++  filenameBase: string,
++  format: "pdf" | "jpg"
++): Promise<void> {
++  if (format === "pdf") {
++    const blob = await renderHtmlStringToPdfBlob(htmlString, filenameBase);
++    await downloadBlob(blob, `${filenameBase}.pdf`);
++  } else {
++    const blobs = await renderHtmlStringToJpgBlobs(htmlString);
++    await downloadBlobs(blobs, `${filenameBase}.jpg`);
++  }
++}
++
++/** Consolidated share, matching downloadDocument - see that function's comment for why this exists. */
++export async function shareDocument(
++  element: HTMLElement,
++  filenameBase: string,
++  format: "pdf" | "jpg",
++  title: string
++): Promise<{ note?: string }> {
++  if (format === "pdf") {
++    const blob = await renderElementToPdfBlob(element, filenameBase);
++    await shareBlob(blob, `${filenameBase}.pdf`, title);
++    return {};
++  }
++  const blobs = await renderElementToJpgBlobs(element);
++  return shareBlobs(blobs, `${filenameBase}.jpg`, title);
++}
++
++/** Same consolidation as shareDocument, for an HTML string instead of a live element. */
++export async function shareHtmlDocument(
++  htmlString: string,
++  filenameBase: string,
++  format: "pdf" | "jpg",
++  title: string
++): Promise<{ note?: string }> {
++  if (format === "pdf") {
++    const blob = await renderHtmlStringToPdfBlob(htmlString, filenameBase);
++    await shareBlob(blob, `${filenameBase}.pdf`, title);
++    return {};
++  }
++  const blobs = await renderHtmlStringToJpgBlobs(htmlString);
++  return shareBlobs(blobs, `${filenameBase}.jpg`, title);
++}
+-- 
+2.43.0
+
+
+From 20f34337974b4afd0457dd4114fec7b1bcf6b1a8 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 09:13:09 +0000
+Subject: [PATCH 02/20] refactor: CarFinancialReport uses consolidated
+ downloadDocument/shareDocument
+
+---
+ components/dealer/CarFinancialReport.tsx | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/components/dealer/CarFinancialReport.tsx b/components/dealer/CarFinancialReport.tsx
+index cc953a8..d4e5d39 100644
+--- a/components/dealer/CarFinancialReport.tsx
++++ b/components/dealer/CarFinancialReport.tsx
+@@ -1,7 +1,7 @@
+ "use client";
+ import { useEffect, useRef, useState } from "react";
+ import api from "@/lib/api";
+-import { renderElementToPdfBlob, downloadBlob, shareBlob, rowsToExcelBlob } from "@/lib/documentExport";
++import { downloadDocument, shareDocument, downloadBlob, rowsToExcelBlob } from "@/lib/documentExport";
+ import { useToast } from "@/store/toastStore";
+ import { parseServerDate } from "@/lib/timeUtils";
+ 
+@@ -47,8 +47,7 @@ export default function CarFinancialReport({ carId, onClose }: Props) {
+         await downloadBlob(blob, `${reportFilename()}.xlsx`);
+       } else {
+         if (!printRef.current) throw new Error("Report isn't ready yet");
+-        const blob = await renderElementToPdfBlob(printRef.current, `Vehicle Financial Report - ${carId}`);
+-        await downloadBlob(blob, `${reportFilename()}.pdf`);
++        await downloadDocument(printRef.current, reportFilename(), "pdf");
+       }
+       showToast("Downloaded", "success");
+     } catch (e: any) {
+@@ -62,8 +61,7 @@ export default function CarFinancialReport({ carId, onClose }: Props) {
+     setBusy("share");
+     try {
+       if (!printRef.current) throw new Error("Report isn't ready yet");
+-      const blob = await renderElementToPdfBlob(printRef.current, `Vehicle Financial Report - ${carId}`);
+-      await shareBlob(blob, `${reportFilename()}.pdf`, `Vehicle Financial Report - ${carId}`);
++      await shareDocument(printRef.current, reportFilename(), "pdf", `Vehicle Financial Report - ${carId}`);
+     } catch (e: any) {
+       showToast(e?.message || "Share failed", "error");
+     } finally {
+-- 
+2.43.0
+
+
+From 21ed3b608e85925038768b97641538e9e5961435 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 09:14:17 +0000
+Subject: [PATCH 03/20] refactor: dealer reports page uses consolidated
+ downloadHtmlDocument/shareHtmlDocument
+
+---
+ app/dashboard/dealer/reports/page.tsx | 20 ++++----------------
+ 1 file changed, 4 insertions(+), 16 deletions(-)
+
+diff --git a/app/dashboard/dealer/reports/page.tsx b/app/dashboard/dealer/reports/page.tsx
+index b504e23..b40be98 100644
+--- a/app/dashboard/dealer/reports/page.tsx
++++ b/app/dashboard/dealer/reports/page.tsx
+@@ -2,7 +2,7 @@
+ import { useEffect, useState, useCallback } from "react";
+ import api from "@/lib/api";
+ import CarFinancialReport from "@/components/dealer/CarFinancialReport";
+-import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlobs, downloadBlob, downloadBlobs, shareBlob, shareBlobs } from "@/lib/documentExport";
++import { downloadHtmlDocument, shareHtmlDocument } from "@/lib/documentExport";
+ import { useToast } from "@/store/toastStore";
+ 
+ //  Period presets 
+@@ -307,13 +307,7 @@ export default function ReportsPage() {
+     setShowExportPicker(""); setExportBusy(format);
+     try {
+       const html = buildReportHtml();
+-      if (format === "jpg") {
+-        const blobs = await renderHtmlStringToJpgBlobs(html);
+-        await downloadBlobs(blobs, `${reportExportFilename()}.jpg`);
+-      } else {
+-        const blob = await renderHtmlStringToPdfBlob(html, "Financial Report");
+-        await downloadBlob(blob, `${reportExportFilename()}.pdf`);
+-      }
++      await downloadHtmlDocument(html, reportExportFilename(), format);
+     } catch (e: any) { showToast(e?.message || "Export failed", "error"); }
+     finally { setExportBusy(""); }
+   };
+@@ -322,14 +316,8 @@ export default function ReportsPage() {
+     setShowExportPicker(""); setExportBusy("share");
+     try {
+       const html = buildReportHtml();
+-      if (format === "jpg") {
+-        const blobs = await renderHtmlStringToJpgBlobs(html);
+-        const { note } = await shareBlobs(blobs, `${reportExportFilename()}.jpg`, "Financial Report");
+-        if (note) showToast(note, "info");
+-      } else {
+-        const blob = await renderHtmlStringToPdfBlob(html, "Financial Report");
+-        await shareBlob(blob, `${reportExportFilename()}.pdf`, "Financial Report");
+-      }
++      const { note } = await shareHtmlDocument(html, reportExportFilename(), format, "Financial Report");
++      if (note) showToast(note, "info");
+     } catch (e: any) { showToast(e?.message || "Share failed", "error"); }
+     finally { setExportBusy(""); }
+   };
+-- 
+2.43.0
+
+
+From 3a950d6eb54f101292909e59ccd90f661625e269 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 09:14:58 +0000
+Subject: [PATCH 04/20] fix: dealer sales report - was still using old
+ singular, non-splitting export functions
+
+---
+ app/dashboard/dealer/sales/page.tsx | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/app/dashboard/dealer/sales/page.tsx b/app/dashboard/dealer/sales/page.tsx
+index 6bda105..abe29c0 100644
+--- a/app/dashboard/dealer/sales/page.tsx
++++ b/app/dashboard/dealer/sales/page.tsx
+@@ -11,7 +11,7 @@ import { parseServerDate } from "@/lib/timeUtils";
+ import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+ import PullToRefreshIndicator from "@/components/shared/PullToRefreshIndicator";
+ import CustomSelect from "@/components/ui/CustomSelect";
+-import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
++import { downloadHtmlDocument, shareHtmlDocument } from "@/lib/documentExport";
+ 
+ const PAYMENT_COLORS:Record<string,string>={cash:"#16A34A",bank_transfer:"#F47B20",card:"#3B8BD4",installment:"#DC2626"};
+ 
+@@ -149,8 +149,7 @@ export default function SalesPage() {
+     setShowSalesPicker(""); setSalesExportBusy(format);
+     try {
+       const html = buildSalesHtml();
+-      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Sales Report");
+-      await downloadBlob(blob, `sales-report-${Date.now()}.${format}`);
++      await downloadHtmlDocument(html, `sales-report-${Date.now()}`, format);
+       showToast("Downloaded", "success");
+     } catch (e: any) { showToast(e?.message || "Download failed", "error"); }
+     finally { setSalesExportBusy(""); }
+@@ -160,8 +159,8 @@ export default function SalesPage() {
+     setShowSalesPicker(""); setSalesExportBusy("share");
+     try {
+       const html = buildSalesHtml();
+-      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Sales Report");
+-      await shareBlob(blob, `sales-report-${Date.now()}.${format}`, "Sales Report");
++      const { note } = await shareHtmlDocument(html, `sales-report-${Date.now()}`, format, "Sales Report");
++      if (note) showToast(note, "info");
+     } catch (e: any) { showToast(e?.message || "Share failed", "error"); }
+     finally { setSalesExportBusy(""); }
+   };
+-- 
+2.43.0
+
+
+From d76307377f1b51f95034c3440e84059d19f4f4a7 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 09:16:58 +0000
+Subject: [PATCH 05/20] fix: dealer movements report - switched to consolidated
+ export functions
+
+---
+ app/dashboard/dealer/movements/page.tsx | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/app/dashboard/dealer/movements/page.tsx b/app/dashboard/dealer/movements/page.tsx
+index 2d9cb31..81ba893 100644
+--- a/app/dashboard/dealer/movements/page.tsx
++++ b/app/dashboard/dealer/movements/page.tsx
+@@ -1,7 +1,7 @@
+ "use client";
+ import { useEffect, useState, useRef, useCallback } from "react";
+ import api from "@/lib/api";
+-import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
++import { downloadHtmlDocument, shareHtmlDocument, rowsToExcelBlob, downloadBlob } from "@/lib/documentExport";
+ import { useToast } from "@/store/toastStore";
+ import CustomSelect from "@/components/ui/CustomSelect";
+ import { parseServerDate } from "@/lib/timeUtils";
+@@ -208,8 +208,7 @@ export default function MovementsPage() {
+         await downloadBlob(blob, `${filename}.xlsx`);
+       } else {
+         const html = buildMovementsHtml();
+-        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Vehicle Movements");
+-        await downloadBlob(blob, `${filename}.${format}`);
++        await downloadHtmlDocument(html, filename, format);
+       }
+       showToast("Downloaded", "success");
+     } catch (e: any) {
+@@ -225,8 +224,8 @@ export default function MovementsPage() {
+     try {
+       const filename = `carstrims-movements-${Date.now()}`;
+       const html = buildMovementsHtml();
+-      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Vehicle Movements");
+-      await shareBlob(blob, `${filename}.${format}`, "Vehicle Movements");
++      const { note } = await shareHtmlDocument(html, filename, format, "Vehicle Movements");
++      if (note) showToast(note, "info");
+     } catch (e: any) {
+       showToast(e?.message || "Share failed", "error");
+     } finally {
+-- 
+2.43.0
+
+
+From 61877ba93592da7c32fe7908ae876cf3b2bbcbf7 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 09:17:49 +0000
+Subject: [PATCH 06/20] fix: dealer inventory export - switched to consolidated
+ export functions
+
+---
+ app/dashboard/dealer/cars/page.tsx | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/app/dashboard/dealer/cars/page.tsx b/app/dashboard/dealer/cars/page.tsx
+index 4cf0672..3c24383 100644
+--- a/app/dashboard/dealer/cars/page.tsx
++++ b/app/dashboard/dealer/cars/page.tsx
+@@ -9,7 +9,7 @@ import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
+ import CustomSelect from "@/components/ui/CustomSelect";
+ import { useToast } from "@/store/toastStore";
+ import { useConfirm } from "@/store/confirmStore";
+-import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
++import { downloadHtmlDocument, rowsToExcelBlob, downloadBlob } from "@/lib/documentExport";
+ import Link from "next/link";
+ import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+ import PullToRefreshIndicator from "@/components/shared/PullToRefreshIndicator";
+@@ -152,8 +152,7 @@ export default function DealerCarsPage() {
+         await downloadBlob(blob, `${filename}.xlsx`);
+       } else {
+         const html = buildInventoryHtml(rows);
+-        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Vehicle Inventory");
+-        await downloadBlob(blob, `${filename}.${format}`);
++        await downloadHtmlDocument(html, filename, format);
+       }
+       showToast("Downloaded", "success");
+     } catch (e: any) {
+-- 
+2.43.0
+
+
+From 3b64321d2994356f4d88c6124d772659dee03562 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 09:18:53 +0000
+Subject: [PATCH 07/20] fix: dealer expenses report - switched to consolidated
+ export functions
+
+---
+ app/dashboard/dealer/expenses/page.tsx | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/app/dashboard/dealer/expenses/page.tsx b/app/dashboard/dealer/expenses/page.tsx
+index 16fdc96..905ea76 100644
+--- a/app/dashboard/dealer/expenses/page.tsx
++++ b/app/dashboard/dealer/expenses/page.tsx
+@@ -6,7 +6,7 @@ import CustomSelect from "@/components/ui/CustomSelect";
+ import { useToast } from "@/store/toastStore";
+ import { useConfirm } from "@/store/confirmStore";
+ import { parseServerDate } from "@/lib/timeUtils";
+-import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
++import { downloadHtmlDocument, shareHtmlDocument, rowsToExcelBlob, downloadBlob } from "@/lib/documentExport";
+ 
+ const CATEGORIES = [
+   "repairs","maintenance","fuel","insurance","registration",
+@@ -166,8 +166,7 @@ export default function ExpensesPage() {
+         await downloadBlob(blob, `${filename}.xlsx`);
+       } else {
+         const html = buildExpensesHtml();
+-        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Expenses");
+-        await downloadBlob(blob, `${filename}.${format}`);
++        await downloadHtmlDocument(html, filename, format);
+       }
+       setSuccess("Downloaded");
+     } catch (e: any) {
+@@ -183,8 +182,8 @@ export default function ExpensesPage() {
+     try {
+       const filename = `carstrims-expenses-${catFilter}-${Date.now()}`;
+       const html = buildExpensesHtml();
+-      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Expenses");
+-      await shareBlob(blob, `${filename}.${format}`, "Expenses");
++      const { note } = await shareHtmlDocument(html, filename, format, "Expenses");
++      if (note) showToast(note, "info");
+     } catch (e: any) {
+       showErr(e?.message || "Share failed");
+     } finally {
+-- 
+2.43.0
+
+
+From 1002129c6724e97f7547f9cd8d75115c1eda19e6 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 09:19:40 +0000
+Subject: [PATCH 08/20] fix: dealer staff list export - switched to
+ consolidated export functions
+
+---
+ app/dashboard/dealer/staff/page.tsx | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/app/dashboard/dealer/staff/page.tsx b/app/dashboard/dealer/staff/page.tsx
+index 2443670..25296c4 100644
+--- a/app/dashboard/dealer/staff/page.tsx
++++ b/app/dashboard/dealer/staff/page.tsx
+@@ -2,7 +2,7 @@
+ import { useEffect, useState } from "react";
+ import api from "@/lib/api";
+ import PasswordInput from "@/components/ui/PasswordInput";
+-import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
++import { rowsToExcelBlob, downloadHtmlDocument, downloadBlob } from "@/lib/documentExport";
+ import { useToast } from "@/store/toastStore";
+ import { useConfirm } from "@/store/confirmStore";
+ import Link from "next/link";
+@@ -190,8 +190,7 @@ export default function DealerStaffPage() {
+         await downloadBlob(blob, `${filename}.xlsx`);
+       } else {
+         const html = buildStaffListHtml();
+-        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Staff List");
+-        await downloadBlob(blob, `${filename}.${format}`);
++        await downloadHtmlDocument(html, filename, format);
+       }
+       showToast("Downloaded", "success");
+     } catch (e: any) {
+-- 
+2.43.0
+
+
+From e3638a72b859a0a1bb7eecb334fc7412c32e759a Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 09:20:30 +0000
+Subject: [PATCH 09/20] fix: dealer requests export - switched to consolidated
+ export functions
+
+---
+ app/dashboard/dealer/requests/page.tsx | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/app/dashboard/dealer/requests/page.tsx b/app/dashboard/dealer/requests/page.tsx
+index 42bf292..81f83c4 100644
+--- a/app/dashboard/dealer/requests/page.tsx
++++ b/app/dashboard/dealer/requests/page.tsx
+@@ -4,7 +4,7 @@ import api from "@/lib/api";
+ import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
+ import CustomSelect from "@/components/ui/CustomSelect";
+ import { useToast } from "@/store/toastStore";
+-import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
++import { rowsToExcelBlob, downloadHtmlDocument, shareHtmlDocument, downloadBlob } from "@/lib/documentExport";
+ import { parseServerDate } from "@/lib/timeUtils";
+ import { toWhatsAppLink } from "@/lib/phoneFormat";
+ 
+@@ -222,8 +222,7 @@ export default function DealerRequestsPage() {
+         await downloadBlob(blob, `${filename}.xlsx`);
+       } else {
+         const html = buildRequestsHtml(cat);
+-        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Customer Requests");
+-        await downloadBlob(blob, `${filename}.${format}`);
++        await downloadHtmlDocument(html, filename, format);
+       }
+       showToast("Downloaded", "success");
+     } catch (e: any) {
+@@ -239,8 +238,8 @@ export default function DealerRequestsPage() {
+     try {
+       const filename = `carstrims-requests-${cat}-${Date.now()}`;
+       const html = buildRequestsHtml(cat);
+-      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Customer Requests");
+-      await shareBlob(blob, `${filename}.${format}`, "Customer Requests");
++      const { note } = await shareHtmlDocument(html, filename, format, "Customer Requests");
++      if (note) showToast(note, "info");
+     } catch (e: any) {
+       showToast(e?.message || "Share failed", "error");
+     } finally {
+-- 
+2.43.0
+
+
+From 1013b168757ca0d91d711a5d9dbc441e3701e33e Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 09:21:34 +0000
+Subject: [PATCH 10/20] fix: dealer partners page (both partner history and
+ partners list exports) - switched to consolidated export functions
+
+---
+ app/dashboard/dealer/partners/page.tsx | 12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
+
+diff --git a/app/dashboard/dealer/partners/page.tsx b/app/dashboard/dealer/partners/page.tsx
+index ba5be6f..24ec6d7 100644
+--- a/app/dashboard/dealer/partners/page.tsx
++++ b/app/dashboard/dealer/partners/page.tsx
+@@ -2,7 +2,7 @@
+ import { useEffect, useState, useRef } from "react";
+ import Link from "next/link";
+ import api from "@/lib/api";
+-import { renderElementToPdfBlob, renderElementToJpgBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
++import { downloadDocument, shareDocument, downloadHtmlDocument, rowsToExcelBlob, downloadBlob } from "@/lib/documentExport";
+ import { useToast } from "@/store/toastStore";
+ import { useConfirm } from "@/store/confirmStore";
+ import { parseServerDate } from "@/lib/timeUtils";
+@@ -163,8 +163,7 @@ export default function PartnersPage() {
+         await downloadBlob(blob, `${exportFilename()}.xlsx`);
+       } else {
+         if (!exportRef.current) throw new Error("Nothing to export yet");
+-        const blob = format === "jpg" ? await renderElementToJpgBlob(exportRef.current) : await renderElementToPdfBlob(exportRef.current, "Partner History");
+-        await downloadBlob(blob, `${exportFilename()}.${format}`);
++        await downloadDocument(exportRef.current, exportFilename(), format);
+       }
+       showToast("Downloaded", "success");
+     } catch (e: any) { showToast(e?.message || "Download failed", "error"); }
+@@ -175,8 +174,8 @@ export default function PartnersPage() {
+     setExportPicker(""); setExportBusy("share");
+     try {
+       if (!exportRef.current) throw new Error("Nothing to export yet");
+-      const blob = format === "jpg" ? await renderElementToJpgBlob(exportRef.current) : await renderElementToPdfBlob(exportRef.current, "Partner History");
+-      await shareBlob(blob, `${exportFilename()}.${format}`, "Partner History");
++      const { note } = await shareDocument(exportRef.current, exportFilename(), format, "Partner History");
++      if (note) showToast(note, "info");
+     } catch (e: any) { showToast(e?.message || "Share failed", "error"); }
+     finally { setExportBusy(""); }
+   };
+@@ -217,8 +216,7 @@ export default function PartnersPage() {
+         await downloadBlob(blob, `${filename}.xlsx`);
+       } else {
+         const html = buildPartnersListHtml();
+-        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Partners");
+-        await downloadBlob(blob, `${filename}.${format}`);
++        await downloadHtmlDocument(html, filename, format);
+       }
+       showToast("Downloaded", "success");
+     } catch (e: any) {
+-- 
+2.43.0
+
+
+From a2c7f8df7629591803905819539d6ded28a24cb2 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 09:22:58 +0000
+Subject: [PATCH 11/20] fix: partner movements export - switched to
+ consolidated export functions
+
+---
+ app/dashboard/partner/movements/page.tsx | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/app/dashboard/partner/movements/page.tsx b/app/dashboard/partner/movements/page.tsx
+index c7c5fdb..fcb1939 100644
+--- a/app/dashboard/partner/movements/page.tsx
++++ b/app/dashboard/partner/movements/page.tsx
+@@ -1,7 +1,7 @@
+ "use client";
+ import { useEffect, useState } from "react";
+ import api from "@/lib/api";
+-import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob } from "@/lib/documentExport";
++import { rowsToExcelBlob, downloadHtmlDocument, downloadBlob } from "@/lib/documentExport";
+ import { useToast } from "@/store/toastStore";
+ import { parseServerDate } from "@/lib/timeUtils";
+ 
+@@ -56,8 +56,7 @@ export default function PartnerMovementsPage() {
+         await downloadBlob(blob, `${filename}.xlsx`);
+       } else {
+         const html = buildMovementsHtml();
+-        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Vehicle Movements");
+-        await downloadBlob(blob, `${filename}.${format}`);
++        await downloadHtmlDocument(html, filename, format);
+       }
+       showToast("Downloaded", "success");
+     } catch (e: any) {
+-- 
+2.43.0
+
+
+From 1ce340af365a96c6a7ee16a41bdb0c145746a77e Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 09:23:38 +0000
+Subject: [PATCH 12/20] fix: partner earnings export - switched to consolidated
+ export functions
+
+---
+ app/dashboard/partner/earnings/page.tsx | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/app/dashboard/partner/earnings/page.tsx b/app/dashboard/partner/earnings/page.tsx
+index ca2be06..3d7c068 100644
+--- a/app/dashboard/partner/earnings/page.tsx
++++ b/app/dashboard/partner/earnings/page.tsx
+@@ -1,7 +1,7 @@
+ "use client";
+ import { useEffect, useState } from "react";
+ import api from "@/lib/api";
+-import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob } from "@/lib/documentExport";
++import { rowsToExcelBlob, downloadHtmlDocument, downloadBlob } from "@/lib/documentExport";
+ import { useToast } from "@/store/toastStore";
+ import { parseServerDate } from "@/lib/timeUtils";
+ 
+@@ -64,8 +64,7 @@ export default function PartnerEarningsPage() {
+         await downloadBlob(blob, `${filename}.xlsx`);
+       } else {
+         const html = buildEarningsHtml();
+-        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "My Earnings");
+-        await downloadBlob(blob, `${filename}.${format}`);
++        await downloadHtmlDocument(html, filename, format);
+       }
+       showToast("Downloaded", "success");
+     } catch (e: any) {
+-- 
+2.43.0
+
+
+From c97264e7339cf28bc82e4de53bcf7eb4088602c6 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 09:24:26 +0000
+Subject: [PATCH 13/20] fix: partner assigned vehicles export - switched to
+ consolidated export functions
+
+---
+ app/dashboard/partner/cars/page.tsx | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/app/dashboard/partner/cars/page.tsx b/app/dashboard/partner/cars/page.tsx
+index b41fe1f..7a7143e 100644
+--- a/app/dashboard/partner/cars/page.tsx
++++ b/app/dashboard/partner/cars/page.tsx
+@@ -2,7 +2,7 @@
+ import { useEffect, useState } from "react";
+ import { useRouter } from "next/navigation";
+ import api from "@/lib/api";
+-import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
++import { rowsToExcelBlob, downloadHtmlDocument, downloadBlob } from "@/lib/documentExport";
+ import { useToast } from "@/store/toastStore";
+ import { parseServerDate } from "@/lib/timeUtils";
+ 
+@@ -61,8 +61,7 @@ export default function PartnerCarsPage() {
+           </table>
+           <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
+           </body></html>`;
+-        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "My Assigned Vehicles");
+-        await downloadBlob(blob, `${filename}.${format}`);
++        await downloadHtmlDocument(html, filename, format);
+       }
+       showToast("Downloaded", "success");
+     } catch (e: any) {
+-- 
+2.43.0
+
+
+From 2f76d35fc71c107b8acb78b0864f0dd7ace49f38 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 09:25:05 +0000
+Subject: [PATCH 14/20] fix: user requests export - switched to consolidated
+ export functions
+
+---
+ app/dashboard/user/requests/page.tsx | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/app/dashboard/user/requests/page.tsx b/app/dashboard/user/requests/page.tsx
+index 4dabc0f..bd5a33a 100644
+--- a/app/dashboard/user/requests/page.tsx
++++ b/app/dashboard/user/requests/page.tsx
+@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
+ import api from "@/lib/api";
+ import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
+ import CustomSelect from "@/components/ui/CustomSelect";
+-import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
++import { rowsToExcelBlob, downloadHtmlDocument, downloadBlob } from "@/lib/documentExport";
+ import { useToast } from "@/store/toastStore";
+ import { useConfirm } from "@/store/confirmStore";
+ import { parseServerDate } from "@/lib/timeUtils";
+@@ -232,8 +232,7 @@ export default function UserRequestsPage() {
+         await downloadBlob(blob, `${filename}.xlsx`);
+       } else {
+         const html = buildRequestsExportHtml();
+-        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "My Vehicle Requests");
+-        await downloadBlob(blob, `${filename}.${format}`);
++        await downloadHtmlDocument(html, filename, format);
+       }
+       showToast("Downloaded", "success");
+     } catch (e: any) {
+-- 
+2.43.0
+
+
+From 3becf7a3018ac10a3f5213b81c7857b58bef591b Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 09:25:54 +0000
+Subject: [PATCH 15/20] fix: user appointments export - switched to
+ consolidated export functions
+
+---
+ app/dashboard/user/appointments/page.tsx | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/app/dashboard/user/appointments/page.tsx b/app/dashboard/user/appointments/page.tsx
+index 5859bb0..73a9373 100644
+--- a/app/dashboard/user/appointments/page.tsx
++++ b/app/dashboard/user/appointments/page.tsx
+@@ -1,7 +1,7 @@
+ "use client";
+ import { useEffect, useState } from "react";
+ import api from "@/lib/api";
+-import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob } from "@/lib/documentExport";
++import { rowsToExcelBlob, downloadHtmlDocument, downloadBlob } from "@/lib/documentExport";
+ import { useToast } from "@/store/toastStore";
+ import { useConfirm } from "@/store/confirmStore";
+ import CustomSelect from "@/components/ui/CustomSelect";
+@@ -150,8 +150,7 @@ export default function UserAppointmentsPage() {
+         await downloadBlob(blob, `${filename}.xlsx`);
+       } else {
+         const html = buildAptHtml();
+-        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "My Appointments");
+-        await downloadBlob(blob, `${filename}.${format}`);
++        await downloadHtmlDocument(html, filename, format);
+       }
+       showToast("Downloaded", "success");
+     } catch (e: any) {
+-- 
+2.43.0
+
+
+From c3db872cce997ba48a6bcd077bfff58f10e436b6 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 09:26:43 +0000
+Subject: [PATCH 16/20] fix: dealer appointments export - switched to
+ consolidated export functions (completes all dealer/partner/user pages)
+
+---
+ app/dashboard/dealer/appointments/page.tsx | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/app/dashboard/dealer/appointments/page.tsx b/app/dashboard/dealer/appointments/page.tsx
+index dfca9ee..869f04e 100644
+--- a/app/dashboard/dealer/appointments/page.tsx
++++ b/app/dashboard/dealer/appointments/page.tsx
+@@ -2,7 +2,7 @@
+ import { useEffect, useState } from "react";
+ import api from "@/lib/api";
+ import Link from "next/link";
+-import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
++import { rowsToExcelBlob, downloadHtmlDocument, shareHtmlDocument, downloadBlob } from "@/lib/documentExport";
+ import { parseServerDate } from "@/lib/timeUtils";
+ import { toWhatsAppLink } from "@/lib/phoneFormat";
+ 
+@@ -138,8 +138,7 @@ export default function DealerAppointmentsPage() {
+         await downloadBlob(blob, `${filename}.xlsx`);
+       } else {
+         const html = buildAppointmentsHtml(cat);
+-        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Appointments");
+-        await downloadBlob(blob, `${filename}.${format}`);
++        await downloadHtmlDocument(html, filename, format);
+       }
+       setMsg("Downloaded");
+     } catch (e: any) {
+@@ -155,8 +154,8 @@ export default function DealerAppointmentsPage() {
+     try {
+       const filename = `carstrims-appointments-${cat}-${Date.now()}`;
+       const html = buildAppointmentsHtml(cat);
+-      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Appointments");
+-      await shareBlob(blob, `${filename}.${format}`, "Appointments");
++      const { note } = await shareHtmlDocument(html, filename, format, "Appointments");
++      if (note) setMsg(note);
+     } catch (e: any) {
+       setMsg("Share failed: " + (e?.message || "please try again"));
+     } finally {
+-- 
+2.43.0
+
+
+From 3d46bfff98eab2712e079cc9c9d335620d23b62d Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 09:27:38 +0000
+Subject: [PATCH 17/20] fix: super-admin user summary export - switched to
+ consolidated export functions
+
+---
+ app/dashboard/super-admin/users/[userId]/page.tsx | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/app/dashboard/super-admin/users/[userId]/page.tsx b/app/dashboard/super-admin/users/[userId]/page.tsx
+index c87d9bd..b0f70ed 100644
+--- a/app/dashboard/super-admin/users/[userId]/page.tsx
++++ b/app/dashboard/super-admin/users/[userId]/page.tsx
+@@ -5,7 +5,7 @@ import api from "@/lib/api";
+ import Link from "next/link";
+ import CustomSelect from "@/components/ui/CustomSelect";
+ import { useConfirm } from "@/store/confirmStore";
+-import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
++import { downloadHtmlDocument, shareHtmlDocument } from "@/lib/documentExport";
+ import { parseServerDate } from "@/lib/timeUtils";
+ 
+ const ROLE_C: Record<string,string> = {DEALER_ADMIN:"#F47B20",DEALER_STAFF:"#D97706",PARTNER_USER:"#7B68EE",SYSTEM_ADMIN:"#DC2626",PUBLIC_USER:"#16A34A"};
+@@ -196,8 +196,8 @@ export default function SuperAdminUserDetail() {
+     setShowDocPicker(""); setDocExportBusy(format);
+     try {
+       const html = buildDocHtml();
+-      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, profile?.fullName || "User Summary");
+-      await downloadBlob(blob, `${(profile?.fullName || userId).replace(/\s+/g, "_")}_CARSTRIMS.${format}`);
++      const filenameBase = `${(profile?.fullName || userId).replace(/\s+/g, "_")}_CARSTRIMS`;
++      await downloadHtmlDocument(html, filenameBase, format);
+     } catch (e: any) { setBanner(e?.message || "Download failed"); }
+     finally { setDocExportBusy(""); }
+   };
+@@ -206,8 +206,9 @@ export default function SuperAdminUserDetail() {
+     setShowDocPicker(""); setDocExportBusy("share");
+     try {
+       const html = buildDocHtml();
+-      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, profile?.fullName || "User Summary");
+-      await shareBlob(blob, `${(profile?.fullName || userId).replace(/\s+/g, "_")}_CARSTRIMS.${format}`, profile?.fullName || "User Summary");
++      const filenameBase = `${(profile?.fullName || userId).replace(/\s+/g, "_")}_CARSTRIMS`;
++      const { note } = await shareHtmlDocument(html, filenameBase, format, profile?.fullName || "User Summary");
++      if (note) setBanner(note);
+     } catch (e: any) { setBanner(e?.message || "Share failed"); }
+     finally { setDocExportBusy(""); }
+   };
+-- 
+2.43.0
+
+
+From ca29cda21a05eb1b97b1423c54c88e4f4eb981d2 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 09:28:20 +0000
+Subject: [PATCH 18/20] fix: super-admin cars list export - switched to
+ consolidated export function
+
+---
+ app/dashboard/super-admin/cars/page.tsx | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/app/dashboard/super-admin/cars/page.tsx b/app/dashboard/super-admin/cars/page.tsx
+index 7100c3e..b12b824 100644
+--- a/app/dashboard/super-admin/cars/page.tsx
++++ b/app/dashboard/super-admin/cars/page.tsx
+@@ -3,7 +3,7 @@
+ import { useEffect, useState } from "react";
+ import { useSearchParams } from "next/navigation";
+ import api from "@/lib/api";
+-import { rowsToExcelBlob, renderHtmlStringToPdfBlob, downloadBlob } from "@/lib/documentExport";
++import { rowsToExcelBlob, downloadHtmlDocument, downloadBlob } from "@/lib/documentExport";
+ import { useToast } from "@/store/toastStore";
+ import { useConfirm } from "@/store/confirmStore";
+ import { usePrompt } from "@/store/promptStore";
+@@ -239,8 +239,7 @@ export default function AdminCarsPage() {
+           </table>
+           <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
+           </body></html>`;
+-        const blob = await renderHtmlStringToPdfBlob(html, title);
+-        await downloadBlob(blob, `${filename}.pdf`);
++        await downloadHtmlDocument(html, filename, "pdf");
+       }
+       showToast("Downloaded", "success");
+     } catch (e: any) { showToast(e?.message || "Export failed", "error"); }
+-- 
+2.43.0
+
+
+From 1536f36b9591ba607d22e219a2f2308175b986f6 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 09:31:12 +0000
+Subject: [PATCH 19/20] fix: super-admin analytics export - switched to
+ consolidated export function (completes all super-admin pages)
+
+---
+ app/dashboard/super-admin/analytics/page.tsx | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/app/dashboard/super-admin/analytics/page.tsx b/app/dashboard/super-admin/analytics/page.tsx
+index 13562ed..ef06590 100644
+--- a/app/dashboard/super-admin/analytics/page.tsx
++++ b/app/dashboard/super-admin/analytics/page.tsx
+@@ -1,6 +1,6 @@
+ "use client";
+ import { useEffect, useState } from "react";
+-import { renderHtmlStringToPdfBlob, downloadBlob } from "@/lib/documentExport";
++import { downloadHtmlDocument } from "@/lib/documentExport";
+ import api from "@/lib/api";
+ 
+ export default function AdminAnalyticsPage() {
+@@ -82,8 +82,7 @@ export default function AdminAnalyticsPage() {
+         <tbody>${topDealers.map((d:any)=>`<tr><td>${d.companyName||d.name||""}</td><td>${d.carsSold||d.totalSold||0}</td><td>NGN ${Number(d.revenue||d.totalRevenue||0).toLocaleString()}</td></tr>`).join("")}</tbody></table>
+         <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
+         </body></html>`;
+-      const blob = await renderHtmlStringToPdfBlob(html, "Platform Analytics");
+-      await downloadBlob(blob, `carstrims-analytics-${Date.now()}.pdf`);
++      await downloadHtmlDocument(html, `carstrims-analytics-${Date.now()}`, "pdf");
+     } catch { } finally { setExportBusy(false); }
+   };
+ 
+-- 
+2.43.0
+
+
+From 896bf86c57f35feb2c04588ac6a801b038362330 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Sun, 13 Sep 2026 09:35:52 +0000
+Subject: [PATCH 20/20] fix: tighten receipt/invoice/proforma template spacing
+ so more documents fit naturally on fewer pages
+
+Real gap addressed: font sizes in this template were already
+appropriately small (7-22px range, mostly 8-13px for body text) - the
+actual cumulative height problem was the whitespace BETWEEN
+sections. Summed across a typical document (header, the two-column
+info grid, vehicle details box, totals block, items table,
+confirmation box, terms) the margins alone added up to roughly
+100px+ of pure spacing.
+
+Tightened every section's margin-bottom and internal padding
+moderately (roughly 30% reduction throughout) without touching a
+single font-size - reclaims meaningful vertical space while keeping
+every line exactly as readable as before. Combined with the export
+mechanism's own existing shrink-to-fit logic (documents up to 1.4x
+one page's height get scaled to fit rather than split - deliberately
+left that threshold unchanged, since pushing it further would risk
+making the already-small 7-8px text illegible on genuinely longer
+documents), this should mean more short receipts and invoices
+naturally land on one page without needing to lean on that
+image-shrink fallback as hard, and fewer borderline-length documents
+tip over into needing a second page at all.
+---
+ components/shared/DocumentViewer.tsx | 44 ++++++++++++++--------------
+ 1 file changed, 22 insertions(+), 22 deletions(-)
+
+diff --git a/components/shared/DocumentViewer.tsx b/components/shared/DocumentViewer.tsx
+index a8ba909..8b2e808 100644
+--- a/components/shared/DocumentViewer.tsx
++++ b/components/shared/DocumentViewer.tsx
+@@ -116,43 +116,43 @@ export default function DocumentViewer({ doc: initialDoc, onClose }: Props) {
+ <title>${docTitle} ${docNumber}</title>
+ <style>
+ *{box-sizing:border-box;margin:0;padding:0}
+-body{font-family:Arial,sans-serif;padding:28px 32px;color:#1A1A1A;max-width:760px;margin:0 auto;font-size:12px}
+-.hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #F47B20;padding-bottom:14px;margin-bottom:18px;gap:12px;flex-wrap:wrap}
++body{font-family:Arial,sans-serif;padding:22px 28px;color:#1A1A1A;max-width:760px;margin:0 auto;font-size:12px}
++.hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #F47B20;padding-bottom:10px;margin-bottom:13px;gap:12px;flex-wrap:wrap}
+ .logo{max-height:68px;max-width:200px;object-fit:contain;display:block;margin-bottom:6px}
+ .dn{font-size:17px;font-weight:700;color:#1A1A1A;margin-bottom:2px}
+-.ds{font-size:9px;color:#737373;line-height:1.6}
++.ds{font-size:9px;color:#737373;line-height:1.5}
+ .dt{font-size:22px;font-weight:700;color:#F47B20;letter-spacing:0.06em;text-align:right}
+-.dm{font-size:9px;color:#737373;text-align:right;line-height:1.8;margin-top:6px}
++.dm{font-size:9px;color:#737373;text-align:right;line-height:1.6;margin-top:5px}
+ .dm strong{color:#1A1A1A}
+-.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+-.bb{background:#F5F5F5;border-radius:6px;padding:11px}
+-.bl{font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#A3A3A3;margin-bottom:5px}
+-.bn{font-size:13px;font-weight:700;color:#1A1A1A;margin-bottom:3px}
+-.bs{font-size:10px;color:#737373;line-height:1.6}
+-.vb{display:flex;gap:12px;align-items:flex-start;background:#FFF7ED;border:1px solid rgba(244,123,32,0.2);border-radius:7px;padding:11px;margin-bottom:16px}
++.g2{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px}
++.bb{background:#F5F5F5;border-radius:6px;padding:9px}
++.bl{font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#A3A3A3;margin-bottom:4px}
++.bn{font-size:13px;font-weight:700;color:#1A1A1A;margin-bottom:2px}
++.bs{font-size:10px;color:#737373;line-height:1.5}
++.vb{display:flex;gap:12px;align-items:flex-start;background:#FFF7ED;border:1px solid rgba(244,123,32,0.2);border-radius:7px;padding:9px;margin-bottom:11px}
+ .vi{width:88px;height:66px;object-fit:cover;border-radius:5px;flex-shrink:0;border:1px solid rgba(244,123,32,0.2)}
+ .vl{font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#F47B20;margin-bottom:3px}
+ .vn{font-size:14px;font-weight:700;color:#1A1A1A}
+ .vs{font-size:9px;color:#737373;margin-top:2px}
+ .vv{font-size:8px;color:#A3A3A3;font-family:monospace;margin-top:3px}
+-.tb{display:flex;justify-content:flex-end;margin-bottom:14px}
+-.ti{width:280px;border-top:2px solid #1A1A1A;padding-top:6px;display:flex;justify-content:space-between;font-size:15px;font-weight:700}
+-.pb{background:#F0FDF4;border:1px solid #86EFAC;border-radius:5px;padding:9px 11px;margin-bottom:14px;display:flex;gap:20px;flex-wrap:wrap;font-size:10px}
++.tb{display:flex;justify-content:flex-end;margin-bottom:10px}
++.ti{width:280px;border-top:2px solid #1A1A1A;padding-top:5px;display:flex;justify-content:space-between;font-size:15px;font-weight:700}
++.pb{background:#F0FDF4;border:1px solid #86EFAC;border-radius:5px;padding:8px 11px;margin-bottom:10px;display:flex;gap:20px;flex-wrap:wrap;font-size:10px}
+ .pl{font-size:8px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#A3A3A3;margin-bottom:2px}
+ .cb{width:12px;height:12px;border:1.5px solid #1A1A1A;display:inline-block;margin-right:4px;vertical-align:middle;flex-shrink:0}
+ .cbon{background:#1A1A1A}
+-table{width:100%;border-collapse:collapse;margin-bottom:14px;font-size:11px}
+-th{background:#D97706;color:#fff;padding:7px 10px;text-align:left;font-size:8px;letter-spacing:0.06em;font-weight:600}
++table{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:11px}
++th{background:#D97706;color:#fff;padding:6px 10px;text-align:left;font-size:8px;letter-spacing:0.06em;font-weight:600}
+ th.r,td.r{text-align:right}
+-td{padding:7px 10px;border-bottom:1px solid #EEE}
++td{padding:6px 10px;border-bottom:1px solid #EEE}
+ tr:nth-child(even) td{background:#FFFBEB}
+-.conf{background:#F0FDF4;border:1px solid #86EFAC;border-radius:5px;padding:11px;margin-bottom:14px;font-size:10px;color:#15803D;line-height:1.5}
+-.terms{font-size:8px;color:#737373;border-left:2px solid #F47B20;padding-left:7px;margin-bottom:14px;line-height:1.6}
+-.sg{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:22px;border-top:1px solid #E5E5E5;padding-top:14px}
+-.sl{font-size:8px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#A3A3A3;margin-bottom:7px}
+-.sline{height:38px;border-bottom:1px solid #1A1A1A;margin-bottom:4px}
++.conf{background:#F0FDF4;border:1px solid #86EFAC;border-radius:5px;padding:9px;margin-bottom:10px;font-size:10px;color:#15803D;line-height:1.4}
++.terms{font-size:8px;color:#737373;border-left:2px solid #F47B20;padding-left:7px;margin-bottom:10px;line-height:1.5}
++.sg{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:16px;border-top:1px solid #E5E5E5;padding-top:10px}
++.sl{font-size:8px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#A3A3A3;margin-bottom:6px}
++.sline{height:32px;border-bottom:1px solid #1A1A1A;margin-bottom:4px}
+ .ss{font-size:8px;color:#737373}
+-.ft{text-align:center;margin-top:22px;padding-top:11px;border-top:1px solid #E5E5E5;font-size:7px;color:#A3A3A3;letter-spacing:0.06em}
++.ft{text-align:center;margin-top:16px;padding-top:9px;border-top:1px solid #E5E5E5;font-size:7px;color:#A3A3A3;letter-spacing:0.06em}
+ .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:8px;font-weight:700;margin-top:4px}
+ .vsr{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+ .vsr-r{display:flex;flex-direction:column;gap:1px}
+-- 
+2.43.0
+
