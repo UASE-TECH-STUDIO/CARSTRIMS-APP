@@ -135,7 +135,7 @@ export default function CarFinancialReport({ carId, onClose }: Props) {
           {/* Financial summary */}
           <div style={{marginBottom:"1.5rem"}}>
             <div style={{fontSize:"0.6rem",fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase" as const,color:"#A3A3A3",marginBottom:"0.875rem"}}>Financial Summary</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:"0.875rem"}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:"0.875rem"}}>
               {[
                 {label:"Purchase Price",value:fmt(financials?.purchasePrice),color:"#737373"},
                 {label:"Total Expenses",value:fmt(financials?.totalExpenses),color:"#DC2626"},
@@ -160,7 +160,7 @@ export default function CarFinancialReport({ carId, onClose }: Props) {
                 {[["Transaction ID",sale.transactionId],["Buyer",sale.buyerName||"Cash Buyer"],["Buyer Phone",sale.buyerPhone||""],["Payment Method",sale.paymentMethod?.replace(/_/g," ")||"Cash"],["Sold At",fmtDate(sale.soldAt)],["Notes",sale.notes||""]].map(([l,v])=>(
                   <div key={l} style={{display:"flex",alignItems:"flex-start",gap:"1rem",padding:"0.625rem 0.875rem",borderBottom:"1px solid #F0F0F0"}}>
                     <div style={{fontSize:"0.72rem",color:"#A3A3A3",minWidth:"120px",flexShrink:0}}>{l}</div>
-                    <div style={{fontSize:"0.875rem",color:"#1A1A1A",flex:1,textTransform:"capitalize" as const}}>{String(v)}</div>
+                    <div style={{fontSize:"0.875rem",color:"#1A1A1A",flex:1,textTransform:"capitalize" as const,wordBreak:"break-word" as const,overflowWrap:"break-word" as const}}>{String(v)}</div>
                   </div>
                 ))}
               </div>
