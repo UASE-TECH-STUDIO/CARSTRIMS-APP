@@ -1,6 +1,7 @@
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
+import JSZip from "jszip";
 
 /**
  * Real, working PDF/Excel generation + native download + native share —
@@ -436,12 +437,36 @@ export async function downloadBlobs(blobs: Blob[], baseFilename: string): Promis
     await downloadBlob(blobs[0], baseFilename);
     return;
   }
+
   const dotIndex = baseFilename.lastIndexOf(".");
   const stem = dotIndex >= 0 ? baseFilename.slice(0, dotIndex) : baseFilename;
   const ext = dotIndex >= 0 ? baseFilename.slice(dotIndex) : "";
-  for (let i = 0; i < blobs.length; i++) {
-    await downloadBlob(blobs[i], `${stem}-page${i + 1}${ext}`);
+  const pageLabel = (i: number) => blobs.length === 2 ? (i === 0 ? "front" : "back") : `page${i + 1}`;
+
+  if (blobs.length === 2) {
+    // Same proven pattern already working reliably for ID card
+    // front/back downloads: a short gap between the two prevents the
+    // second one from being silently blocked by browsers/WebViews
+    // that treat rapid successive programmatic downloads similarly
+    // to popup spam. Matches what a short document (a 2-page
+    // receipt/invoice) should feel like - two clearly-labeled files,
+    // not a zip archive for something this small.
+    await downloadBlob(blobs[0], `${stem}-${pageLabel(0)}${ext}`);
+    await new Promise(resolve => setTimeout(resolve, 400));
+    await downloadBlob(blobs[1], `${stem}-${pageLabel(1)}${ext}`);
+    return;
   }
+
+  // 3+ pages: bundle into a single .zip rather than looping more
+  // downloads - per-file delays become slow and less reliable as the
+  // count grows, and a zip sidesteps the browser's multi-download
+  // blocking entirely regardless of how many pages are inside it.
+  const zip = new JSZip();
+  for (let i = 0; i < blobs.length; i++) {
+    zip.file(`${stem}-page${i + 1}${ext}`, blobs[i]);
+  }
+  const zipBlob = await zip.generateAsync({ type: "blob" });
+  await downloadBlob(zipBlob, `${stem}.zip`);
 }
 
 /**
