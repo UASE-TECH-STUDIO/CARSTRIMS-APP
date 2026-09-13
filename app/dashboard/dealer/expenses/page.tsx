@@ -6,7 +6,7 @@ import CustomSelect from "@/components/ui/CustomSelect";
 import { useToast } from "@/store/toastStore";
 import { useConfirm } from "@/store/confirmStore";
 import { parseServerDate } from "@/lib/timeUtils";
-import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+import { downloadHtmlDocument, shareHtmlDocument, rowsToExcelBlob, downloadBlob } from "@/lib/documentExport";
 
 const CATEGORIES = [
   "repairs","maintenance","fuel","insurance","registration",
@@ -166,8 +166,7 @@ export default function ExpensesPage() {
         await downloadBlob(blob, `${filename}.xlsx`);
       } else {
         const html = buildExpensesHtml();
-        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Expenses");
-        await downloadBlob(blob, `${filename}.${format}`);
+        await downloadHtmlDocument(html, filename, format);
       }
       setSuccess("Downloaded");
     } catch (e: any) {
@@ -183,8 +182,8 @@ export default function ExpensesPage() {
     try {
       const filename = `carstrims-expenses-${catFilter}-${Date.now()}`;
       const html = buildExpensesHtml();
-      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Expenses");
-      await shareBlob(blob, `${filename}.${format}`, "Expenses");
+      const { note } = await shareHtmlDocument(html, filename, format, "Expenses");
+      if (note) showToast(note, "info");
     } catch (e: any) {
       showErr(e?.message || "Share failed");
     } finally {
