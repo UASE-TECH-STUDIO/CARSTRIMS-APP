@@ -11,7 +11,7 @@ import { parseServerDate } from "@/lib/timeUtils";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import PullToRefreshIndicator from "@/components/shared/PullToRefreshIndicator";
 import CustomSelect from "@/components/ui/CustomSelect";
-import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+import { downloadHtmlDocument, shareHtmlDocument } from "@/lib/documentExport";
 
 const PAYMENT_COLORS:Record<string,string>={cash:"#16A34A",bank_transfer:"#F47B20",card:"#3B8BD4",installment:"#DC2626"};
 
@@ -149,8 +149,7 @@ export default function SalesPage() {
     setShowSalesPicker(""); setSalesExportBusy(format);
     try {
       const html = buildSalesHtml();
-      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Sales Report");
-      await downloadBlob(blob, `sales-report-${Date.now()}.${format}`);
+      await downloadHtmlDocument(html, `sales-report-${Date.now()}`, format);
       showToast("Downloaded", "success");
     } catch (e: any) { showToast(e?.message || "Download failed", "error"); }
     finally { setSalesExportBusy(""); }
@@ -160,8 +159,8 @@ export default function SalesPage() {
     setShowSalesPicker(""); setSalesExportBusy("share");
     try {
       const html = buildSalesHtml();
-      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Sales Report");
-      await shareBlob(blob, `sales-report-${Date.now()}.${format}`, "Sales Report");
+      const { note } = await shareHtmlDocument(html, `sales-report-${Date.now()}`, format, "Sales Report");
+      if (note) showToast(note, "info");
     } catch (e: any) { showToast(e?.message || "Share failed", "error"); }
     finally { setSalesExportBusy(""); }
   };
