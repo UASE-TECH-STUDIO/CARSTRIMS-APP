@@ -4,6 +4,7 @@ import api from "@/lib/api";
 import Link from "next/link";
 import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { parseServerDate } from "@/lib/timeUtils";
+import { toWhatsAppLink } from "@/lib/phoneFormat";
 
 const STILL_ATTENDING_APT = ["pending", "pending_buyer"];
 const isStillAttendingApt = (status: string) => STILL_ATTENDING_APT.includes(status);
@@ -347,8 +348,8 @@ export default function DealerAppointmentsPage() {
                         Call
                       </a>
                     )}
-                    {selected.buyerWhatsapp && (
-                      <a href={`https://wa.me/${selected.buyerWhatsapp.replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer"
+                    {toWhatsAppLink(selected.buyerWhatsapp) && (
+                      <a href={toWhatsAppLink(selected.buyerWhatsapp)!} target="_blank" rel="noreferrer"
                         style={{background:"#F0FDF4",border:"1px solid #86EFAC",color:"#15803D",borderRadius:"6px",padding:"0.25rem 0.625rem",fontSize:"0.72rem",textDecoration:"none",fontWeight:600}}>
                         WhatsApp
                       </a>
