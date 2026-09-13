@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useRef, useCallback } from "react";
 import api from "@/lib/api";
-import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+import { downloadHtmlDocument, shareHtmlDocument, rowsToExcelBlob, downloadBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { parseServerDate } from "@/lib/timeUtils";
@@ -208,8 +208,7 @@ export default function MovementsPage() {
         await downloadBlob(blob, `${filename}.xlsx`);
       } else {
         const html = buildMovementsHtml();
-        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Vehicle Movements");
-        await downloadBlob(blob, `${filename}.${format}`);
+        await downloadHtmlDocument(html, filename, format);
       }
       showToast("Downloaded", "success");
     } catch (e: any) {
@@ -225,8 +224,8 @@ export default function MovementsPage() {
     try {
       const filename = `carstrims-movements-${Date.now()}`;
       const html = buildMovementsHtml();
-      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Vehicle Movements");
-      await shareBlob(blob, `${filename}.${format}`, "Vehicle Movements");
+      const { note } = await shareHtmlDocument(html, filename, format, "Vehicle Movements");
+      if (note) showToast(note, "info");
     } catch (e: any) {
       showToast(e?.message || "Share failed", "error");
     } finally {
