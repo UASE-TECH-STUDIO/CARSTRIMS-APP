@@ -6,6 +6,7 @@ import CustomSelect from "@/components/ui/CustomSelect";
 import { useToast } from "@/store/toastStore";
 import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
 import { parseServerDate } from "@/lib/timeUtils";
+import { toWhatsAppLink } from "@/lib/phoneFormat";
 
 // "Still attending to" = awaiting further action from either side.
 // "Attended to" = resolved one way or another. Matches an explicit
@@ -454,8 +455,8 @@ export default function DealerRequestsPage() {
                               Call
                             </a>
                           )}
-                          {(selected.buyerWhatsapp||selected.userWhatsapp) && (
-                            <a href={`https://wa.me/${(selected.buyerWhatsapp||selected.userWhatsapp).replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer"
+                          {toWhatsAppLink(selected.buyerWhatsapp||selected.userWhatsapp) && (
+                            <a href={toWhatsAppLink(selected.buyerWhatsapp||selected.userWhatsapp)!} target="_blank" rel="noreferrer"
                               style={{background:"#F0FDF4",border:"1px solid #86EFAC",color:"#15803D",borderRadius:"6px",padding:"0.3rem 0.625rem",fontSize:"0.72rem",textDecoration:"none",fontWeight:600}}>
                               WhatsApp
                             </a>
