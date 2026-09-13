@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import { useToast } from "@/store/toastStore";
 import { parseServerDate } from "@/lib/timeUtils";
+import { toWhatsAppLink } from "@/lib/phoneFormat";
 
 const STATUSES = ["all","awaiting_approval","approved","suspended","rejected","deleted"];
 const STATUS_COLORS: Record<string, string> = {
@@ -118,7 +119,7 @@ export default function AdminDealersPage() {
                     <div className="contact-row">
                       <a href={`tel:${d.phone}`} className="contact-btn" title="Call"></a>
                       <a href={`mailto:${d.email}`} className="contact-btn" title="Email"></a>
-                      {d.whatsapp && <a href={`https://wa.me/${d.whatsapp}`} target="_blank" rel="noreferrer" className="contact-btn" title="WhatsApp"></a>}
+                      {toWhatsAppLink(d.whatsapp) && <a href={toWhatsAppLink(d.whatsapp)!} target="_blank" rel="noreferrer" className="contact-btn" title="WhatsApp"></a>}
                     </div>
                   </td>
                   <td className="num-cell">{d.carCount || 0}</td>
