@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
-import { renderElementToPdfBlob, renderElementToJpgBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, rowsToExcelBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+import { downloadDocument, shareDocument, downloadHtmlDocument, rowsToExcelBlob, downloadBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
 import { useConfirm } from "@/store/confirmStore";
 import { parseServerDate } from "@/lib/timeUtils";
@@ -163,8 +163,7 @@ export default function PartnersPage() {
         await downloadBlob(blob, `${exportFilename()}.xlsx`);
       } else {
         if (!exportRef.current) throw new Error("Nothing to export yet");
-        const blob = format === "jpg" ? await renderElementToJpgBlob(exportRef.current) : await renderElementToPdfBlob(exportRef.current, "Partner History");
-        await downloadBlob(blob, `${exportFilename()}.${format}`);
+        await downloadDocument(exportRef.current, exportFilename(), format);
       }
       showToast("Downloaded", "success");
     } catch (e: any) { showToast(e?.message || "Download failed", "error"); }
@@ -175,8 +174,8 @@ export default function PartnersPage() {
     setExportPicker(""); setExportBusy("share");
     try {
       if (!exportRef.current) throw new Error("Nothing to export yet");
-      const blob = format === "jpg" ? await renderElementToJpgBlob(exportRef.current) : await renderElementToPdfBlob(exportRef.current, "Partner History");
-      await shareBlob(blob, `${exportFilename()}.${format}`, "Partner History");
+      const { note } = await shareDocument(exportRef.current, exportFilename(), format, "Partner History");
+      if (note) showToast(note, "info");
     } catch (e: any) { showToast(e?.message || "Share failed", "error"); }
     finally { setExportBusy(""); }
   };
@@ -217,8 +216,7 @@ export default function PartnersPage() {
         await downloadBlob(blob, `${filename}.xlsx`);
       } else {
         const html = buildPartnersListHtml();
-        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Partners");
-        await downloadBlob(blob, `${filename}.${format}`);
+        await downloadHtmlDocument(html, filename, format);
       }
       showToast("Downloaded", "success");
     } catch (e: any) {
