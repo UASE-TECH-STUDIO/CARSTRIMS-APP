@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import Link from "next/link";
-import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+import { rowsToExcelBlob, downloadHtmlDocument, shareHtmlDocument, downloadBlob } from "@/lib/documentExport";
 import { parseServerDate } from "@/lib/timeUtils";
 import { toWhatsAppLink } from "@/lib/phoneFormat";
 
@@ -138,8 +138,7 @@ export default function DealerAppointmentsPage() {
         await downloadBlob(blob, `${filename}.xlsx`);
       } else {
         const html = buildAppointmentsHtml(cat);
-        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Appointments");
-        await downloadBlob(blob, `${filename}.${format}`);
+        await downloadHtmlDocument(html, filename, format);
       }
       setMsg("Downloaded");
     } catch (e: any) {
@@ -155,8 +154,8 @@ export default function DealerAppointmentsPage() {
     try {
       const filename = `carstrims-appointments-${cat}-${Date.now()}`;
       const html = buildAppointmentsHtml(cat);
-      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Appointments");
-      await shareBlob(blob, `${filename}.${format}`, "Appointments");
+      const { note } = await shareHtmlDocument(html, filename, format, "Appointments");
+      if (note) setMsg(note);
     } catch (e: any) {
       setMsg("Share failed: " + (e?.message || "please try again"));
     } finally {
