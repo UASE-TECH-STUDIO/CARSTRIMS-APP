@@ -1,0 +1,92 @@
+From b48fd91ee0dd1556d92476f90d440f269470d708 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Thu, 3 Sep 2026 13:39:00 +0000
+Subject: [PATCH] fix: try iOS 26's dedicated on-device recognition path
+ instead of relying on the plugin's automatic fallback
+
+Well-reasoned hypothesis based on real evidence from the plugin's own
+documentation, not another blind guess: 'iOS uses SFSpeechRecognizer
+by default, including on versions below iOS 26 ... Set
+useOnDeviceRecognition: true only when you want the iOS 26+
+SpeechAnalyzer path ... If that newer path is unavailable, the
+plugin falls back to SFSpeechRecognizer.'
+
+The friend's iPhone is running iOS 26.3.1 - squarely inside the exact
+version range the plugin's own docs call out as needing this special
+handling. iOS 26 is an extremely recently released OS version, and
+it's plausible the plugin's automatic 'fall back to the older API'
+logic isn't yet fully solid on such new OS support - matching the
+reported symptom exactly (recording visibly starts, audio permission
+is genuinely granted, but nothing ever gets transcribed - consistent
+with the underlying recognition engine silently failing to produce
+results rather than the UI/permission layer having any problem).
+
+Checks isOnDeviceRecognitionAvailable() after permissions are
+granted, and when the device reports it's genuinely available,
+explicitly requests that path via useOnDeviceRecognition on both the
+primary and en-US-fallback start() calls - using the path actually
+built and tested for this specific OS generation, rather than relying
+on the plugin's own version-detection fallback working correctly on
+day-one support for a brand new iOS release. Wrapped in a try/catch
+since this method may not exist at all on older plugin versions or
+platforms - safely does nothing and leaves the existing behavior
+unchanged if so.
+
+Stating plainly: this is a strong, evidence-based hypothesis tied
+directly to the plugin's own documentation and the exact device
+being tested on, not a confirmed fix - needs a real test on the
+actual iPhone before treating this as resolved.
+---
+ lib/useVoiceInput.ts | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+
+diff --git a/lib/useVoiceInput.ts b/lib/useVoiceInput.ts
+index b66cef9..c570325 100644
+--- a/lib/useVoiceInput.ts
++++ b/lib/useVoiceInput.ts
+@@ -101,6 +101,26 @@ export function useVoiceInput(onResult: (text: string) => void) {
+         return;
+       }
+ 
++      // iOS 26+ has a newer on-device recognition path (SpeechAnalyzer)
++      // that this plugin only uses when explicitly requested -
++      // otherwise it falls back to the older SFSpeechRecognizer API.
++      // That automatic fallback is new, less battle-tested code on a
++      // very recently released OS version, and a very plausible
++      // explanation for "recording visibly starts, nothing ever gets
++      // written": explicitly opting into the path actually built and
++      // tested for this specific OS generation, when the device
++      // reports it's genuinely available, rather than relying on the
++      // plugin's own fallback logic working correctly on day-one
++      // support for a brand new OS release.
++      let useOnDevice = false;
++      try {
++        const onDeviceCheck = await SpeechRecognition.isOnDeviceRecognitionAvailable?.({ language: "en-US" });
++        useOnDevice = !!onDeviceCheck?.available;
++      } catch {
++        // Method may not exist on this platform/version - safe to
++        // just fall through with useOnDevice left false.
++      }
++
+       setSupported(true);
+       setListening(true);
+ 
+@@ -153,6 +173,7 @@ export function useVoiceInput(onResult: (text: string) => void) {
+         maxResults: 3,
+         partialResults: true,
+         popup: false,
++        useOnDeviceRecognition: useOnDevice,
+       }).catch(async (deviceDefaultErr: any) => {
+         // Defensive fallback: if the device's own default language
+         // somehow still fails to start recognition, retry once with
+@@ -165,6 +186,7 @@ export function useVoiceInput(onResult: (text: string) => void) {
+           maxResults: 3,
+           partialResults: true,
+           popup: false,
++          useOnDeviceRecognition: useOnDevice,
+         });
+       });
+ 
+-- 
+2.43.0
+

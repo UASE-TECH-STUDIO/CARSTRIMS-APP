@@ -1,0 +1,53 @@
+From d12cf66f984e031280cb6d6f4e63e002280e05b9 Mon Sep 17 00:00:00 2001
+From: Usty <usty@uase.tech>
+Date: Thu, 3 Sep 2026 14:13:58 +0000
+Subject: [PATCH] chore: bump iOS version 1.0.5 (5) -> 1.0.6 (6) for the
+ production submission with the crash fix and iOS mic disabled
+
+---
+ ios/App/App.xcodeproj/project.pbxproj | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/ios/App/App.xcodeproj/project.pbxproj b/ios/App/App.xcodeproj/project.pbxproj
+index ff72865..9dec8ad 100644
+--- a/ios/App/App.xcodeproj/project.pbxproj
++++ b/ios/App/App.xcodeproj/project.pbxproj
+@@ -296,7 +296,7 @@
+ 			buildSettings = {
+ 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+ 				CODE_SIGN_STYLE = Automatic;
+-				CURRENT_PROJECT_VERSION = 5;
++				CURRENT_PROJECT_VERSION = 6;
+ 				DEVELOPMENT_TEAM = MGUHG86LAC;
+ 				INFOPLIST_FILE = App/Info.plist;
+ 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
+@@ -305,7 +305,7 @@
+ 					"$(inherited)",
+ 					"@executable_path/Frameworks",
+ 				);
+-				MARKETING_VERSION = 1.0.5;
++				MARKETING_VERSION = 1.0.6;
+ 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
+ 				PRODUCT_BUNDLE_IDENTIFIER = com.uasetechstudio.carstrims;
+ 				PRODUCT_NAME = "$(TARGET_NAME)";
+@@ -320,7 +320,7 @@
+ 			buildSettings = {
+ 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+ 				CODE_SIGN_STYLE = Automatic;
+-				CURRENT_PROJECT_VERSION = 5;
++				CURRENT_PROJECT_VERSION = 6;
+ 				DEVELOPMENT_TEAM = MGUHG86LAC;
+ 				INFOPLIST_FILE = App/Info.plist;
+ 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
+@@ -329,7 +329,7 @@
+ 					"$(inherited)",
+ 					"@executable_path/Frameworks",
+ 				);
+-				MARKETING_VERSION = 1.0.5;
++				MARKETING_VERSION = 1.0.6;
+ 				PRODUCT_BUNDLE_IDENTIFIER = com.uasetechstudio.carstrims;
+ 				PRODUCT_NAME = "$(TARGET_NAME)";
+ 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
+-- 
+2.43.0
+
