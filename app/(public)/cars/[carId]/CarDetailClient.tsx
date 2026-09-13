@@ -11,6 +11,7 @@ import ZoomableImage from "@/components/ui/ZoomableImage";
 import FeedHomeButton from "@/components/shared/FeedHomeButton";
 import ShareMenu from "@/components/shared/ShareMenu";
 import { timeAgoLong } from "@/lib/timeUtils";
+import { toWhatsAppNumber } from "@/lib/phoneFormat";
 
 export default function CarDetailClient() {
   const params = useParams();
@@ -469,8 +470,8 @@ export default function CarDetailClient() {
                   {showContact && (
                     <div className="cd-contact-btns">
                       {car.dealer.phone && <a href={`tel:${car.dealer.phone}`} className="cd-cta phone"> Call</a>}
-                      {car.dealer.whatsapp && (
-                        <a href={`https://wa.me/${car.dealer.whatsapp}?text=Hi, I am interested in your ${car.brand} ${car.model} ${car.year} (${car.carId}). Is it still available?`}
+                      {toWhatsAppNumber(car.dealer.whatsapp) && (
+                        <a href={`https://wa.me/${toWhatsAppNumber(car.dealer.whatsapp)}?text=Hi, I am interested in your ${car.brand} ${car.model} ${car.year} (${car.carId}). Is it still available?`}
                           target="_blank" rel="noreferrer" className="cd-cta wa"> WhatsApp</a>
                       )}
                       {car.dealer.email && <a href={`mailto:${car.dealer.email}`} className="cd-cta email"> Email</a>}
