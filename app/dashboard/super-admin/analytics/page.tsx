@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { renderHtmlStringToPdfBlob, downloadBlob } from "@/lib/documentExport";
+import { downloadHtmlDocument } from "@/lib/documentExport";
 import api from "@/lib/api";
 
 export default function AdminAnalyticsPage() {
@@ -82,8 +82,7 @@ export default function AdminAnalyticsPage() {
         <tbody>${topDealers.map((d:any)=>`<tr><td>${d.companyName||d.name||""}</td><td>${d.carsSold||d.totalSold||0}</td><td>NGN ${Number(d.revenue||d.totalRevenue||0).toLocaleString()}</td></tr>`).join("")}</tbody></table>
         <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
         </body></html>`;
-      const blob = await renderHtmlStringToPdfBlob(html, "Platform Analytics");
-      await downloadBlob(blob, `carstrims-analytics-${Date.now()}.pdf`);
+      await downloadHtmlDocument(html, `carstrims-analytics-${Date.now()}`, "pdf");
     } catch { } finally { setExportBusy(false); }
   };
 
