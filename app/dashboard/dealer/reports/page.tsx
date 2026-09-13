@@ -87,6 +87,7 @@ export default function ReportsPage() {
   const buildReportHtml = (): string => {
     if (!data) return "";
     const s        = data.summary;
+    const actualVehiclesSold = (data.monthlySales||[]).reduce((a:number,m:any)=>a+(m.count||0),0);
     const cogs     = (s?.totalRevenue||0) - (s?.totalProfit||0);
     const netProfit = calcNetProfit(s);
     const netMargin = calcNetMargin(s);
@@ -115,7 +116,7 @@ export default function ReportsPage() {
       <div class="grid3" style="margin-top:8px">
         <div class="card red">  <div class="cv">${fmtN(s?.totalExpenses||0)}</div><div class="cl">Total Expenses</div></div>
         <div class="card ${netProfit>=0?"green":"red"}"><div class="cv">${fmtN(netProfit)}</div><div class="cl">Net Profit (After Expenses)</div></div>
-        <div class="card blue"><div class="cv">${s?.soldCars||0} / ${s?.totalCars||0}</div><div class="cl">Vehicles Sold / Listed</div></div>
+        <div class="card blue"><div class="cv">${actualVehiclesSold} / ${s?.totalCars||0}</div><div class="cl">Vehicles Sold / Listed</div></div>
       </div>
 
       <div class="section" style="margin-top:14px">PROFITABILITY RATIOS</div>
@@ -327,6 +328,7 @@ export default function ReportsPage() {
   const exportCSV = () => {
     if (!data) return;
     const s        = data.summary;
+    const actualVehiclesSold = (data.monthlySales||[]).reduce((a:number,m:any)=>a+(m.count||0),0);
     const netProfit = calcNetProfit(s);
     const netMargin = calcNetMargin(s);
     const grossMargin = calcGrossMargin(s);
@@ -344,7 +346,7 @@ export default function ReportsPage() {
       ["Total Expenses",             s?.totalExpenses||0],
       ["Net Profit (After Expenses)", netProfit],
       ["Net Profit Margin",          `${netMargin}%`],
-      ["Vehicles Sold",              s?.soldCars||0],
+      ["Vehicles Sold",              actualVehiclesSold],
       ["Vehicles Listed",            s?.totalCars||0],
       [],
       ["MONTHLY BREAKDOWN"],
@@ -395,6 +397,7 @@ export default function ReportsPage() {
   if (!data) return <div style={{padding:"2rem",color:"#888"}}>Could not load reports.</div>;
 
   const s          = data.summary;
+  const actualVehiclesSold = (data.monthlySales||[]).reduce((a:number,m:any)=>a+(m.count||0),0);
   const netProfit  = calcNetProfit(s);
   const netMargin  = calcNetMargin(s);
   const grossMargin = calcGrossMargin(s);
@@ -513,7 +516,7 @@ export default function ReportsPage() {
             { label:"Gross Profit",              val:fmtN(s?.totalProfit||0),                                    cls:"green",   sub:`${grossMargin}% gross margin` },
             { label:"Total Expenses",            val:fmtN(s?.totalExpenses||0),                                  cls:"red",     sub:"Operational costs" },
             { label:"Net Profit",                val:fmtN(netProfit),                                            cls:netProfit>=0?"green":"red", sub:`${netMargin}% net margin` },
-            { label:"Vehicles Sold / Listed",    val:`${s?.soldCars||0} / ${s?.totalCars||0}`,                   cls:"",        sub:"Inventory turnover" },
+            { label:"Vehicles Sold / Listed",    val:`${actualVehiclesSold} / ${s?.totalCars||0}`,                   cls:"",        sub:"Inventory turnover" },
           ].map(card=>(
             <div key={card.label} className={`sum-card ${card.cls}`}>
               <div className="sc-val">{card.val}</div>
@@ -538,7 +541,7 @@ export default function ReportsPage() {
           <div style={{flex:1,minWidth:"160px",background:"#EFF6FF",border:"1.5px solid #BFDBFE",borderRadius:"10px",padding:"0.875rem 1rem"}}>
             <div style={{fontSize:"0.62rem",color:"#A3A3A3",fontWeight:700,textTransform:"uppercase" as const,letterSpacing:"0.06em",marginBottom:"0.25rem"}}>Avg. Profit Per Vehicle</div>
             <div style={{fontFamily:"var(--font-display)",fontSize:"1.5rem",color:"#3B8BD4"}}>
-              {s?.soldCars > 0 ? fmtN(Math.round(netProfit / s.soldCars)) : "NGN 0"}
+              {actualVehiclesSold > 0 ? fmtN(Math.round(netProfit / actualVehiclesSold)) : "NGN 0"}
             </div>
             <div style={{fontSize:"0.7rem",color:"#737373",marginTop:"2px"}}>Net Profit ÷ Vehicles Sold</div>
           </div>

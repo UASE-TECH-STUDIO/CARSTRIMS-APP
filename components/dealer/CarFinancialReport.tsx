@@ -115,7 +115,7 @@ export default function CarFinancialReport({ carId, onClose }: Props) {
               </div>
             </div>
             <div style={{textAlign:"right" as const}}>
-              <div style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",color:"#F47B20",fontWeight:700}}>PER-CAR REPORT</div>
+              <div style={{fontFamily:"Georgia,serif",fontSize:"0.95rem",color:"#F47B20",fontWeight:700,whiteSpace:"nowrap" as const}}>PER-CAR REPORT</div>
               <div style={{fontSize:"0.72rem",color:"#737373"}}>{data.generatedAt ? (parseServerDate(data.generatedAt)?.toLocaleString("en-NG")||"") : ""}</div>
             </div>
           </div>
