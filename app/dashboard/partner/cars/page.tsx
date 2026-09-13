@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
-import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+import { rowsToExcelBlob, downloadHtmlDocument, downloadBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
 import { parseServerDate } from "@/lib/timeUtils";
 
@@ -61,8 +61,7 @@ export default function PartnerCarsPage() {
           </table>
           <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
           </body></html>`;
-        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "My Assigned Vehicles");
-        await downloadBlob(blob, `${filename}.${format}`);
+        await downloadHtmlDocument(html, filename, format);
       }
       showToast("Downloaded", "success");
     } catch (e: any) {
