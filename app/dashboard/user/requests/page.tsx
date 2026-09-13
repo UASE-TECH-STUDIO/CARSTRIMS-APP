@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 import CustomSelect from "@/components/ui/CustomSelect";
-import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+import { rowsToExcelBlob, downloadHtmlDocument, downloadBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
 import { useConfirm } from "@/store/confirmStore";
 import { parseServerDate } from "@/lib/timeUtils";
@@ -232,8 +232,7 @@ export default function UserRequestsPage() {
         await downloadBlob(blob, `${filename}.xlsx`);
       } else {
         const html = buildRequestsExportHtml();
-        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "My Vehicle Requests");
-        await downloadBlob(blob, `${filename}.${format}`);
+        await downloadHtmlDocument(html, filename, format);
       }
       showToast("Downloaded", "success");
     } catch (e: any) {
