@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
-import { rowsToExcelBlob, renderHtmlStringToPdfBlob, downloadBlob } from "@/lib/documentExport";
+import { rowsToExcelBlob, downloadHtmlDocument, downloadBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
 import { useConfirm } from "@/store/confirmStore";
 import { usePrompt } from "@/store/promptStore";
@@ -239,8 +239,7 @@ export default function AdminCarsPage() {
           </table>
           <div class="footer">Powered by CARSTRIMS &mdash; UASE TECH STUDIO</div>
           </body></html>`;
-        const blob = await renderHtmlStringToPdfBlob(html, title);
-        await downloadBlob(blob, `${filename}.pdf`);
+        await downloadHtmlDocument(html, filename, "pdf");
       }
       showToast("Downloaded", "success");
     } catch (e: any) { showToast(e?.message || "Export failed", "error"); }
