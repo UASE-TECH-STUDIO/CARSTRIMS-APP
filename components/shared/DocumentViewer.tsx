@@ -2,7 +2,7 @@
 import { useState, useRef } from "react";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 import CustomSelect from "@/components/ui/CustomSelect";
-import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, renderElementToPdfBlob, renderElementToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+import { renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlobs, renderElementToPdfBlob, renderElementToJpgBlobs, downloadBlob, downloadBlobs, shareBlob, shareBlobs } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
 import { parseServerDate } from "@/lib/timeUtils";
 import { RECEIPT_DESIGNS, PROFORMA_DESIGNS, BusinessDocData } from "@/components/design-studio/BusinessDocDesigns";
@@ -306,10 +306,17 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
     setShowFormatPicker("");
     setBusy(format);
     try {
-      const blob = activeNewDesign && newDesignRef.current
-        ? (format === "jpg" ? await renderElementToJpgBlob(newDesignRef.current, 0.95) : await renderElementToPdfBlob(newDesignRef.current, docTitle))
-        : (format === "jpg" ? await renderHtmlStringToJpgBlob(buildHtml()) : await renderHtmlStringToPdfBlob(buildHtml(), docTitle));
-      await downloadBlob(blob, `${docFilename()}.${format}`);
+      if (format === "jpg") {
+        const blobs = activeNewDesign && newDesignRef.current
+          ? await renderElementToJpgBlobs(newDesignRef.current, 0.95)
+          : await renderHtmlStringToJpgBlobs(buildHtml());
+        await downloadBlobs(blobs, `${docFilename()}.jpg`);
+      } else {
+        const blob = activeNewDesign && newDesignRef.current
+          ? await renderElementToPdfBlob(newDesignRef.current, docTitle)
+          : await renderHtmlStringToPdfBlob(buildHtml(), docTitle);
+        await downloadBlob(blob, `${docFilename()}.pdf`);
+      }
       showToast("Downloaded", "success");
     } catch (e: any) {
       showToast(e?.message || "Download failed — please try again", "error");
@@ -322,10 +329,18 @@ ${notes ? `<div style="background:#F5F5F5;border-radius:5px;padding:9px 11px;fon
     setShowFormatPicker("");
     setBusy("share");
     try {
-      const blob = activeNewDesign && newDesignRef.current
-        ? (format === "jpg" ? await renderElementToJpgBlob(newDesignRef.current, 0.95) : await renderElementToPdfBlob(newDesignRef.current, docTitle))
-        : (format === "jpg" ? await renderHtmlStringToJpgBlob(buildHtml()) : await renderHtmlStringToPdfBlob(buildHtml(), docTitle));
-      await shareBlob(blob, `${docFilename()}.${format}`, docTitle);
+      if (format === "jpg") {
+        const blobs = activeNewDesign && newDesignRef.current
+          ? await renderElementToJpgBlobs(newDesignRef.current, 0.95)
+          : await renderHtmlStringToJpgBlobs(buildHtml());
+        const { note } = await shareBlobs(blobs, `${docFilename()}.jpg`, docTitle);
+        if (note) showToast(note, "info");
+      } else {
+        const blob = activeNewDesign && newDesignRef.current
+          ? await renderElementToPdfBlob(newDesignRef.current, docTitle)
+          : await renderHtmlStringToPdfBlob(buildHtml(), docTitle);
+        await shareBlob(blob, `${docFilename()}.pdf`, docTitle);
+      }
     } catch (e: any) {
       showToast(e?.message || "Share failed — please try again", "error");
     } finally {
