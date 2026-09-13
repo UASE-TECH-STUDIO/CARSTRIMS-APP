@@ -8,6 +8,7 @@ import FollowButton from "@/components/ui/FollowButton";
 import { useMessagesStore } from "@/store/messagesStore";
 import { useToast } from "@/store/toastStore";
 import CarCard from "@/components/shared/CarCard";
+import { toWhatsAppLink } from "@/lib/phoneFormat";
 
 const STATUS_C: Record<string,string> = {
   available:"#16A34A", sold:"#888", reserved:"#D97706", on_promotion:"#7C3AED"
@@ -255,8 +256,8 @@ export default function DealerProfileClient() {
                   Call
                 </a>
               )}
-              {dealer.whatsapp && (
-                <a href={`https://wa.me/${dealer.whatsapp.replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer"
+              {toWhatsAppLink(dealer.whatsapp) && (
+                <a href={toWhatsAppLink(dealer.whatsapp)!} target="_blank" rel="noreferrer"
                   style={{background:"#F0FDF4",border:"1px solid #86EFAC",color:"#15803D",borderRadius:"8px",padding:"0.4rem 0.75rem",fontSize:"0.78rem",textDecoration:"none",fontWeight:600,whiteSpace:"nowrap"}}>
                   WhatsApp
                 </a>
