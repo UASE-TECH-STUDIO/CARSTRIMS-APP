@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuthStore, getRoleRedirect } from "@/store/authStore";
 import { useMessagesStore } from "@/store/messagesStore";
 import { useToast } from "@/store/toastStore";
+import { toWhatsAppLink } from "@/lib/phoneFormat";
 
 export default function UserProfileClient() {
   const showToast = useToast();
@@ -142,7 +143,7 @@ export default function UserProfileClient() {
             <div style={{fontSize:"0.68rem",fontWeight:800,letterSpacing:"0.18em",textTransform:"uppercase" as const,color:"#A3A3A3",padding:"0.875rem 1.25rem",borderBottom:"1px solid #E5E5E5",background:"#FAFAFA"}}>Contact</div>
             <div style={{display:"flex",flexDirection:"column",gap:"0.5rem",padding:"1.25rem"}}>
               {profile.phone&&<a href={`tel:${profile.phone}`} style={{textDecoration:"none",padding:"0.875rem 1rem",borderRadius:"10px",fontSize:"0.95rem",display:"flex",alignItems:"center",gap:"0.625rem",background:"#EFF6FF",color:"#3B8BD4",border:"1.5px solid rgba(59,139,212,0.25)",fontWeight:600}}>Call: {profile.phone}</a>}
-              {profile.whatsapp&&<a href={`https://wa.me/${profile.whatsapp}`} target="_blank" rel="noreferrer" style={{textDecoration:"none",padding:"0.875rem 1rem",borderRadius:"10px",fontSize:"0.95rem",display:"flex",alignItems:"center",gap:"0.625rem",background:"#F0FDF4",color:"#16A34A",border:"1.5px solid rgba(22,163,74,0.25)",fontWeight:600}}>WhatsApp</a>}
+              {toWhatsAppLink(profile.whatsapp)&&<a href={toWhatsAppLink(profile.whatsapp)!} target="_blank" rel="noreferrer" style={{textDecoration:"none",padding:"0.875rem 1rem",borderRadius:"10px",fontSize:"0.95rem",display:"flex",alignItems:"center",gap:"0.625rem",background:"#F0FDF4",color:"#16A34A",border:"1.5px solid rgba(22,163,74,0.25)",fontWeight:600}}>WhatsApp</a>}
               {profile.email&&<a href={`mailto:${profile.email}`} style={{textDecoration:"none",padding:"0.875rem 1rem",borderRadius:"10px",fontSize:"0.95rem",display:"flex",alignItems:"center",gap:"0.625rem",background:"#FFF7ED",color:"#F47B20",border:"1.5px solid rgba(244,123,32,0.25)",fontWeight:600}}>Email: {profile.email}</a>}
             </div>
           </div>
