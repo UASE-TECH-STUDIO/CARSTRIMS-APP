@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
-import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob } from "@/lib/documentExport";
+import { rowsToExcelBlob, downloadHtmlDocument, downloadBlob } from "@/lib/documentExport";
 import { useToast } from "@/store/toastStore";
 import { useConfirm } from "@/store/confirmStore";
 import CustomSelect from "@/components/ui/CustomSelect";
@@ -150,8 +150,7 @@ export default function UserAppointmentsPage() {
         await downloadBlob(blob, `${filename}.xlsx`);
       } else {
         const html = buildAptHtml();
-        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "My Appointments");
-        await downloadBlob(blob, `${filename}.${format}`);
+        await downloadHtmlDocument(html, filename, format);
       }
       showToast("Downloaded", "success");
     } catch (e: any) {
