@@ -8,6 +8,7 @@ import CustomSelect from "@/components/ui/CustomSelect";
 import { parseServerDate } from "@/lib/timeUtils";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import PullToRefreshIndicator from "@/components/shared/PullToRefreshIndicator";
+import { toWhatsAppLink } from "@/lib/phoneFormat";
 
 const APT_TYPES = ["showroom_visit","test_drive","inspection","payment_meeting"];
 const STATUS_COLORS: Record<string,string> = {
@@ -205,7 +206,7 @@ export default function UserAppointmentsPage() {
                 {a.notes && <div className="apt-notes">{a.notes}</div>}
                 <div className="apt-contacts">
                   {a.dealerPhone && <a href={`tel:${a.dealerPhone}`} className="cta" onClick={(e)=>e.stopPropagation()}> Call</a>}
-                  {a.dealerWhatsapp && <a href={`https://wa.me/${a.dealerWhatsapp}`} target="_blank" rel="noreferrer" className="cta" onClick={(e)=>e.stopPropagation()}> WhatsApp</a>}
+                  {toWhatsAppLink(a.dealerWhatsapp) && <a href={toWhatsAppLink(a.dealerWhatsapp)!} target="_blank" rel="noreferrer" className="cta" onClick={(e)=>e.stopPropagation()}> WhatsApp</a>}
                 </div>
               </div>
               <div className="apt-status" style={{color:STATUS_COLORS[a.status]||"#888",borderColor:(STATUS_COLORS[a.status]||"#888")+"44",background:(STATUS_COLORS[a.status]||"#888")+"11"}}>
@@ -311,7 +312,7 @@ export default function UserAppointmentsPage() {
               )}
               <div className="dealer-contacts">
                 {showDetail.dealerPhone && <a href={`tel:${showDetail.dealerPhone}`} className="contact-btn"> {showDetail.dealerPhone}</a>}
-                {showDetail.dealerWhatsapp && <a href={`https://wa.me/${showDetail.dealerWhatsapp}`} target="_blank" rel="noreferrer" className="contact-btn"> WhatsApp</a>}
+                {toWhatsAppLink(showDetail.dealerWhatsapp) && <a href={toWhatsAppLink(showDetail.dealerWhatsapp)!} target="_blank" rel="noreferrer" className="contact-btn"> WhatsApp</a>}
               </div>
               <div className="modal-footer">
                 {showDetail.status === "pending" && (

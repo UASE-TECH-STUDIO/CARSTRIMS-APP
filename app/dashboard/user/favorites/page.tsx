@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
+import { toWhatsAppNumber } from "@/lib/phoneFormat";
 
 export default function UserFavoritesPage() {
   const router = useRouter();
@@ -102,8 +103,8 @@ export default function UserFavoritesPage() {
               </div>
               <div className="fav-actions">
                 <button className="fav-btn view" onClick={()=>router.push(`/cars/${car.carId}`)}>View Vehicle</button>
-                {car.dealerWhatsapp&&(
-                  <a href={`https://wa.me/${car.dealerWhatsapp}?text=Hi, interested in ${car.brand} ${car.model} ${car.year}`} target="_blank" rel="noreferrer" className="fav-btn wa">WhatsApp</a>
+                {toWhatsAppNumber(car.dealerWhatsapp)&&(
+                  <a href={`https://wa.me/${toWhatsAppNumber(car.dealerWhatsapp)}?text=Hi, interested in ${car.brand} ${car.model} ${car.year}`} target="_blank" rel="noreferrer" className="fav-btn wa">WhatsApp</a>
                 )}
                 <button className="fav-btn remove" disabled={removing===car.carId} onClick={()=>remove(car.carId,`${car.brand} ${car.model}`)}>
                   {removing===car.carId?"...":"Remove"}
