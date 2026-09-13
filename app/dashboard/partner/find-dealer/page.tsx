@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
+import { toWhatsAppLink } from "@/lib/phoneFormat";
 
 export default function FindDealerPage() {
   const router = useRouter();
@@ -123,7 +124,7 @@ export default function FindDealerPage() {
                   <div className="dealer-id">{d.dealerId}</div>
                   <div className="dealer-contacts">
                     {d.phone && <a href={`tel:${d.phone}`} className="cpi" onClick={(e) => e.stopPropagation()}></a>}
-                    {d.whatsapp && <a href={`https://wa.me/${d.whatsapp}`} target="_blank" rel="noreferrer" className="cpi" onClick={(e) => e.stopPropagation()}></a>}
+                    {toWhatsAppLink(d.whatsapp) && <a href={toWhatsAppLink(d.whatsapp)!} target="_blank" rel="noreferrer" className="cpi" onClick={(e) => e.stopPropagation()}></a>}
                     {d.email && <a href={`mailto:${d.email}`} className="cpi" onClick={(e) => e.stopPropagation()}></a>}
                   </div>
                   <button className="profile-btn" onClick={() => openDealerProfile(d)}>View Profile</button>
@@ -176,7 +177,7 @@ export default function FindDealerPage() {
 
               <div className="profile-contacts">
                 {selectedDealer.phone && <a href={`tel:${selectedDealer.phone}`} className="contact-btn"> {selectedDealer.phone}</a>}
-                {selectedDealer.whatsapp && <a href={`https://wa.me/${selectedDealer.whatsapp}`} target="_blank" rel="noreferrer" className="contact-btn"> WhatsApp</a>}
+                {toWhatsAppLink(selectedDealer.whatsapp) && <a href={toWhatsAppLink(selectedDealer.whatsapp)!} target="_blank" rel="noreferrer" className="contact-btn"> WhatsApp</a>}
                 {selectedDealer.email && <a href={`mailto:${selectedDealer.email}`} className="contact-btn"> {selectedDealer.email}</a>}
                 {selectedDealer.city && <div className="contact-btn"> {selectedDealer.city}, {selectedDealer.state}</div>}
               </div>

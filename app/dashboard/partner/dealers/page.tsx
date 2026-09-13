@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import Link from "next/link";
 import { parseServerDate } from "@/lib/timeUtils";
+import { toWhatsAppLink } from "@/lib/phoneFormat";
 
 export default function PartnerDealersPage() {
   const [links, setLinks] = useState<any[]>([]);
@@ -63,7 +64,7 @@ export default function PartnerDealersPage() {
                   </div>
                   <div className="dealer-contacts">
                     {link.dealerPhone && <a href={`tel:${link.dealerPhone}`} className="cta-pill"> Call</a>}
-                    {link.dealerWhatsapp && <a href={`https://wa.me/${link.dealerWhatsapp}`} target="_blank" rel="noreferrer" className="cta-pill"> WhatsApp</a>}
+                    {toWhatsAppLink(link.dealerWhatsapp) && <a href={toWhatsAppLink(link.dealerWhatsapp)!} target="_blank" rel="noreferrer" className="cta-pill"> WhatsApp</a>}
                     {link.dealerEmail && <a href={`mailto:${link.dealerEmail}`} className="cta-pill"> Email</a>}
                   </div>
                 </div>
