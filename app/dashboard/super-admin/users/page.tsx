@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import { useToast } from "@/store/toastStore";
 import { parseServerDate } from "@/lib/timeUtils";
+import { toWhatsAppLink } from "@/lib/phoneFormat";
 
 const ROLES = ["all","DEALER_ADMIN","DEALER_STAFF","PARTNER_USER","PUBLIC_USER","SYSTEM_ADMIN"];
 const ROLE_COLORS: Record<string,string> = {
@@ -228,7 +229,7 @@ export default function AdminUsersPage() {
                     <div style={{display:"flex",gap:"0.3rem",marginBottom:"0.2rem"}}>
                       {u.phone&&<a href={`tel:${u.phone}`} style={{fontSize:"0.9rem",textDecoration:"none"}}></a>}
                       {u.email&&<a href={`mailto:${u.email}`} style={{fontSize:"0.9rem",textDecoration:"none"}}></a>}
-                      {(u.whatsapp||u.phone)&&<a href={`https://wa.me/${(u.whatsapp||u.phone).replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer" style={{fontSize:"0.9rem",textDecoration:"none"}}></a>}
+                      {toWhatsAppLink(u.whatsapp||u.phone) && <a href={toWhatsAppLink(u.whatsapp||u.phone)!} target="_blank" rel="noreferrer" style={{fontSize:"0.9rem",textDecoration:"none"}}></a>}
                     </div>
                     <div style={{fontSize:"0.75rem",color:"#737373"}}>{u.phone||"-"}</div>
                   </td>

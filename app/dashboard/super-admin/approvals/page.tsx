@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import api from "@/lib/api";
 import { useConfirm } from "@/store/confirmStore";
 import { parseServerDate } from "@/lib/timeUtils";
+import { toWhatsAppLink } from "@/lib/phoneFormat";
 
 function PreviewModal({ src, type, onClose }: { src:string; type:"image"|"pdf"; onClose:()=>void }) {
   return (
@@ -310,7 +311,7 @@ export default function ApprovalsPage() {
                       {/* Contact */}
                       <div style={{display:"flex",gap:"0.75rem",flexWrap:"wrap"}}>
                         {d.phone&&<a href={`tel:${d.phone}`} style={{background:"#F5F5F5",border:"1px solid #E5E5E5",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#1A1A1A",textDecoration:"none"}}> Call</a>}
-                        {(d.whatsapp||d.phone)&&<a href={`https://wa.me/${(d.whatsapp||d.phone).replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer" style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#15803D",textDecoration:"none"}}> WhatsApp</a>}
+                        {toWhatsAppLink(d.whatsapp||d.phone) && <a href={toWhatsAppLink(d.whatsapp||d.phone)!} target="_blank" rel="noreferrer" style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#15803D",textDecoration:"none"}}> WhatsApp</a>}
                         {d.email&&<a href={`mailto:${d.email}`} style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:"6px",padding:"0.5rem 0.875rem",fontSize:"0.8rem",color:"#1D4ED8",textDecoration:"none"}}> Email</a>}
                       </div>
 
@@ -349,7 +350,7 @@ export default function ApprovalsPage() {
                     <div style={{fontSize:"0.72rem",color:"#A3A3A3"}}>Registered {fmtDate(u.createdAt)}</div>
                   </div>
                   <div style={{display:"flex",gap:"0.5rem",flexShrink:0,flexWrap:"wrap"}}>
-                    {(u.whatsapp||u.phone)&&<a href={`https://wa.me/${(u.whatsapp||u.phone).replace(/[^0-9]/g,"")}`} target="_blank" rel="noreferrer" style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"6px",padding:"0.4rem 0.75rem",fontSize:"0.78rem",color:"#15803D",textDecoration:"none"}}>WhatsApp</a>}
+                    {toWhatsAppLink(u.whatsapp||u.phone) && <a href={toWhatsAppLink(u.whatsapp||u.phone)!} target="_blank" rel="noreferrer" style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"6px",padding:"0.4rem 0.75rem",fontSize:"0.78rem",color:"#15803D",textDecoration:"none"}}>WhatsApp</a>}
                     {u.email&&<a href={`mailto:${u.email}`} style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:"6px",padding:"0.4rem 0.75rem",fontSize:"0.78rem",color:"#1D4ED8",textDecoration:"none"}}>Email</a>}
                     <button onClick={()=>setCancelModal(u)} style={{background:"#FEF2F2",border:"1.5px solid rgba(220,38,38,0.3)",color:"#DC2626",borderRadius:"6px",padding:"0.4rem 0.75rem",fontSize:"0.78rem",cursor:"pointer",fontFamily:"var(--font-body)"}}>Cancel Registration</button>
                   </div>
