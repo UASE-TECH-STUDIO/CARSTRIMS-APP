@@ -4,7 +4,7 @@ import api from "@/lib/api";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { useToast } from "@/store/toastStore";
-import { rowsToExcelBlob, renderHtmlStringToPdfBlob, renderHtmlStringToJpgBlob, downloadBlob, shareBlob } from "@/lib/documentExport";
+import { rowsToExcelBlob, downloadHtmlDocument, shareHtmlDocument, downloadBlob } from "@/lib/documentExport";
 import { parseServerDate } from "@/lib/timeUtils";
 import { toWhatsAppLink } from "@/lib/phoneFormat";
 
@@ -222,8 +222,7 @@ export default function DealerRequestsPage() {
         await downloadBlob(blob, `${filename}.xlsx`);
       } else {
         const html = buildRequestsHtml(cat);
-        const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Customer Requests");
-        await downloadBlob(blob, `${filename}.${format}`);
+        await downloadHtmlDocument(html, filename, format);
       }
       showToast("Downloaded", "success");
     } catch (e: any) {
@@ -239,8 +238,8 @@ export default function DealerRequestsPage() {
     try {
       const filename = `carstrims-requests-${cat}-${Date.now()}`;
       const html = buildRequestsHtml(cat);
-      const blob = format === "jpg" ? await renderHtmlStringToJpgBlob(html) : await renderHtmlStringToPdfBlob(html, "Customer Requests");
-      await shareBlob(blob, `${filename}.${format}`, "Customer Requests");
+      const { note } = await shareHtmlDocument(html, filename, format, "Customer Requests");
+      if (note) showToast(note, "info");
     } catch (e: any) {
       showToast(e?.message || "Share failed", "error");
     } finally {
