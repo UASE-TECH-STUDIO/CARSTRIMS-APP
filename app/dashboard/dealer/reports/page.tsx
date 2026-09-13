@@ -158,8 +158,8 @@ export default function ReportsPage() {
           <td>${fmtN((data.monthlySales||[]).reduce((a:number,m:any)=>a+(m.revenue-m.profit),0))}</td>
           <td>${fmtN((data.monthlySales||[]).reduce((a:number,m:any)=>a+m.profit,0))}</td>
           <td></td>
-          <td>${fmtN((data.monthlySales||[]).reduce((a:number,m:any)=>a+(m.expenses||0),0))}</td>
-          <td>${fmtN((data.monthlySales||[]).reduce((a:number,m:any)=>a+(m.profit-(m.expenses||0)),0))}</td>
+          <td>${fmtN(s?.totalExpenses||0)}</td>
+          <td>${fmtN(netProfit)}</td>
           <td></td>
           <td>${(data.monthlySales||[]).reduce((a:number,m:any)=>a+m.count,0)}</td>
         </tr>
@@ -615,8 +615,8 @@ export default function ReportsPage() {
                   <td style={{padding:"7px 10px",color:"#DC2626"}}>{fmtN((data.monthlySales||[]).reduce((a:number,m:any)=>a+(m.revenue-m.profit),0))}</td>
                   <td style={{padding:"7px 10px",color:"#16A34A"}}>{fmtN((data.monthlySales||[]).reduce((a:number,m:any)=>a+m.profit,0))}</td>
                   <td style={{padding:"7px 10px"}}></td>
-                  <td style={{padding:"7px 10px",color:"#DC2626"}}>{fmtN((data.monthlySales||[]).reduce((a:number,m:any)=>a+(m.expenses||0),0))}</td>
-                  <td style={{padding:"7px 10px",color:"#16A34A"}}>{fmtN((data.monthlySales||[]).reduce((a:number,m:any)=>a+(m.profit-(m.expenses||0)),0))}</td>
+                  <td style={{padding:"7px 10px",color:"#DC2626"}}>{fmtN(s?.totalExpenses||0)}</td>
+                  <td style={{padding:"7px 10px",color:"#16A34A"}}>{fmtN(netProfit)}</td>
                   <td style={{padding:"7px 10px"}}></td>
                   <td style={{padding:"7px 10px"}}>{(data.monthlySales||[]).reduce((a:number,m:any)=>a+m.count,0)}</td>
                 </tr>
