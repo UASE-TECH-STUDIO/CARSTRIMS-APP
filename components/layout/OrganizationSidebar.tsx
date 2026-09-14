@@ -1,0 +1,225 @@
+"use client";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/authStore";
+import { useEffect, useState } from "react";
+import api from "@/lib/api";
+
+// Adapted from DealerSidebar - Partners, Requests, and Appointments
+// are intentionally left out entirely (not hidden, genuinely absent):
+// an Organization account has no public buyers to request from or
+// book appointments with, and no investor/consignment partners to
+// manage, since it never lists anything on the public marketplace.
+const NAV_GROUPS: { label: string; items: { href: string; label: string; icon: string; exact?: boolean }[] }[] = [
+  {
+    label: "Fleet & Records",
+    items: [
+      { href:"/dashboard/organization/cars", label:"Vehicles & Fleet", icon:"" },
+      { href:"/dashboard/organization/expenses", label:"Expenses", icon:"" },
+      { href:"/dashboard/organization/reports", label:"Reports", icon:"" },
+    ],
+  },
+  {
+    label: "Team",
+    items: [
+      { href:"/dashboard/organization/staff", label:"Staff", icon:"" },
+    ],
+  },
+  {
+    label: "Operations",
+    items: [
+      { href:"/dashboard/organization/movements", label:"Movements", icon:"" },
+      { href:"/dashboard/organization/cctv", label:"CCTV", icon:"" },
+    ],
+  },
+  {
+    label: "Account",
+    items: [
+      { href:"/dashboard/organization/notifications", label:"Notifications", icon:"" },
+      { href:"/dashboard/organization/settings", label:"Settings", icon:"" },
+    ],
+  },
+];
+
+interface Props { isOpen?: boolean; onClose?: () => void; }
+
+export default function OrganizationSidebar({ isOpen, onClose }: Props) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { user, logout } = useAuthStore();
+  const [org, setOrg] = useState<any>(null);
+
+  const isActive = (href: string, exact?: boolean) =>
+    exact ? pathname === href : pathname.startsWith(href);
+
+  const initialGroupIndex = NAV_GROUPS.findIndex((g) => g.items.some((i) => isActive(i.href)));
+  const [expandedGroups, setExpandedGroups] = useState<Set<number>>(
+    new Set([initialGroupIndex >= 0 ? initialGroupIndex : 0])
+  );
+  const toggleGroup = (idx: number) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx); else next.add(idx);
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    // Real backend dependency: /api/v1/organizations/me needs to
+    // exist, mirroring /api/v1/dealers/me but scoped to the
+    // organization's own private account.
+    api.get("/api/v1/organizations/me").then((r) => setOrg(r.data)).catch(() => {});
+  }, []);
+
+  const handleNav = () => {
+    if (typeof window !== "undefined" && window.innerWidth <= 768) onClose?.();
+  };
+
+  return (
+    <>
+      <aside className={`dealer-sidebar${isOpen ? " mobile-open" : ""}`}>
+        <div className="sb-brand">
+          <span className="sb-bi"></span>
+          <span className="sb-bn">CARSTRIMS</span>
+          <button className="sb-x" onClick={onClose} aria-label="Close menu">×</button>
+        </div>
+
+        <Link href="/dashboard/organization/settings" className="sb-profile" onClick={handleNav}>
+          <div className="sb-av">
+            {org?.logo
+              ? <img src={org.logo} alt=""/>
+              : <span>{(org?.companyName||user?.fullName||"O").charAt(0).toUpperCase()}</span>
+            }
+          </div>
+          <div className="sb-info">
+            <div className="sb-name">{org?.companyName||user?.fullName||"Organization"}</div>
+            {org?.organizationId && <div className="sb-id">{org.organizationId}</div>}
+          </div>
+          <span className="sb-edit"></span>
+        </Link>
+
+        <nav className="sb-nav">
+          <Link
+            href="/dashboard/organization"
+            className={`sb-item${isActive("/dashboard/organization", true) ? " active" : ""}`}
+            onClick={handleNav}
+          >
+            <span className="sb-icon"></span>
+            <span>Overview</span>
+          </Link>
+
+          {NAV_GROUPS.map((group, idx) => {
+            const expanded = expandedGroups.has(idx);
+            const groupHasActive = group.items.some((i) => isActive(i.href));
+            return (
+              <div key={group.label} className="sb-group">
+                <button
+                  type="button"
+                  className={`sb-group-header${groupHasActive ? " has-active" : ""}`}
+                  onClick={() => toggleGroup(idx)}
+                >
+                  <span>{group.label}</span>
+                  <span className={`sb-chevron${expanded ? " open" : ""}`}>&rsaquo;</span>
+                </button>
+                {expanded && group.items.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`sb-item sb-sub${isActive(item.href) ? " active" : ""}`}
+                    onClick={handleNav}
+                  >
+                    <span className="sb-icon">{item.icon}</span>
+                    <span>{item.label}</span>
+                  </Link>
+                ))}
+              </div>
+            );
+          })}
+        </nav>
+
+        <div className="sb-bot">
+          <div className="sb-dev">Powered by <strong>UASE TECH STUDIO</strong></div>
+          <button className="sb-out" onClick={() => { logout(); router.push("/login"); }}>
+             Sign Out
+          </button>
+        </div>
+      </aside>
+
+      <style>{`
+        .dealer-sidebar{
+          width:240px;height:100vh;height:100dvh;background:#fff;border-right:1.5px solid #E5E5E5;
+          display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:60;
+          padding-top:var(--sat, 0px);padding-left:env(safe-area-inset-left,0px);
+          padding-bottom:env(safe-area-inset-bottom,0px);
+          overflow-y:auto;transition:transform 0.25s ease;
+        }
+        .sb-brand{
+          display:flex;align-items:center;gap:0.6rem;padding:0 1rem;
+          background:#1A1A1A;border-bottom:1px solid rgba(255,255,255,0.08);
+          flex-shrink:0;height:64px;
+        }
+        .sb-bi{font-size:1.1rem;color:#F47B20}
+        .sb-bn{font-family:var(--font-display);font-size:1rem;letter-spacing:0.2em;color:#fff;flex:1}
+        .sb-x{display:none;background:none;border:none;color:#aaa;font-size:1rem;cursor:pointer;padding:0.25rem;flex-shrink:0}
+        .sb-x:hover{color:#fff}
+        .sb-profile{
+          display:flex;align-items:center;gap:0.75rem;padding:0.875rem 1rem;
+          border-bottom:1px solid #E5E5E5;background:#FFF7ED;
+          text-decoration:none;transition:background 0.15s;flex-shrink:0;
+        }
+        .sb-profile:hover{background:#FFEDD5}
+        .sb-av{
+          width:36px;height:36px;border-radius:8px;background:#F47B20;color:#fff;
+          font-family:var(--font-display);font-size:1rem;display:flex;align-items:center;
+          justify-content:center;flex-shrink:0;overflow:hidden;
+          border:2px solid rgba(244,123,32,0.4);
+        }
+        .sb-av img{width:100%;height:100%;object-fit:cover}
+        .sb-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:0.06rem}
+        .sb-name{font-size:0.8rem;font-weight:600;color:#1A1A1A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .sb-id{font-size:0.6rem;color:#A3A3A3;font-family:monospace}
+        .sb-edit{font-size:0.75rem;color:#A3A3A3;flex-shrink:0}
+        .sb-nav{display:flex;flex-direction:column;flex:1;padding:0.5rem 0;overflow-y:auto}
+        .sb-item{
+          display:flex;align-items:center;gap:0.75rem;padding:0.625rem 1rem;
+          text-decoration:none;color:#525252;font-size:0.82rem;
+          transition:all 0.15s;border-left:3px solid transparent;white-space:nowrap;
+        }
+        .sb-item:hover{color:#F47B20;background:#FFF7ED}
+        .sb-item.active{color:#F47B20;background:rgba(244,123,32,0.06);border-left-color:#F47B20;font-weight:600}
+        .sb-icon{font-size:0.9rem;width:16px;text-align:center;flex-shrink:0}
+        .sb-group{display:flex;flex-direction:column}
+        .sb-group-header{
+          display:flex;align-items:center;justify-content:space-between;gap:0.5rem;
+          padding:0.55rem 1rem;background:none;border:none;cursor:pointer;
+          font-family:var(--font-body);font-size:0.7rem;font-weight:700;
+          letter-spacing:0.08em;text-transform:uppercase;color:#A3A3A3;
+          transition:color 0.15s;width:100%;text-align:left;
+        }
+        .sb-group-header:hover{color:#F47B20}
+        .sb-group-header.has-active{color:#F47B20}
+        .sb-chevron{font-size:1rem;transition:transform 0.2s;flex-shrink:0}
+        .sb-chevron.open{transform:rotate(90deg)}
+        .sb-sub{padding-left:1.5rem;font-size:0.8rem}
+        .sb-bot{padding:0.875rem 1rem;border-top:1px solid #E5E5E5;flex-shrink:0}
+        .sb-dev{font-size:0.6rem;color:#C0C0C0;text-align:center;margin-bottom:0.5rem}
+        .sb-dev strong{color:#F47B20}
+        .sb-out{
+          display:flex;align-items:center;gap:0.5rem;width:100%;
+          padding:0.55rem 0;background:none;border:none;color:#A3A3A3;
+          font-size:0.82rem;font-family:var(--font-body);cursor:pointer;transition:color 0.2s;
+        }
+        .sb-out:hover{color:#DC2626}
+
+        @media(max-width:768px){
+          .dealer-sidebar{transform:translateX(-100%)}
+          .dealer-sidebar.mobile-open{transform:translateX(0);box-shadow:8px 0 32px rgba(0,0,0,0.2)}
+          .sb-x{display:block}
+        }
+        @media(min-width:769px){
+          .dealer-sidebar{transform:translateX(0)!important}
+        }
+      `}</style>
+    </>
+  );
+}
