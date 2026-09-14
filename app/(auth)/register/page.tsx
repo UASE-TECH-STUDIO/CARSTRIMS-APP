@@ -9,6 +9,7 @@ import { useToast } from "@/store/toastStore";
 
 const ROLES = [
   { value:"DEALER_ADMIN", label:"Dealership", icon:"", desc:"Manage inventory, staff and sales from your own dealership" },
+  { value:"ORGANIZATION_ADMIN", label:"Organization", icon:"", desc:"Manage your company's own vehicle fleet privately  not for sale on the marketplace" },
   { value:"PARTNER_USER", label:"Partner / Consignor", icon:"", desc:"Monitor your vehicles assigned across multiple dealers" },
   { value:"PUBLIC_USER", label:"Buyer", icon:"", desc:"Browse, save and request vehicles from verified dealers" },
 ];
@@ -37,7 +38,7 @@ export default function RegisterPage() {
       const loginRes = await api.post("/api/v1/auth/login", { emailOrPhone: form.email, password: form.password });
       const d = loginRes.data;
       setUser({ userId:d.userId, fullName:d.fullName, email:d.email, role:d.role, dealerId:d.dealerId, accessToken:d.accessToken, refreshToken:d.refreshToken });
-      if (role === "DEALER_ADMIN") { router.push("/dashboard/dealer/setup"); }
+      if (role === "DEALER_ADMIN" || role === "ORGANIZATION_ADMIN") { router.push("/dashboard/dealer/setup"); }
       else { router.push(getRoleRedirect(d.role, d.dealerId)); }
     } catch (err: any) {
       const msg = err.response?.data?.detail || "";
@@ -153,6 +154,9 @@ export default function RegisterPage() {
 
               {role==="DEALER_ADMIN" && (
                 <div className="rg-notice"><strong>Dealership Account:</strong> After registering you will complete your dealership setup. Listings are hidden until a CARSTRIMS admin approves your account.</div>
+              )}
+              {role==="ORGANIZATION_ADMIN" && (
+                <div className="rg-notice"><strong>Organization Account:</strong> After registering you will complete your organization setup. This is a private account for managing your own vehicle fleet  your vehicles are never listed on the public marketplace.</div>
               )}
               <div className="rg-actions">
                 <button type="button" className="rg-back" onClick={()=>setStep(1)}> Back</button>

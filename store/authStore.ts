@@ -34,6 +34,7 @@ export function getRoleRedirect(role: string, dealerId?: string | null): string 
   switch (role) {
     case "SYSTEM_ADMIN":  return "/dashboard/super-admin";
     case "DEALER_ADMIN":  return "/dashboard/dealer";
+    case "ORGANIZATION_ADMIN": return "/dashboard/dealer";
     case "DEALER_STAFF":  return "/dashboard/staff";
     case "PARTNER_USER":  return "/dashboard/partner";
     default:              return "/dashboard/user";
