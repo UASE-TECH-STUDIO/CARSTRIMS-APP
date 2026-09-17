@@ -1,0 +1,419 @@
+"use client";
+import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import api from "@/lib/api";
+import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
+import CustomSelect from "@/components/ui/CustomSelect";
+import { useToast } from "@/store/toastStore";
+
+const STEPS = [
+  { num:1, label:"Company Info" },
+  { num:2, label:"First Vehicle" },
+  { num:3, label:"First Staff" },
+  { num:4, label:"CCTV" },
+];
+
+const STATES = ["Abia","Adamawa","Akwa Ibom","Anambra","Bauchi","Bayelsa","Benue","Borno","Cross River","Delta","Ebonyi","Edo","Ekiti","Enugu","FCT","Gombe","Imo","Jigawa","Kaduna","Kano","Katsina","Kebbi","Kogi","Kwara","Lagos","Nasarawa","Niger","Ogun","Ondo","Osun","Oyo","Plateau","Rivers","Sokoto","Taraba","Yobe","Zamfara"];
+const PERMISSIONS = ["view_inventory","add_cars","edit_cars","view_sales","record_sales","view_staff","view_partners","view_cctv","view_movements","view_reports"];
+
+//  Temp upload  no dealer profile needed 
+async function tempUploadImage(file: File, folder: string): Promise<string> {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("folder", folder);
+  const res = await api.post("/api/v1/upload/temp/image", fd, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data.url || "";
+}
+
+async function tempUploadDocument(file: File, folder: string): Promise<string> {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("folder", folder);
+  const res = await api.post("/api/v1/upload/temp/document", fd, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data.url || "";
+}
+
+//  Preview modal 
+function PreviewModal({ src, type, onClose }: { src: string; type: "image"|"video"|"pdf"; onClose: () => void }) {
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#1A1A1A",borderRadius:"12px",overflow:"hidden",maxWidth:"90vw",maxHeight:"90vh",position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+        <button onClick={onClose} style={{position:"absolute",top:"0.5rem",right:"0.5rem",background:"rgba(255,255,255,0.15)",border:"none",borderRadius:"50%",width:"32px",height:"32px",color:"#fff",fontSize:"1rem",cursor:"pointer",zIndex:10}}>×</button>
+        {type==="image" && <img src={src} alt="" style={{maxWidth:"85vw",maxHeight:"85vh",objectFit:"contain",display:"block"}} />}
+        {type==="video" && <video src={src} controls autoPlay style={{maxWidth:"85vw",maxHeight:"85vh"}} />}
+        {type==="pdf" && <iframe src={src} style={{width:"80vw",height:"85vh",border:"none"}} />}
+      </div>
+    </div>
+  );
+}
+
+export default function OrganizationSetupPage() {
+  const router = useRouter();
+  const [checking, setChecking] = useState(true);
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const showToast = useToast();
+  const showErr = (msg: string) => { setError(msg); if (msg) showToast(msg, "error"); };
+  const [uploadingLabel, setUploadingLabel] = useState("");
+  const [preview, setPreview] = useState<{src:string;type:"image"|"video"|"pdf"}|null>(null);
+
+  // Step 1
+  const [logoUrl, setLogoUrl] = useState("");
+  const [passportUrl, setPassportUrl] = useState("");
+  const [company, setCompany] = useState({ companyName:"", phone:"", whatsapp:"", address:"", city:"", state:"", country:"Nigeria", description:"" });
+
+  // Step 2 (First Vehicle)
+  const [car, setCar] = useState({ brand:"Toyota", model:"", year:new Date().getFullYear(), color:"", mileage:"", transmission:"automatic", fuelType:"petrol", condition:"foreign used", description:"", state:"", city:"", purchasePrice:"", sellingPrice:"" });
+
+  // Step 3
+  const [staff, setStaff] = useState({ fullName:"", username:"", email:"", phone:"", position:"Sales Manager", password:"Staff@1234", permissions:["view_inventory","view_sales","add_cars"] });
+
+  // Step 4
+  const [cctv, setCctv] = useState({ cameraName:"", cameraLocation:"", streamUrl:"", streamType:"rtsp" });
+
+  const logoRef = useRef<HTMLInputElement>(null);
+  const passportRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Real backend dependency: /api/v1/organizations/me needs to
+    // exist, mirroring /api/v1/dealers/me but scoped to the
+    // organization's own private account.
+    api.get("/api/v1/organizations/me")
+      .then(() => router.replace("/dashboard/organization"))
+      .catch(() => setChecking(false));
+  }, [router]);
+
+  const doUpload = async (file: File, setter: (u:string)=>void, label: string, isDoc=false, folder="") => {
+    setUploadingLabel(label); setError("");
+    try {
+      let url = "";
+      if (isDoc) {
+        url = await tempUploadDocument(file, folder || "documents");
+      } else {
+        url = await tempUploadImage(file, folder || "logos");
+      }
+      if (url) setter(url);
+      else showErr(`${label}: upload succeeded but no URL returned`);
+    } catch(e:any) {
+      showErr(`${label} upload failed: ${e.response?.data?.detail || e.message}`);
+    } finally { setUploadingLabel(""); }
+  };
+
+  const handleStep1 = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!company.companyName.trim()) { showErr("Company name is required"); return; }
+    if (!company.phone.trim()) { showErr("Phone number is required"); return; }
+    if (!company.state) { showErr("Please select your state"); return; }
+    // Logo optional  can be uploaded later from Settings
+    // Passport optional  can be uploaded later from Settings
+    setLoading(true); setError("");
+    try {
+      // Real backend dependency: /api/v1/organizations/setup needs
+      // to exist, mirroring /api/v1/dealers/setup but creating an
+      // organization record instead of a dealer record.
+      await api.post("/api/v1/organizations/setup", { ...company, logo: logoUrl, passportPhoto: passportUrl });
+      setStep(2);
+    } catch(err:any) {
+      const detail = err.response?.data?.detail || "";
+      if (detail.includes("already exists")) { setStep(2); }
+      else { showErr(detail || "Failed to save company info. Please try again."); }
+    } finally { setLoading(false); }
+  };
+
+  const handleStep2 = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!car.model.trim()) { showErr("Vehicle model is required"); return; }
+    if (!car.sellingPrice) { showErr("Selling price is required"); return; }
+    setLoading(true); setError("");
+    try {
+      await api.post("/api/v1/cars/", { ...car, year:Number(car.year), mileage:car.mileage?Number(car.mileage):0, purchasePrice:car.purchasePrice?Number(car.purchasePrice):0, sellingPrice:Number(car.sellingPrice) });
+      setStep(3);
+    } catch(err:any) { showErr(err.response?.data?.detail || "Failed to add car."); }
+    finally { setLoading(false); }
+  };
+
+  const handleStep3 = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!staff.fullName.trim() || !staff.email.trim()) { showErr("Full name and email are required"); return; }
+    setLoading(true); setError("");
+    try {
+      await api.post("/api/v1/staff/", staff);
+      setStep(4);
+    } catch(err:any) { showErr(err.response?.data?.detail || "Failed to create staff."); }
+    finally { setLoading(false); }
+  };
+
+  const handleStep4 = async (skip?: boolean) => {
+    if (!skip && cctv.cameraName && cctv.streamUrl) {
+      setLoading(true);
+      try { await api.post("/api/v1/cctv/", cctv); } catch {}
+      finally { setLoading(false); }
+    }
+    router.push("/dashboard/organization");
+  };
+
+  const fi: React.CSSProperties = { width:"100%", background:"#F5F5F5", border:"1.5px solid #E5E5E5", borderRadius:"8px", padding:"0.75rem 1rem", color:"#1A1A1A", fontSize:"0.875rem", fontFamily:"var(--font-body)", outline:"none", boxSizing:"border-box" as const };
+  const lbl: React.CSSProperties = { fontSize:"0.68rem", fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase" as const, color:"#525252", display:"block", marginBottom:"0.35rem" };
+  const row: React.CSSProperties = { display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem" };
+
+  // Upload box with preview
+  const UploadBox = ({
+    label, url, inputRef, onFile, accept="image/*", note="", previewType="image" as "image"|"video"|"pdf"
+  }: {
+    label:string; url:string; inputRef:React.RefObject<HTMLInputElement>;
+    onFile:(f:File)=>void; accept?:string; note?:string; previewType?:"image"|"video"|"pdf";
+  }) => (
+    <div style={{border:`1.5px dashed ${url?"#16A34A":uploadingLabel===label?"#F47B20":"#D4D4D4"}`,borderRadius:"10px",padding:"1rem",background:url?"#F0FDF4":uploadingLabel===label?"#FFF7ED":"#FAFAFA",display:"flex",flexDirection:"column",alignItems:"center",gap:"0.5rem",textAlign:"center",minHeight:"100px",justifyContent:"center"}}>
+      {uploadingLabel===label ? (
+        <>
+          <div style={{width:"22px",height:"22px",border:"2.5px solid #E5E5E5",borderTopColor:"#F47B20",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+          <div style={{fontSize:"0.75rem",color:"#F47B20",fontWeight:600}}>Uploading...</div>
+        </>
+      ) : url ? (
+        <>
+          {(previewType==="image") && (
+            <img src={url} alt="" onClick={()=>setPreview({src:url,type:"image"})}
+              style={{width:"72px",height:"56px",objectFit:"cover",borderRadius:"6px",border:"2px solid #86EFAC",cursor:"zoom-in"}} />
+          )}
+          {previewType==="video" && (
+            <button onClick={()=>setPreview({src:url,type:"video"})} style={{background:"#15803D",color:"#fff",border:"none",borderRadius:"6px",padding:"0.3rem 0.75rem",fontSize:"0.75rem",cursor:"pointer"}}> Preview Video</button>
+          )}
+          {previewType==="pdf" && (
+            <button onClick={()=>setPreview({src:url,type:"pdf"})} style={{background:"#15803D",color:"#fff",border:"none",borderRadius:"6px",padding:"0.3rem 0.75rem",fontSize:"0.75rem",cursor:"pointer"}}> View Document</button>
+          )}
+          <div style={{fontSize:"0.72rem",color:"#15803D",fontWeight:600}}> {label} uploaded</div>
+          <button onClick={()=>inputRef.current?.click()} style={{background:"none",border:"1px solid #86EFAC",color:"#16A34A",borderRadius:"4px",padding:"0.15rem 0.5rem",fontSize:"0.68rem",cursor:"pointer"}}>Change</button>
+        </>
+      ) : (
+        <>
+          <div style={{fontSize:"1.75rem",opacity:0.3}}>{accept.includes("video")?"":accept.includes("pdf")||accept.includes("application")?"":""}</div>
+          <div style={{fontSize:"0.78rem",color:"#525252",fontWeight:600}}>{label}</div>
+          {note && <div style={{fontSize:"0.68rem",color:"#A3A3A3"}}>{note}</div>}
+          <button onClick={()=>inputRef.current?.click()} style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"5px",padding:"0.3rem 0.75rem",fontSize:"0.75rem",cursor:"pointer",marginTop:"0.25rem"}}>Click to upload</button>
+        </>
+      )}
+      <input ref={inputRef} type="file" accept={accept} style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0]; if(f) onFile(f); e.target.value="";}} />
+    </div>
+  );
+
+  if (checking) return (
+    <div style={{minHeight:"100vh",background:"#F5F5F5",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:"1rem"}}>
+      <div style={{fontFamily:"var(--font-display)",fontSize:"1.4rem",letterSpacing:"0.2em",color:"#F47B20"}}>CARSTRIMS</div>
+      <div style={{width:"28px",height:"28px",border:"2.5px solid #E5E5E5",borderTopColor:"#F47B20",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+
+  return (
+    <div style={{minHeight:"100vh",background:"#F5F5F5",fontFamily:"var(--font-body)"}}>
+      {preview && <PreviewModal src={preview.src} type={preview.type} onClose={()=>setPreview(null)} />}
+
+      {/* Header */}
+      <div style={{background:"#fff",borderBottom:"1.5px solid #E5E5E5",padding:"1rem 1.5rem",position:"sticky",top:0,zIndex:50}}>
+        <div style={{maxWidth:"720px",margin:"0 auto"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"0.875rem"}}>
+            <div style={{fontFamily:"var(--font-display)",fontSize:"1.1rem",letterSpacing:"0.2em",color:"#F47B20"}}>CARSTRIMS</div>
+            <div style={{fontSize:"0.75rem",color:"#737373"}}>Organization Setup  Step {step} of {STEPS.length}</div>
+          </div>
+          <div style={{display:"flex",alignItems:"center"}}>
+            {STEPS.map((s,i)=>(
+              <div key={s.num} style={{display:"flex",alignItems:"center",flex:i<STEPS.length-1?1:"auto"}}>
+                <div style={{display:"flex",alignItems:"center",gap:"0.4rem",flexShrink:0}}>
+                  <div style={{width:"26px",height:"26px",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.72rem",fontWeight:700,background:step>s.num?"#16A34A":step===s.num?"#F47B20":"#E5E5E5",color:step>=s.num?"#fff":"#737373",transition:"all 0.25s",flexShrink:0}}>
+                    {step>s.num?"":s.num}
+                  </div>
+                  <span style={{fontSize:"0.65rem",color:step===s.num?"#F47B20":step>s.num?"#16A34A":"#A3A3A3",fontWeight:step===s.num?700:400,whiteSpace:"nowrap"}}>{s.label}</span>
+                </div>
+                {i<STEPS.length-1&&<div style={{flex:1,height:"2px",background:step>s.num?"#16A34A":"#E5E5E5",margin:"0 0.4rem",transition:"background 0.25s"}}/>}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div style={{maxWidth:"720px",margin:"0 auto",padding:"2rem 1.5rem 5rem"}}>
+        {error && (
+          <div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",color:"#DC2626",padding:"0.875rem 1rem",borderRadius:"8px",fontSize:"0.875rem",marginBottom:"1.25rem",display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:"0.75rem",lineHeight:1.5}}>
+            <span>{error}</span>
+            <button onClick={()=>setError("")} style={{background:"none",border:"none",color:"inherit",cursor:"pointer",flexShrink:0}}>×</button>
+          </div>
+        )}
+
+        {/*  STEP 1  */}
+        {step===1&&(
+          <div style={{background:"#fff",borderRadius:"16px",padding:"2rem",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
+            <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.4rem",letterSpacing:"0.04em",color:"#1A1A1A",marginBottom:"0.25rem"}}>Company & Personal Details</h2>
+            <p style={{fontSize:"0.85rem",color:"#737373",marginBottom:"1.5rem",lineHeight:1.6}}>Set up your organization profile. Logo and photo are optional and can be added anytime.</p>
+            <form onSubmit={handleStep1} style={{display:"flex",flexDirection:"column",gap:"1.25rem"}}>
+              <div>
+                <label style={lbl}>Business Logo & Passport Photo *</label>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem"}}>
+                  <UploadBox label="Business Logo" url={logoUrl} inputRef={logoRef}
+                    onFile={f=>doUpload(f,setLogoUrl,"Business Logo",false,"logos")}
+                    note="Optional  can be added from Settings" />
+                  <UploadBox label="Your Passport Photo" url={passportUrl} inputRef={passportRef}
+                    onFile={f=>doUpload(f,setPassportUrl,"Your Passport Photo",false,"passports")}
+                    note="Optional  can be added from Settings" />
+                </div>
+                <p style={{fontSize:"0.72rem",color:"#A3A3A3",marginTop:"0.5rem"}}> Click an uploaded photo to preview it</p>
+              </div>
+              <div style={row}>
+                <div><label style={lbl}>Company / Business Name *</label><input style={fi} placeholder="e.g. Ayo Motors Ltd" value={company.companyName} onChange={e=>setCompany({...company,companyName:e.target.value})} required /></div>
+                <div><label style={lbl}>Business Phone *</label><input style={fi} placeholder="+234..." value={company.phone} onChange={e=>setCompany({...company,phone:e.target.value})} required /></div>
+              </div>
+              <div style={row}>
+                <div><label style={lbl}>WhatsApp</label><input style={fi} placeholder="+234..." value={company.whatsapp} onChange={e=>setCompany({...company,whatsapp:e.target.value})} /></div>
+                <div><label style={lbl}>City *</label><input style={fi} placeholder="e.g. Lagos" value={company.city} onChange={e=>setCompany({...company,city:e.target.value})} required /></div>
+              </div>
+              <div style={row}>
+                <div><label style={lbl}>State *</label>
+                  <CustomSelect value={company.state} onChange={(v)=>setCompany({...company,state:v})} placeholder="Select state..." options={STATES.map((s:string)=>({value:s,label:s}))} />
+                </div>
+                <div><label style={lbl}>Address</label><input style={fi} placeholder="Street address" value={company.address} onChange={e=>setCompany({...company,address:e.target.value})} /></div>
+              </div>
+              <div><label style={lbl}>Description</label><textarea style={{...fi,minHeight:"70px",resize:"vertical" as const}} placeholder="What does your organization use this fleet for?" value={company.description} onChange={e=>setCompany({...company,description:e.target.value})} /></div>
+              <button type="submit" disabled={loading||!!uploadingLabel}
+                style={{background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"1rem",fontFamily:"var(--font-display)",fontSize:"0.95rem",letterSpacing:"0.1em",cursor:loading||uploadingLabel?"not-allowed":"pointer",opacity:loading||uploadingLabel?0.6:1}}>
+                {loading?"Saving...":uploadingLabel?`Uploading ${uploadingLabel}...`:"CONTINUE "}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/*  STEP 2  */}
+        {step===2&&(
+          <div style={{background:"#fff",borderRadius:"16px",padding:"2rem",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
+            <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.4rem",letterSpacing:"0.04em",color:"#1A1A1A",marginBottom:"0.25rem"}}>Add Your First Vehicle</h2>
+            <p style={{fontSize:"0.85rem",color:"#737373",marginBottom:"1.5rem",lineHeight:1.6}}>List your first vehicle. You can add photos and more cars from your dashboard.</p>
+            <form onSubmit={handleStep2} style={{display:"flex",flexDirection:"column",gap:"1.25rem"}}>
+              <div style={row}>
+                <div><label style={lbl}>Brand *</label>
+                  <CustomSelect value={car.brand} onChange={(v)=>setCar({...car,brand:v})} options={["Toyota","Honda","Mercedes","BMW","Lexus","Ford","Hyundai","Kia","Chevrolet","Nissan","Audi","Land Rover","Jeep","Volkswagen","Peugeot","Mitsubishi","Other"].map(b=>({value:b,label:b}))} />
+                </div>
+                <div><label style={lbl}>Model *</label><input style={fi} placeholder="e.g. Camry, Accord..." value={car.model} onChange={e=>setCar({...car,model:e.target.value})} required /></div>
+              </div>
+              <div style={row}>
+                <div><label style={lbl}>Year</label><input type="number" style={fi} value={car.year} onChange={e=>setCar({...car,year:Number(e.target.value)})} /></div>
+                <div><label style={lbl}>Color</label><input style={fi} placeholder="e.g. Black" value={car.color} onChange={e=>setCar({...car,color:e.target.value})} /></div>
+              </div>
+              <div style={row}>
+                <div><label style={lbl}>Selling Price (NGN) *</label><FormattedNumberInput style={fi} placeholder="0" value={car.sellingPrice} onChange={(raw)=>setCar({...car,sellingPrice:raw})} required /></div>
+                <div><label style={lbl}>Purchase Price (NGN)</label><FormattedNumberInput style={fi} placeholder="0" value={car.purchasePrice} onChange={(raw)=>setCar({...car,purchasePrice:raw})} /></div>
+              </div>
+              <div style={row}>
+                <div><label style={lbl}>Condition</label>
+                  <CustomSelect value={car.condition} onChange={(v)=>setCar({...car,condition:v})} options={["brand new","foreign used","locally used","salvage"].map(c=>({value:c,label:c}))} />
+                </div>
+                <div><label style={lbl}>Transmission</label>
+                  <CustomSelect value={car.transmission} onChange={(v)=>setCar({...car,transmission:v})} options={["automatic","manual","semi-automatic"].map(c=>({value:c,label:c}))} />
+                </div>
+              </div>
+              <div style={row}>
+                <div><label style={lbl}>City</label><input style={fi} placeholder="e.g. Lagos" value={car.city} onChange={e=>setCar({...car,city:e.target.value})} /></div>
+                <div><label style={lbl}>State</label>
+                  <CustomSelect value={car.state} onChange={(v)=>setCar({...car,state:v})} placeholder="Select state..." options={STATES.map((s:string)=>({value:s,label:s}))} />
+                </div>
+              </div>
+              <div style={{display:"flex",gap:"0.75rem"}}>
+                <button type="button" onClick={()=>setStep(2)} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.875rem 1.25rem",fontSize:"0.875rem",cursor:"pointer",fontFamily:"var(--font-body)"}}> Back</button>
+                <button type="submit" disabled={loading} style={{flex:1,background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.875rem",fontFamily:"var(--font-display)",fontSize:"0.95rem",letterSpacing:"0.08em",cursor:"pointer",opacity:loading?0.6:1}}>
+                  {loading?"Adding car...":"ADD CAR & CONTINUE "}
+                </button>
+                <button type="button" onClick={()=>setStep(4)} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#737373",borderRadius:"8px",padding:"0.875rem 1rem",fontSize:"0.8rem",cursor:"pointer",fontFamily:"var(--font-body)",whiteSpace:"nowrap"}}>Skip</button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/*  STEP 3  */}
+        {step===3&&(
+          <div style={{background:"#fff",borderRadius:"16px",padding:"2rem",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
+            <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.4rem",letterSpacing:"0.04em",color:"#1A1A1A",marginBottom:"0.25rem"}}>Create First Staff Account</h2>
+            <p style={{fontSize:"0.85rem",color:"#737373",marginBottom:"1.5rem",lineHeight:1.6}}>Add a team member and set their permissions. They can sign in immediately.</p>
+            <form onSubmit={handleStep3} style={{display:"flex",flexDirection:"column",gap:"1.25rem"}}>
+              <div style={row}>
+                <div><label style={lbl}>Full Name *</label><input style={fi} placeholder="John Doe" value={staff.fullName} onChange={e=>setStaff({...staff,fullName:e.target.value})} required /></div>
+                <div><label style={lbl}>Username *</label><input style={fi} placeholder="johndoe" value={staff.username} onChange={e=>setStaff({...staff,username:e.target.value})} required /></div>
+              </div>
+              <div style={row}>
+                <div><label style={lbl}>Email *</label><input type="email" style={fi} placeholder="staff@email.com" value={staff.email} onChange={e=>setStaff({...staff,email:e.target.value})} required /></div>
+                <div><label style={lbl}>Phone</label><input style={fi} placeholder="+234..." value={staff.phone} onChange={e=>setStaff({...staff,phone:e.target.value})} /></div>
+              </div>
+              <div style={row}>
+                <div><label style={lbl}>Position</label><input style={fi} placeholder="Sales Manager" value={staff.position} onChange={e=>setStaff({...staff,position:e.target.value})} /></div>
+                <div><label style={lbl}>Temp Password</label><input style={fi} value={staff.password} onChange={e=>setStaff({...staff,password:e.target.value})} /></div>
+              </div>
+              <div>
+                <label style={lbl}>Permissions</label>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0.5rem",marginTop:"0.35rem"}}>
+                  {PERMISSIONS.map(p=>(
+                    <label key={p} style={{display:"flex",alignItems:"center",gap:"0.5rem",padding:"0.5rem 0.75rem",border:`1.5px solid ${staff.permissions.includes(p)?"#F47B20":"#E5E5E5"}`,borderRadius:"6px",cursor:"pointer",fontSize:"0.78rem",color:staff.permissions.includes(p)?"#C4621A":"#737373",background:staff.permissions.includes(p)?"#FFF7ED":"#F5F5F5",transition:"all 0.15s"}}>
+                      <input type="checkbox" checked={staff.permissions.includes(p)} onChange={()=>setStaff(f=>({...f,permissions:f.permissions.includes(p)?f.permissions.filter(x=>x!==p):[...f.permissions,p]}))} style={{accentColor:"#F47B20"}} />
+                      <span style={{textTransform:"capitalize"}}>{p.replace(/_/g," ")}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div style={{display:"flex",gap:"0.75rem"}}>
+                <button type="button" onClick={()=>setStep(3)} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.875rem 1.25rem",fontSize:"0.875rem",cursor:"pointer",fontFamily:"var(--font-body)"}}> Back</button>
+                <button type="submit" disabled={loading} style={{flex:1,background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.875rem",fontFamily:"var(--font-display)",fontSize:"0.95rem",letterSpacing:"0.08em",cursor:"pointer",opacity:loading?0.6:1}}>
+                  {loading?"Creating...":"CREATE STAFF & CONTINUE "}
+                </button>
+                <button type="button" onClick={()=>setStep(5)} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#737373",borderRadius:"8px",padding:"0.875rem 1rem",fontSize:"0.8rem",cursor:"pointer",fontFamily:"var(--font-body)",whiteSpace:"nowrap"}}>Skip</button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/*  STEP 4  */}
+        {step===4&&(
+          <div style={{background:"#fff",borderRadius:"16px",padding:"2rem",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
+            <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.4rem",letterSpacing:"0.04em",color:"#1A1A1A",marginBottom:"0.25rem"}}>CCTV Setup <span style={{fontSize:"0.85rem",color:"#A3A3A3",fontWeight:400}}>(Optional)</span></h2>
+            <p style={{fontSize:"0.85rem",color:"#737373",marginBottom:"1.5rem",lineHeight:1.6}}>Connect a security camera. You can add more from Settings later.</p>
+            <div style={{display:"flex",flexDirection:"column",gap:"1.25rem"}}>
+              <div style={row}>
+                <div><label style={lbl}>Camera Name</label><input style={fi} placeholder="Main Gate" value={cctv.cameraName} onChange={e=>setCctv({...cctv,cameraName:e.target.value})} /></div>
+                <div><label style={lbl}>Location</label><input style={fi} placeholder="Front Entrance" value={cctv.cameraLocation} onChange={e=>setCctv({...cctv,cameraLocation:e.target.value})} /></div>
+              </div>
+              <div><label style={lbl}>Stream URL</label><input style={fi} placeholder="rtsp://192.168.1.x:554/stream or https://..." value={cctv.streamUrl} onChange={e=>setCctv({...cctv,streamUrl:e.target.value})} /></div>
+              <div><label style={lbl}>Stream Type</label>
+                <CustomSelect value={cctv.streamType} onChange={(v)=>setCctv({...cctv,streamType:v})} options={["rtsp","hls","ip"].map(t=>({value:t,label:t.toUpperCase()}))} />
+              </div>
+              <div style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"10px",padding:"1.25rem"}}>
+                <div style={{fontFamily:"var(--font-display)",fontSize:"0.75rem",letterSpacing:"0.1em",color:"#15803D",marginBottom:"0.75rem"}}>SETUP COMPLETE  SUMMARY</div>
+                {[
+                  {label:"Company profile saved",done:true},
+                  {label:"Business logo uploaded",done:!!logoUrl},
+                  {label:"First car listed",done:!!car.model},
+                  {label:"First staff created",done:!!staff.email},
+                ].map(item=>(
+                  <div key={item.label} style={{display:"flex",alignItems:"center",gap:"0.5rem",marginBottom:"0.4rem",fontSize:"0.825rem",color:item.done?"#15803D":"#A3A3A3"}}>
+                    <span>{item.done?"":""}</span><span>{item.label}</span>
+                  </div>
+                ))}
+                <div style={{marginTop:"0.75rem",paddingTop:"0.75rem",borderTop:"1px solid rgba(22,163,74,0.2)",fontSize:"0.78rem",color:"#15803D",lineHeight:1.6}}>
+                  You will have immediate dashboard access. This is a private account  your vehicles are never listed on the public marketplace.
+                </div>
+              </div>
+              <div style={{display:"flex",gap:"0.75rem"}}>
+                <button onClick={()=>setStep(4)} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#525252",borderRadius:"8px",padding:"0.875rem 1.25rem",fontSize:"0.875rem",cursor:"pointer",fontFamily:"var(--font-body)"}}> Back</button>
+                <button onClick={()=>handleStep4()} disabled={loading}
+                  style={{flex:1,background:"#F47B20",color:"#fff",border:"none",borderRadius:"8px",padding:"0.875rem",fontFamily:"var(--font-display)",fontSize:"0.95rem",letterSpacing:"0.08em",cursor:"pointer",opacity:loading?0.6:1}}>
+                  {loading?"Saving...":"SAVE & GO TO DASHBOARD "}
+                </button>
+                <button onClick={()=>handleStep4(true)} style={{background:"#F5F5F5",border:"1.5px solid #E5E5E5",color:"#737373",borderRadius:"8px",padding:"0.875rem 1rem",fontSize:"0.8rem",cursor:"pointer",fontFamily:"var(--font-body)",whiteSpace:"nowrap"}}>Skip CCTV</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
